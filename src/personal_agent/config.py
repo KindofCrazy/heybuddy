@@ -17,6 +17,7 @@ class Settings(BaseModel):
     request_timeout_seconds: float = Field(default=60, gt=0)
     tool_timeout_seconds: float = Field(default=10, gt=0)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
 
     @field_validator("base_url")
     @classmethod
@@ -56,6 +57,7 @@ ENV_FIELDS = {
     "AGENT_REQUEST_TIMEOUT_SECONDS": "request_timeout_seconds",
     "AGENT_TOOL_TIMEOUT_SECONDS": "tool_timeout_seconds",
     "AGENT_LOG_LEVEL": "log_level",
+    "AGENT_DATABASE_PATH": "database_path",
 }
 
 

@@ -3,7 +3,7 @@
 ## 职责与架构组成
 
 `src/personal_agent/config.py::Settings` 使用 Pydantic 校验密钥、模型名、Base URL、
-轮数、超时和日志级别；密钥以 `SecretStr` 保存。
+轮数、超时、日志级别和数据库路径；密钥以 `SecretStr` 保存。
 `ENV_FIELDS` 映射环境变量到内部字段，`load_settings()` 只读取指定文件或当前目录的 `.env`。
 `main.py::main()` 加载配置，`run_cli()` 根据配置装配 SDK 客户端和 Runtime。
 这里不执行 API 请求，不解析 SDK 响应，也不搜索父目录凭证。
@@ -19,8 +19,11 @@
    未设置或使用 HTTPS 时通过；HTTP 仅允许解析后的主机名为 `localhost`（可有结尾的点），
    或 `ipaddress.ip_address(host).is_loopback` 为真的数值地址。
    IPv6 主机名先移除方括号，不执行 DNS 查询。
-6. 配置通过后由 `run_cli()` 传给 SDK；未设置 Base URL 时使用 SDK 默认 OpenAI 地址。
+6. `AGENT_DATABASE_PATH` 默认 `.heybuddy/heybuddy.sqlite3`，相对启动目录解析。
+   `run_cli()` 先打开数据库、初始化 schema、处理遗留 running Run 并恢复会话，再装配 SDK。
+   未设置 Base URL 时使用 SDK 默认 OpenAI 地址。
    校验失败时 CLI 仅报告出错字段并以退出码 2 结束，不输出原始输入值或密钥。
+   数据库无法打开、被其他实例占用或初始化失败时返回退出码 1，不悄悄创建临时会话替代。
 
 ## 异常与边界
 

@@ -1,116 +1,147 @@
-# Personal Agent — V0.1 Core Runtime
+# HeyBuddy — V0.2 Persistent Conversations
 
-一个运行于本机的最小 Python Agent Runtime。核心 Harness 自行实现，便于阅读、测试和扩展。
-当前只支持 CLI 会话、Responses API、显式注册工具和进程内对话历史。
-目标仓库：<https://github.com/KindofCrazy/heybuddy>。
+一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。
+V0.2 在 V0.1 的 Agent Loop、Provider、ToolRegistry 和 CLI 上加入 SQLite 持久化与会话管理。
+仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
-## 安装
+## 当前范围与设计
 
-需要 [uv](https://docs.astral.sh/uv/)。在项目根目录运行（以下命令适用于 PowerShell）：
+持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。
+重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。
+借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts)
+对 Agent 与 Conversation 的分离，不复制其后端或记忆系统。
+**Conversation History 与长期记忆是不同概念**：当前只保存和重放历史，不进行跨会话记忆检索。
+
+不实现 Memory Blocks、自动记忆提取、向量/Embeddings、Reflection、Context Compaction、
+Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。
+
+## 安装与配置
+
+需要 [uv](https://docs.astral.sh/uv/)，Python 3.13；在项目根目录运行：
 
 ```powershell
 uv python install 3.13
 uv sync --locked
-# 仅在尚无 .env 时复制，避免覆盖自己的配置
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-项目固定 Python 3.13 系列，依赖版本由 `uv.lock` 锁定。`uv sync` 默认安装开发依赖。
-若系统 uv 缓存目录不可写，可设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
-
-## 配置与启动
-
-编辑当前工作目录的 `.env`：
+编辑当前目录的 `.env`，已有配置无需覆盖，数据库路径可省略：
 
 ```dotenv
 OPENAI_API_KEY=your-key
 OPENAI_MODEL=your-responses-api-model
+# 使用 DeepSeek 时可设置以下地址及模型 deepseek-flash
+# OPENAI_BASE_URL=https://api.deepseek.com
+AGENT_DATABASE_PATH=.heybuddy/heybuddy.sqlite3
 AGENT_MAX_ROUNDS=10
 AGENT_REQUEST_TIMEOUT_SECONDS=60
 AGENT_TOOL_TIMEOUT_SECONDS=10
 AGENT_LOG_LEVEL=INFO
 ```
 
-Key 和模型名必填；模型必须支持 Responses API 和函数调用，并对你的账户开放。
-不在源码中指定模型，不自动探测模型或发送试探请求。其余变量可省略。
-使用 DeepSeek 时，在 `.env` 中设置 `OPENAI_MODEL=deepseek-flash`、
-`OPENAI_BASE_URL=https://api.deepseek.com`，Key 填对应服务的 Key。
-省略 `OPENAI_BASE_URL` 时使用 OpenAI 默认地址；只支持 Responses 兼容端点，不回退到 Chat Completions。
-自定义地址要求 HTTPS；HTTP 仅允许 `localhost`（含结尾的点）和数值 loopback IP
-（IPv4 `127.0.0.0/8`、IPv6 `::1`），如 `http://127.0.0.1:8000/v1`。
-不通过 DNS 判定是否为本机；局域网地址、`0.0.0.0`、`::` 和类似 `localhost.example.com` 的域名不属于例外。
-DeepSeek 支持通过同一个官方 OpenAI SDK Provider 调用 Responses API，相关参数兼容性见
-[DeepSeek 官方文档](https://api-docs.deepseek.com/guides/responses_api/)。
-系统环境变量优先于 `.env`；只读取启动目录中的 `.env`，不向父目录搜索密钥。
-`.env` 被 Git 忽略，`.env.example` 只包含占位值。不要在命令参数、日志或提交中写入凭证。
+Key 和模型名必填，其余均有默认值。系统环境变量优先于当前目录 `.env`，不搜索父目录。
+自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8`
+和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。
+默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见
+[DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
+
+数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。
+`.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。
+数据库含完整私人对话和 Provider 数据，当前没有加密或自动备份，不要提交或公开它。
+
+## 启动与会话命令
 
 ```powershell
 uv run personal-agent
 # 等价入口
 uv run python -m personal_agent.main
-# 查看帮助不需要密钥，也不产生网络请求
+# 帮助不读取密钥、不打开数据库
 uv run personal-agent --help
 ```
 
-可以输入“计算 12.5 加 7，再告诉我 UTC 时间”，连续聊天，输入 `exit` / `quit` 或 EOF 退出，
-Ctrl+C 也可退出。标准输出显示回答，标准错误输出运行日志。
-配置错误退出码为 2；单轮失败显示状态，CLI 仍可接收后续输入。
+| 输入 | 行为 |
+| --- | --- |
+| 普通文本 | 在当前 Conversation 中运行 Agent |
+| `/new` | 在同一 Agent 下新建并切换到空会话 |
+| `/sessions` | 列出会话 ID、更新时间，并标记当前会话 |
+| `/resume <conversation_id>` | 根据完整 ID 恢复已有会话 |
+| `/status` | 查看 Agent、当前 Conversation、Run 状态和中断提示 |
+| `exit` / `quit` / EOF | 正常退出 |
 
-## 架构与执行流程
+首次启动创建 Agent `heybuddy` 和一个 Conversation；之后自动恢复上次选中的会话。
+命令不会送给模型或保存为聊天消息；无效 ID 或命令不会切换当前会话。
+Ctrl+C 取消当前 Run 并退出。每个数据库同时只支持一个本地 CLI 实例，另一个实例会明确报错。
+配置错误退出码 2，存储启动错误退出码 1；单轮错误显示状态后仍可接收后续输入。
+
+例如第一次输入“我正在开发 HeyBuddy，准备参考 Letta Code 设计长期记忆”，然后退出。
+第二次使用同一数据库启动并问“我们之前准备怎样实现 Memory？”，Provider 会收到恢复的前文。
+输入 `/new` 后再提问，则只包含 Agent 的 system 提示词与新输入；可通过 `/resume` 返回旧会话。
+
+## 架构与实际运行路径
 
 ```text
-CLI → Agent → ContextBuilder（system + 会话历史 + 新输入）
-          ↓
-       Provider.generate(messages, tool_definitions)
-          ↓
-       文本终答 → 提交历史 → RunResult
-       工具调用 → Registry 校验/执行 → 按 call_id 写入结果 → 下一次模型请求
+main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
+     → ContextBuilder(ConversationHistory) → Agent.run
+          ↓ begin：保存 running Run + 用户消息
+       Provider.generate（普通内部消息 / 工具定义）
+          ↓ record：先保存模型调用
+       ToolRegistry.execute → 保存结果 → 下一轮模型请求
+          ↓ commit：完成 Run 状态
+       RunResult → CLI
 ```
 
-- `core/models.py`：Pydantic 内部消息、调用、结果、停止状态。不包含 OpenAI SDK 对象。
-- `core/context.py`：构建上下文并保存当前进程内的会话历史。返回深拷贝，避免外部意外修改。
-- `core/agent.py`：手写有界异步循环；同一 Agent 的多次调用按顺序运行。
-- `llm/base.py`：一个结构化 Protocol 和两类 Provider 异常，无复杂继承体系。
-- `llm/openai_provider.py`：唯一具体 Provider，集中转换 Responses API 输入输出。
-- `tools/registry.py`：显式注册、严格参数校验、执行隔离和 JSON 结果规范化。
-- `config.py` / `main.py`：配置与 CLI 装配；其他渠道将来可直接复用 `Agent.run()`。
+- Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
+- SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
+- Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
+- `user_version` 管理 schema；当前应用 0.2.0 对应 schema 1。CLI 每次启动显式初始化并按序迁移，
+  迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- ContextBuilder 区分完整审计、可重放历史、当前上下文和运行中消息；目前不压缩上下文。
+- Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，
+  持久化前后使用相同映射。工具调用格式参考
+  [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
-一次 round 是一次模型请求，最多 `AGENT_MAX_ROUNDS` 次；SDK 自动重试关闭。
-每次模型请求有 Runtime 超时，SDK 也使用同一请求超时。
-同一响应的多个工具按模型给出的顺序执行，每个调用都会得到对应 ID 的成功或错误结果。
-文本和工具调用同时返回时，先执行工具；仅没有工具调用且有文本时才视为最终回答。
-拒绝回答作为文本展示；空响应、重复调用 ID、未完成响应都会明确失败。
+模块文档均包含架构组成、真实入口/执行顺序、异常边界和验证方法：
 
-停止状态：`completed`、`max_rounds`、`timeout`、`provider_error`、`invalid_response`、
-`runtime_error`。工具错误包含 `unknown_tool`、`invalid_arguments`、`execution_error`、
-`tool_timeout`，会返回模型而不是中断循环。
-最后一次模型请求只用于生成最终回答，不再提供工具定义。
-若模型仍返回工具调用，Runtime 不执行它们，而是按调用 ID 记录 `round_budget_exhausted` 错误，
-返回 `max_rounds`，不追加模型请求。`AGENT_MAX_ROUNDS=1` 时只允许直接回答。
-先前轮次已执行的工具仍可能产生副作用；错误后保留工具记录及停止说明，不自动重试或回滚。
-用户取消时取消当前异步调用、不提交该轮临时历史，已经发生的工具副作用仍然存在。
+- [Agent Loop](docs/modules/agent.md)
+- [ContextBuilder 与历史边界](docs/modules/context.md)
+- [内部及持久化数据模型](docs/modules/models.md)
+- [Provider 与 Responses 重放](docs/modules/provider.md)
+- [工具注册与超时契约](docs/modules/tools.md)
+- [SQLite、迁移及事务](docs/modules/storage.md)
+- [会话管理与 CLI](docs/modules/sessions-cli.md)
+- [配置与 API 地址校验](docs/modules/config.md)
 
-Responses 使用 `store=False`，每次发送本地完整上下文。Provider 将原始 output items
-转换为普通 JSON，置于内部消息的 `provider_data["openai"]`，自行重放 reasoning、文本和工具调用；
-核心 Loop 不解释这些数据。请求包含 `reasoning.encrypted_content` 以支持无服务端会话的推理模型。
-工具 schema 来自 Pydantic；显式 `strict=False` 保留自定义工具的默认值/可选字段语义，
-执行前始终由本地 Pydantic 严格校验。参考
-[OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
+## 一致性、失败与中断
 
-日志只记录轮次、工具名、调用 ID、状态和异常类型，不输出对话、参数、工具结果、请求体或密钥。
+一次 round 是一次模型请求，SDK 自动重试关闭。最后一轮不提供工具定义；若模型仍请求工具，
+则不执行，逐个保存关联调用 ID 的 `round_budget_exhausted` 错误，返回 `max_rounds`。
+同一响应中的工具按顺序执行，每个调用在执行前持久化，每个结果在执行下个工具前持久化。
 
-本次涉及模块的说明文档：
+Run 与初始用户消息原子创建；消息使用会话内递增 sequence 排序。
+每次追加消息是短事务；正常结束时校验无悬空调用，原子保存终态、结束时间和 RunResult。
+只有成功完成保存后才向 CLI 报告最终成功。保存失败停止运行，已提交的历史不被覆盖。
 
-- [Agent Loop：架构与执行路径](docs/modules/agent.md)
-- [工具注册、执行和超时契约](docs/modules/tools.md)
-- [环境配置与 API 地址校验](docs/modules/config.md)
+| Run 状态 | 含义 | 正常模型上下文 |
+| --- | --- | --- |
+| `running` | 正在处理，可能已有部分日志 | 不包含 |
+| `completed` | 已保存完整成功结果 | 包含 |
+| `failed` | 模型/API/轮数等正常停止，已有完整停止记录 | 包含 |
+| `cancelled` | 用户取消，可能存在未配对工具调用 | 不包含 |
+| `interrupted` | 存储故障或启动时发现遗留 running | 不包含 |
+
+完整历史 `SQLiteStore.load_messages()` 始终保留未完成记录；恢复时不伪造结果、不自动续跑或重试。
+中断/取消的整个 Run 被排除出模型上下文，`/status` 会提示。工具可能已经产生副作用；
+工具完成与结果落库之间仍有不可消除的崩溃窗口，SQLite 不能回滚外部效果。
+如果连标记中断也失败，Run 保持 running，下一次启动在占用锁下标记为 interrupted。
+
+RunResult 的 `storage_error` 表示持久化失败，不代表工具未执行；其他停止状态与 V0.1 保持一致。
+日志不输出用户消息、工具参数/结果、Provider 原始错误正文或凭证。
 
 ## 注册新工具
 
-先定义 `ToolArguments` 子类和普通 Python 函数，然后在传给 Agent 的 registry 上注册：
-
 ```python
-from personal_agent.tools.registry import Tool, ToolArguments, ToolRegistry
+from personal_agent.tools.registry import Tool, ToolArguments
+from personal_agent.tools.builtin import create_builtin_registry
 
 
 class MultiplyArguments(ToolArguments):
@@ -122,7 +153,7 @@ def multiply(args: MultiplyArguments) -> dict[str, float]:
     return {"product": args.a * args.b}
 
 
-registry = ToolRegistry()
+registry = create_builtin_registry()
 registry.register(
     Tool(
         "multiply",
@@ -134,19 +165,13 @@ registry.register(
 )
 ```
 
-使用已有内置工具时，先 `registry = create_builtin_registry()` 再注册新工具。
-`ToolArguments` 禁止额外字段、字符串到数字的隐式转换和非有限数字。
-工具应返回 JSON 值或可转为 JSON 的 Pydantic 模型；无法规范化的返回值视为执行失败。
-同步函数在线程中执行；异步函数直接 await，推荐将 I/O 工具写成可取消的异步函数。
-同步工具必须显式声明 `side_effect_free=True` 才能注册，适用于读取、计算等无外部写入的操作；
-未声明时注册失败，内置的时间与加法工具已声明。Runtime 信任开发者声明，不能验证任意函数是否确实无副作用。
-同步工具的 `tool_timeout` 只代表停止等待；错误结果明确说明线程可能继续运行、完成状态未知，
-副作用没有被取消或回滚，不应自动重试。Python 线程不能被安全强制终止；进程退出也可能等待线程结束。
-异步工具超时同样不能保证已发生的副作用回滚。
-未来引入外部写入工具时，需要单独设计权限、幂等和取消语义。
-不注册任意 shell、`eval` 或 `exec` 工具，不执行模型生成的代码。
+同步工具必须显式声明 `side_effect_free=True`；Runtime 信任开发者承诺，不能自动验证函数行为。
+参数严格校验，结果须为 JSON 值或 Pydantic 模型。未知工具、非法参数和执行异常返回标准错误。
+同步工具在线程中执行，超时只停止等待，线程仍可能完成；Python 线程不能安全强制终止，
+程序退出可能等待线程。异步取消同样不保证外部副作用回滚；两者都不自动重试。
+禁止注册任意 shell、eval、exec 或执行模型生成代码的工具。
 
-## 验证
+## 测试与检查
 
 ```powershell
 uv run pytest
@@ -155,19 +180,16 @@ uv run ruff format --check .
 uv build
 ```
 
-若 Windows 沙箱临时目录不可写，可使用 `uv run pytest --basetemp=.pytest_cache/tmp`。
-Windows asyncio 自身需要本地 socketpair；运行环境需允许回环连接，测试仍禁止外网连接。
+测试使用 Fake Provider、SDK MockTransport 和临时 SQLite，隔离真实配置并禁用外网，
+不需要真实 API Key，不消耗模型费用。覆盖重启恢复、会话隔离、完整消息/Provider JSON 重放、
+迁移回滚、数据库异常、批量工具调用中断、真实进程退出和多次重启，以及原有 Runtime 测试。
+Windows 沙箱临时目录受限时使用 `uv run pytest --basetemp=.pytest_cache/tmp`；
+asyncio 需要允许本地 socketpair，测试仍禁止外网。
+uv 缓存目录不可写时设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
 
-测试使用 Fake Provider 和 SDK 的 HTTP MockTransport；会禁用真实网络连接。
-不读取真实 `.env`，不需要 API Key，不调用模型、不消耗 API 费用。
-覆盖直答、连续/批量工具调用、错误工具、参数/执行错误、超时/API 失败、轮数限制、ID 关联、
-上下文连续性、OpenAI 请求/响应转换、reasoning 重放、配置脱敏和 CLI 退出。
+## 当前限制
 
-## 当前边界与后续方向
-
-当前没有流式输出、token 预算或上下文压缩；历史随会话增长，退出即丢失。
-没有 SQLite、长期记忆、后台任务、checkpoint、自动恢复、Scheduler、Telegram/QQ 或 Gmail。
-没有其他 Provider、多 Agent 架构、动态工具发现或框架运行时。
-
-建议下一步先增加 Telegram 单渠道适配：验证 CLI 之外的入口能否直接复用 Runtime，
-按用户/会话隔离 Agent 实例。之后再单独设计 SQLite 历史持久化，避免把通信和持久化同时引入。
+V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。
+SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。
+会话历史会完整加载并随请求发送，暂无 token 预算、压缩、跨会话检索、自动备份或数据加密。
+中断记录用于审计，工具的幂等、权限、未知副作用人工核对及任务恢复均需后续单独设计。

@@ -153,8 +153,9 @@ def test_run_cli_constructs_sdk_and_runtime_and_closes_client(monkeypatch):
     )
     observed = {}
 
-    async def chat(agent):
+    async def chat(agent, *, sessions):
         observed["agent"] = agent
+        assert sessions.current.id
         assert agent.provider.client.max_retries == 0
         assert agent.provider.client.api_key == "test-key"
         assert str(agent.provider.client.base_url) == "https://api.deepseek.com/"

@@ -2,20 +2,35 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，V0.1 只提供可读、可测试、可扩展的进程内 Runtime、CLI、
-OpenAI Responses Provider、Pydantic 工具注册及会话历史。用户需要掌握 Harness 的核心实现。
+本项目从零实现个人 Agent，当前 V0.2 在自建 Runtime、CLI、OpenAI Responses Provider 和工具注册上，
+增加本地 SQLite 持久化会话与会话管理。用户需要掌握 Harness 的核心实现。
 修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
 - `core/agent.py` 手写 asyncio Agent Loop；不得依赖 CLI 或 OpenAI SDK 的响应对象。
-- `core/context.py` 独立构建上下文；当前只保存内存中的会话历史。
+- `core/context.py` 独立构建上下文，通过 `core/history.py` 的 Protocol 访问历史，不了解 SQLite。
 - `core/models.py` 定义统一内部消息和调用结果；Provider 专用数据仅允许普通 JSON。
+- `storage/` 使用标准库 sqlite3 保存 Agent / Conversation / Message / Run；不引入 ORM 或外部数据库。
+- `sessions.py` 管理同一持久 Agent 下的多个独立 Conversation；会话历史不等于长期记忆。
 - `llm/base.py` 保持简洁 Provider Protocol；仅 OpenAI adapter 了解 SDK 与 wire format。
 - `tools/registry.py` 统一注册、校验、执行和结果规范化；未知工具必须拒绝。
 - `main.py` 只负责配置、装配、交互和退出，不承载 Agent Loop。
 - 工具错误作为关联 call_id 的数据返回模型；模型失败和轮数上限返回明确 RunResult。
 - 不允许模型通过 eval、exec、任意 shell 命令执行生成代码。
+
+## 持久化与一致性
+
+- CLI 显式初始化数据库，以 `PRAGMA user_version` 和顺序迁移管理 schema；迁移必须原子执行。
+- 同一数据库仅允许一个本地应用实例持有占用锁；取得锁后才能把遗留 running Run 标记 interrupted。
+- 保存完整内部消息 JSON，包括 tool_calls、call_id、工具结果与 provider_data；禁止只保存聊天文本。
+- Run 与初始用户消息原子创建；工具调用在执行前落库，每个结果在下一次工具执行前落库。
+- 消息使用会话内稳定序号排序；正常结束前验证调用/结果完整性，完成状态和结束元数据原子提交。
+- 完整审计历史、可重放历史和运行中消息必须区分。仅 completed / failed Run 可进入正常模型上下文；
+  cancelled / interrupted / running Run 保留审计但不重放，不自动重试工具，也不伪造工具成功或失败结果。
+- 数据库失败时停止当前 Run，保留此前已提交数据；工具副作用与数据库事务无法一起回滚。
+- 默认重启恢复上次选中的 Conversation；新会话仅共享 Agent 身份和系统提示词，不继承旧会话聊天记录。
+- 数据库及其 journal/lock 文件必须被 Git 忽略；数据库含私人会话，不作为测试样本提交。
 
 ## 核心模块说明文档
 
@@ -51,6 +66,7 @@ Key/模型只从环境配置获得，密钥只能在被忽略的本地 `.env` �
 修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。
 涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。
 覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。
+V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。
 测试应验证行为与契约，而不是机械重复实现。
 
 ## Git 提交流程与信息
@@ -76,6 +92,7 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.1 不实现 Telegram/QQ、Gmail、SQLite、长期记忆、任务持久化、checkpoint、后台 Worker、
-失败恢复、Scheduler 或主动对话。只有后续明确请求时才实现；保持 Provider、ContextBuilder、
-Agent 和 CLI 职责分离即可，不预建这些模块。无微服务、Redis、消息队列、向量库、多 Agent。
+V0.2 仅增加持久化会话与管理命令，不实现 Memory Blocks、记忆提取、跨会话检索、向量/Embedding、
+Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。
+记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。
+保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。

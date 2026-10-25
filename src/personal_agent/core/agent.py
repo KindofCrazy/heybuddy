@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from personal_agent.core.context import ContextBuilder
+from personal_agent.core.history import HistoryError
 from personal_agent.core.models import (
     AssistantMessage,
     Message,
@@ -44,22 +45,47 @@ class Agent:
             raise ValueError("User input cannot be empty")
         # Serialize turns on this session to prevent interleaved history.
         async with self._lock:
-            messages = self.context.build(user_input)
-            return await self._run(messages)
+            self._round_number = 0
+            try:
+                messages = self.context.begin(user_input)
+                return await self._run(messages)
+            except HistoryError:
+                self._abort_context()
+                logger.error("history_failed round=%d", self._round_number)
+                return RunResult(
+                    status="storage_error",
+                    rounds=self._round_number,
+                    error="Conversation history could not be saved or loaded; "
+                    "run stopped without retrying tools. Tool effects may already have occurred.",
+                )
+            except asyncio.CancelledError:
+                self._abort_context(cancelled=True)
+                raise
+
+    def _abort_context(self, *, cancelled: bool = False) -> None:
+        try:
+            self.context.abort(cancelled=cancelled)
+        except HistoryError:
+            logger.error("history_interrupt_failed")
 
     async def _run(self, messages: list[Message]) -> RunResult:
+        def append(message: Message) -> None:
+            # Save assistant calls before any execution and each result before the
+            # next tool. A write failure stops the run; external effects cannot roll back.
+            self.context.record(message)
+            messages.append(message)
+
         def finish(result: RunResult) -> RunResult:
             if result.status != "completed":
                 # Keep completed tool effects and outputs in history. No automatic retry
                 # or pretend rollback; every recorded call already has a result.
-                messages.append(
-                    AssistantMessage(text=f"[Runtime stopped: {result.status}] {result.error}")
-                )
-            self.context.commit(messages)
+                append(AssistantMessage(text=f"[Runtime stopped: {result.status}] {result.error}"))
+            self.context.commit(messages, result)
             logger.info("run_end status=%s rounds=%d", result.status, result.rounds)
             return result
 
         for round_number in range(1, self.max_rounds + 1):
+            self._round_number = round_number
             logger.info("model_request round=%d", round_number)
             try:
                 async with asyncio.timeout(self.request_timeout_seconds):
@@ -120,7 +146,7 @@ class Agent:
                     )
                 )
 
-            messages.append(
+            append(
                 AssistantMessage(
                     text=response.text,
                     tool_calls=response.tool_calls,
@@ -143,7 +169,7 @@ class Agent:
                 # Record explicit rejections instead of leaving dangling calls in
                 # the session. No validation or execution is delegated to the registry.
                 for call in response.tool_calls:
-                    messages.append(
+                    append(
                         ToolMessage(
                             result=ToolResult(
                                 call_id=call.id,
@@ -162,7 +188,7 @@ class Agent:
             # Sequential execution is deliberate: side effects have a predictable order.
             # ToolRegistry turns validation, execution, and timeout failures into data.
             for call in response.tool_calls:
-                messages.append(ToolMessage(result=await self.tools.execute(call)))
+                append(ToolMessage(result=await self.tools.execute(call)))
 
         return finish(
             RunResult(

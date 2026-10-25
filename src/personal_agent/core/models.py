@@ -65,7 +65,13 @@ class ModelResponse(Model):
 
 class RunResult(Model):
     status: Literal[
-        "completed", "max_rounds", "timeout", "provider_error", "invalid_response", "runtime_error"
+        "completed",
+        "max_rounds",
+        "timeout",
+        "provider_error",
+        "invalid_response",
+        "runtime_error",
+        "storage_error",
     ]
     text: str = ""
     rounds: int
