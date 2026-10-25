@@ -51,6 +51,53 @@ def test_invalid_settings(field, value):
         Settings.model_validate(data)
 
 
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        None,
+        "https://api.example.com/v1",
+        "https://192.168.1.10:8443/v1",
+        "http://localhost:8000/v1",
+        "http://LOCALHOST.:8000/v1",
+        "http://127.0.0.1:8000/v1",
+        "http://127.20.30.40:8000/v1",
+        "http://[::1]:8000/v1",
+    ],
+)
+def test_base_url_allows_https_and_explicit_loopback_http(base_url):
+    settings = Settings(api_key="test-key", model="test-model", base_url=base_url)
+    assert (settings.base_url is None) == (base_url is None)
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://api.example.com/v1",
+        "http://8.8.8.8/v1",
+        "http://192.168.1.10/v1",
+        "http://0.0.0.0:8000/v1",
+        "http://[::]:8000/v1",
+        "http://[2001:db8::1]/v1",
+        "http://localhost.example.com/v1",
+        "http://127.0.0.1.example.com/v1",
+        "http://localhost@api.example.com/v1",
+        "http://api.example.com/localhost",
+        "http://[::ffff:192.168.1.10]/v1",
+    ],
+)
+def test_base_url_rejects_non_loopback_http_and_hostname_spoofs(base_url):
+    with pytest.raises(ValidationError, match="requires HTTPS"):
+        Settings(api_key="test-key", model="test-model", base_url=base_url)
+
+
+def test_environment_base_url_cannot_bypass_https_policy(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_MODEL", "test-model")
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://api.example.com/v1")
+    with pytest.raises(ValidationError, match="requires HTTPS"):
+        load_settings()
+
+
 async def test_cli_multiple_turns_with_tools_and_quit():
     provider = FakeProvider(
         ModelResponse(text="hello"), ModelResponse(tool_calls=[add_call()]), ModelResponse(text="5")

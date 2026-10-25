@@ -114,7 +114,7 @@ async def test_failed_tool_does_not_skip_other_tools_in_batch():
         raise RuntimeError("sensitive private exception")
 
     registry = create_builtin_registry()
-    registry.register(Tool("fail", "Always fails", ToolArguments, fail))
+    registry.register(Tool("fail", "Always fails", ToolArguments, fail, side_effect_free=True))
     provider = FakeProvider(
         ModelResponse(tool_calls=[ToolCall(id="bad", name="fail", arguments="{}"), add_call()]),
         ModelResponse(text="Partial success"),
@@ -167,7 +167,7 @@ async def test_runtime_enforces_model_timeout():
     assert provider.cancelled
 
 
-async def test_round_limit_keeps_complete_call_result_pairs_and_allows_next_turn():
+async def test_round_limit_rejects_final_tools_keeps_pairs_and_allows_next_turn():
     provider = FakeProvider(
         ModelResponse(tool_calls=[add_call("r1")]),
         ModelResponse(tool_calls=[add_call("r2")]),
@@ -185,7 +185,56 @@ async def test_round_limit_keeps_complete_call_result_pairs_and_allows_next_turn
     ]
     outputs = [message.result.call_id for message in history if isinstance(message, ToolMessage)]
     assert calls == outputs == ["r1", "r2"]
+    results = [message.result for message in history if isinstance(message, ToolMessage)]
+    assert results[0].ok
+    assert not results[1].ok
+    assert results[1].error.code == "round_budget_exhausted"
+    assert provider.tools[0]
+    assert provider.tools[1] == []
     assert (await agent.run("continue")).status == "completed"
+    next_turn_outputs = [
+        message.result for message in provider.requests[2] if isinstance(message, ToolMessage)
+    ]
+    assert next_turn_outputs == results
+
+
+@pytest.mark.parametrize("call_count", [1, 2])
+async def test_final_round_never_executes_new_side_effects_even_with_text(call_count):
+    effects = []
+
+    async def write(_):
+        effects.append("written")
+        return "done"
+
+    registry = create_builtin_registry()
+    registry.register(Tool("write", "Test side effect", ToolArguments, write))
+    calls = [ToolCall(id=f"write-{i}", name="write", arguments="{}") for i in range(call_count)]
+    provider = FakeProvider(ModelResponse(text="I wrote it", tool_calls=calls))
+    agent = Agent(provider, registry, max_rounds=1)
+    result = await agent.run("write")
+
+    assert result.status == "max_rounds"
+    assert result.rounds == len(provider.requests) == 1
+    assert result.text == ""
+    assert "not executed" in result.error
+    assert provider.tools == [[]]
+    assert effects == []
+    outputs = [
+        message.result for message in agent.context.history if isinstance(message, ToolMessage)
+    ]
+    assert [output.call_id for output in outputs] == [call.id for call in calls]
+    assert all(
+        not output.ok and output.error.code == "round_budget_exhausted" for output in outputs
+    )
+
+
+async def test_final_round_can_return_answer_after_processing_prior_tool_output():
+    provider = FakeProvider(ModelResponse(tool_calls=[add_call()]), ModelResponse(text="5"))
+    result = await Agent(provider, create_builtin_registry(), max_rounds=2).run("2+3")
+    assert result.status == "completed"
+    assert result.text == "5"
+    assert provider.tools[1] == []
+    assert provider.requests[1][-1].result.data == {"sum": 5.0}
 
 
 @pytest.mark.parametrize(

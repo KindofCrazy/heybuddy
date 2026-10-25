@@ -28,9 +28,16 @@ def create_builtin_registry(timeout_seconds: float = 10) -> ToolRegistry:
             "Get the current date and time in UTC.",
             CurrentTimeArguments,
             get_current_time,
+            side_effect_free=True,
         )
     )
     registry.register(
-        Tool("add_numbers", "Add two finite numbers.", AddNumbersArguments, add_numbers)
+        Tool(
+            "add_numbers",
+            "Add two finite numbers.",
+            AddNumbersArguments,
+            add_numbers,
+            side_effect_free=True,
+        )
     )
     return registry

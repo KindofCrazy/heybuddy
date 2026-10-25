@@ -1,4 +1,5 @@
 import os
+from ipaddress import ip_address
 from pathlib import Path
 from typing import Literal
 
@@ -16,6 +17,23 @@ class Settings(BaseModel):
     request_timeout_seconds: float = Field(default=60, gt=0)
     tool_timeout_seconds: float = Field(default=10, gt=0)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    @field_validator("base_url")
+    @classmethod
+    def require_secure_base_url(cls, value: HttpUrl | None) -> HttpUrl | None:
+        if value is None or value.scheme == "https":
+            return value
+        # Check the parsed hostname, never substrings or DNS results. Pydantic
+        # brackets IPv6 hosts; localhost is the only permitted hostname alias.
+        host = (value.host or "").strip("[]").removesuffix(".")
+        if host == "localhost":
+            return value
+        try:
+            if ip_address(host).is_loopback:
+                return value
+        except ValueError:
+            pass
+        raise ValueError("API Base URL requires HTTPS unless the host is loopback")
 
     @field_validator("model", mode="before")
     @classmethod

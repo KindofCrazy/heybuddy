@@ -36,6 +36,9 @@ Key 和模型名必填；模型必须支持 Responses API 和函数调用，并�
 使用 DeepSeek 时，在 `.env` 中设置 `OPENAI_MODEL=deepseek-flash`、
 `OPENAI_BASE_URL=https://api.deepseek.com`，Key 填对应服务的 Key。
 省略 `OPENAI_BASE_URL` 时使用 OpenAI 默认地址；只支持 Responses 兼容端点，不回退到 Chat Completions。
+自定义地址要求 HTTPS；HTTP 仅允许 `localhost`（含结尾的点）和数值 loopback IP
+（IPv4 `127.0.0.0/8`、IPv6 `::1`），如 `http://127.0.0.1:8000/v1`。
+不通过 DNS 判定是否为本机；局域网地址、`0.0.0.0`、`::` 和类似 `localhost.example.com` 的域名不属于例外。
 DeepSeek 支持通过同一个官方 OpenAI SDK Provider 调用 Responses API，相关参数兼容性见
 [DeepSeek 官方文档](https://api-docs.deepseek.com/guides/responses_api/)。
 系统环境变量优先于 `.env`；只读取启动目录中的 `.env`，不向父目录搜索密钥。
@@ -81,8 +84,10 @@ CLI → Agent → ContextBuilder（system + 会话历史 + 新输入）
 停止状态：`completed`、`max_rounds`、`timeout`、`provider_error`、`invalid_response`、
 `runtime_error`。工具错误包含 `unknown_tool`、`invalid_arguments`、`execution_error`、
 `tool_timeout`，会返回模型而不是中断循环。
-轮数耗尽时仍完成最后一次已接收的工具调用，再结束本轮，不发额外模型请求。
-因此耗尽轮数的结果可能已有工具副作用；错误后保留工具记录及停止说明，不自动重试或回滚。
+最后一次模型请求只用于生成最终回答，不再提供工具定义。
+若模型仍返回工具调用，Runtime 不执行它们，而是按调用 ID 记录 `round_budget_exhausted` 错误，
+返回 `max_rounds`，不追加模型请求。`AGENT_MAX_ROUNDS=1` 时只允许直接回答。
+先前轮次已执行的工具仍可能产生副作用；错误后保留工具记录及停止说明，不自动重试或回滚。
 用户取消时取消当前异步调用、不提交该轮临时历史，已经发生的工具副作用仍然存在。
 
 Responses 使用 `store=False`，每次发送本地完整上下文。Provider 将原始 output items
@@ -93,6 +98,12 @@ Responses 使用 `store=False`，每次发送本地完整上下文。Provider �
 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
 日志只记录轮次、工具名、调用 ID、状态和异常类型，不输出对话、参数、工具结果、请求体或密钥。
+
+本次涉及模块的说明文档：
+
+- [Agent Loop：架构与执行路径](docs/modules/agent.md)
+- [工具注册、执行和超时契约](docs/modules/tools.md)
+- [环境配置与 API 地址校验](docs/modules/config.md)
 
 ## 注册新工具
 
@@ -112,14 +123,26 @@ def multiply(args: MultiplyArguments) -> dict[str, float]:
 
 
 registry = ToolRegistry()
-registry.register(Tool("multiply", "Multiply two finite numbers.", MultiplyArguments, multiply))
+registry.register(
+    Tool(
+        "multiply",
+        "Multiply two finite numbers.",
+        MultiplyArguments,
+        multiply,
+        side_effect_free=True,
+    )
+)
 ```
 
 使用已有内置工具时，先 `registry = create_builtin_registry()` 再注册新工具。
 `ToolArguments` 禁止额外字段、字符串到数字的隐式转换和非有限数字。
 工具应返回 JSON 值或可转为 JSON 的 Pydantic 模型；无法规范化的返回值视为执行失败。
 同步函数在线程中执行；异步函数直接 await，推荐将 I/O 工具写成可取消的异步函数。
-超时只停止等待，不能强制杀死同步线程，也不能回滚副作用。当前内置工具都是短时无副作用操作。
+同步工具必须显式声明 `side_effect_free=True` 才能注册，适用于读取、计算等无外部写入的操作；
+未声明时注册失败，内置的时间与加法工具已声明。Runtime 信任开发者声明，不能验证任意函数是否确实无副作用。
+同步工具的 `tool_timeout` 只代表停止等待；错误结果明确说明线程可能继续运行、完成状态未知，
+副作用没有被取消或回滚，不应自动重试。Python 线程不能被安全强制终止；进程退出也可能等待线程结束。
+异步工具超时同样不能保证已发生的副作用回滚。
 未来引入外部写入工具时，需要单独设计权限、幂等和取消语义。
 不注册任意 shell、`eval` 或 `exec` 工具，不执行模型生成的代码。
 

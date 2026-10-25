@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from threading import Event
 
 import pytest
 from pydantic import field_validator
@@ -49,7 +50,9 @@ async def test_unknown_tool_rejected():
 
 def test_registry_rejects_duplicates_and_bad_names():
     registry = ToolRegistry()
-    tool = Tool("add", "Add", AddNumbersArguments, lambda args: args.a + args.b)
+    tool = Tool(
+        "add", "Add", AddNumbersArguments, lambda args: args.a + args.b, side_effect_free=True
+    )
     registry.register(tool)
     with pytest.raises(ValueError, match="already registered"):
         registry.register(tool)
@@ -75,7 +78,9 @@ async def test_async_tool_timeout():
 @pytest.mark.parametrize("value", [object(), {"bad": object()}, float("inf"), float("nan")])
 async def test_unserializable_or_nonfinite_results_are_errors(value):
     registry = ToolRegistry()
-    registry.register(Tool("invalid", "invalid", ToolArguments, lambda _: value))
+    registry.register(
+        Tool("invalid", "invalid", ToolArguments, lambda _: value, side_effect_free=True)
+    )
     result = await registry.execute(ToolCall(id="1", name="invalid", arguments="{}"))
     assert result.error.code == "execution_error"
 
@@ -85,7 +90,7 @@ async def test_tool_exception_not_exposed_in_result_or_log(caplog):
         raise ValueError("secret-test-token")
 
     registry = ToolRegistry()
-    registry.register(Tool("fail", "fail", ToolArguments, fail))
+    registry.register(Tool("fail", "fail", ToolArguments, fail, side_effect_free=True))
     result = await registry.execute(ToolCall(id="1", name="fail", arguments="{}"))
     assert result.error.code == "execution_error"
     assert "secret-test-token" not in result.model_dump_json() + caplog.text
@@ -101,7 +106,9 @@ async def test_custom_validator_bug_becomes_tool_error():
             raise RuntimeError("private validator failure")
 
     registry = ToolRegistry()
-    registry.register(Tool("broken", "broken", BrokenArguments, lambda _: None))
+    registry.register(
+        Tool("broken", "broken", BrokenArguments, lambda _: None, side_effect_free=True)
+    )
     result = await registry.execute(ToolCall(id="1", name="broken", arguments='{"value":"input"}'))
     assert result.error.code == "invalid_arguments"
 
@@ -109,8 +116,58 @@ async def test_custom_validator_bug_becomes_tool_error():
 async def test_pydantic_output_normalization():
     registry = ToolRegistry()
     registry.register(
-        Tool("model", "model", ToolArguments, lambda _: AddNumbersArguments(a=1, b=2))
+        Tool(
+            "model",
+            "model",
+            ToolArguments,
+            lambda _: AddNumbersArguments(a=1, b=2),
+            side_effect_free=True,
+        )
     )
     result = await registry.execute(ToolCall(id="1", name="model", arguments="{}"))
     assert result.ok
     assert result.data == {"a": 1.0, "b": 2.0}
+
+
+def test_sync_tools_require_explicit_side_effect_free_contract():
+    registry = ToolRegistry()
+    with pytest.raises(ValueError, match="side_effect_free=True"):
+        registry.register(Tool("unsafe", "No safety declaration", ToolArguments, lambda _: None))
+    assert registry.definitions() == []
+
+
+async def test_sync_timeout_reports_unknown_completion_and_thread_can_finish_later():
+    loop = asyncio.get_running_loop()
+    started = asyncio.Event()
+    finished = asyncio.Event()
+    release = Event()
+
+    def blocked_read(_):
+        # Events are test instrumentation; the tool performs no external writes.
+        loop.call_soon_threadsafe(started.set)
+        release.wait(timeout=5)
+        loop.call_soon_threadsafe(finished.set)
+        return "read complete"
+
+    registry = ToolRegistry(timeout_seconds=0.1)
+    registry.register(Tool("read", "Read only", ToolArguments, blocked_read, side_effect_free=True))
+    task = asyncio.create_task(
+        registry.execute(ToolCall(id="thread-1", name="read", arguments="{}"))
+    )
+    try:
+        await asyncio.wait_for(started.wait(), timeout=2)
+        result = await asyncio.wait_for(task, timeout=2)
+        assert not result.ok
+        assert result.call_id == "thread-1"
+        assert result.error.code == "tool_timeout"
+        assert "thread may still run" in result.error.message
+        assert "Completion is unknown" in result.error.message
+        assert "not cancelled or rolled back" in result.error.message
+        assert "do not automatically retry" in result.error.message
+        assert not finished.is_set()
+    finally:
+        release.set()
+        await asyncio.wait_for(finished.wait(), timeout=2)
+        await task
+    # A late completion must not turn the earlier timeout result into success.
+    assert not result.ok

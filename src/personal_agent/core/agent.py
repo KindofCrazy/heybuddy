@@ -2,7 +2,14 @@ import asyncio
 import logging
 
 from personal_agent.core.context import ContextBuilder
-from personal_agent.core.models import AssistantMessage, Message, RunResult, ToolMessage
+from personal_agent.core.models import (
+    AssistantMessage,
+    Message,
+    RunResult,
+    ToolError,
+    ToolMessage,
+    ToolResult,
+)
 from personal_agent.llm.base import Provider, ProviderError, ProviderTimeout
 from personal_agent.tools.registry import ToolRegistry
 
@@ -56,7 +63,10 @@ class Agent:
             logger.info("model_request round=%d", round_number)
             try:
                 async with asyncio.timeout(self.request_timeout_seconds):
-                    response = await self.provider.generate(messages, self.tools.definitions())
+                    # Reserve the last request for a final answer. Also guard below
+                    # against unsolicited calls; tool omission alone is not enforcement.
+                    definitions = self.tools.definitions() if round_number < self.max_rounds else []
+                    response = await self.provider.generate(messages, definitions)
             except (TimeoutError, ProviderTimeout):
                 return finish(
                     RunResult(
@@ -125,6 +135,30 @@ class Agent:
                     RunResult(status="completed", text=response.text, rounds=round_number)
                 )
 
+            if round_number == self.max_rounds:
+                logger.warning(
+                    "tool_calls_rejected reason=round_budget_exhausted count=%d",
+                    len(response.tool_calls),
+                )
+                # Record explicit rejections instead of leaving dangling calls in
+                # the session. No validation or execution is delegated to the registry.
+                for call in response.tool_calls:
+                    messages.append(
+                        ToolMessage(
+                            result=ToolResult(
+                                call_id=call.id,
+                                name=call.name,
+                                ok=False,
+                                error=ToolError(
+                                    code="round_budget_exhausted",
+                                    message="Tool was not executed: no request budget "
+                                    "remains to process its result.",
+                                ),
+                            )
+                        )
+                    )
+                break
+
             # Sequential execution is deliberate: side effects have a predictable order.
             # ToolRegistry turns validation, execution, and timeout failures into data.
             for call in response.tool_calls:
@@ -134,6 +168,6 @@ class Agent:
             RunResult(
                 status="max_rounds",
                 rounds=self.max_rounds,
-                error="Maximum model interaction rounds reached.",
+                error="Model round limit reached; final-round tools were not executed.",
             )
         )
