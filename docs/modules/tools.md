@@ -29,7 +29,7 @@
 
 ## 记忆工具的特殊执行边界
 
-`memory/tools.py` 注册四个固定工具，使用 memory.read / memory.write 权限；权限默认空集合，Agent 将本轮宿主授权同时传入 definitions 和 execute，不依赖模型自律。 ToolExecutionError 将安全领域错误码（如 memory_conflict）转换为标准 ToolResult。记忆更新是协程包装的短本地同步提交，没有 await 点，不在线程中执行有副作用的写入。它会短暂阻塞事件循环，timeout 无法强制打断文件系统操作；并不改变一般同步工具的超时契约。具体授权、冲突和版本路径见[MemoryStore](memory.md)，测试见 tests/test_memory_runtime.py。
+`memory/tools.py` 注册五个固定工具，分别使用 memory.read / memory.update / memory.restore 权限；权限默认空集合，Agent 将本轮宿主授权同时传入 definitions 和 execute，不依赖模型自律。 ToolExecutionError 将安全领域错误码（如 memory_conflict）转换为标准 ToolResult。memory_edit 以唯一原文匹配保护局部修改，memory_update 保留显式整块替换；memory_restore 独立授权。记忆读取、Git 隐私检查和提交均是协程包装的同步 I/O，没有 await 点，不在线程中执行有副作用的写入。它会短暂阻塞事件循环，timeout 无法强制打断文件系统操作；并不改变一般同步工具的超时契约。具体授权、冲突和版本路径见[MemoryStore](memory.md)，测试见 tests/test_memory_runtime.py。
 
 ## 阅读与验证
 

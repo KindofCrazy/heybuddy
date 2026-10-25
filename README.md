@@ -1,4 +1,4 @@
-# HeyBuddy — V0.3 Editable Core Memory
+# HeyBuddy — V0.3.1 Memory Hardening
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，加入可编辑、跨会话共享的 Markdown Core Memory。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
@@ -37,7 +37,7 @@ AGENT_LOG_LEVEL=INFO
 
 Key 和模型名必填，其余均有默认值。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
 
-数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或自动备份。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 时放在仓库外或自行加入 .gitignore，不要提交它。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
+数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或自动备份。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 推荐放在仓库外；仓库内实际 Agent 记忆目录必须整目录被 Git 忽略且没有已跟踪文件，否则初始化或写入会被拒绝。程序不会自动改写忽略规则或移除索引。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
 
 ## 启动与会话命令
 
@@ -56,7 +56,8 @@ uv run personal-agent --help
 | `/sessions` | 列出会话 ID、更新时间，并标记当前会话 |
 | `/resume <conversation_id>` | 根据完整 ID 恢复已有会话 |
 | `/memory read <请求>` | 本轮允许读取记忆和版本历史工具 |
-| `/memory edit <请求>` | 本轮允许读取、更新和恢复记忆工具 |
+| `/memory edit <请求>` | 本轮允许读取、局部编辑与显式整块替换，不允许恢复 |
+| `/memory restore <请求>` | 本轮允许读取与恢复完整快照，不允许普通更新 |
 | `/status` | 查看 Agent、当前 Conversation、Run 状态和中断提示 |
 | `exit` / `quit` / EOF | 正常退出 |
 
@@ -68,17 +69,21 @@ uv run personal-agent --help
 
 ```text
 你 > /memory edit 请记住：我正在开发 HeyBuddy，希望回答使用简洁中文。写入 human.md。
-Agent > （模型调用 memory_update 后确认；成功必须以工具返回为准）
+Agent > （模型调用 memory_edit 后确认；成功必须以工具返回为准）
 你 > /new
 你 > 我正在做什么项目？我喜欢怎样的回答？
 Agent > （新会话可使用共享 Core Memory，无需加载旧会话）
 你 > /memory read 请读取 human.md，并列出最近的记忆版本。
-你 > /memory edit 请先查看历史，将记忆恢复到版本 <完整版本 ID>。
+你 > /memory restore 请先查看历史，将记忆恢复到版本 <完整版本 ID>。
 ```
 
-重启后同样加载已提交记忆。每次请求编译最新版本，允许工具的 Run 内更新也会在下一轮生效。读取和版本工具为 memory_read / memory_history，更新和恢复为 memory_update / memory_restore。更新必须携带最新 expected_version；连续更新两个块时，第二次需要第一次返回的新版本。恢复创建新版本，不删除历史。不要在记忆中存放 API Key 或其他凭证。
+重启后同样加载已提交记忆。每次请求编译最新版本，允许工具的 Run 内更新也会在下一轮生效。读取和版本工具为 memory_read / memory_history；新增或修正优先用 memory_edit，显式整块替换用 memory_update，恢复用独立授权的 memory_restore。嵌入入口的权限改为 memory.read / memory.update / memory.restore；旧 memory.write 不再授予操作。更新必须携带最新 expected_version；连续更新两个块时，第二次需要第一次返回的新版本。恢复创建新版本，不删除历史。不要在记忆中存放 API Key 或其他凭证。
 
 磁盘布局是 `<memory_root>/<agent_id>/versions/<version>/{persona.md,human.md,MEMORY.md,revision.json}`， CURRENT 原子选择当前版本。版本目录不可直接编辑，改动会破坏哈希校验；本地维护可使用 `MemoryStore.update(block, content, expected_version=...)`，详见[模块文档](docs/modules/memory.md)。 Base System Prompt 由程序维护，Core Memory 以 user 角色 JSON 数据注入，没有修改系统规则和工具权限的接口。
+
+局部编辑使用 `old_text` / `new_text`，要求原文非空且精确匹配一次；新增内容可匹配末尾事实并在替换文本中保留它。例如已有 `A\nB\n`，将 `B\n` 替换为 `B\nC\n`，结果为 `A\nB\nC\n`。旧版本、找不到原文、重复匹配和超限都拒绝发布新快照，不自动重试。整块替换仍可明确请求，但不会自动保留被省略的内容。
+
+自定义目录如 `<仓库>/private-memory/heybuddy/`，可由用户在仓库 `.gitignore` 加入 `/private-memory/`。只有忽略个别文件不够；目录内已被 Git 跟踪的旧文件也必须先人工检查并移出索引，新增忽略规则不会自动保护它们。每次初始化或写入都会检查；仓库内检查需要可用的 Git，失败时停止，不悄悄换目录。
 
 ## 架构与实际运行路径
 
@@ -99,7 +104,7 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.3.0 仍对应 schema 1。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.3.1 仍对应 schema 1。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、可重放历史、当前上下文和运行中消息；目前不压缩上下文。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -177,4 +182,4 @@ uv build
 
 ## 当前限制
 
-V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、跨会话检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆提交在事件循环中同步执行，磁盘卡顿不能被 asyncio 超时中断；版本尚无自动清理。 Markdown 快照发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子指针不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。固定路径与完整性校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
+V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、跨会话检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；版本尚无自动清理。 Markdown 快照发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子指针不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。固定路径与完整性校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。

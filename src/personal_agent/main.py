@@ -27,8 +27,8 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
 ) -> None:
-    write("HeyBuddy V0.3 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
-    write("记忆工具授权仅对本轮有效：/memory read <请求> 或 /memory edit <请求>。")
+    write("HeyBuddy V0.3.1 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write("记忆授权仅对本轮有效：/memory read|edit|restore <请求>；edit 不授权恢复。")
     if sessions is not None:
         write(sessions.status())
     while True:
@@ -44,17 +44,19 @@ async def chat(
         permissions: frozenset[str] = frozenset()
         if user_input.split(maxsplit=1)[0] == "/memory":
             parts = user_input.split(maxsplit=2)
-            if len(parts) != 3 or parts[1] not in {"read", "edit"}:
-                write("命令用法：/memory read <请求> | /memory edit <请求>")
+            if len(parts) != 3 or parts[1] not in {"read", "edit", "restore"}:
+                write(
+                    "命令用法：/memory read <请求> | /memory edit <请求> | /memory restore <请求>"
+                )
                 continue
             if sessions is None or sessions.memory is None:
                 write("记忆错误 > 当前入口未配置 Core Memory。")
                 continue
-            permissions = (
-                frozenset({"memory.read", "memory.write"})
-                if parts[1] == "edit"
-                else frozenset({"memory.read"})
-            )
+            permissions = frozenset({"memory.read"})
+            if parts[1] == "edit":
+                permissions |= {"memory.update"}
+            elif parts[1] == "restore":
+                permissions |= {"memory.restore"}
         elif user_input.startswith("/"):
             if sessions is None:
                 write("错误 > 当前入口未配置持久化会话。")
@@ -126,7 +128,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.3 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.3.1 CLI")
     parser.parse_args()
     try:
         settings = load_settings()
@@ -155,7 +157,14 @@ def main() -> int:
         )
         return 1
     except CoreMemoryError as exc:
-        print(f"记忆错误 [{exc.code}]：请检查记忆目录、完整性和容量配置。", file=sys.stderr)
+        if exc.code in {"memory_not_private", "memory_privacy_error"}:
+            print(
+                f"记忆错误 [{exc.code}]：目录须位于 Git 仓库外，或整目录被忽略且无已跟踪文件；"
+                "请检查忽略规则、Git 可用性与索引，不会自动修改 Git 配置。",
+                file=sys.stderr,
+            )
+        else:
+            print(f"记忆错误 [{exc.code}]：请检查记忆目录、完整性和容量配置。", file=sys.stderr)
         return 1
     return 0
 

@@ -15,7 +15,7 @@
 
 ## 记忆配置与启动
 
-AGENT_MEMORY_ROOT 默认为空，run_cli() 使用数据库路径字符串加 `.memory`，再拼 Agent ID。 AGENT_CORE_MEMORY_MAX_BYTES 默认为 8192，Settings 限制范围 512～1048576，按编译 JSON 的 UTF-8 字节计算，包含三个块和封装开销，不是 token 或字符数。超限不截断。记忆初始化/校验失败退出码 1；参数越界为配置错误，退出码 2。自定义根必须是私有可信本地目录，用户应自行忽略 Git；不从其他位置搜索记忆或秘密配置。
+AGENT_MEMORY_ROOT 默认为空，run_cli() 使用数据库路径字符串加 `.memory`，再拼 Agent ID。 AGENT_CORE_MEMORY_MAX_BYTES 默认为 8192，Settings 限制范围 512～1048576，按编译 JSON 的 UTF-8 字节计算，包含三个块和封装开销，不是 token 或字符数。超限不截断。记忆初始化/校验失败退出码 1；参数越界为配置错误，退出码 2。自定义根必须是私有可信本地目录。MemoryStore 每次写入前检查实际 Agent 目录：位于正常 Git 仓库或 worktree 时，必须整目录被忽略且无已跟踪文件。检查失败退出码 1，不创建记忆文件；不会自动修改 .gitignore 或移除索引。仓库内检查需要 git 可执行文件；不从其他位置搜索记忆或秘密配置。
 
 ## 异常与边界
 

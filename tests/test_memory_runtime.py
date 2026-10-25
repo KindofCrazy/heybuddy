@@ -1,5 +1,7 @@
 import json
 import sqlite3
+import threading
+import time
 
 import pytest
 
@@ -15,7 +17,8 @@ from personal_agent.tools.builtin import create_builtin_registry
 from tests.fakes import FakeProvider
 
 READ = frozenset({"memory.read"})
-EDIT = frozenset({"memory.read", "memory.write"})
+EDIT = frozenset({"memory.read", "memory.update"})
+RESTORE = frozenset({"memory.read", "memory.restore"})
 
 
 def memory_call(memory, *, call_id="remember", content="用户偏好简洁中文。", **extra):
@@ -282,6 +285,7 @@ async def test_cli_authorizes_exactly_the_requested_run(state):
         ModelResponse(text="saved"),
         ModelResponse(text="normal"),
         ModelResponse(text="read"),
+        ModelResponse(text="restore"),
     )
     agent, sessions = runtime(provider, db, memory)
     inputs = iter(
@@ -291,6 +295,7 @@ async def test_cli_authorizes_exactly_the_requested_run(state):
             "/memory edit 记住偏好",
             "普通问题",
             "/memory read 查看偏好",
+            "/memory restore 恢复到先前版本",
             "quit",
         ]
     )
@@ -301,12 +306,17 @@ async def test_cli_authorizes_exactly_the_requested_run(state):
         "memory_read",
         "memory_history",
         "memory_update",
-        "memory_restore",
+        "memory_edit",
     }
     assert not any(tool.name.startswith("memory_") for tool in provider.tools[2])
     assert {tool.name for tool in provider.tools[3] if tool.name.startswith("memory_")} == {
         "memory_read",
         "memory_history",
+    }
+    assert {tool.name for tool in provider.tools[4] if tool.name.startswith("memory_")} == {
+        "memory_read",
+        "memory_history",
+        "memory_restore",
     }
 
 
@@ -332,11 +342,139 @@ async def test_authorized_memory_tools_history_and_restore(state):
                 {"version": original.revision.version, "expected_version": current.revision.version}
             ),
         ),
-        permissions=EDIT,
+        permissions=RESTORE,
     )
     assert restored.ok
     assert memory.read().blocks == original.blocks
     assert memory.read().revision.version == restored.data["version"]
+
+
+@pytest.mark.parametrize(
+    "permissions,name,offered",
+    [
+        (EDIT, "memory_restore", {"memory_read", "memory_history", "memory_update", "memory_edit"}),
+        (RESTORE, "memory_update", {"memory_read", "memory_history", "memory_restore"}),
+        (RESTORE, "memory_edit", {"memory_read", "memory_history", "memory_restore"}),
+        (frozenset({"memory.write"}), "memory_restore", set()),
+    ],
+)
+async def test_update_and_restore_permissions_are_independent_even_for_forced_calls(
+    state, permissions, name, offered
+):
+    db, memory = state
+    before = memory.read()
+    provider = FakeProvider(
+        ModelResponse(tool_calls=[ToolCall(id="forced", name=name, arguments="{}")]),
+        ModelResponse(text="denied"),
+    )
+    agent, _ = runtime(provider, db, memory)
+    result = await agent.run("explicit host grant", permissions=permissions)
+    assert result.status == "completed"
+    assert {tool.name for tool in provider.tools[0] if tool.name.startswith("memory_")} == offered
+    outputs = [m.result for m in agent.context.history if isinstance(m, ToolMessage)]
+    assert outputs[0].error.code == "permission_denied"
+    assert memory.read() == before
+
+
+@pytest.mark.parametrize(
+    "old_text,new_text,stale,code",
+    [
+        ("- B\n", "- B\n- C\n", False, None),
+        ("- B\n", "- B\n- C\n", True, "memory_conflict"),
+        ("no such fact", "C", False, "memory_edit_mismatch"),
+        ("- B\n", "你" * 9000, False, "memory_too_large"),
+        ("", "C", False, "invalid_arguments"),
+    ],
+    ids=["append", "stale", "missing", "oversized", "empty"],
+)
+async def test_partial_edit_tool_keeps_existing_facts_and_reports_errors(
+    state, old_text, new_text, stale, code
+):
+    db, memory = state
+    initial = memory.read()
+    before = memory.update(
+        "human.md", "# Human\n- A\n- B\n", expected_version=initial.revision.version
+    )
+    call = ToolCall(
+        id="edit",
+        name="memory_edit",
+        arguments=json.dumps(
+            {
+                "block": "human.md",
+                "old_text": old_text,
+                "new_text": new_text,
+                "expected_version": initial.revision.version if stale else before.revision.version,
+            }
+        ),
+    )
+    provider = FakeProvider(ModelResponse(tool_calls=[call]), ModelResponse(text="done"))
+    agent, _ = runtime(provider, db, memory)
+    assert (await agent.run("/memory edit 新增 C", permissions=EDIT)).status == "completed"
+    outputs = [m.result for m in agent.context.history if isinstance(m, ToolMessage)]
+    assert outputs[0].call_id == "edit"
+    if code:
+        assert outputs[0].error.code == code
+        assert memory.read() == before
+    else:
+        assert outputs[0].ok
+        assert memory.read().blocks["human.md"] == "# Human\n- A\n- B\n- C\n"
+        assert (
+            json.loads(provider.requests[1][1].text)["blocks"]["human.md"]
+            == "# Human\n- A\n- B\n- C\n"
+        )
+
+
+async def test_restore_cli_grant_expires_on_next_input(state):
+    db, memory = state
+    original = memory.read()
+    current = memory.update("human.md", "changed", expected_version=original.revision.version)
+    call = ToolCall(
+        id="restore",
+        name="memory_restore",
+        arguments=json.dumps(
+            {
+                "version": original.revision.version,
+                "expected_version": current.revision.version,
+            }
+        ),
+    )
+    provider = FakeProvider(
+        ModelResponse(tool_calls=[call]),
+        ModelResponse(text="restored"),
+        ModelResponse(tool_calls=[call.model_copy(update={"id": "again"})]),
+        ModelResponse(text="denied"),
+    )
+    agent, sessions = runtime(provider, db, memory)
+    inputs = iter(["/memory restore 恢复旧版本", "继续", "quit"])
+    await chat(agent, read=lambda _: next(inputs), write=lambda _: None, sessions=sessions)
+    assert memory.read().blocks == original.blocks
+    assert len(memory.history()) == 3
+    outputs = [m.result for m in agent.context.history if isinstance(m, ToolMessage)]
+    assert outputs[0].ok and outputs[1].error.code == "permission_denied"
+
+
+async def test_memory_commit_is_synchronous_and_timeout_is_not_a_hard_deadline(state, monkeypatch):
+    _, memory = state
+    original_publish = memory._publish
+    caller = threading.get_ident()
+    observed = []
+
+    def slow_publish(*args, **kwargs):
+        observed.append(threading.get_ident())
+        time.sleep(0.02)  # Deliberately longer than the cooperative asyncio timeout.
+        return original_publish(*args, **kwargs)
+
+    def reject_thread(*args, **kwargs):
+        pytest.fail("Memory mutation must not be moved to a background thread")
+
+    monkeypatch.setattr(memory, "_publish", slow_publish)
+    monkeypatch.setattr("personal_agent.tools.registry.asyncio.to_thread", reject_thread)
+    registry = create_builtin_registry(0.001)
+    register_memory_tools(registry, memory)
+    result = await registry.execute(memory_call(memory), permissions=EDIT)
+    assert result.ok  # No await point exists at which the deadline can preempt this commit.
+    assert observed == [caller]
+    assert memory.read().revision.version == result.data["version"]
 
 
 async def test_memory_io_failure_rolls_back_and_returns_safe_error(state, monkeypatch, caplog):

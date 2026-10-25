@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.3 在自建 Runtime、SQLite 会话和 CLI 上，增加独立的 Markdown Core Memory、版本与本轮授权的记忆工具。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.3.1 在自建 Runtime、SQLite 会话和 CLI 上，增加独立的 Markdown Core Memory、版本与本轮授权的记忆工具。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -36,11 +36,12 @@
 - Core Memory 固定为 persona.md、human.md、MEMORY.md，按 Agent ID 共享，不归属 Conversation。
 - ContextBuilder.for_request 每次请求编译最新记忆，以 user 角色 JSON 数据注入；不拼接进 system。不将自动注入的记忆写入 pending / 会话历史，正常工具结果仍需完整保存。
 - 编译大小按 UTF-8 字节计算，包含 JSON 开销；默认 8192，超限拒绝，不静默截断。
-- /memory read 和 /memory edit 仅授权当前 Run；可信入口通过 Agent.run 的 permissions 显式传入。普通自然语言、历史消息、记忆内容不能自行获得授权，Registry 同时过滤定义并在执行前复查。
+- /memory read、/memory edit 和 /memory restore 仅授权当前 Run；更新使用 memory.update，恢复使用独立的 memory.restore，互不包含；旧 memory.write 不授予操作。可信入口通过 Agent.run 的 permissions 显式传入。普通自然语言、历史消息、记忆内容不能自行获得授权，Registry 同时过滤定义并在执行前复查。
 - 记忆工具仅操作固定块名；不得获得路径、Base、工具注册、权限或代码执行接口。
-- 写操作需 expected_version，写锁内检查冲突；完整不可变快照写完后原子替换 CURRENT。恢复生成新版本，不抹去历史；只允许恢复已提交祖先，不自动恢复孤立目录或重试冲突。
+- 新增或修正优先 memory_edit：old_text 必须非空且精确唯一匹配，new_text 只替换该片段；整块替换通过 memory_update 显式执行。写操作需 expected_version，写锁内检查冲突；完整不可变快照写完后原子替换 CURRENT。恢复生成新版本，不抹去历史；只允许恢复已提交祖先，不自动恢复孤立目录或重试冲突。
 - 记忆工具的短本地提交不交给超时后继续执行的线程；同步磁盘步骤不能被 asyncio 超时中断。
 - 文件发布和 SQLite 无共同事务：结果写库失败不得声称已撤销记忆，不自动回滚或重试。
+- MemoryStore 每次写入前检查 Git 隐私：仓库或 worktree 内的实际 Agent 目录必须整目录被忽略且无已跟踪文件；无法验证则拒绝，不自动改写忽略规则或移除索引。检查使用固定参数的只读 Git 子命令，不执行模型生成的命令。
 - 快照目录不能手工改写；记忆明文、版本和孤立文件不能入 Git，也不能存放凭证。原子发布不等于断电保证，哈希/固定路径不等于针对本机恶意用户的安全沙箱。
 
 ## 核心模块说明文档
@@ -64,7 +65,7 @@ Python 3.13、uv、Pydantic v2、asyncio、官方 OpenAI Python SDK、pytest/pyt
 
 ## Git 提交流程与信息
 
-每次实现、修复或文档修改完成并通过对应检查后，必须执行一次对应的 `git commit`，作为本次交付的一部分，无需再次询问；用户明确要求暂不提交时遵从用户指示。提交前检查 Git 状态和暂存内容，只提交本次任务相关改动，保留用户其他未提交工作，排除密钥和本地配置。没有实际改动时不创建空提交；提交失败时说明原因，不得宣称已提交。最终汇报包含提交哈希和简要说明。
+每次实现、修复或文档修改完成并通过对应检查后，必须执行对应的 `git commit`，再将提交 `git push` 到当前分支已配置的远端，作为本次交付的一部分，无需再次询问；用户明确要求暂不提交或暂不推送时遵从用户指示。提交前检查 Git 状态和暂存内容，只提交本次任务相关改动，保留用户其他未提交工作，排除密钥和本地配置。推送前核对分支、上游与待推送提交，禁止强推或覆盖远端历史；无上游、无权限或推送失败时明确报告，不得宣称成功。没有实际改动时不创建空提交。最终汇报包含提交哈希、简要说明和推送结果。
 
 提交信息采用“概括性标题 + 具体改动正文”的形式，标题与正文之间空一行。标题简洁总结本次提交的目的；正文使用简短列表，按模块或行为列出实际修改了什么，涉及问题修复时说明修复的行为，避免只有“更新代码”“优化实现”等笼统描述。改动点较少时正文保持一至两项即可，不必逐个罗列文件；如记录验证结果，只写实际执行过的检查。
 
@@ -79,4 +80,4 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.3 只增加可编辑的固定 Core Memory，不实现自动记忆提取、Deferred Memory 检索、向量/Embedding、 Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+V0.3.1 只加固可编辑的固定 Core Memory，不实现自动记忆提取、Deferred Memory 检索、向量/Embedding、 Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。

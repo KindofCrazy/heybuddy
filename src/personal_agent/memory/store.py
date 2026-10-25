@@ -21,6 +21,7 @@ from personal_agent.memory.models import (
     MemorySnapshot,
     render_memory,
 )
+from personal_agent.memory.privacy import require_private_directory
 
 DEFAULT_BLOCKS = {"persona.md": "# Persona\n", "human.md": "# Human\n", "MEMORY.md": "# Memory\n"}
 
@@ -51,6 +52,7 @@ class MemoryStore:
     def _writing(self) -> Iterator[None]:
         try:
             self._check_layout()
+            require_private_directory(self.root)
             self.root.mkdir(parents=True, exist_ok=True)
             self._guard(self.root / ".write.lock")
             with FileLock(self.root / ".write.lock"):
@@ -189,6 +191,7 @@ class MemoryStore:
         return snapshot
 
     def update(self, block: BlockName, content: str, *, expected_version: str) -> MemorySnapshot:
+        """Explicit full-block replacement; prefer edit() for incremental changes."""
         if block not in BLOCKS:
             raise CoreMemoryError(
                 "invalid_block", "Only persona.md, human.md and MEMORY.md are writable."
@@ -201,6 +204,30 @@ class MemoryStore:
                 )
             blocks = dict(current.blocks)
             blocks[block] = content
+            return self._publish(blocks, parent=expected_version, action="update")
+
+    def edit(
+        self, block: BlockName, old_text: str, new_text: str, *, expected_version: str
+    ) -> MemorySnapshot:
+        """Replace one exact, nonempty, unique span without touching other text."""
+        if block not in BLOCKS:
+            raise CoreMemoryError("invalid_block", "Only fixed Core Memory blocks are editable.")
+        if not old_text:
+            raise CoreMemoryError("memory_edit_mismatch", "Original text must be nonempty.")
+        with self._writing():
+            current = self.read()
+            if current.revision.version != expected_version:
+                raise CoreMemoryError("memory_conflict", "Memory changed; read before editing.")
+            original = current.blocks[block]
+            start = original.find(old_text)
+            # A second match can overlap the first (e.g. 'aa' inside 'aaa').
+            if start < 0 or original.find(old_text, start + 1) >= 0:
+                raise CoreMemoryError(
+                    "memory_edit_mismatch",
+                    "Original text must match exactly once; read before editing.",
+                )
+            blocks = dict(current.blocks)
+            blocks[block] = original[:start] + new_text + original[start + len(old_text) :]
             return self._publish(blocks, parent=expected_version, action="update")
 
     def history(self, *, limit: int = 20) -> list[MemoryRevision]:

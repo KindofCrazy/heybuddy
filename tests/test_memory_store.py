@@ -62,6 +62,83 @@ def test_update_reopen_and_restore_preserve_committed_history(memory):
     ]
 
 
+def test_partial_edit_adds_c_while_preserving_a_b_and_other_blocks(memory):
+    initial = memory.read()
+    before = memory.update(
+        "human.md", "# Human\n- A\n- B\n", expected_version=initial.revision.version
+    )
+    after = memory.edit("human.md", "- B\n", "- B\n- C\n", expected_version=before.revision.version)
+    assert after.blocks["human.md"] == "# Human\n- A\n- B\n- C\n"
+    assert after.blocks["persona.md"] == before.blocks["persona.md"]
+    assert after.blocks["MEMORY.md"] == before.blocks["MEMORY.md"]
+    assert after.revision.parent == before.revision.version
+    assert MemoryStore(memory.root).read() == after
+
+
+@pytest.mark.parametrize(
+    "old_text,new_text,stale,code",
+    [
+        ("- B\n", "- B\n- C\n", True, "memory_conflict"),
+        ("- missing\n", "- C\n", False, "memory_edit_mismatch"),
+        ("- B ", "- C\n", False, "memory_edit_mismatch"),
+        ("", "- C\n", False, "memory_edit_mismatch"),
+        ("- B\n", "你" * 9000, False, "memory_too_large"),
+    ],
+    ids=["stale", "missing", "whitespace", "empty", "oversized"],
+)
+def test_rejected_partial_edits_leave_pointer_history_and_blocks_unchanged(
+    memory, old_text, new_text, stale, code
+):
+    initial = memory.read()
+    before = memory.update(
+        "human.md", "# Human\n- A\n- B\n", expected_version=initial.revision.version
+    )
+    history = memory.history()
+    pointer = (memory.root / "CURRENT").read_bytes()
+    with pytest.raises(CoreMemoryError) as caught:
+        memory.edit(
+            "human.md",
+            old_text,
+            new_text,
+            expected_version=initial.revision.version if stale else before.revision.version,
+        )
+    assert caught.value.code == code
+    assert memory.read() == before
+    assert memory.history() == history
+    assert (memory.root / "CURRENT").read_bytes() == pointer
+
+
+@pytest.mark.parametrize("content,anchor", [("A B B", "B"), ("aaa", "aa")])
+def test_partial_edit_rejects_ambiguous_including_overlapping_matches(memory, content, anchor):
+    before = memory.update("human.md", content, expected_version=memory.read().revision.version)
+    with pytest.raises(CoreMemoryError) as caught:
+        memory.edit("human.md", anchor, "C", expected_version=before.revision.version)
+    assert caught.value.code == "memory_edit_mismatch"
+    assert memory.read() == before
+
+
+def test_partial_edit_can_correct_or_delete_only_a_matched_span(memory):
+    before = memory.update("human.md", "A B C", expected_version=memory.read().revision.version)
+    changed = memory.edit("human.md", "B", "D", expected_version=before.revision.version)
+    deleted = memory.edit("human.md", " D", "", expected_version=changed.revision.version)
+    assert changed.blocks["human.md"] == "A D C"
+    assert deleted.blocks["human.md"] == "A C"
+
+
+def test_partial_edit_publication_failure_keeps_previous_snapshot(memory, monkeypatch):
+    before = memory.read()
+
+    def fail(*args):
+        raise OSError("private-path")
+
+    monkeypatch.setattr("personal_agent.memory.store.os.replace", fail)
+    with pytest.raises(CoreMemoryError) as caught:
+        memory.edit("human.md", "# Human", "# Human\nC", expected_version=before.revision.version)
+    assert caught.value.code == "memory_io_error"
+    assert memory.read() == before
+    assert len(memory.history()) == 1
+
+
 @pytest.mark.parametrize("operation", ["update", "restore"])
 def test_stale_versions_are_rejected_without_overwrite(memory, operation):
     stale = memory.read().revision.version

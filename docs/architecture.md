@@ -1,4 +1,4 @@
-# HeyBuddy V0.3：整体架构与 Pipeline
+# HeyBuddy V0.3.1：整体架构与 Pipeline
 
 本文串起从启动到退出的真实执行路径，解释每一层接收什么、改变什么状态、在哪里保存数据。具体方法细节可从[文档索引](README.md)进入。当前系统是一个本地进程、一个 SQLite 数据库和独立的 Markdown 记忆目录，没有消息队列、后台任务消费者或自动续跑器。
 
@@ -279,7 +279,7 @@ sequenceDiagram
     participant C as ContextBuilder
     participant T as ToolRegistry
     participant M as MemoryStore
-    CLI->>A: run('/memory edit ...', permissions=read+write)
+    CLI->>A: run('/memory edit ...', permissions=read+update)
     A->>C: begin；保存用户消息及 running Run
     A->>C: for_request；获取最新记忆
     A->>A: 请求模型；先持久化 assistant 调用
@@ -294,9 +294,9 @@ sequenceDiagram
     A->>A: 下一轮模型请求 / 最终回答 / finish
 ```
 
-普通输入不授予 Memory Tools 权限，但每次请求仍自动包含有界 Core Memory 数据。 `/memory read <请求>` 本轮开启 memory_read / memory_history； `/memory edit <请求>` 再开启 memory_update / memory_restore。完整命令作为正常用户消息保存，供审计；它不是会话管理命令。权限由 CLI 解析本次输入后通过 `Agent.run(..., permissions=...)` 传入，默认空集合，结束即失效。自然语言“记住”、历史命令和记忆内容均不能授权后续 Run。嵌入入口的可信宿主也必须显式传权限。
+普通输入不授予 Memory Tools 权限，但每次请求仍自动包含有界 Core Memory 数据。 `/memory read <请求>` 本轮开启 memory_read / memory_history； `/memory edit <请求>` 再开启 memory_edit / memory_update；`/memory restore <请求>` 只额外开启 memory_restore，两种写权限互不包含。完整命令作为正常用户消息保存，供审计；它不是会话管理命令。权限由 CLI 解析本次输入后通过 `Agent.run(..., permissions=...)` 传入，默认空集合，结束即失效。自然语言“记住”、历史命令和记忆内容均不能授权后续 Run。嵌入入口的可信宿主也必须显式传权限。
 
-Registry 同时过滤模型工具定义并在执行前复查权限；模型凭空请求受限工具返回 permission_denied。工具参数只允许固定块名和版本，不能传路径或改权限。更新替换一个块，恢复复制完整旧快照，都要求当前 expected_version；冲突返回 memory_conflict，不自动合并或重试。终轮策略优先于授权：即使有写权限，最后一轮的新工具调用也不会执行。
+Registry 同时过滤模型工具定义并在执行前复查权限；模型凭空请求受限工具返回 permission_denied。工具参数只允许固定块名和版本，不能传路径或改权限。局部编辑精确替换唯一原文，显式整块替换仍使用 memory_update，恢复复制完整旧快照；三种操作都要求当前 expected_version；冲突返回 memory_conflict，不自动合并或重试。终轮策略优先于授权：即使有写权限，最后一轮的新工具调用也不会执行。
 
 ## 13. 文件版本提交与数据库事务的交界
 
@@ -317,7 +317,7 @@ Registry 同时过滤模型工具定义并在执行前复查权限；模型凭�
 
 提交前失败保留旧快照；新目录可能残留为不可达孤立版本，不作为历史展示或自动恢复。提交后进程退出，下次读取新版本。该方案保证进程崩溃边界的一致视图，不承诺断电级持久性：未做目录 fsync，不保证网络文件系统语义，也没有自动版本清理/备份。不可直接修改版本目录里的 Markdown，否则完整性校验失败；通过 MemoryStore API 或授权工具修改。
 
-SQLite 与记忆文件**没有共同事务**：记忆已经发布而 ToolResult 落库失败时，新记忆保留，Run 标记 interrupted，不自动撤销或重试。审计必须区分“记忆已提交”和“Run 已完成”。 Memory Tools 用无 await 点的短本地协程包装同步提交，不将写操作交给超时后可能继续运行的线程。因此磁盘操作会阻塞事件循环，超时不能打断这些同步步骤；未来若处理大型数据需另行设计隔离。
+SQLite 与记忆文件**没有共同事务**：记忆已经发布而 ToolResult 落库失败时，新记忆保留，Run 标记 interrupted，不自动撤销或重试。审计必须区分“记忆已提交”和“Run 已完成”。 Memory Tools 用无 await 点的协程包装同步读取、Git 检查和提交，不将写操作交给超时后可能继续运行的线程。因此磁盘操作会阻塞事件循环，超时不能打断这些同步步骤；未来若处理大型数据需另行设计隔离。
 
 固定文件名、版本格式、哈希及链接检查防止模型参数越界；本地文件系统仍是可信操作员边界，不抵御同一 OS 用户恶意篡改元数据或竞争替换祖先路径。记忆与历史均为明文，不得存放凭证。
 
@@ -326,3 +326,22 @@ SQLite 与记忆文件**没有共同事务**：记忆已经发布而 ToolResult 
 本次核对用户提供的本地 Letta Code checkout，参考 [Core Memory 维护约定](https://github.com/letta-ai/letta-code/blob/main/src/skills/builtin/maintaining-core-memory/SKILL.md) 与 [system-prompt compilation](https://github.com/letta-ai/letta-code/blob/main/src/backend/local/system-prompt-compilation.ts)。采用固定 Markdown 核心文件与 Conversation 分离的思路，但将记忆限制为低优先级数据，不照搬自主系统提示词学习、递归目录索引或 Deferred Memory 检索。
 
 `tests/test_memory_store.py` 验证原子发布、并发冲突、版本恢复、字节限制、篡改和真实进程退出； `tests/test_memory_runtime.py` 验证跨会话/重启共享、每轮刷新、权限过期、不可覆盖 Base、失败回滚、双存储提交窗口与终轮拒绝。全部使用临时目录和 Fake Provider，禁止真实网络。后续再设计版本保留策略、token 预算、自动提取和更强文件隔离；本轮不预建相应模块。
+
+
+## 15. V0.3.1 Memory Hardening Pipeline
+
+Snapshot / CURRENT / Revision 和 Agent Loop 保持原结构。CLI 将本轮授权分为 memory.read、memory.update、memory.restore；`/memory edit` 不能调用恢复，`/memory restore` 不授予更新，旧 memory.write 不再启用任何受限工具。Registry 仍同时过滤定义与检查实际执行，历史和记忆文本不能授予权限。
+
+```text
+/memory edit 请求 → Agent.run(read + update) → Provider 请求 memory_edit
+  → 先持久化调用 → Registry 权限及 Schema 校验
+  → Store.edit：检查 Git 私密性 → 取得写锁 → 校验 expected_version
+  → old_text 非空且恰好匹配一次 → 只替换匹配片段
+  → 校验编译大小 → 原有完整快照发布流程 → 工具结果落库
+  → 下一轮 for_request 获取新版本
+/memory restore 请求 → Agent.run(read + restore) → 原有恢复发布流程
+```
+
+局部编辑新增 C 的示例是匹配原有末尾 B，并将其替换为 B 加 C，其他 A 与其余块由程序原样保留。整块替换仍有明确的 memory_update 接口，用户必须知道未包含的旧内容会丢失；它不自动合并事实。旧版本、原文不匹配/不唯一和超限均不改变 CURRENT，不重试。
+
+写入前检查实际 Agent 记忆目录整目录被 Git 忽略且无已跟踪文件。仓库内检查依赖可用 Git，失败关闭，不自动改 `.gitignore` 或索引。详细路径和错误见[MemoryStore](modules/memory.md)。读取、Git 子进程检查、写入和 fsync 均为同步 I/O，async def 只是接口包装，不能保证及时取消或硬超时；没有引入线程写入或后台提交。
