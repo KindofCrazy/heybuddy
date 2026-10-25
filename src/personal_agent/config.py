@@ -18,6 +18,8 @@ class Settings(BaseModel):
     tool_timeout_seconds: float = Field(default=10, gt=0)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
+    memory_root: Path | None = None
+    memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
 
     @field_validator("base_url")
     @classmethod
@@ -58,6 +60,8 @@ ENV_FIELDS = {
     "AGENT_TOOL_TIMEOUT_SECONDS": "tool_timeout_seconds",
     "AGENT_LOG_LEVEL": "log_level",
     "AGENT_DATABASE_PATH": "database_path",
+    "AGENT_MEMORY_ROOT": "memory_root",
+    "AGENT_CORE_MEMORY_MAX_BYTES": "memory_max_bytes",
 }
 
 

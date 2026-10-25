@@ -72,6 +72,7 @@ class RunResult(Model):
         "invalid_response",
         "runtime_error",
         "storage_error",
+        "memory_error",
     ]
     text: str = ""
     rounds: int

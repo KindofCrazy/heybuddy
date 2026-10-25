@@ -1,4 +1,5 @@
 .venv/
+.vscode/
 .uv-cache/
 .uv-python/
 __pycache__/
@@ -24,3 +25,6 @@ build/
 *.db
 *.db-*
 *.db.lock
+*.sqlite3.memory/
+*.sqlite.memory/
+*.db.memory/

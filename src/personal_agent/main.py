@@ -3,6 +3,7 @@ import asyncio
 import logging
 import sys
 from collections.abc import Callable
+from pathlib import Path
 
 from openai import AsyncOpenAI
 from pydantic import ValidationError
@@ -10,7 +11,10 @@ from pydantic import ValidationError
 from personal_agent.config import Settings, load_settings
 from personal_agent.core.agent import Agent
 from personal_agent.core.history import HistoryError
+from personal_agent.core.memory import CoreMemoryError
 from personal_agent.llm.openai_provider import OpenAIProvider
+from personal_agent.memory.store import MemoryStore
+from personal_agent.memory.tools import register_memory_tools
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.tools.builtin import create_builtin_registry
@@ -23,7 +27,8 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
 ) -> None:
-    write("HeyBuddy V0.2 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write("HeyBuddy V0.3 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write("记忆工具授权仅对本轮有效：/memory read <请求> 或 /memory edit <请求>。")
     if sessions is not None:
         write(sessions.status())
     while True:
@@ -36,7 +41,21 @@ async def chat(
             break
         if not user_input:
             continue
-        if user_input.startswith("/"):
+        permissions: frozenset[str] = frozenset()
+        if user_input.split(maxsplit=1)[0] == "/memory":
+            parts = user_input.split(maxsplit=2)
+            if len(parts) != 3 or parts[1] not in {"read", "edit"}:
+                write("命令用法：/memory read <请求> | /memory edit <请求>")
+                continue
+            if sessions is None or sessions.memory is None:
+                write("记忆错误 > 当前入口未配置 Core Memory。")
+                continue
+            permissions = (
+                frozenset({"memory.read", "memory.write"})
+                if parts[1] == "edit"
+                else frozenset({"memory.read"})
+            )
+        elif user_input.startswith("/"):
             if sessions is None:
                 write("错误 > 当前入口未配置持久化会话。")
                 continue
@@ -64,7 +83,7 @@ async def chat(
             except HistoryError:
                 write("会话错误 > 无法读取或切换会话，请检查 ID 和数据库状态。")
             continue
-        result = await agent.run(user_input)
+        result = await agent.run(user_input, permissions=permissions)
         if result.status == "completed":
             write(f"Agent > {result.text}")
         else:
@@ -79,10 +98,16 @@ async def run_cli(settings: Settings) -> None:
         if recovered:
             print(f"发现 {recovered} 个未完成 Run，已标记 interrupted；不会重试工具。")
         sessions = SessionManager(store)
-        await _run_session(settings, sessions)
+        root = settings.memory_root or Path(str(settings.database_path) + ".memory")
+        memory = MemoryStore.for_agent(root, sessions.agent.id, max_bytes=settings.memory_max_bytes)
+        memory.initialize()
+        sessions.memory = memory
+        await _run_session(settings, sessions, memory)
 
 
-async def _run_session(settings: Settings, sessions: SessionManager) -> None:
+async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryStore) -> None:
+    tools = create_builtin_registry(settings.tool_timeout_seconds)
+    register_memory_tools(tools, memory)
     # Disable SDK retries: each loop round is exactly one bounded model request.
     async with AsyncOpenAI(
         api_key=settings.api_key.get_secret_value(),
@@ -92,7 +117,7 @@ async def _run_session(settings: Settings, sessions: SessionManager) -> None:
     ) as client:
         agent = Agent(
             OpenAIProvider(client, settings.model),
-            create_builtin_registry(settings.tool_timeout_seconds),
+            tools,
             context=sessions.context(),
             max_rounds=settings.max_rounds,
             request_timeout_seconds=settings.request_timeout_seconds,
@@ -101,7 +126,7 @@ async def _run_session(settings: Settings, sessions: SessionManager) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.2 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.3 CLI")
     parser.parse_args()
     try:
         settings = load_settings()
@@ -128,6 +153,9 @@ def main() -> int:
         print(
             "存储错误：无法初始化或访问会话数据库，请检查权限或其他运行中的实例。", file=sys.stderr
         )
+        return 1
+    except CoreMemoryError as exc:
+        print(f"记忆错误 [{exc.code}]：请检查记忆目录、完整性和容量配置。", file=sys.stderr)
         return 1
     return 0
 

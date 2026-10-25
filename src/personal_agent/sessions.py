@@ -2,14 +2,16 @@
 
 from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.history import HistoryError
+from personal_agent.core.memory import CoreMemory
 from personal_agent.storage.history import SQLiteConversationHistory
 from personal_agent.storage.models import ConversationRecord
 from personal_agent.storage.sqlite import SQLiteStore
 
 
 class SessionManager:
-    def __init__(self, store: SQLiteStore) -> None:
+    def __init__(self, store: SQLiteStore, *, memory: CoreMemory | None = None) -> None:
         self.store = store
+        self.memory = memory
         self.agent = store.get_agent("heybuddy") or store.create_agent(
             "HeyBuddy", DEFAULT_SYSTEM_PROMPT, agent_id="heybuddy"
         )
@@ -18,8 +20,9 @@ class SessionManager:
 
     def context(self) -> ContextBuilder:
         return ContextBuilder(
-            self.agent.system_prompt,
+            DEFAULT_SYSTEM_PROMPT,
             history_store=SQLiteConversationHistory(self.store, self.current.id),
+            memory=self.memory,
         )
 
     def new(self) -> ConversationRecord:

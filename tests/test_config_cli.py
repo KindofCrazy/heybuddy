@@ -43,6 +43,8 @@ def test_no_parent_directory_secret_search(tmp_path, monkeypatch):
         ("tool_timeout_seconds", float("inf")),
         ("log_level", "TRACE"),
         ("base_url", "not-a-url"),
+        ("memory_max_bytes", 511),
+        ("memory_max_bytes", 1_048_577),
     ],
 )
 def test_invalid_settings(field, value):
@@ -96,6 +98,18 @@ def test_environment_base_url_cannot_bypass_https_policy(monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "http://api.example.com/v1")
     with pytest.raises(ValidationError, match="requires HTTPS"):
         load_settings()
+
+
+def test_memory_configuration_environment_overrides_file(monkeypatch):
+    Path(".env").write_text(
+        "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\n"
+        "AGENT_MEMORY_ROOT=file-memory\nAGENT_CORE_MEMORY_MAX_BYTES=1024\n"
+    )
+    monkeypatch.setenv("AGENT_MEMORY_ROOT", "custom-memory")
+    monkeypatch.setenv("AGENT_CORE_MEMORY_MAX_BYTES", "2048")
+    settings = load_settings()
+    assert settings.memory_root == Path("custom-memory")
+    assert settings.memory_max_bytes == 2048
 
 
 async def test_cli_multiple_turns_with_tools_and_quit():
@@ -152,6 +166,7 @@ def test_run_cli_constructs_sdk_and_runtime_and_closes_client(monkeypatch):
         api_key="test-key", model="deepseek-flash", base_url="https://api.deepseek.com"
     )
     observed = {}
+    memory_root = Path(str(settings.database_path) + ".memory/heybuddy").absolute()
 
     async def chat(agent, *, sessions):
         observed["agent"] = agent
@@ -160,6 +175,9 @@ def test_run_cli_constructs_sdk_and_runtime_and_closes_client(monkeypatch):
         assert agent.provider.client.api_key == "test-key"
         assert str(agent.provider.client.base_url) == "https://api.deepseek.com/"
         assert agent.provider.model == "deepseek-flash"
+        assert sessions.memory is agent.context.memory
+        assert sessions.memory.root == memory_root
+        assert sessions.memory.read().blocks["human.md"] == "# Human\n"
 
     monkeypatch.setattr(cli, "chat", chat)
     import asyncio

@@ -3,6 +3,7 @@ import logging
 
 from personal_agent.core.context import ContextBuilder
 from personal_agent.core.history import HistoryError
+from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import (
     AssistantMessage,
     Message,
@@ -40,15 +41,16 @@ class Agent:
         self.request_timeout_seconds = request_timeout_seconds
         self._lock = asyncio.Lock()
 
-    async def run(self, user_input: str) -> RunResult:
+    async def run(self, user_input: str, *, permissions: frozenset[str] = frozenset()) -> RunResult:
         if not user_input.strip():
             raise ValueError("User input cannot be empty")
+        permissions = frozenset(permissions)
         # Serialize turns on this session to prevent interleaved history.
         async with self._lock:
             self._round_number = 0
             try:
                 messages = self.context.begin(user_input)
-                return await self._run(messages)
+                return await self._run(messages, permissions=permissions)
             except HistoryError:
                 self._abort_context()
                 logger.error("history_failed round=%d", self._round_number)
@@ -68,7 +70,7 @@ class Agent:
         except HistoryError:
             logger.error("history_interrupt_failed")
 
-    async def _run(self, messages: list[Message]) -> RunResult:
+    async def _run(self, messages: list[Message], *, permissions: frozenset[str]) -> RunResult:
         def append(message: Message) -> None:
             # Save assistant calls before any execution and each result before the
             # next tool. A write failure stops the run; external effects cannot roll back.
@@ -91,8 +93,22 @@ class Agent:
                 async with asyncio.timeout(self.request_timeout_seconds):
                     # Reserve the last request for a final answer. Also guard below
                     # against unsolicited calls; tool omission alone is not enforcement.
-                    definitions = self.tools.definitions() if round_number < self.max_rounds else []
-                    response = await self.provider.generate(messages, definitions)
+                    definitions = (
+                        self.tools.definitions(permissions=permissions)
+                        if round_number < self.max_rounds
+                        else []
+                    )
+                    response = await self.provider.generate(
+                        self.context.for_request(messages), definitions
+                    )
+            except CoreMemoryError as exc:
+                return finish(
+                    RunResult(
+                        status="memory_error",
+                        rounds=round_number,
+                        error=f"Core Memory could not be compiled ({exc.code}).",
+                    )
+                )
             except (TimeoutError, ProviderTimeout):
                 return finish(
                     RunResult(
@@ -188,7 +204,7 @@ class Agent:
             # Sequential execution is deliberate: side effects have a predictable order.
             # ToolRegistry turns validation, execution, and timeout failures into data.
             for call in response.tool_calls:
-                append(ToolMessage(result=await self.tools.execute(call)))
+                append(ToolMessage(result=await self.tools.execute(call, permissions=permissions)))
 
         return finish(
             RunResult(

@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 JSON_VALUE = TypeAdapter(JsonValue)
 
 
+class ToolExecutionError(Exception):
+    """A tool's intentional, sanitized domain failure."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
 class ToolArguments(BaseModel):
     """Strict tool inputs: reject unknown fields, coercion, and non-finite numbers."""
 
@@ -29,6 +37,7 @@ class Tool[Args: BaseModel]:
     arguments: type[Args]
     function: Callable[[Args], object | Awaitable[object]]
     side_effect_free: bool = field(default=False, kw_only=True)
+    required_permission: str | None = field(default=None, kw_only=True)
 
 
 class ToolRegistry:
@@ -50,7 +59,7 @@ class ToolRegistry:
             )
         self._tools[tool.name] = tool
 
-    def definitions(self) -> list[ToolDefinition]:
+    def definitions(self, *, permissions: frozenset[str] = frozenset()) -> list[ToolDefinition]:
         return [
             ToolDefinition(
                 name=tool.name,
@@ -58,9 +67,12 @@ class ToolRegistry:
                 parameters=tool.arguments.model_json_schema(),
             )
             for tool in self._tools.values()
+            if tool.required_permission is None or tool.required_permission in permissions
         ]
 
-    async def execute(self, call: ToolCall) -> ToolResult:
+    async def execute(
+        self, call: ToolCall, *, permissions: frozenset[str] = frozenset()
+    ) -> ToolResult:
         def failure(code: str, message: str) -> ToolResult:
             logger.warning("tool_failed name=%s call_id=%s code=%s", call.name, call.id, code)
             return ToolResult(
@@ -73,6 +85,10 @@ class ToolRegistry:
         tool = self._tools.get(call.name)
         if tool is None:
             return failure("unknown_tool", "Tool is not registered.")
+        if tool.required_permission is not None and tool.required_permission not in permissions:
+            return failure(
+                "permission_denied", "This tool requires explicit permission for this run."
+            )
         try:
             arguments = tool.arguments.model_validate_json(call.arguments)
         except ValidationError as exc:
@@ -117,6 +133,8 @@ class ToolRegistry:
                 "Tool execution timed out; cancellation does not guarantee side-effect rollback. "
                 "Do not automatically retry.",
             )
+        except ToolExecutionError as exc:
+            return failure(exc.code, str(exc))
         except Exception as exc:
             logger.warning(
                 "tool_exception name=%s call_id=%s type=%s",
