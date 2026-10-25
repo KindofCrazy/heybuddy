@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+先看[整体架构与 Pipeline](../architecture.md)的请求时序和事务表，再对照本模块的方法。
+
 ## 架构组成
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。
@@ -11,6 +13,25 @@
 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。
 消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。
 数据库 schema 版本 1 与应用版本 0.2 是不同概念。
+
+## 表字段与一致性约束
+
+| 表 | 主要字段 | 设计作用 |
+| --- | --- | --- |
+| agents | id、name、system_prompt、created_at | 持久身份及共享提示词，不保存每次运行中的消息状态 |
+| conversations | id、agent_id、title、created_at、updated_at | 按 Agent 归属隔离会话，正常 Run 完成时更新时间 |
+| runs | id、conversation_id、status、started_at、ended_at、result_json | 记录每次输入的执行生命周期，区别正常结束与中断 |
+| messages | id、conversation_id、run_id、sequence、payload、created_at | payload 保存完整内部 Message；sequence 决定会话内重放顺序 |
+| client_state | agent_id、conversation_id | 每个 Agent 的上次会话选择，与消息内容分开保存 |
+
+messages 的 `(conversation_id, sequence)` 唯一；`(run_id, conversation_id)` 复合外键保证
+消息所指 Run 属于同一个会话。runs 的部分唯一索引只约束 status=running 的记录，
+允许一个会话有多个已结束 Run，但不允许两个同时运行。client_state 的复合外键避免跨 Agent 选择。
+SQL 值都通过参数绑定传入；唯一动态迁移语句中的版本号来自内部顺序整数。
+
+payload 由 `TypeAdapter(Message)` 序列化，不拆成一张只有 role/text 的聊天表。
+这样原始参数字符串、工具错误、JSON 数据、reasoning 等 Provider 项目可以一起恢复。
+读取时重新校验内部模型，重放时再校验 Run 内调用配对；坏数据会明确报错，不被静默丢弃。
 
 ## 实际运行路径与事务边界
 

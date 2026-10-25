@@ -1,0 +1,27 @@
+# HeyBuddy 开发文档
+
+当前文档描述 V0.2 的实际实现。建议先看整体 Pipeline，再沿调用路径进入具体模块。
+
+## 阅读顺序
+
+1. [整体架构与 Pipeline](architecture.md)：对象关系、模块依赖、启动、请求执行、切换、恢复及事务边界。
+2. [Agent Loop](modules/agent.md) 与 [ContextBuilder](modules/context.md)：一次输入如何变成模型上下文、工具循环和最终结果。
+3. [Provider](modules/provider.md) 与 [工具注册](modules/tools.md)：模型接口转换、工具参数校验及超时契约。
+4. [SQLite 存储](modules/storage.md) 与 [数据模型](modules/models.md)：消息怎样保存、排序、关联和恢复。
+5. [会话管理与 CLI](modules/sessions-cli.md) 与 [配置](modules/config.md)：应用入口、会话选择和配置校验。
+
+## 按问题查阅
+
+| 想弄清楚的问题 | 文档入口 |
+| --- | --- |
+| 程序启动时先做什么，何时创建 SDK 和 Runtime？ | 整体架构的启动 Pipeline |
+| 一次用户输入为何可能触发多次模型请求？ | 整体架构的请求 Pipeline、Agent Loop |
+| 为什么 Agent 核心不需要认识 SQLite？ | 整体架构的依赖方向、ContextBuilder |
+| 工具何时执行，执行前后分别保存什么？ | 整体架构的时序图、事务边界、SQLite 存储 |
+| 工具超时是否代表没有副作用？ | 工具注册与超时契约、整体架构的失败路径 |
+| 为什么有些数据库记录不会出现在模型上下文？ | 整体架构的四种历史视图、Run 状态转换 |
+| 重启后 reasoning 和工具调用如何重新发送？ | Provider、整体架构的重启 Pipeline |
+| `/new`、`/resume` 会替换哪些对象？ | 会话管理与 CLI、整体架构的会话切换 Pipeline |
+
+源码位置均相对于项目根目录，使用实际类名、函数名定位。图中的调用顺序对应当前代码，
+不是未来功能的设计草图；测试入口见各模块文档及整体架构末尾的验证映射。

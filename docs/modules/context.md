@@ -1,11 +1,28 @@
 # ContextBuilder 与持久化边界
 
+整体时序和四种历史视图见[架构 Pipeline](../architecture.md)。
+
 ## 架构组成
 
 `core/context.py::ContextBuilder` 依赖内部消息模型及 `core/history.py::ConversationHistory` Protocol。
 `storage/history.py::SQLiteConversationHistory` 绑定一个 Conversation ID，实现这个 Protocol，
 将操作转给 SQLiteStore。ContextBuilder 和 Agent 都不导入 sqlite3 或具体存储实现。
 不传 history_store 时仍提供进程内模式，用于嵌入及原有离线测试；CLI 总是使用持久化模式。
+
+## 接口怎样连接到数据库
+
+| ContextBuilder 操作 | ConversationHistory 接口 | SQLite 实现 | 完成后的含义 |
+| --- | --- | --- | --- |
+| `history` / `build()` | `load()` | `load_messages(..., replayable_only=True)` | 得到可安全重放的完整消息对象 |
+| `begin()` | `begin(user_message)` | `begin_run(conversation_id, user_message)` | Run 和用户输入已一起提交 |
+| `record()` | `append(run_id, message)` | `append_message()` | 这一条消息已保存，但 Run 仍在运行 |
+| `commit()` | `finish(run_id, result)` | `finish_run()` | 完整 Run 正常结束，可以进入后续历史 |
+| `abort()` | `interrupt(run_id, cancelled=...)` | `interrupt_run()` | 尝试结束运行状态，已保存消息仍保留 |
+
+适配器持有 conversation_id，ContextBuilder 不需要传 SQL、数据库路径或表名。
+`commit(messages, result)` 不把整个 messages 列表重新覆盖写入数据库：消息此前已由 record()
+逐条保存，此处只完成持久 Run 状态并更新进程内历史副本。持久化模式下 history 属性每次从存储读取，
+内存 `_history` 不替代数据库作为会话来源；history 和 pending_messages 对外都返回深拷贝。
 
 ## 数据层次与实际运行路径
 

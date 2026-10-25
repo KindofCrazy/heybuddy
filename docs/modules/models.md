@@ -7,6 +7,21 @@ Message 是以 role 区分的 Pydantic 联合类型；Provider 数据只能保�
 `storage/models.py` 定义 AgentRecord、ConversationRecord、StoredMessage、RunRecord，
 将持久记录身份与运行时 `core/agent.py::Agent` 的执行职责分开。
 
+## 不同 ID 分别关联什么
+
+| 标识 | 生成/来源 | 关联职责 |
+| --- | --- | --- |
+| AgentRecord.id | 默认 heybuddy，或存储 API 创建的 ID | 找到共享身份和 system 提示词 |
+| ConversationRecord.id | 本地 UUID | 选择、切换和隔离会话 |
+| RunRecord.id | 本地 UUID | 将一次用户输入的所有持久消息分为一组 |
+| StoredMessage.id | 本地 UUID | 标识一条数据库记录，不承担排序职责 |
+| StoredMessage.sequence | 会话内递增整数 | 决定消息重放顺序 |
+| ToolCall.id / ToolResult.call_id | Provider 响应中的调用标识 | 把模型调用与工具结果配对 |
+| Provider output item 的 id | SDK 响应项目 | 保留在 provider_data 中供原协议重放 |
+
+例如 OpenAI function_call 的项目 id 与 call_id 可以不同；适配器取 call_id 作为内部 ToolCall.id，
+工具结果必须关联这个值。不能用数据库 Message ID 或 SDK 项目 id 替换工具调用 ID。
+
 ## 实际数据路径
 
 1. 用户输入转换为 TextMessage；Provider 响应归一化为 ModelResponse 和 AssistantMessage。

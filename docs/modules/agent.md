@@ -1,5 +1,7 @@
 # Agent Loop
 
+先读[整体架构与 Pipeline](../architecture.md)可了解本模块在启动、持久化和恢复路径中的位置。
+
 ## 职责与架构组成
 
 `src/personal_agent/core/agent.py` 的 `Agent` 负责一个会话的有界模型/工具循环。

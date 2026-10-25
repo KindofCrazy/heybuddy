@@ -79,6 +79,9 @@ Ctrl+C 取消当前 Run 并退出。每个数据库同时只支持一个本地 C
 
 ## 架构与实际运行路径
 
+详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、
+四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
+
 ```text
 main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
      → ContextBuilder(ConversationHistory) → Agent.run
@@ -102,6 +105,7 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 
 模块文档均包含架构组成、真实入口/执行顺序、异常边界和验证方法：
 
+- [整体架构与端到端 Pipeline](docs/architecture.md)
 - [Agent Loop](docs/modules/agent.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
 - [内部及持久化数据模型](docs/modules/models.md)
