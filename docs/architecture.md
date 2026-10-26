@@ -1,4 +1,4 @@
-# HeyBuddy V0.5.1：整体架构与 Pipeline
+# HeyBuddy V0.6：整体架构与 Pipeline
 
 本文串起从启动到退出的真实执行路径，解释每一层接收什么、改变什么状态、在哪里保存数据。具体方法细节可从[文档索引](README.md)进入。当前系统是一个本地进程、一个 SQLite 数据库和独立的 Markdown 记忆目录，没有消息队列、后台任务消费者或自动续跑器。
 
@@ -74,11 +74,11 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移到 schema 2，FTS5 索引及旧文本回填与版本更新在同一事务内完成，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 3，顺序执行 Recall 与 Context 派生对象/旧数据回填，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
-7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续验证并恢复上次选择的会话。
+7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续校验摘要检查点并恢复上次选择的会话，不全量反序列化旧消息。
 8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。
-9. `_run_session()` 注册受限 Memory Tools 与绑定 Agent 的只读 Recall Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
+9. `_run_session()` 注册受限 Memory Tools 与绑定 Agent 的只读 Recall Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、带显式 ContextBudget、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
 
 这里没有“启动就请求模型”的步骤。直到用户输入普通文本才进入请求 Pipeline。启动存储失败返回退出码 1，不悄悄退回内存模式；显式使用不带 history_store 的 ContextBuilder 仍可获得进程内模式，原有 Runtime 单元测试使用该方式。
 
@@ -98,11 +98,17 @@ sequenceDiagram
     participant T as ToolRegistry
     CLI->>A: run(user_input)
     A->>C: begin(user_input)
-    C->>H: load 可重放历史
-    H-->>C: completed / failed 消息
     C->>H: begin：保存 running Run 和用户消息
-    C-->>A: system + 历史 + 新输入
-    A->>C: for_request(messages)：编译最新 Core Memory
+    C-->>A: system + 本次原始输入
+    A->>C: await prepare(messages, tools, provider)
+    C->>H: summary + 有界完整 Run 页
+    opt 达到水位或分页条件
+        C->>P: 无工具摘要请求，独立预算/超时
+        P-->>C: 合法 Summary
+        C->>H: 原子保存 Summary + 完整 Run 边界
+        C->>H: 从新边界加载有界页
+    end
+    C->>C: for_request：Core + Summary；检查全部预算
     A->>P: await generate(请求上下文, 已授权工具)
     P-->>A: ModelResponse(tool_calls)
     A->>C: record(AssistantMessage)
@@ -111,7 +117,7 @@ sequenceDiagram
     T-->>A: ToolResult
     A->>C: record(ToolMessage)
     C->>H: 保存结果，提交事务
-    A->>C: for_request(messages)：再次读取最新记忆
+    A->>C: await prepare(messages, tools, provider)：再次检查预算与最新记忆
     A->>P: await generate(追加结果和最新记忆的上下文)
     P-->>A: ModelResponse(text)
     A->>C: record(最终 AssistantMessage)
@@ -127,9 +133,9 @@ sequenceDiagram
 | -------- | ----------------------------------------------------------- | --------------------------------------------------------------- |
 | 接收     | `chat()` → `Agent.run()`                               | 普通文本进入 Runtime；空白输入由 CLI 跳过，Runtime 也拒绝空输入 |
 | 串行化   | `Agent.run()` 的 `asyncio.Lock`                         | 同一 Runtime 的 Run 顺序执行，避免上下文交错                    |
-| 构建     | `ContextBuilder.begin()` → `build()`                   | system + 当前会话可重放历史 + 新用户消息                        |
+| 构建     | `ContextBuilder.begin()`                   | system + 新用户消息；历史在 prepare() 有界加载                        |
 | 开始记录 | `ConversationHistory.begin()` → `begin_run()`          | 原子保存 running Run 与用户消息，得到 Run ID                    |
-| 请求模型 | `Agent._run()` → `Provider.generate()`                 | 在单次请求超时内 await，消耗一个 round                          |
+| 请求模型 | `Agent._run()` → `ContextBuilder.prepare()` → `Provider.generate()`                 | 准备/摘要后通过预算；正常请求超时内 await，消耗一个 round                          |
 | 响应检查 | `_run()` 的 ID/空响应检查                                 | 拒绝重复 ID 或既无文本也无调用的响应                            |
 | 记录响应 | `_run()` 内部 `append()` → `ContextBuilder.record()` | 先落库，再加入 pending 和当前上下文                             |
 | 执行工具 | `ToolRegistry.execute()`                                  | 名称查找、参数校验、执行与 JSON 规范化，生成同 ID 的结果        |
@@ -162,13 +168,13 @@ sequenceDiagram
 | 视图           | 读取位置                                     | 包含内容                                    | 用途                           |
 | -------------- | -------------------------------------------- | ------------------------------------------- | ------------------------------ |
 | 完整持久化历史 | `SQLiteStore.load_messages()`              | 所有 Run 的消息，包括未完成调用             | 审计、诊断，不直接全量送入模型 |
-| 可重放历史     | `ContextBuilder.history` → adapter.load() | 仅 completed / failed Run，且通过结构校验   | 构建下一次输入的上下文         |
+| 可重放历史     | `ContextBuilder.history` → summary()/page() | 摘要边界之后的有界 completed/failed 完整 Run 页   | 构建下一次输入的上下文         |
 | 工作消息链     | `_run()` 的局部 `messages`               | system、可重放历史、新输入、本 Run 后续消息 | for_request 编译前的基础链     |
 | 运行中消息     | `ContextBuilder.pending_messages`          | 仅当前 Run 的用户、模型、工具消息副本       | 跟踪尚未结束的 Run             |
 
 pending 消息可以已经逐条持久化；“Run 未完成”不表示持有一个一直不提交的 SQL 事务。例如正在执行工具时，调用已在数据库中，但整个 Run 仍是 running，尚未进入正常可重放历史。这种区分避免“数据库中有一条调用”被误解为“下次启动应继续执行它”。
 
-Base system 提示词来自程序代码，不作为每个 Run 的重复数据库消息保存。当前对 Conversation 的可重放历史全部加载，不进行召回筛选、摘要或 token 压缩。
+Base 来自程序代码，不作为原始消息重复保存。V0.6 在四种历史视图之外增加独立的会话摘要检查点；正常请求只发送有界未覆盖历史、低信任 Summary 和当前 Run。完整原始日志仍留在 SQLite/Recall。
 
 ## 6. 持久化 Pipeline 与事务边界
 
@@ -181,6 +187,7 @@ Base system 提示词来自程序代码，不作为每个 Run 的重复数据库
 | 开始 Run           | runs + 首条用户消息                                       | 全部回滚，模型还未被调用               |
 | 追加消息           | 校验既有 Run 消息，插入完整 JSON 及下一个 sequence        | 只回滚本次追加，保留此前日志           |
 | 完成 Run           | 检查调用完整性，更新终态、result_json、结束时间与会话时间 | 全部回滚，不能报告最终成功             |
+| Summary 检查点 | 校验本批来源、原子更新摘要/完整 Run 边界/修订/checksum | 失败批次回滚，之前独立批次保留 |
 | 标记中断           | 更新 cancelled / interrupted 与结束时间                   | 写入仍失败时保留 running，待启动时处理 |
 
 数据库约束防止同一会话的 sequence 重复、消息挂到其他会话的 Run，以及同一 Conversation 同时出现两个 running Run。`validate_turn()` 还检查调用 ID、工具名和结果的配对关系；正常结束必须没有悬空调用，最后一条是 assistant 消息。
@@ -255,11 +262,12 @@ Provider 专用数据必须跟随消息保存：OpenAIProvider 把 output items 
 程序 `DEFAULT_SYSTEM_PROMPT` 是可信 Base，SessionManager 不从旧 agents.system_prompt 恢复执行规则。ContextBuilder 只依赖 `CoreMemory.compile()`，每次请求自动注入三块 Core 的 JSON 数据；MEMORY.md 已包含顶层 Deferred 入口，不再额外拼接全部目录正文。
 
 ```text
-ContextBuilder.begin → Base + 当前会话可重放历史 + 本次输入
+ContextBuilder.begin → Base + 本次输入；prepare → 有界原始历史 + pending
 Agent._run 每次 Provider.generate 前 → ContextBuilder.for_request
   system: 程序 Base
   user: JSON {kind: agent_core_memory, trust: data_only, blocks: ...}
-  当前会话历史 + 本 Run 消息
+  user: JSON {kind: conversation_summary, trust: historical_data_only, ...}
+  摘要未覆盖的有界完整历史 + 本 Run 消息
 模型按需 → deferred_read(目录 MEMORY.md) → deferred_list(元数据)
          → deferred_read(有关主题) → 正常 ToolMessage → 下一次请求
 历史取证 → recall_search / recall_get → 正常 ToolMessage
@@ -338,3 +346,26 @@ flowchart LR
 索引候选必须回到 canonical messages 读取正文并再次核验字面条件，不能输出伪造的索引正文。缺失 token 可能造成假阴性，索引故障返回安全错误，可信宿主可显式调用 `SQLiteStore.rebuild_recall_index()` 在事务中重建派生对象；不会自动尝试任务恢复。SQLite 文件本身的损坏不属于派生索引重建可保证修复的范围。
 
 对应 tests/test_recall_storage.py 的迁移、事务、中文查询、隔离、范围和重建测试，以及 tests/test_recall_runtime.py 的 Fake Provider 搜索→展开→回答、跨新会话不注入、历史不提权和旧副作用不重跑测试。
+
+## 17. V0.6 Context Management Pipeline
+
+`core/budget.py` 管理显式模型窗口及输入/输出/安全余量，`core/compaction.py` 只生成无工具摘要，ContextBuilder.prepare() 在每次正常请求前组合两者。CLI 要求 AGENT_CONTEXT_WINDOW；不猜自定义模型窗口。估算包括工具定义、Core、Summary、Provider JSON 和当前 Run，服务端 usage 单独记录。近期保护单位是完整已结束 Run，当前 Run 不压缩。
+
+```text
+begin：原子保存 Run + user
+  → prepare：summary + sequence 范围内有限完整 Run 页 + 全部 pending
+  → for_request：Base + Core + 低信任 Summary + 窗口 + 当前消息
+  → 估算本轮请求及输出余量
+      无压力 → 正常 Provider.generate(max_output_tokens)
+      有可压缩前缀 → 旧 Summary + 有界新前缀 → 无工具 Provider 请求
+          → 校验结果 → 原子 checkpoint → 新边界重新组装并检查
+      不可缩减 / 失败 / 批数上限 → 明确停止，不静默删消息或重试工具
+```
+
+schema 3 追加 context_runs 范围/大小派生索引和每会话一行 context_summaries。迁移一次性回填旧 completed/failed Run，之后终态触发器同事务维护。页查询先核对元数据预算再加载有限 payload，单页最多 2 MiB/64 Run，每 Run 最多 2048 条；正常 prepare 实际更小。resume 只验证身份和 checkpoint，commit 不复制全会话，status 只读 SQL 统计。完整 load_messages 审计 API 与 Recall 保留。
+
+Summary 和 through_sequence/through_run_id/revision/checksum 在同一事务提交。失败不移动失败批次边界，先前批次有效；进程退出后恢复最后检查点，当前遗留 Run 仍按原规则 interrupted。Summary 是会话工作数据，不写 Core/Deferred，不自动提取长期事实，不改变权限。
+
+ContextError 分别映射 context_error/compaction_error；准备中的 HistoryError 必须经外层存储中断处理。较早历史分批压缩但不在 Run 内拆分；不可缩减的单 Run、当前 Run 和预算配置变化可能需要人工调整或新会话。摘要有损、估算非精确，不提供对任意本机 SQL 篡改的全库验证。完整算法、WHY、配置和故障示例见[Compaction 模块](modules/compaction.md)。
+
+测试入口是 `tests/test_compaction.py`：Fake Provider/MockTransport、schema 2→3 回填/回滚、增量前缀、完整工具重放、取消、真实进程退出、原子摘要冲突、查询范围和解码数量；原 Runtime、Memory 和 Recall 测试继续离线回归。

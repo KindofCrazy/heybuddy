@@ -7,9 +7,9 @@
 ## 代码实际运行路径
 
 1. `main()` 加载 Settings、配置安全日志，`asyncio.run(run_cli())` 打开数据库并显式迁移。
-2. `run_cli()` 标记遗留 Run，`SessionManager(store)` 加载或创建默认 Agent，读取该 Agent 的 last_conversation；首次创建空会话，其余恢复上次选择。
+2. `run_cli()` 标记遗留 Run，`SessionManager(store, budget=settings.context_budget())` 加载或创建默认 Agent，读取该 Agent 的 last_conversation；首次创建空会话，其余恢复上次选择。
 3. `run_cli()` 按 Agent ID 初始化或迁移 MemoryFS，绑定 sessions.memory，再由 `_run_session()` 装配官方 SDK、Provider、内置工具、Agent，以及 `sessions.context()`。 CLI 和存储均不进入 Provider 接口。
-4. `chat()` 展示当前 Agent/Conversation/Run 状态，读取输入。普通文本调用 Agent.run()；始终提供绑定当前 Agent 的 recall_search / recall_get，不需要记忆写入授权。 `/new` 创建空会话并保存选择；`/sessions` 列出当前 Agent 的会话并标记当前项； `/resume <id>` 校验归属、验证可重放历史后保存选择；`/status` 展示状态。
+4. `chat()` 展示当前 Agent/Conversation/Run 状态，读取输入。普通文本调用 Agent.run()；始终提供绑定当前 Agent 的 recall_search / recall_get，不需要记忆写入授权。 `/new` 创建空会话并保存选择；`/sessions` 列出当前 Agent 的会话并标记当前项； `/resume <id>` 校验归属和摘要检查点后保存选择，实际历史页在模型请求前有界验证；`/status` 展示状态。
 5. 切换成功后只替换 Runtime 的 ContextBuilder，不重写 Loop，不混入上个会话的历史。失败时保留旧选择；会话管理命令不送给模型、不保存为聊天消息。
 6. exit / quit / EOF 正常退出；Ctrl+C 取消当前 Run，SDK 和数据库由上下文管理器关闭。再启动使用同一数据库路径，即可恢复之前选择的会话。
 
@@ -33,3 +33,11 @@ main() 仅在运行期安装日志 handler，退出时恢复之前的日志配�
 ## V0.4 无额外命令的 Recall
 
 `_run_session()` 在创建 Runtime 前把 Recall 绑定到 sessions.agent.id 并注册两项只读工具。/new 只替换 ContextBuilder，Recall 继续查询同一持久 Agent 下的历史；不把其他会话复制到当前上下文。用户直接问“我们之前为什么决定先实现 Memory？”即可由模型选择搜索→展开→回答；没有增加 /recall 管理命令。schema 2 初始化回填在接收输入前完成，坏索引不自动修复，显式修复 API 见[Recall 模块](recall.md)。
+
+## V0.6 上下文与诊断
+
+run_cli() 用 Settings.context_budget() 构造 SessionManager；context() 将同一预算及当前 Conversation 的 adapter 传给 ContextBuilder。resume() 不再调用全量 load_messages()，只验证 Agent 归属和已有摘要检查点；prepare() 在真正发送前读取/校验完整 Run 页。/new 不继承其他会话的摘要。status() 用 run_statistics() SQL 统计，不反序列化全部 RunResult。
+
+`/context status` 在 chat() 中直接调用 diagnostics()，不创建 Run、不调用模型，显示显式窗口、输出预留、输入上限、本地估算、服务端 usage（可用时）、摘要边界/修订/大小、当前加载页规模和最近压缩结果；不显示摘要、消息或 reasoning 正文。首次请求前 estimated_tokens 为空表示尚无实际准备记录，不是精确零 token。bad checkpoint/预算或数据库错误返回安全诊断。
+
+启动必须配置 AGENT_CONTEXT_WINDOW，帮助入口仍不读配置。长会话达到水位或分页资源条件时先摘要再正常请求；当前 Run 太大或摘要失败返回明确状态，CLI 继续接收下一次用户请求，不自动重试工具。实际路径见[Compaction](compaction.md)，测试见 `tests/test_config_cli.py` 和 `tests/test_compaction.py`。

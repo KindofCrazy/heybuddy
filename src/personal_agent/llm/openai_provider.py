@@ -11,6 +11,7 @@ from personal_agent.core.models import (
     Message,
     ModelResponse,
     TextMessage,
+    TokenUsage,
     ToolCall,
     ToolDefinition,
     ToolMessage,
@@ -56,7 +57,13 @@ class OpenAIProvider:
                     )
         return items
 
-    async def generate(self, messages: list[Message], tools: list[ToolDefinition]) -> ModelResponse:
+    async def generate(
+        self,
+        messages: list[Message],
+        tools: list[ToolDefinition],
+        *,
+        max_output_tokens: int | None = None,
+    ) -> ModelResponse:
         definitions = [
             {
                 "type": "function",
@@ -69,6 +76,7 @@ class OpenAIProvider:
         ]
         # strict=False preserves Pydantic defaults/optional fields without rewriting
         # arbitrary schemas. ToolRegistry always validates locally before execution.
+        options = {"max_output_tokens": max_output_tokens} if max_output_tokens is not None else {}
         try:
             response = await self.client.responses.create(
                 model=self.model,
@@ -76,6 +84,8 @@ class OpenAIProvider:
                 tools=cast(list[ToolParam], definitions),
                 store=False,
                 include=["reasoning.encrypted_content"],
+                truncation="disabled",
+                **options,
             )
         except APITimeoutError:
             raise ProviderTimeout("OpenAI request timed out.") from None
@@ -106,6 +116,12 @@ class OpenAIProvider:
                         "OpenAI returned an unsupported output item.", code="unsupported_output"
                     )
             return ModelResponse(
+                usage=TokenUsage(
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                )
+                if response.usage
+                else None,
                 text=response.output_text or "\n".join(refusals),
                 tool_calls=calls,
                 provider_data={

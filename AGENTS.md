@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.5.1 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引和同一 Agent 跨会话的只读 Conversation Recall。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.6 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -56,7 +56,16 @@
 - 参数化 SQL；query、limit、窗口、片段和总输出都设上限。SQLite VM 预算不能当作同步 I/O 的硬取消保证。
 - 普通对话默认提供 recall_search / recall_get，ContextBuilder 不自动全库搜索，不把结果默认注入后续新会话或写成 Core Memory。
 - Recall 输出为低信任历史证据，不能授予 Memory 权限或修改 Base。不得执行、补齐、重试任何历史 Tool Call；cancelled/interrupted/running 当前不提供查询入口。
-- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。没有 Compaction、Reflection 或后台回填；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
+- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。没有 Reflection 或后台回填；Context Compaction 只更新会话工作摘要，不影响 Recall 原始证据；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
+
+## Context 与 Compaction 边界
+
+- 模型窗口由宿主显式配置，不按未知模型/端点猜测；预算计入 Base、Core、Summary、历史/当前 Run、工具定义和 Provider JSON，预留输出及安全余量。估算与 Provider usage 分开，不宣称精确 tokenizer。
+- 每次正常 Provider 请求前执行 ContextBuilder.prepare()，仅以完整 completed/failed Run 的前缀压缩；至少保护近期配置数量和当前 Run 全部消息，不能拆工具调用/结果或丢弃需重放的 Provider 数据。
+- Summary 仅属于 Conversation，以低信任 user JSON 注入，不作为原始消息，不写 Core/Deferred、不授予权限。摘要请求复用 Provider、空工具列表、独立预算和超时，返回调用时不得执行。
+- schema 3 以 context_runs 维护派生范围/大小索引，context_summaries 保存当前摘要；正文、完整 Run 边界、修订和 checksum 原子提交。失败批次不推进，之前已提交批次保留；不修改/删除原 Journal，不自动重试或续跑工具。
+- 正常 history/build/prepare/resume/commit 路径不得全量反序列化会话；页查询先核对元数据预算再读有限 payload。完整 load_messages 审计和 Recall 继续保留。
+- 不可缩减或超预算时明确停止；摘要有损，校验不是针对本机恶意修改的认证。没有后台压缩、递归摘要树、Reflection 或自动长期记忆提取。
 
 ## 核心模块说明文档
 
@@ -75,7 +84,7 @@ Python 3.13、uv、Pydantic v2、asyncio、官方 OpenAI Python SDK、pytest/pyt
 
 ## 测试与交付
 
-核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。V0.5 还需覆盖旧格式无损迁移/中断/冲突、编辑器可见性、单文件原子替换、索引缺项/悬空/部分失败与显式补链、Deferred 分页、路径及 Junction 隔离和 CLI 重启渐进读取。测试应验证行为与契约，而不是机械重复实现。
+核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。V0.5 还需覆盖旧格式无损迁移/中断/冲突、编辑器可见性、单文件原子替换、索引缺项/悬空/部分失败与显式补链、Deferred 分页、路径及 Junction 隔离和 CLI 重启渐进读取。V0.6 另需覆盖有界历史读取、预算与增量边界、工具/Provider 重放、摘要事务回滚、取消/进程退出和重启恢复；测试应验证行为与契约，而不是机械重复实现。
 
 ## Git 提交流程与信息
 
@@ -94,4 +103,4 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.5 仅增加轻量 File-based Core/Deferred Memory 与分层索引，不实现 Git-backed Memory、日常版本恢复、远程同步、自动记忆提取、向量/Embedding、Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+V0.6 增加会话 Context Budget、完整 Run 分批压缩与持久工作摘要，不实现 Git-backed Memory、日常版本恢复、远程同步、自动记忆提取、向量/Embedding、Reflection、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。

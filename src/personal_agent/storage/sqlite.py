@@ -10,19 +10,23 @@ from uuid import uuid4
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from personal_agent.core.history import HistoryError
+from personal_agent.core.history import (
+    ConversationSummary,
+    HistoryError,
+    HistoryPage,
+    HistoryTurn,
+    validate_turn,
+)
 from personal_agent.core.models import (
-    AssistantMessage,
     Message,
     RunResult,
     TextMessage,
-    ToolMessage,
 )
-from personal_agent.storage import recall
+from personal_agent.storage import context, recall
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -50,6 +54,7 @@ MIGRATIONS = {
         FOREIGN KEY(conversation_id, agent_id) REFERENCES conversations(id, agent_id))""",
     ),
     2: recall.INDEX_SCHEMA,
+    3: context.SCHEMA,
 }
 
 
@@ -62,31 +67,6 @@ def decode_record[Record: BaseModel](kind: type[Record], row: sqlite3.Row) -> Re
         return kind.model_validate(dict(row))
     except ValidationError:
         raise HistoryError("Stored record structure is invalid.") from None
-
-
-def validate_turn(messages: list[Message], *, complete: bool = False) -> None:
-    """Validate call/result pairing before accepting journal writes or replaying a run."""
-    if not messages or not isinstance(messages[0], TextMessage) or messages[0].role != "user":
-        raise HistoryError("Invalid run message sequence.")
-    pending: dict[str, str] = {}
-    seen = set()
-    for message in messages[1:]:
-        if isinstance(message, AssistantMessage):
-            if pending:
-                raise HistoryError("Tool results are missing before an assistant message.")
-            for call in message.tool_calls:
-                if call.id in seen:
-                    raise HistoryError("Duplicate tool call ID in run.")
-                seen.add(call.id)
-                pending[call.id] = call.name
-        elif isinstance(message, ToolMessage):
-            result = message.result
-            if pending.pop(result.call_id, None) != result.name:
-                raise HistoryError("Tool result does not match a pending call.")
-        else:
-            raise HistoryError("Unexpected user or system message inside a run.")
-    if complete and (pending or not isinstance(messages[-1], AssistantMessage)):
-        raise HistoryError("Cannot finish a run with incomplete messages.")
 
 
 class SQLiteStore:
@@ -161,6 +141,38 @@ class SQLiteStore:
                 (record.id, record.name, record.system_prompt, record.created_at.isoformat()),
             )
         return record
+
+    def context_summary(self, conversation_id: str) -> ConversationSummary | None:
+        with self._transaction() as db:
+            return context.summary(db, conversation_id)
+
+    def context_page(
+        self,
+        conversation_id: str,
+        after: int,
+        *,
+        through: int | None = None,
+        max_runs: int = 32,
+        max_bytes: int = 262144,
+    ) -> HistoryPage:
+        with self._transaction() as db:
+            return context.page(
+                db, conversation_id, after, through=through, max_runs=max_runs, max_bytes=max_bytes
+            )
+
+    def compact_through(self, conversation_id: str, recent_runs: int) -> int:
+        with self._transaction() as db:
+            return context.compact_through(db, conversation_id, recent_runs)
+
+    def save_context_summary(
+        self,
+        conversation_id: str,
+        text: str,
+        previous: ConversationSummary | None,
+        turns: list[HistoryTurn],
+    ) -> ConversationSummary:
+        with self._transaction() as db:
+            return context.save_summary(db, conversation_id, text, previous, turns)
 
     def rebuild_recall_index(self) -> None:
         """Explicitly replace only derived Recall objects, atomically, from messages."""
@@ -322,6 +334,20 @@ class SQLiteStore:
             return db.execute(
                 "UPDATE runs SET status='interrupted',ended_at=? WHERE status='running'", (now(),)
             ).rowcount
+
+    def run_statistics(self, conversation_id: str) -> tuple[int, int, str]:
+        with self._transaction() as db:
+            counts = db.execute(
+                "SELECT COUNT(*),COALESCE(SUM(status IN "
+                "('cancelled','interrupted')),0) FROM runs WHERE conversation_id=?",
+                (conversation_id,),
+            ).fetchone()
+            latest = db.execute(
+                "SELECT status FROM runs WHERE conversation_id=? ORDER BY started_at "
+                "DESC,id DESC LIMIT 1",
+                (conversation_id,),
+            ).fetchone()
+        return counts[0], counts[1], latest[0] if latest else "none"
 
     def list_runs(self, conversation_id: str) -> list[RunRecord]:
         with self._transaction() as db:

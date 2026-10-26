@@ -10,6 +10,7 @@ from pydantic import ValidationError
 
 from personal_agent.config import Settings, load_settings, memory_root_for
 from personal_agent.core.agent import Agent
+from personal_agent.core.budget import ContextError
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.llm.openai_provider import OpenAIProvider
@@ -30,7 +31,9 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
 ) -> None:
-    write("HeyBuddy V0.5.1 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write(
+        "HeyBuddy V0.6 — /new /sessions /resume <id> /status /context status；exit 或 quit 退出。"
+    )
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
     if sessions is not None:
         write(sessions.status())
@@ -73,6 +76,12 @@ async def chat(
             permissions = frozenset({"memory.read"})
             if parts[1] == "edit":
                 permissions |= {"memory.update", "deferred.update"}
+        elif user_input == "/context status":
+            try:
+                write(json.dumps(agent.context.diagnostics(), ensure_ascii=False))
+            except (ContextError, HistoryError):
+                write("Context 错误 > 无法读取有界上下文状态；请检查数据库与预算配置。")
+            continue
         elif user_input.startswith("/"):
             if sessions is None:
                 write("错误 > 当前入口未配置持久化会话。")
@@ -115,7 +124,7 @@ async def run_cli(settings: Settings) -> None:
         recovered = store.recover_incomplete_runs()
         if recovered:
             print(f"发现 {recovered} 个未完成 Run，已标记 interrupted；不会重试工具。")
-        sessions = SessionManager(store)
+        sessions = SessionManager(store, budget=settings.context_budget())
         root = memory_root_for(settings, sessions.agent.id)
         memory = MemoryFS.for_agent(root, sessions.agent.id, max_bytes=settings.memory_max_bytes)
         memory.initialize()
@@ -145,13 +154,20 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.5.1 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.6 CLI")
     parser.parse_args()
     try:
         settings = load_settings()
     except ValidationError as exc:
         # ValidationError.__str__ contains raw input, potentially including the API key.
-        fields = ", ".join(sorted({str(error["loc"][0]) for error in exc.errors()}))
+        fields = ", ".join(
+            sorted(
+                {
+                    (str(error["loc"][0]) if error["loc"] else "context_budget")
+                    for error in exc.errors()
+                }
+            )
+        )
         print(f"配置错误：请检查 {fields}。参考 .env.example。", file=sys.stderr)
         return 2
     except OSError:

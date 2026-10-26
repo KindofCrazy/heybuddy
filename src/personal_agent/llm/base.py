@@ -19,6 +19,12 @@ class ProviderTimeout(ProviderError):
 
 
 class Provider(Protocol):
-    async def generate(self, messages: list[Message], tools: list[ToolDefinition]) -> ModelResponse:
+    async def generate(
+        self,
+        messages: list[Message],
+        tools: list[ToolDefinition],
+        *,
+        max_output_tokens: int | None = None,
+    ) -> ModelResponse:
         """Return plain text and/or tool calls; raise sanitized ProviderError on failure."""
         ...

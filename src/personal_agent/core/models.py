@@ -57,7 +57,13 @@ class ToolMessage(Model):
 Message = Annotated[TextMessage | AssistantMessage | ToolMessage, Field(discriminator="role")]
 
 
+class TokenUsage(Model):
+    input_tokens: int = Field(ge=0)
+    output_tokens: int = Field(ge=0)
+
+
 class ModelResponse(Model):
+    usage: TokenUsage | None = None
     text: str = ""
     tool_calls: list[ToolCall] = Field(default_factory=list)
     provider_data: dict[str, list[dict[str, JsonValue]]] = Field(default_factory=dict, repr=False)
@@ -73,6 +79,8 @@ class RunResult(Model):
         "runtime_error",
         "storage_error",
         "memory_error",
+        "context_error",
+        "compaction_error",
     ]
     text: str = ""
     rounds: int

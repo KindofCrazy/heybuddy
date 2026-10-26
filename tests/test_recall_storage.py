@@ -70,7 +70,7 @@ def test_v1_migration_backfills_without_changing_canonical_history(tmp_path, mon
         store.initialize()
         assert Recall(store, agent_id).search("Memory").hits == hits
     with sqlite3.connect(path) as db:
-        assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert db.execute("PRAGMA user_version").fetchone()[0] == storage.SCHEMA_VERSION
 
 
 def test_recall_migration_failure_rolls_back_index_and_version(tmp_path, monkeypatch):

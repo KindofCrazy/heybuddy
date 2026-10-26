@@ -1,5 +1,6 @@
 """Local session selection. Conversation history is not cross-conversation memory."""
 
+from personal_agent.core.budget import ContextBudget
 from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemory
@@ -9,7 +10,14 @@ from personal_agent.storage.sqlite import SQLiteStore
 
 
 class SessionManager:
-    def __init__(self, store: SQLiteStore, *, memory: CoreMemory | None = None) -> None:
+    def __init__(
+        self,
+        store: SQLiteStore,
+        *,
+        memory: CoreMemory | None = None,
+        budget: ContextBudget | None = None,
+    ) -> None:
+        self.budget = budget
         self.store = store
         self.memory = memory
         self.agent = store.get_agent("heybuddy") or store.create_agent(
@@ -23,6 +31,7 @@ class SessionManager:
             DEFAULT_SYSTEM_PROMPT,
             history_store=SQLiteConversationHistory(self.store, self.current.id),
             memory=self.memory,
+            budget=self.budget,
         )
 
     def new(self) -> ConversationRecord:
@@ -33,8 +42,9 @@ class SessionManager:
         conversation = self.store.get_conversation(conversation_id)
         if conversation.agent_id != self.agent.id:
             raise HistoryError("Conversation belongs to a different agent.")
-        # Validate replayable content before changing the durable active selection.
-        self.store.load_messages(conversation_id, replayable_only=True)
+        # Validate the checkpoint, not every historic payload. Pages are checked
+        # before model use; ordinary writes already validate complete Runs.
+        self.store.context_summary(conversation_id)
         self.store.select_conversation(self.agent.id, conversation.id)
         self.current = conversation
         return conversation
@@ -43,12 +53,10 @@ class SessionManager:
         return self.store.list_conversations(self.agent.id)
 
     def status(self) -> str:
-        runs = self.store.list_runs(self.current.id)
-        interrupted = sum(run.status in {"cancelled", "interrupted"} for run in runs)
-        last = runs[-1].status if runs else "none"
+        count, interrupted, last = self.store.run_statistics(self.current.id)
         return (
             f"Agent: {self.agent.id} ({self.agent.name})\nConversation: {self.current.id}\n"
-            f"Runs: {len(runs)} | Last: {last} | Interrupted/cancelled: {interrupted}"
+            f"Runs: {count} | Last: {last} | Interrupted/cancelled: {interrupted}"
             + (
                 "\n中断/取消 Run 仅保留审计，不进入模型上下文；副作用可能已发生，不会重试。"
                 if interrupted

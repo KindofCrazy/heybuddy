@@ -2,7 +2,7 @@
 
 ## 职责与架构组成
 
-`src/personal_agent/config.py::Settings` 使用 Pydantic 校验密钥、模型名、Base URL、轮数、超时、日志级别、数据库路径与记忆大小/根目录；密钥以 `SecretStr` 保存。 `ENV_FIELDS` 映射环境变量到内部字段，`load_settings()` 只读取指定文件或当前目录的 `.env`。 `main.py::main()` 加载配置，`run_cli()` 根据配置装配 SDK 客户端和 Runtime。这里不执行 API 请求，不解析 SDK 响应，也不搜索父目录凭证。
+`src/personal_agent/config.py::Settings` 继承 ContextBudget，使用 Pydantic 校验密钥、模型名、Base URL、轮数、超时、日志级别、数据库路径与记忆大小/根目录；密钥以 `SecretStr` 保存。 `ENV_FIELDS` 映射环境变量到内部字段，`load_settings()` 只读取指定文件或当前目录的 `.env`。 `main.py::main()` 加载配置，`run_cli()` 根据配置装配 SDK 客户端和 Runtime。这里不执行 API 请求，不解析 SDK 响应，也不搜索父目录凭证。
 
 ## 代码实际运行路径
 
@@ -27,7 +27,7 @@ HTTPS 校验只保证配置的初始地址符合传输策略，不验证模型�
 
 ## 阅读与验证
 
-最小用法：`Settings(api_key="test-key", model="test-model", base_url="http://127.0.0.1:8000/v1")` 通过；将地址换成 `http://api.example.com/v1` 则触发 `ValidationError`。通过环境变量设置 Base URL 也经过相同校验。
+最小用法：`Settings(api_key="test-key", model="test-model", context_window=64000, base_url="http://127.0.0.1:8000/v1")` 通过；将地址换成 `http://api.example.com/v1` 则触发 `ValidationError`。通过环境变量设置 Base URL 也经过相同校验。
 
 对应 `tests/test_config_cli.py`：
 
@@ -41,3 +41,23 @@ HTTPS 校验只保证配置的初始地址符合传输策略，不验证模型�
 ## V0.4 Recall 的运行要求
 
 未新增环境变量或依赖。Python 自带 SQLite 必须支持 FTS5 trigram（本地验证为 3.47.1）；schema 2 初始化回填失败会以原有存储启动错误退出，不降低成无界扫描。搜索和输出上限是 Recall 模块中的保守常量；短词范围限制始终在工具描述及结果中说明。只做索引重建的宿主 API 不需要配置模型或 API Key。
+
+## V0.6 Context 配置
+
+AGENT_CONTEXT_WINDOW 必填，单位为模型窗口 tokens；不按模型名或自定义端点猜测数值。其他配置继承 ContextBudget 的保守默认值，Settings.context_budget() 只将预算字段传给 SessionManager/ContextBuilder。组合约束检查输出/余量后剩余空间、摘要容量，以及 page_runs 大于 recent_runs，失败为安全配置错误退出码 2，根级错误显示 context_budget，不输出 Pydantic 输入值。
+
+| 环境变量 | 字段 | 默认 |
+| --- | --- | --- |
+| AGENT_CONTEXT_WINDOW | context_window | 必填，4096～4000000 |
+| AGENT_RESERVED_OUTPUT_TOKENS | reserved_output_tokens | 4096 |
+| AGENT_CONTEXT_SAFETY_MARGIN | safety_margin | 1024 |
+| AGENT_COMPACTION_TRIGGER_RATIO | trigger_ratio | 0.8 |
+| AGENT_RECENT_RUNS | recent_runs | 2，至少保护的完整 Run 数 |
+| AGENT_HISTORY_PAGE_RUNS | page_runs | 32，2～64，须大于 recent_runs |
+| AGENT_SUMMARY_TOKENS | summary_tokens | 2048，摘要正文的本地估算上限 |
+| AGENT_SUMMARY_OUTPUT_TOKENS | summary_output_tokens | 4096，摘要调用输出限额 |
+| AGENT_COMPACTION_INPUT_TOKENS | compaction_input_tokens | 16384，另受模型窗口/输出/余量限制 |
+| AGENT_COMPACTION_TIMEOUT_SECONDS | compaction_timeout | 30，独立摘要请求超时 |
+| AGENT_MAX_COMPACTION_STEPS | max_compaction_steps | 16，每次准备最多批数 |
+
+输出限额需匹配具体模型能力；reasoning 也消耗输出预算。较小窗口通常还需调低输出/摘要上限，不能只修改窗口使默认组合不一致。估算按 UTF-8 序列化字节保守计量，非精确 tokenizer，不同端点的真实上下文/最大输出应由用户查证。请求预算范围和不可缩减行为见[Compaction](compaction.md)。所有新测试继续隔离真实配置，不访问真实 API。

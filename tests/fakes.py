@@ -6,10 +6,18 @@ class FakeProvider:
         self.responses = list(responses)
         self.requests: list[list[Message]] = []
         self.tools: list[list[ToolDefinition]] = []
+        self.output_limits: list[int | None] = []
 
-    async def generate(self, messages: list[Message], tools: list[ToolDefinition]) -> ModelResponse:
+    async def generate(
+        self,
+        messages: list[Message],
+        tools: list[ToolDefinition],
+        *,
+        max_output_tokens: int | None = None,
+    ) -> ModelResponse:
         self.requests.append([message.model_copy(deep=True) for message in messages])
         self.tools.append(tools)
+        self.output_limits.append(max_output_tokens)
         if not self.responses:
             raise AssertionError("Unexpected extra model request")
         response = self.responses.pop(0)

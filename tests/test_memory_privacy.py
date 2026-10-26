@@ -104,6 +104,7 @@ def test_git_unavailable_fails_closed_without_leaking_subprocess_output(repo, mo
 
 def test_custom_cli_root_is_checked_before_sdk_is_created(repo, tmp_path, monkeypatch):
     settings = Settings(
+        context_window=64000,
         api_key="test-key",
         model="test-model",
         database_path=tmp_path / "history.sqlite3",
@@ -126,6 +127,7 @@ def test_cli_privacy_error_is_actionable_and_does_not_expose_path(
     monkeypatch.setattr("sys.argv", ["personal-agent"])
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_MODEL", "test-model")
+    monkeypatch.setenv("AGENT_CONTEXT_WINDOW", "64000")
     monkeypatch.setenv("AGENT_DATABASE_PATH", str(tmp_path / "history.sqlite3"))
     monkeypatch.setenv("AGENT_MEMORY_ROOT", str(repo / "private-sensitive-path"))
     assert cli.main() == 1

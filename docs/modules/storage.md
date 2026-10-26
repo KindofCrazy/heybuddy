@@ -6,7 +6,7 @@
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。数据库 schema 版本 2 与应用版本 0.4 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。数据库 schema 版本 3 与应用版本 0.6 是不同概念。
 
 ## 表字段与一致性约束
 
@@ -17,6 +17,8 @@
 | runs | id、conversation_id、status、started_at、ended_at、result_json | 记录每次输入的执行生命周期，区别正常结束与中断 |
 | messages | id、conversation_id、run_id、sequence、payload、created_at | payload 保存完整内部 Message；sequence 决定会话内重放顺序 |
 | client_state | agent_id、conversation_id | 每个 Agent 的上次会话选择，与消息内容分开保存 |
+| context_runs | run_id、conversation_id、首尾 sequence、message_count、payload_bytes | 已完成可重放 Run 的派生范围/大小索引 |
+| context_summaries | conversation_id、text、through_sequence、through_run_id、revision、updated_at、checksum | 每会话当前工作摘要及其原子历史边界 |
 
 messages 的 `(conversation_id, sequence)` 唯一；`(run_id, conversation_id)` 复合外键保证消息所指 Run 属于同一个会话。runs 的部分唯一索引只约束 status=running 的记录，允许一个会话有多个已结束 Run，但不允许两个同时运行。client_state 的复合外键避免跨 Agent 选择。 SQL 值都通过参数绑定传入；动态 schema 语句仅使用程序定义的对象名及内部顺序整数版本号。
 
@@ -29,9 +31,9 @@ payload 由 `TypeAdapter(Message)` 序列化，不拆成一张只有 role/text �
 3. `recover_incomplete_runs()` 在占用锁下把 running 标记 interrupted，保留消息，不执行任何工具。新建会话与更新 active 选择使用同一事务，选择写入失败时不留下额外空会话。
 4. `begin_run()` 在同一事务内插入 running Run 和初始用户消息；部分写入失败则全部回滚。
 5. `append_message()` 在事务内重新读取该 Run 的消息，验证调用/结果关系，追加一条消息；schema 2 的触发器在同一事务中更新派生 Recall token。模型工具调用在执行前提交；每个结果在下一个工具或模型请求前提交。
-6. `finish_run()` 验证无悬空调用且以 assistant 消息结束，在一个事务内写终态、结果、结束时间，更新会话时间。只有正常 finalized Run 才进入可重放历史。
+6. `finish_run()` 验证无悬空调用且以 assistant 消息结束，在一个事务内写终态、结果、结束时间，更新会话时间。只有正常 finalized Run 才进入可重放历史；schema 3 的 context_run_finished 触发器在同一事务更新该 Run 的有界加载元数据。
 7. `interrupt_run()` 标记 cancelled / interrupted，不改写已提交消息。
-8. `load_messages(replayable_only=True)` 过滤 completed / failed，并再次验证每个 Run 的结构，用 Pydantic 恢复完整内部对象，Provider 随后能够原样重放 JSON 数据。
+8. 完整审计/显式调用 `load_messages(replayable_only=True)` 过滤 completed / failed，并再次验证每个 Run 的结构，用 Pydantic 恢复完整内部对象，Provider 随后能够原样重放 JSON 数据。
 
 Run 状态：running；成功结束为 completed；有完整停止说明的模型错误、超时、轮数限制为 failed；用户取消为 cancelled；异常存储失败或下次启动发现遗留运行则为 interrupted。非成功 Run 的 result 字段可保留 RunResult；cancelled / interrupted 没有正常完成结果。
 
@@ -57,3 +59,17 @@ Core Memory 继续不放进聊天表；V0.4 schema 2 只增加 Recall 派生对�
 `search_recall()` / `get_recall()` 在现有短事务内调用 storage/recall.py 的固定参数化查询，同时安装并清理 SQLite progress handler。所有结果 JOIN conversations 与 runs，验证宿主 agent_id 和 completed / failed 终态；搜索片段和展开文本都从 messages.payload 读取，索引只做定位。读接口不修改原历史，但沿用单进程拥有数据库及 BEGIN IMMEDIATE 的锁定策略，不承诺并发只读服务。
 
 `rebuild_recall_index()` 只在可信宿主中显式调用，在一个事务内重建派生对象，原 Message ID/sequence/Run 不变；失败回滚全部重建步骤。缺失索引会使相关触发器写入失败，系统不会绕过这种一致性检查，先显式修复再继续。索引 shadow tables 在同一个私有 SQLite 文件里，不输出为可上传文件。中文取舍、大小限制与修复示例见[Recall](recall.md)，测试见 tests/test_recall_storage.py。
+
+## V0.6 有界工作历史与 Summary 事务
+
+`storage/context.py::SCHEMA` 是 MIGRATIONS[3]，追加 context_runs/context_summaries 和查询索引，迁移原子回填旧 completed/failed Run 的首尾 sequence、消息数与字节数。没有删除、重建或改写原始消息表，也不改变 Recall 对原消息的依赖。未知/更高版本和迁移失败处理仍如前。
+
+正常调用路径：`ContextBuilder._load()` → `SQLiteConversationHistory.summary()/page()` → `SQLiteStore.context_summary()/context_page()` → storage/context.py。page() 从 conversation/sequence 联合索引选最多 max_runs+1 条元数据，先验证大小和数量上限，再按 run_id/sequence 索引读取有界完整消息并验证工具配对。不会先执行 load_messages() 全量反序列化后截断；大于一页的单个 Run 返回明确 ContextError。
+
+`save_context_summary()` 在 BEGIN IMMEDIATE 短事务内调用 save_summary()：验证旧 checkpoint 的完整值，重新读取/比较仅本批来源的 Run、边界及内容 hash，确认它是旧边界之后下一段可重放前缀，再将摘要和边界/revision/checksum 一起 UPSERT。失败全部回滚该批次，之前独立成功的批次保留。源不可包含 running/cancelled/interrupted 或其他 Conversation，不能跳过正常完整 Run。读取也校验摘要 hash 与其已结束 Run 边界。
+
+Summary 不作为 StoredMessage，不进入 Recall；完整审计 API 仍返回原值。SessionManager.resume() 只验证身份/摘要，实际页在发送前校验；status() 走 run_statistics()，不加载所有 RunResult。当前 Run 的 append/finish 仍校验该 Run 的完整消息，不会全量读取其他 Run。
+
+SQLite 表本身假设由应用追加使用，外部直接篡改已覆盖的原始历史不通过每次全库校验发现；checksum 也不是防本机攻击的安全机制。单页最多 2 MiB、每 Run 最多 2048 条，SQL/I/O 仍同步执行。摘要表和数据库同为私人明文，应沿用已有备份和 Git 忽略保护。
+
+最小宿主读取为 `SQLiteConversationHistory(store, conversation_id).page(after_sequence)`，完整示例和错误恢复见[Compaction](compaction.md)。`tests/test_compaction.py` 验证 schema 2→3 回填/回滚、来源与修订冲突、原子摘要写入、取消/进程退出、SQL sequence 范围和解码数量；`tests/test_recall_storage.py` 继续验证原始历史索引不受影响。

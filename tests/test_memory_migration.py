@@ -155,7 +155,10 @@ def test_incomplete_new_format_is_not_reset(tmp_path):
 
 def test_legacy_default_location_takes_precedence_and_explicit_root_wins(tmp_path, monkeypatch):
     settings = Settings(
-        api_key="test-key", model="test-model", database_path=tmp_path / "history.sqlite3"
+        context_window=64000,
+        api_key="test-key",
+        model="test-model",
+        database_path=tmp_path / "history.sqlite3",
     )
     monkeypatch.setattr("personal_agent.config.default_memory_root", lambda: tmp_path / "user-data")
     assert memory_root_for(settings, "heybuddy") == tmp_path / "user-data"

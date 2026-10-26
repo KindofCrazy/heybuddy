@@ -1,5 +1,6 @@
 """Bind a conversation ID to the database-independent history contract."""
 
+from personal_agent.core.history import ConversationSummary, HistoryError, HistoryPage, HistoryTurn
 from personal_agent.core.models import Message, RunResult, TextMessage
 from personal_agent.storage.sqlite import SQLiteStore
 
@@ -10,10 +11,29 @@ class SQLiteConversationHistory:
         self.conversation_id = conversation_id
 
     def load(self) -> list[Message]:
-        return [
-            record.content
-            for record in self.store.load_messages(self.conversation_id, replayable_only=True)
-        ]
+        previous = self.summary()
+        result = self.page(previous.through_sequence if previous else 0)
+        if result.has_more:
+            raise HistoryError("History requires bounded context preparation.")
+        return result.messages
+
+    def summary(self) -> ConversationSummary | None:
+        return self.store.context_summary(self.conversation_id)
+
+    def page(
+        self, after: int, *, through: int | None = None, max_runs: int = 32, max_bytes: int = 262144
+    ) -> HistoryPage:
+        return self.store.context_page(
+            self.conversation_id, after, through=through, max_runs=max_runs, max_bytes=max_bytes
+        )
+
+    def compact_through(self, recent_runs: int) -> int:
+        return self.store.compact_through(self.conversation_id, recent_runs)
+
+    def save_summary(
+        self, text: str, previous: ConversationSummary | None, turns: list[HistoryTurn]
+    ) -> ConversationSummary:
+        return self.store.save_context_summary(self.conversation_id, text, previous, turns)
 
     def begin(self, user_message: TextMessage) -> str:
         return self.store.begin_run(self.conversation_id, user_message)

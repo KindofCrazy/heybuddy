@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from personal_agent.core.budget import ContextError
 from personal_agent.core.context import ContextBuilder
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
@@ -98,17 +99,31 @@ class Agent:
             self._round_number = round_number
             logger.info("model_request round=%d", round_number)
             try:
+                definitions = (
+                    self.tools.definitions(permissions=permissions)
+                    if round_number < self.max_rounds
+                    else []
+                )
+                request = await self.context.prepare(messages, definitions, self.provider)
+                options = (
+                    {"max_output_tokens": self.context.budget.reserved_output_tokens}
+                    if self.context.budget
+                    else {}
+                )
                 async with asyncio.timeout(self.request_timeout_seconds):
-                    # Reserve the last request for a final answer. Also guard below
-                    # against unsolicited calls; tool omission alone is not enforcement.
-                    definitions = (
-                        self.tools.definitions(permissions=permissions)
-                        if round_number < self.max_rounds
-                        else []
+                    response = await self.provider.generate(request, definitions, **options)
+                self.context.observe_usage(response.usage)
+            except ContextError as exc:
+                return finish(
+                    RunResult(
+                        status="compaction_error"
+                        if exc.code.startswith(("compaction_", "invalid_summary"))
+                        else "context_error",
+                        rounds=round_number,
+                        error=f"Context preparation stopped ({exc.code}); "
+                        "history and any completed tool effects were retained.",
                     )
-                    response = await self.provider.generate(
-                        self.context.for_request(messages), definitions
-                    )
+                )
             except CoreMemoryError as exc:
                 return finish(
                     RunResult(
@@ -133,6 +148,8 @@ class Agent:
                         error=f"Model provider failed ({detail}); check access and network.",
                     )
                 )
+            except HistoryError:
+                raise
             except Exception as exc:
                 logger.error("runtime_failed type=%s", type(exc).__name__)
                 return finish(

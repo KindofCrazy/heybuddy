@@ -4,10 +4,12 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import dotenv_values
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, SecretStr, field_validator
+from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator
+
+from personal_agent.core.budget import ContextBudget
 
 
-class Settings(BaseModel):
+class Settings(ContextBudget):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     api_key: SecretStr
@@ -20,6 +22,11 @@ class Settings(BaseModel):
     database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
     memory_root: Path | None = None
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
+
+    def context_budget(self) -> ContextBudget:
+        return ContextBudget.model_validate(
+            {name: getattr(self, name) for name in ContextBudget.model_fields}
+        )
 
     @field_validator("base_url")
     @classmethod
@@ -54,6 +61,17 @@ class Settings(BaseModel):
 ENV_FIELDS = {
     "OPENAI_API_KEY": "api_key",
     "OPENAI_MODEL": "model",
+    "AGENT_CONTEXT_WINDOW": "context_window",
+    "AGENT_RESERVED_OUTPUT_TOKENS": "reserved_output_tokens",
+    "AGENT_CONTEXT_SAFETY_MARGIN": "safety_margin",
+    "AGENT_COMPACTION_TRIGGER_RATIO": "trigger_ratio",
+    "AGENT_RECENT_RUNS": "recent_runs",
+    "AGENT_HISTORY_PAGE_RUNS": "page_runs",
+    "AGENT_SUMMARY_TOKENS": "summary_tokens",
+    "AGENT_SUMMARY_OUTPUT_TOKENS": "summary_output_tokens",
+    "AGENT_COMPACTION_INPUT_TOKENS": "compaction_input_tokens",
+    "AGENT_COMPACTION_TIMEOUT_SECONDS": "compaction_timeout",
+    "AGENT_MAX_COMPACTION_STEPS": "max_compaction_steps",
     "OPENAI_BASE_URL": "base_url",
     "AGENT_MAX_ROUNDS": "max_rounds",
     "AGENT_REQUEST_TIMEOUT_SECONDS": "request_timeout_seconds",

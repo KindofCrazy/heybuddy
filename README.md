@@ -1,6 +1,6 @@
-# HeyBuddy — V0.5.1 Memory Index Hardening
+# HeyBuddy — V0.6 Context Management & Compaction
 
-一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
+一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计
 
@@ -8,7 +8,7 @@
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 
-不实现自动记忆提取、向量/Embeddings、Reflection、Context Compaction、Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。设计参考与取舍见[Letta Code 调研](docs/memory-design.md)，升级前请阅读[迁移说明](docs/memory-migration.md)。
+不实现自动记忆提取、向量/Embeddings、Reflection、Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。设计参考与取舍见[Letta Code 调研](docs/memory-design.md)，升级前请阅读[迁移说明](docs/memory-migration.md)。
 
 ## 安装与配置
 
@@ -31,13 +31,19 @@ AGENT_DATABASE_PATH=.heybuddy/heybuddy.sqlite3
 # 新安装默认用户数据目录；已有数据库旁的 .memory 目录继续原地使用
 # AGENT_MEMORY_ROOT=D:/private-data/heybuddy-memory
 AGENT_CORE_MEMORY_MAX_BYTES=8192
+# 必填：设为所用模型真实支持的窗口 token 数，不按模型名/端点猜测
+AGENT_CONTEXT_WINDOW=<实际窗口 token 数>
+AGENT_RESERVED_OUTPUT_TOKENS=4096
+AGENT_CONTEXT_SAFETY_MARGIN=1024
+AGENT_COMPACTION_TRIGGER_RATIO=0.8
+AGENT_RECENT_RUNS=2
 AGENT_MAX_ROUNDS=10
 AGENT_REQUEST_TIMEOUT_SECONDS=60
 AGENT_TOOL_TIMEOUT_SECONDS=10
 AGENT_LOG_LEVEL=INFO
 ```
 
-Key 和模型名必填，其余均有默认值。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
+Key、模型名和 AGENT_CONTEXT_WINDOW 必填，其余均有默认值。较小窗口需同时调整输出/摘要预算，组合不一致会明确报配置错误，见[配置说明](docs/modules/config.md)。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
 
 数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或日常自动备份；旧格式迁移会创建一次性完整备份。新安装 Memory 默认在 Windows `%LOCALAPPDATA%/HeyBuddy/memory/`（其他系统 `~/.local/share/heybuddy/memory/`），并按 Agent ID 隔离；已有 `<database_path>.memory/<agent_id>/` 继续原地使用。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 推荐放在仓库外；仓库内实际 Agent 记忆目录必须整目录被 Git 忽略且没有已跟踪文件，否则初始化或写入会被拒绝。程序不会自动改写忽略规则或移除索引。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
 
@@ -62,6 +68,7 @@ uv run personal-agent --help
 | `/memory check` | 本地检查缺失索引/链接、悬空/无效链接，不调用模型 |
 | `/memory repair` | 用户直接授权本地补齐缺失索引/链接，保留原文，不调用模型 |
 | `/status` | 查看 Agent、当前 Conversation、Run 状态和中断提示 |
+| `/context status` | 本地查看预算估算、摘要边界/大小、加载页和最近压缩状态，不调用模型 |
 | `exit` / `quit` / EOF | 正常退出 |
 
 首次启动创建 Agent `heybuddy` 和一个 Conversation；之后自动恢复上次选中的会话。会话管理命令不送给模型或保存聊天消息；记忆授权命令连同请求作为用户消息进入 Run 并保存。授权只对当前 Run 有效，普通自然语言“记住”不会获得写权限，历史里的授权不会延续。无效 ID 或命令不会切换当前会话。 Ctrl+C 取消当前 Run 并退出。每个数据库同时只支持一个本地 CLI 实例，另一个实例会明确报错。配置错误退出码 2，存储/记忆启动错误退出码 1；单轮错误显示状态后仍可接收后续输入。
@@ -121,15 +128,27 @@ Base System Prompt 由程序维护，Core 继续以 user 角色 JSON 数据注�
 
 启动通过 schema 1→2 迁移原子回填已有文本，新消息与索引通过触发器同事务写入。索引只是候选定位，结果正文回到原始 messages 读取。损坏时返回安全错误，不自动修复或重试；关闭 CLI 后可在本地 Python 中通过 `SQLiteStore.rebuild_recall_index()` 显式重建，完整示例见 [Recall 模块](docs/modules/recall.md)。重建不需要 API Key，不修改原始历史。
 
+## 长会话 Context Management
+
+V0.6 保留完整 SQLite 消息日志，但每轮正常请求只处理有界工作上下文：Base + 最新 Core + 当前 Conversation 的低信任 Summary + 尚未覆盖的完整 Run 窗口 + 当前 Run 全部消息。Summary 不写 Core/Deferred，也不成为新的原始聊天消息；Recall 继续查原始历史。
+
+低于水位且一页容纳历史时，没有额外摘要调用。达到输入水位或超过分页资源上限时，ContextBuilder.prepare() 只压缩最近保护区之外、已经 completed/failed 的完整 Run。摘要通过现有 Provider、空工具列表、独立输入/输出和超时分批生成，逐批原子提交正文与历史边界。重启和 /resume 只读摘要及有界后续历史，不每次全量反序列化会话。
+
+每个正常 Provider 请求前都检查预算，包含工具 Schema、Provider reasoning/wire JSON、当前工具结果和预留输出。保留区域不拆开调用/结果，当前 Run 绝不压缩；太大且不可缩减时返回 context_error，不静默丢弃。摘要失败返回 compaction_error，写库失败沿用 storage_error/interrupted；失败批次不推进边界，已经提交的前几批仍可恢复。不会自动重试或执行历史工具。
+
+`/context status` 只显示安全统计，不显示 Summary、私人正文或 reasoning。estimated_tokens 是保守 UTF-8 序列化估算，Provider 返回的 input/output usage 另列；估算不是精确 tokenizer 或任意模型窗口的保证。摘要也是有损工作记录，重要内容可用 Recall 核实。
+
+近期保留默认至少 2 个完整 Run，历史每页默认 32 Run、最多 2 MiB、单 Run 最多 2048 条。单个无法放进摘要输入的 Run 会明确拒绝，不在内部任意截断。所有参数和实际运行路径见[Context Budget 与 Compaction](docs/modules/compaction.md)。生产嵌入也应显式传 ContextBudget；无预算只兼容有资源上限的短嵌入模式，不提供模型窗口保证。
+
 ## 架构与实际运行路径
 
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
+main → SQLiteStore.initialize(schema 3) / recover_incomplete_runs → SessionManager(ContextBudget)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
-       ContextBuilder.for_request → 编译最新 Core Memory（不写入聊天历史）
+       ContextBuilder.prepare → 有界历史 + 必要的分批摘要 → 编译 Core/Summary（不写入原始聊天历史）
        Provider.generate（内部消息 / 本轮授权的工具定义）
           ↓ record：先保存模型调用
        ToolRegistry.execute → 保存结果 → 下一轮模型请求
@@ -140,8 +159,8 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.5.1 对应 schema 2，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
-- ContextBuilder 区分完整审计、可重放历史、当前上下文和运行中消息；目前不压缩上下文。
+- `user_version` 管理 schema；当前应用 0.6.0 对应 schema 3，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
 模块文档均包含架构组成、真实入口/执行顺序、异常边界和验证方法：
@@ -150,6 +169,7 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - [V0.5 设计调研](docs/memory-design.md) 与 [迁移说明](docs/memory-migration.md)
 - [Agent Loop](docs/modules/agent.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
+- [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)
 - [内部及持久化数据模型](docs/modules/models.md)
 - [Provider 与 Responses 重放](docs/modules/provider.md)
 - [工具注册与超时契约](docs/modules/tools.md)
@@ -220,8 +240,10 @@ uv build
 
 ## 当前限制
 
-V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、语义检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
+V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。正常路径只加载有限工作页和摘要；没有精确 tokenizer、语义检索、自动备份或数据加密。摘要有损、估算不精确，单个不可缩减的大 Run 需调整预算或新建会话。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
 
 Recall 采用关键词子串与时间排序，尚无语义召回或分页；短查询和长消息正文会受范围/长度上限限制。SQLite 读取、回填与重建是同步操作，查询工作预算不是硬实时取消。索引错误可能使新消息事务失败，需要显式修复后继续；外部 VACUUM 等维护改变内部 rowid 后也应重建索引。
 
 外部编辑器不参与受控写锁，最后摘要检查与 replace 仍有竞争窗口；多文件索引无整体事务，需显式检查/修复。索引只支持约定的根相对 Markdown bullet 链接和简化 Frontmatter，不提供任意 YAML、无限目录或自动语义搜索。迁移保留的旧目录及备份由用户手动清理。
+
+V0.6 新增离线 Compaction 验证：schema 2→3 回填与回滚、增量检查点、完整工具与 SDK 重放、分批失败续接、取消和真实进程退出、跨会话隔离、SQL 范围与解码数量、输出/超时限额及注入权限边界。原完整 Journal 与 Recall API 继续保留。

@@ -1,52 +1,55 @@
-# ContextBuilder 与持久化边界
+# ContextBuilder 与会话工作上下文
 
-整体时序和四种历史视图见[架构 Pipeline](../architecture.md)。
+## 职责与架构组成
 
-## 架构组成
+`core/context.py::ContextBuilder` 负责一次 Run 的原始消息生命周期和每轮模型工作视图。它依赖 `core/history.py::ConversationHistory`、CoreMemory、Provider Protocol，不导入 SQLite 或 SDK。`core/budget.py` 管理预算，`core/compaction.py` 生成增量摘要；具体 SQLite 查询位于 `storage/context.py`，由 `storage/history.py::SQLiteConversationHistory` 绑定 Conversation。
 
-`core/context.py::ContextBuilder` 依赖内部消息模型及 `core/history.py::ConversationHistory` Protocol。 `storage/history.py::SQLiteConversationHistory` 绑定一个 Conversation ID，实现这个 Protocol，将操作转给 SQLiteStore。ContextBuilder 和 Agent 都不导入 sqlite3 或具体存储实现。不传 history_store 时仍提供进程内模式，用于嵌入及原有离线测试；CLI 总是使用持久化模式。
+未传 history_store 时使用 InMemoryHistory，仍以完整 Run 和检查点划分窗口；不具备重启持久性。CLI 始终绑定 SQLite，并从 Settings 显式构造 ContextBudget。完整算法、配置和限制见[Compaction 模块](compaction.md)。
 
-## 接口怎样连接到数据库
+## 接口与数据视图
 
-| ContextBuilder 操作 | ConversationHistory 接口 | SQLite 实现 | 完成后的含义 |
-| --- | --- | --- | --- |
-| `history` / `build()` | `load()` | `load_messages(..., replayable_only=True)` | 得到可安全重放的完整消息对象 |
-| `begin()` | `begin(user_message)` | `begin_run(conversation_id, user_message)` | Run 和用户输入已一起提交 |
-| `record()` | `append(run_id, message)` | `append_message()` | 这一条消息已保存，但 Run 仍在运行 |
-| `commit()` | `finish(run_id, result)` | `finish_run()` | 完整 Run 正常结束，可以进入后续历史 |
-| `abort()` | `interrupt(run_id, cancelled=...)` | `interrupt_run()` | 尝试结束运行状态，已保存消息仍保留 |
+| ContextBuilder 操作 | History 接口 / SQLite 路径 | 含义 |
+| --- | --- | --- |
+| `_load()`、`history`、`build()` | summary() + page() → context_summary/context_page | 仅摘要边界后的有界工作页，不是全量审计 |
+| `begin()` | begin(user) → begin_run() | 原子创建 Run 与用户消息，尚不加载旧历史 |
+| `prepare()` | compact_through()、page()、save_summary() | 每轮预算检查，必要时按完整 Run 压缩旧前缀 |
+| `record()` | append() → append_message() | 原消息/结果先提交，再加入 pending |
+| `commit()` | finish() → finish_run() | 完成状态，清理 pending/页缓存，不复制整段历史 |
+| `abort()` | interrupt() → interrupt_run() | cancelled/interrupted；保留审计，不自动续跑 |
 
-适配器持有 conversation_id，ContextBuilder 不需要传 SQL、数据库路径或表名。 `commit(messages, result)` 不把整个 messages 列表重新覆盖写入数据库：消息此前已由 record() 逐条保存，此处只完成持久 Run 状态并更新进程内历史副本。持久化模式下 history 属性每次从存储读取，内存 `_history` 不替代数据库作为会话来源；history 和 pending_messages 对外都返回深拷贝。
+完整审计仍调用 `SQLiteStore.load_messages()`，包括未配对的中断调用。正常模型工作页只包含 completed/failed 完整 Run；历史摘要与 pending 分开。history/pending 对外返回独立对象，不能通过修改返回值篡改存储。
 
-## 数据层次与实际运行路径
+`history` 现在只返回有界的未压缩页，有更多历史时仍需 prepare() 压缩后才能发正常模型请求；它不再承诺全部对话。`SQLiteConversationHistory.load()` 也走同一有界路径，一页放不下时明确要求准备上下文。不要把该接口当完整审计 API。
 
-1. **完整持久化记录**：`SQLiteStore.load_messages()` 包含所有 Run 的消息，含未配对调用。
-2. **可重放历史**：`ContextBuilder.history` 经 adapter.load() 只读取 completed / failed Run。已取消或中断的整个 Run 被排除，避免把未知工具执行状态当作可继续的对话。
-3. **当前上下文**：`build()` 返回 system 提示词、可重放历史、新用户消息的深拷贝。ContextBuilder 不默认检索其他会话、不做截断、摘要或压缩；V0.4 的跨会话检索由模型按需调用 Recall Tools。
-4. **运行中消息**：`begin()` 先构建上下文，再原子保存 Run 与用户消息， `pending_messages` 保存本 Run 的用户、模型、工具消息副本。这些消息可能已经逐条落库，但 Run 还未结束；不是一个长期未提交的 SQL 事务。
-5. Agent 每次新增消息调用 `record()`，先写存储，成功后再加入运行中消息和局部上下文。
-6. `commit(messages, result)` 完成 Run，成功后清理 pending；此后完整 Run 才进入可重放历史。
-7. `abort(cancelled=...)` 尝试标记 cancelled / interrupted，清理进程内 pending；已持久化的部分记录仍保留。若标记失败，下次启动将遗留 running Run 标记为 interrupted。
+## 代码实际运行路径
 
-## V0.3 请求编译路径
+1. `SessionManager.context()` 传入程序 DEFAULT_SYSTEM_PROMPT、绑定会话的 history adapter、共享 CoreMemory 和配置预算。
+2. `Agent.run()` 调用 begin()，保存用户消息和 running Run，建立 pending，只返回 Base 与本次输入。
+3. `_run()` 每次准备发模型请求时，先按本轮权限/终轮策略取得真实工具定义，再 await prepare()。
+4. 首轮 `_load()` 读取已持久化摘要和边界后的有限完整 Run；后续同一 Run 复用页。Provider 数据和工具配对不被截断。
+5. prepare() 以 Base、当前页和完整 pending 重新建立工作链；for_request() 每次读取最新 Core，再追加显式低信任 Summary JSON。原工作链、pending 和 Journal 不保存自动注入片段。
+6. 估算包括本轮工具 Schema、Provider JSON 和输出余量。低于触发水位且没有待加载历史时直接返回；否则只对已结束、近期保护区之外的完整 Run 调 compact_step()。
+7. 每批合法摘要原子保存后，释放旧页并从新边界继续；旧 Summary 与新压缩前缀合成新 Summary。达到每次准备的次数上限或不可缩减就明确停止。
+8. 预算通过后 Agent 才在正常请求超时内调用 Provider.generate(max_output_tokens=...)。摘要超时独立，不被普通请求的超时包住。
+9. 新 assistant/tool 消息通过 record() 逐条提交，下一轮再次检查。当前 Run 无论多长都不作为摘要源；超预算时保留已执行工具与结果并记录停止。
+10. 完成时 commit() 只 finish() 并清理临时状态；取消/存储失败走 abort()。下次请求或重启按已提交摘要恢复，不读取全部旧消息。
 
-构造参数 `memory` 只需实现 `core/memory.py::CoreMemory.compile()`，不暴露数据库或文件接口。 `build()` / `begin()` 仍返回 Base + 会话历史 + 新输入。Agent 每次模型请求前调用 for_request()，读取最新 Core Memory，以 user 角色 JSON 消息放在 Base 后，生成独立请求列表。工作消息链不变；自动记忆片段不进入 pending、commit 或 SQLite，工具返回则正常持久化。同一 Run 内更新后下一轮即使用新版本；切换会话只换历史，继续使用共享读取接口。
+`build()` 保留一个同步的有界基础视图入口，供检查和短场景使用；它不调用 LLM，也不替代生产请求的 prepare()。Provider 应收到 prepare() 返回的视图，不能绕过预算直接发送 build()。
 
-字节限制由 MemoryFS 编译阶段执行，损坏或超限经 CoreMemoryError 转为 memory_error。 Base 明确记忆只是数据，无权限覆盖能力；程序权限由宿主和 Registry 控制，不由记忆文本控制。Base 明确新增/修正优先局部编辑，整块替换需明确请求，Deferred 只读默认可用，所有写入由本轮授权；History/Restore 已移除。验证见 `tests/test_memory_runtime.py`，包含刷新、不重复保存、跨会话和规则隔离。
+## Summary、Memory 与权限
+
+模型结构为 Base system → Core user JSON → Summary user JSON → 有界原始历史 → 当前 Run。Summary kind=conversation_summary，trust=historical_data_only，带 through_sequence/revision；它不伪装真实用户新请求，也没有系统优先级。自动摘要永不写 MemoryFS，不注册工具或授予权限；/new 共享 Core/Deferred，但没有前一个 Conversation 的 Summary。
+
+Recall/Deferred 仍由模型按需调用，结果作为普通 ToolMessage 进入当前 Run 并保存。Context 不自动检索全库或加载全部 Markdown。每轮 Core 编译保持 8192 默认 UTF-8 总预算，错误仍是 memory_error。
 
 ## 异常与边界
 
-通过 `HistoryError` 传递安全错误，Agent 返回 storage_error，不把 SQL 或聊天内容写入日志。同一 ContextBuilder 只服务一个运行中的 Runtime，CLI 仅在两个 Run 之间切换 ContextBuilder。不保留跨会话历史缓存；新 Conversation 的 build() 不会加载其他会话的聊天。 CLI 的 Base System Prompt 来自程序 DEFAULT_SYSTEM_PROMPT，旧持久 Agent 的 system_prompt 不作为执行规则。未完成 Run 的部分成功工具效果仍可能真实存在。
+ContextError → context_error/compaction_error；HistoryError → storage_error 并标记 interrupted；用户取消传播 CancelledError。写入检查点失败不推进失败批次边界，之前成功批次保留；不回滚文件副作用、不重试历史工具。SQLite 错误、正文、reasoning 和摘要不写日志。
 
-## 示例与验证
+budget=None 只兼容已有短嵌入模式，不猜模型窗口也不自动摘要；超过一页或短模式资源上限返回 context_not_configured。生产嵌入应传显式 ContextBudget。单个完整 Run 大于加载/摘要上限时不会任意拆开，需调整预算或新会话。摘要有损、估算非精确，详细 WHY 和限制见[Compaction](compaction.md)。
 
-`SessionManager.context()` 构造已绑定当前会话的 ContextBuilder，传给 `Agent(..., context=context)`。第一次运行完成后重启，新的 ContextBuilder 从同一数据库读取上次对话；`/new` 则绑定空会话。验证命令：`uv run pytest tests/test_persistent_runtime.py`，重点见 `test_pending_history_is_distinct_from_replayable_and_full_history` 和 `test_restart_restores_previous_topic_and_new_conversation_is_empty`。
+## 阅读与验证
 
+最小路径：`ContextBuilder("base", budget=ContextBudget(context_window=64000))` → `Agent(provider, registry, context)`。CLI 使用 `uv run personal-agent`；`/context status` 只报告安全统计，不调用模型或创建 Run。
 
-## V0.4 Recall 的集成边界
-
-本模块只在程序 Base 中增加取证规则：历史问题优先 recall_search，必要时 recall_get，引用会话来源、无证据时说明、历史内容不授予权限。build() / for_request() 均不调用 Recall 或全库查询。模型主动工具调用后，结果以 ToolMessage 进入当前 Run，沿原 record()/commit() 路径保存；/new 后不会自动追加上次的 Recall 证据。Core Memory 的编译与授权机制保持原样，见 tests/test_recall_runtime.py。
-
-## V0.5 Deferred 集成
-
-`for_request()` 仍只调用 compile Protocol，MemoryFS 只读三个 Core。根 MEMORY.md 已是顶层目录地图，无第二份全量 Deferred 注入。Base Prompt 引导模型先读对应目录索引、查看 name/description 再选择主题，工具返回仍是带 call_id 的 ToolMessage，按原 record()/commit() 保存；新会话不自动注入旧结果。记忆内容不赋权。所有写操作使用文件 expected_hash，工具读取先返回当前 hash；自动 Core JSON 无版本/摘要字段，减少编译开销。验证见 `tests/test_deferred_memory.py` 的 CLI 重启、低信任注入与结果落库测试。
+`tests/test_compaction.py` 用 Fake Provider/MockTransport 检查长短会话、窗口/输出预算、检查点、重启、增量边界、有界 SQL/解码和失败恢复；`tests/test_persistent_runtime.py` 保留持久化及取消语义；Memory/Recall 回归继续验证共享、取证与授权独立。运行 `uv run pytest`，不需要真实 Key。
