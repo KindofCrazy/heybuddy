@@ -1,6 +1,6 @@
 # HeyBuddy 开发文档
 
-当前文档描述 V0.6 的实际实现。建议先看整体 Pipeline，再沿调用路径进入具体模块。
+当前文档描述 V0.7 的实际实现。建议先看整体 Pipeline，再沿调用路径进入具体模块。
 
 ## 阅读顺序
 
@@ -12,6 +12,8 @@
 6. [MemoryFS](modules/memory.md)：Core/Deferred 分层、索引发现、摘要冲突、原子文件、大小和权限边界。另见[Letta Code 调研](memory-design.md)与[迁移说明](memory-migration.md)。
 7. [Conversation Recall](modules/recall.md)：FTS5 中文取舍、schema 迁移、派生索引、只读证据与重建。
 8. [会话管理与 CLI](modules/sessions-cli.md) 与 [配置](modules/config.md)：应用入口、会话选择和配置校验。
+
+[Reflection 学习流程](modules/reflection.md)：候选证据、已有记忆整合、人类审批、部分写入与跨进程恢复。
 
 ## 按问题查阅
 

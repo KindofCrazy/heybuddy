@@ -26,7 +26,7 @@ SQLite messages 保存完整、原始经历，Recall 从它查询历史证据；
 
 ## 代码实际运行路径
 
-1. `main.run_cli()` 迁移 schema 3，恢复遗留 running Run，构造带 Settings.context_budget() 的 SessionManager；切换会话会构造绑定新 Conversation 的 ContextBuilder。
+1. `main.run_cli()` 迁移当前 schema 4（Context 表由 migration 3 引入），恢复遗留 running Run，构造带 Settings.context_budget() 的 SessionManager；切换会话会构造绑定新 Conversation 的 ContextBuilder。
 2. `Agent.run()` → `ContextBuilder.begin()` 原子创建本 Run 和原始用户消息；此时不全量读历史。读取失败也能留下可诊断的本轮状态。
 3. 每轮 `Agent._run()` 先根据权限/终轮策略生成工具定义，再 await `ContextBuilder.prepare(messages, definitions, provider)`。
 4. 首轮 `_load()` 读取一行摘要及其边界，从该 sequence 之后按完整 Run 读取有界页。后续同 Run 请求复用页缓存，Core 仍每次重新编译。
@@ -64,7 +64,7 @@ schema 3 追加两个表，不修改旧 messages：
 - 本轮处理次数耗尽时停止，已提交进度保留；下一次明确请求从该边界继续，不无限重试。阈值处的摘要失败也选择停止，即使原上下文可能还在硬上限内，避免隐含回退策略。
 - 没有可压缩前缀且硬超限，或单个历史 Run 仍无法放入摘要预算时明确失败。没有 Run 内递归拆分或任意用户消息截断；用户需要调整预算、近期保留数或新建会话。
 - LLM 摘要有损，可能遗漏或错误提炼，必须保留不确定性并可用 Recall 核实。有限脱敏不是通用秘密识别器，不保证检测所有自然语言秘密；低信任数据也不保证模型绝不受注入影响，程序权限检查独立保持。
-- SQLite/估算与证据投影仍是有界同步操作，模型请求超时不是磁盘硬取消。没有跨文件事务、后台压缩、Reflection 或长期记忆更新。
+- SQLite/估算与证据投影仍是有界同步操作，模型请求超时不是磁盘硬取消。Compaction 没有跨文件事务或后台压缩，不触发 Reflection 或长期记忆更新。
 - 为兼容已有短嵌入用法，budget=None 不猜模型窗口，也不执行压缩；只允许一页/262144 估算单位内的短模式，超过即 context_not_configured。生产嵌入应像 CLI 一样显式提供 ContextBudget；此短模式不提供模型窗口保证。
 
 ## 阅读、示例与验证
@@ -78,3 +78,5 @@ schema 3 追加两个表，不修改旧 messages：
 本次离线完整回归为 350 passed、1 skipped（Windows 环境未具备创建 Symlink 的权限）；Ruff 检查、格式检查、uv build、两个 CLI 帮助入口均通过。已有 Windows Junction 隔离测试继续通过，网络禁用保护未改动。
 
 构建出的 0.6.0 wheel 在独立临时目录连续启动两次，确认 schema 3、相同会话恢复，纯 /context status 不创建 Run 或模型调用。另以 60 个合成历史 Run 运行真实 CLI 交互，Provider 替换为离线 Fake：首次 7 批摘要、1 次正常回答，消息数 120→122；第二次启动复用原摘要边界 84，无新摘要调用，1 次正常回答后消息数 124。两次正常请求估算分别 45896、46075，均低于所配置输入上限 58880；没有真实 API 调用或费用。
+
+V0.7 的 [Reflection](reflection.md) 是独立手动流程：从原始 completed Run 提出长期知识，用户批准后才写 Memory；其审阅边界与本模块 through_sequence 无关。Compaction 的工具序列、预算和恢复规则保持原实现。

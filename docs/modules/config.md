@@ -61,3 +61,16 @@ AGENT_CONTEXT_WINDOW 必填，单位为模型窗口 tokens；不按模型名或�
 | AGENT_MAX_COMPACTION_STEPS | max_compaction_steps | 16，每次准备最多批数 |
 
 输出限额需匹配具体模型能力；reasoning 也消耗输出预算。较小窗口通常还需调低输出/摘要上限，不能只修改窗口使默认组合不一致。估算按 UTF-8 序列化字节保守计量，非精确 tokenizer，不同端点的真实上下文/最大输出应由用户查证。请求预算范围和不可缩减行为见[Compaction](compaction.md)。所有新测试继续隔离真实配置，不访问真实 API。
+
+## V0.7 手动 Reflection 配置
+
+Settings.reflection_policy() 只将以下参数传入 ReflectionPolicy，与普通请求/Compaction 独立。无新依赖或第二个模型配置，复用同一 Provider。所有值均可通过 `.env` 或环境变量设置，环境优先；测试环境仍按 ENV_FIELDS 隔离，未改网络禁用保护。
+
+| 环境变量 | 默认 | 边界 |
+| --- | --- | --- |
+| AGENT_REFLECTION_INPUT_TOKENS | 16384 | 2048～262144；实际还减去模型输出和安全余量 |
+| AGENT_REFLECTION_OUTPUT_TOKENS | 4096 | 256～16384；同时作为本地返回 JSON UTF-8 字节上限 |
+| AGENT_REFLECTION_TIMEOUT_SECONDS | 60 | 每阶段独立有限正超时 |
+| AGENT_REFLECTION_PAGE_RUNS | 8 | 1～32 个完整 completed Run，每次手动处理一批 |
+
+Reflection 输入不足时只在触发 /reflect 时明确失败，不因未使用的 Reflection 预算阻止普通聊天或只读 review/status。每阶段包含 Schema/JSON 封装后重新检查；无重试或静默截断。候选/事实判断必须经用户审阅，见[Reflection](reflection.md)。

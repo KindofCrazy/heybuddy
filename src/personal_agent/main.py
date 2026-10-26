@@ -19,7 +19,11 @@ from personal_agent.memory.store import MemoryFS
 from personal_agent.memory.tools import register_memory_tools
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
+from personal_agent.reflection.cli import command as reflection_command
+from personal_agent.reflection.models import ReflectionError
+from personal_agent.reflection.service import ReflectionService
 from personal_agent.sessions import SessionManager
+from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.tools.builtin import create_builtin_registry
 
@@ -30,9 +34,11 @@ async def chat(
     write: Callable[[str], None] = print,
     *,
     sessions: SessionManager | None = None,
+    reflection: ReflectionService | None = None,
 ) -> None:
     write(
-        "HeyBuddy V0.6 — /new /sessions /resume <id> /status /context status；exit 或 quit 退出。"
+        "HeyBuddy V0.7 — /new /sessions /resume <id> /status /context status /reflect；"
+        "exit 或 quit 退出。"
     )
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
     if sessions is not None:
@@ -76,6 +82,20 @@ async def chat(
             permissions = frozenset({"memory.read"})
             if parts[1] == "edit":
                 permissions |= {"memory.update", "deferred.update"}
+        elif user_input.split(maxsplit=1)[0] == "/reflect":
+            if reflection is None or sessions is None:
+                write("Reflection 错误 > 当前入口未配置 Reflection。")
+                continue
+            try:
+                await reflection_command(reflection, sessions.current.id, user_input, write)
+            except (ReflectionError, CoreMemoryError) as exc:
+                write(f"Reflection 错误 [{exc.code}] > 计划未自动批准；请 review/status 核对进度。")
+            except (HistoryError, ContextError):
+                write(
+                    "Reflection 存储/历史错误 > 检查 status/review；"
+                    "文件写入可能已完成，不会自动重试。"
+                )
+            continue
         elif user_input == "/context status":
             try:
                 write(json.dumps(agent.context.diagnostics(), ensure_ascii=False))
@@ -150,11 +170,18 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
             max_rounds=settings.max_rounds,
             request_timeout_seconds=settings.request_timeout_seconds,
         )
-        await chat(agent, sessions=sessions)
+        reflection = ReflectionService(
+            ReflectionRepository(sessions.store, sessions.agent.id),
+            memory,
+            agent.provider,
+            settings.context_budget(),
+            settings.reflection_policy(),
+        )
+        await chat(agent, sessions=sessions, reflection=reflection)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.6 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.7 CLI")
     parser.parse_args()
     try:
         settings = load_settings()

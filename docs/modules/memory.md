@@ -4,7 +4,7 @@
 
 `src/personal_agent/memory/store.py::MemoryFS` 实现 `core/memory.py::CoreMemory.compile()`，并提供有界文件读取、目录元数据、摘要冲突检测和单文件原子替换。`memory/models.py` 定义三个固定 Core 块、`CoreMemoryData`、SHA256 摘要、简化 Frontmatter 解析和输出预算；摘要仅用于当前文件的乐观并发校验，不构成版本历史。`memory/index.py` 维护分层发现链、带校验标记的生成条目及修改后的索引同步；`memory/migration.py` 仅负责一次性 V0.4 导出；`memory/privacy.py` 保留写入前的 Git 隐私检查。`memory/tools.py::register_memory_tools()` 将这些能力接到现有 Registry。
 
-Agent Loop 和 ContextBuilder 不依赖 MemoryFS。前者执行原有工具循环，后者只通过 Protocol 编译 Core。SQLite 不增加 Memory 表，Deferred Markdown 是整理知识的唯一权威源；SQLite messages 仍是原始交流的唯一权威源。
+Agent Loop 和 ContextBuilder 不依赖 MemoryFS。前者执行原有工具循环，后者只通过 Protocol 编译 Core。SQLite 不保存长期 Memory 的权威副本，Deferred Markdown 是整理知识的唯一权威源；SQLite messages 仍是原始交流的唯一权威源。
 
 ## 文件和链接约定
 
@@ -156,3 +156,11 @@ print(fs.read_file("projects/MEMORY.md"))
 `tests/test_memory_store.py` 覆盖外部编辑可见性、摘要冲突、并发受控写入、UTF-8/JSON 容量、路径与链接，以及真实进程在替换前后退出。`tests/test_memory_migration.py` 覆盖旧格式字节保留、备份和各阶段中断。`tests/test_memory_runtime.py` 保留 Core 的授权过期、刷新、Base 隔离和双存储窗口回归。`tests/test_deferred_memory.py` 覆盖分层创建、索引修复、局部更新、分页、安全、CLI 新会话/重启和 Recall 协作；`tests/test_memory_privacy.py` 验证 Git 隐私。运行 `uv run pytest`，均使用临时数据和 Fake Provider，保留网络禁用保护。
 
 V0.5.1 在同一测试文件增加多主题目录中性概要、正文编辑不写索引、元数据/目录概要安全同步、旧版无标记和人工改写保护、LF/CRLF/CR 换行保留、重复链接、父索引冲突、部分结果持久化，以及陈旧生成条目的显式修复。`tests/test_tools.py` 验证结构化失败数据沿用原 JSON 校验契约。
+
+## V0.7 Reflection 的可信写入路径
+
+除 /memory edit 授予本轮受限工具权限外，用户现在可通过显式 /reflect 从原始历史生成待审阅计划。生成/选择/比较阶段只读 MemoryFS；`ReflectionService.apply()` 必须由可信 CLI 带计划 ID 和条目调用，不作为 ToolRegistry 工具。历史与模型输出不能批准。
+
+Core 局部更新仍调用 MemoryFS.edit()，Deferred 更新/创建仍调用 index.edit()/create()；路径、Frontmatter、容量、expected_hash、短锁、Git 隐私和原子发布规则全部保留。计划显示具体修改及自动索引补链范围。编辑器改变目标后拒绝旧计划；索引失败保留已写 hash 与父索引原因，不重试已成功正文。用户可显式修复索引并 reconcile；元数据仍过期不能确认完整成功。
+
+SQLite 只记录候选、批准、片段和状态，Markdown 仍是后续读取的唯一权威源。Reflection 不直接追加原始聊天日志，Compaction 也不触发它。完整调用、部分完成和崩溃窗口见[Reflection](reflection.md)，验证见 tests/test_reflection.py。

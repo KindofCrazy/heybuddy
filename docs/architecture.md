@@ -1,4 +1,4 @@
-# HeyBuddy V0.6：整体架构与 Pipeline
+# HeyBuddy V0.7：整体架构与 Pipeline
 
 本文串起从启动到退出的真实执行路径，解释每一层接收什么、改变什么状态、在哪里保存数据。具体方法细节可从[文档索引](README.md)进入。当前系统是一个本地进程、一个 SQLite 数据库和独立的 Markdown 记忆目录，没有消息队列、后台任务消费者或自动续跑器。
 
@@ -36,6 +36,10 @@ flowchart TD
     CLI["main.py：配置、装配、输入输出"] --> Sessions["SessionManager：身份和会话选择"]
     CLI --> Runtime["Agent：有界执行循环"]
     CLI --> Context["ContextBuilder：上下文和 Run 生命周期"]
+    CLI --> Reflection["ReflectionService：提取、计划、可信审批"]
+    Reflection --> Store
+    Reflection --> Memory
+    Reflection --> Provider
     CLI --> Memory["MemoryFS：Core 与分层 Deferred Markdown"]
     Context --> Reader["CoreMemory Protocol"]
     Memory -. "实现" .-> Reader
@@ -74,13 +78,13 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移到 schema 3，顺序执行 Recall 与 Context 派生对象/旧数据回填，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 4，顺序执行 Recall、Context 和 Reflection 对象迁移/旧索引回填，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续校验摘要检查点并恢复上次选择的会话，不全量反序列化旧消息。
 8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。
 9. `_run_session()` 注册受限 Memory Tools 与绑定 Agent 的只读 Recall Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、带显式 ContextBudget、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
 
-这里没有“启动就请求模型”的步骤。直到用户输入普通文本才进入请求 Pipeline。启动存储失败返回退出码 1，不悄悄退回内存模式；显式使用不带 history_store 的 ContextBuilder 仍可获得进程内模式，原有 Runtime 单元测试使用该方式。
+这里没有“启动就请求模型”的步骤。用户输入普通文本进入普通请求 Pipeline；显式 /reflect 可单独调用 Provider 生成提案。启动存储失败返回退出码 1，不悄悄退回内存模式；显式使用不带 history_store 的 ContextBuilder 仍可获得进程内模式，原有 Runtime 单元测试使用该方式。
 
 ## 4. 请求 Pipeline：输入 → 上下文 → 模型 → 工具 → 结果
 
@@ -312,7 +316,7 @@ Core 编译上限默认 8192 UTF-8 字节，包含 JSON 开销；Deferred 新增
 
 ## 15. 设计依据与验证路径
 
-[Letta Code 源码调研](memory-design.md) 区分上游真实实现、V0.4 已有能力和本次取舍。采用分层 MEMORY.md、name/description、渐进读取与主题理解；不复制 Git-backed MemFS、system prompt learning、Reflection/worktree、远程同步或自动提取。
+[Letta Code 源码调研](memory-design.md) 区分上游真实实现、V0.4 已有能力和本次取舍。采用分层 MEMORY.md、name/description、渐进读取与主题理解；不复制 Git-backed MemFS、system prompt learning、后台 Reflection/worktree 或远程同步；V0.7 的手动 Reflection 见后文。
 
 `tests/test_memory_store.py` 验证原子文件写、进程退出、编辑器更改、冲突、路径和容量；`test_memory_migration.py` 验证字节保留、完整备份、重复/中断迁移；`test_deferred_memory.py` 验证索引链、分页读取、部分失败/补链、CLI 新会话/重启和 Recall 协作；`test_memory_runtime.py` 保留 Runtime 授权与双存储窗口测试。全部离线，不调用真实模型。
 
@@ -369,3 +373,39 @@ Summary 和 through_sequence/through_run_id/revision/checksum 在同一事务提
 ContextError 分别映射 context_error/compaction_error；准备中的 HistoryError 必须经外层存储中断处理。较早历史分批压缩但不在 Run 内拆分；不可缩减的单 Run、当前 Run 和预算配置变化可能需要人工调整或新会话。摘要有损、估算非精确，不提供对任意本机 SQL 篡改的全库验证。完整算法、WHY、配置和故障示例见[Compaction 模块](modules/compaction.md)。
 
 测试入口是 `tests/test_compaction.py`：Fake Provider/MockTransport、schema 2→3 回填/回滚、增量前缀、完整工具重放、取消、真实进程退出、原子摘要冲突、查询范围和解码数量；原 Runtime、Memory 和 Recall 测试继续离线回归。
+
+## 18. V0.7 Reflection Pipeline
+
+Reflection 与 Context Compaction 是两个独立入口：前者从原始 completed Run 学习跨会话知识，后者从 completed/failed Run 形成当前会话低信任工作摘要。Compaction 不修改 Memory，Reflection 不维持当前窗口，也不依赖压缩边界。Agent Loop、Recall 和 Markdown 权威源继续沿用。
+
+```mermaid
+sequenceDiagram
+    participant U as 用户/CLI
+    participant R as ReflectionService
+    participant S as SQLite
+    participant P as 同一 Provider
+    participant M as MemoryFS
+    U->>R: /reflect
+    R->>S: 读取独立进度与有界 completed Run
+    R->>P: 提取候选（空工具）
+    R->>R: 验证来源与实际引文
+    R->>M: 目录元数据及 Core
+    R->>P: 选择相关既有文件
+    R->>M: 按需读取选定主题
+    R->>P: 比较、去重、纠正、形成结构化计划
+    R->>S: 原子保存待审阅计划，重新验证本批源
+    R-->>U: 候选、来源、目标、局部 Diff
+    U->>R: apply plan_id item_id/all
+    R->>S: 先保存 approved/applying
+    R->>M: expected_hash 局部编辑/创建及补链
+    R->>S: 保存逐项成功/部分失败
+    opt 全部条目已处理
+        R->>S: 同事务关闭计划与推进独立审阅边界
+    end
+```
+
+schema 4 增加 reflection_progress 与 reflection_plans；后一表保存有界、带修订/checksum 的审阅 JSON，每会话最多一个活动计划。生成候选不会推进为“已写入”；未决计划阻止重复提取，空候选直接记录关闭。拒绝和跳过都保存结果。已应用 Markdown 通过下一次正常 Core 编译/Deferred 读取被使用，不向当前聊天伪造新的用户授权消息。
+
+SQLite 与文件没有共同事务。逐项 applying 先落库，文件发布后若记账失败或进程退出，重启不会重复写入；显式 reconcile 核对 after_hash、发现链及具体过期元数据条目后记账。不能核实时保持 partial/uncertain，用户处理剩余计划。一个已成功项不会因为后项失败而被撤销或重新执行。
+
+每个 Reflection 模型阶段均有独立输入/输出预算、超时、无工具 JSON 校验。程序验证 ID/引文存在，不证明候选语义一定正确；人工审阅仍是事实和修改批准边界。详细模型、状态、实际函数路径、命令与限制见[Reflection 模块](modules/reflection.md)。不实现 V0.8 Background Task Runtime。

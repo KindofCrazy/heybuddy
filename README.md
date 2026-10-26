@@ -1,14 +1,14 @@
-# HeyBuddy — V0.6 Context Management & Compaction
+# HeyBuddy — V0.7 Reflection & Memory Consolidation
 
-一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
+一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供显式提取、审阅批准后写入的长期记忆学习流程。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计
 
-持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 只在本轮显式授权后通过受限工具修改，不自动从聊天提取；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
+持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；普通聊天不自动提取写入；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 
-不实现自动记忆提取、向量/Embeddings、Reflection、Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。设计参考与取舍见[Letta Code 调研](docs/memory-design.md)，升级前请阅读[迁移说明](docs/memory-migration.md)。
+不实现后台自动学习、向量/Embeddings、Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。设计参考与取舍见[Letta Code 调研](docs/memory-design.md)，升级前请阅读[迁移说明](docs/memory-migration.md)。
 
 ## 安装与配置
 
@@ -140,12 +140,32 @@ V0.6 保留完整 SQLite 消息日志，但每轮正常请求只处理有界工�
 
 近期保留默认至少 2 个完整 Run，历史每页默认 32 Run、最多 2 MiB、单 Run 最多 2048 条。单个无法放进摘要输入的 Run 会明确拒绝，不在内部任意截断。所有参数和实际运行路径见[Context Budget 与 Compaction](docs/modules/compaction.md)。生产嵌入也应显式传 ContextBudget；无预算只兼容有资源上限的短嵌入模式，不提供模型窗口保证。
 
+## 显式 Reflection 与长期知识整合
+
+`/reflect` 只分析当前 Conversation 尚未审阅的 completed Run 原始历史，按完整 Run 和预算处理一批；不会把 Compaction Summary 当事实来源。先提取有证据的候选，再选择相关 Core/Deferred 记忆进行比较，生成新增、局部更新、no-op、拒绝或待判断计划。生成计划不修改 Markdown。
+
+```text
+/reflect
+/reflect status
+/reflect review
+/reflect apply <plan_id> <item_id|all>
+/reflect reject <plan_id> <item_id|all>
+/reflect skip <plan_id> <item_id|all>
+/reflect reconcile <plan_id> <item_id>
+```
+
+review 会展示候选价值、来源 Conversation/Run/sequence/引文、目标文件、局部 Before/After、预期 hash 和逐项状态。请核对事实、纠正顺序及 Diff 后，再带具体计划 ID 执行 apply；可逐项批准、拒绝或跳过。普通对话、历史和工具结果不能代替这个可信操作。待审阅计划跨重启保存；未决计划直接返回，不重复提取。空候选或所有条目已处理时，独立 Reflection 进度与关闭状态原子提交，下一次继续新历史。
+
+Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路径/隐私检查和索引维护。编辑器改动会产生冲突；多项写入保留已成功项，不做整体回滚。partial/applying 表示文件可能已落盘，不能盲目重试：先 review，必要时显式 `/memory check`、`/memory repair`，再 reconcile 核对。reconcile 不写文件，仅核对目标 hash 和索引；skip/reject 不撤销已有副作用。
+
+默认每次最多 8 个完整 Run、8 个候选、三次无工具 Provider 请求，输入/输出/超时独立配置为 16384/4096/60 秒；见 `.env.example` 的 AGENT_REFLECTION_* 和[配置说明](docs/modules/config.md)。较大目录/正文或单 Run 无法容纳时明确停止。默认只反思当前会话；可 /resume 其他会话分别处理，同一 Agent 最终共享 Markdown 理解。模型事实判断与语义去重仍有误差，审批不可省略。设计与完整调用路径见 [Reflection 模块](docs/modules/reflection.md)。
+
 ## 架构与实际运行路径
 
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize(schema 3) / recover_incomplete_runs → SessionManager(ContextBudget)
+main → SQLiteStore.initialize(schema 4) / recover_incomplete_runs → SessionManager(ContextBudget)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → 有界历史 + 必要的分批摘要 → 编译 Core/Summary（不写入原始聊天历史）
@@ -159,7 +179,7 @@ main → SQLiteStore.initialize(schema 3) / recover_incomplete_runs → SessionM
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.6.0 对应 schema 3，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.7.0 对应 schema 4，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -170,6 +190,7 @@ main → SQLiteStore.initialize(schema 3) / recover_incomplete_runs → SessionM
 - [Agent Loop](docs/modules/agent.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
 - [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)
+- [Reflection、证据、审批与长期记忆整合](docs/modules/reflection.md)
 - [内部及持久化数据模型](docs/modules/models.md)
 - [Provider 与 Responses 重放](docs/modules/provider.md)
 - [工具注册与超时契约](docs/modules/tools.md)
@@ -247,3 +268,5 @@ Recall 采用关键词子串与时间排序，尚无语义召回或分页；短�
 外部编辑器不参与受控写锁，最后摘要检查与 replace 仍有竞争窗口；多文件索引无整体事务，需显式检查/修复。索引只支持约定的根相对 Markdown bullet 链接和简化 Frontmatter，不提供任意 YAML、无限目录或自动语义搜索。迁移保留的旧目录及备份由用户手动清理。
 
 V0.6 新增离线 Compaction 验证：schema 2→3 回填与回滚、增量检查点、完整工具与 SDK 重放、分批失败续接、取消和真实进程退出、跨会话隔离、SQL 范围与解码数量、输出/超时限额及注入权限边界。原完整 Journal 与 Recall API 继续保留。
+
+V0.7 的离线 Reflection 验证覆盖来源校验、整合计划、选择性审批、拒绝/跳过、增量分页、schema 3→4 原子迁移、人工编辑冲突、索引部分成功和真实 CLI 子进程崩溃/重启。完整回归 390 passed、1 skipped（Windows Symlink 权限）；Ruff、打包与 CLI 检查见交付记录。

@@ -6,7 +6,7 @@
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。数据库 schema 版本 3 与应用版本 0.6 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。数据库 schema 版本 4 与应用版本 0.7 是不同概念。
 
 ## 表字段与一致性约束
 
@@ -73,3 +73,11 @@ Summary 不作为 StoredMessage，不进入 Recall；完整审计 API 仍返回�
 SQLite 表本身假设由应用追加使用，外部直接篡改已覆盖的原始历史不通过每次全库校验发现；checksum 也不是防本机攻击的安全机制。单页最多 2 MiB、每 Run 最多 2048 条，SQL/I/O 仍同步执行。摘要表和数据库同为私人明文，应沿用已有备份和 Git 忽略保护。
 
 最小宿主读取为 `SQLiteConversationHistory(store, conversation_id).page(after_sequence)`，完整示例和错误恢复见[Compaction](compaction.md)。`tests/test_compaction.py` 验证 schema 2→3 回填/回滚、来源与修订冲突、原子摘要写入、取消/进程退出、SQL sequence 范围和解码数量；`tests/test_recall_storage.py` 继续验证原始历史索引不受影响。
+
+## V0.7 Reflection 审阅记录
+
+`MIGRATIONS[4]` 引用 `storage/reflection.py::SCHEMA`，追加 reflection_progress、reflection_plans 和每 Conversation 一个活动计划的唯一索引，不改旧 Journal/Recall/Compaction。ReflectionRepository 绑定 agent_id，每次查询先验证 Conversation 归属；window() 复用 context.page(completed_only=True)，默认最多 8 个完整 Run，仍先检查字节/数量再解析。
+
+新计划保存前，在短事务内验证独立进度和本批来源 Run/hash 未变；计划用有界 JSON、revision 与 checksum 保存。后续 save() 用 expected_revision 做 CAS；全部条目已应用/拒绝/跳过时，关闭计划和审阅进度同事务提交。空候选也保存关闭记录。字段、来源与批准状态见[Reflection](reflection.md)。
+
+应用先保存 approved/applying，再调用现有 MemoryFS，结果单独提交。数据库失败不能回滚 Markdown，也不能把已写内容说成未发生。恢复时仍为 applying/partial 的操作不重写，显式 reconcile 仅核对并记账。测试 `tests/test_reflection.py` 覆盖 schema 3→4 回滚、源变更、CAS、审批写库失败、文件成功后写库失败及真实进程退出。

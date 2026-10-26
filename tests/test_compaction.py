@@ -426,7 +426,7 @@ def test_schema_two_migration_backfills_only_replayable_runs_atomically(tmp_path
         assert len(source.page(0).turns) == 3
         assert source.summary() is None
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == storage.SCHEMA_VERSION
 
 
 async def test_failure_after_one_checkpoint_resumes_without_repeating_covered_runs(state):

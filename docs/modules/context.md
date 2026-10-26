@@ -53,3 +53,7 @@ budget=None 只兼容已有短嵌入模式，不猜模型窗口也不自动摘�
 最小路径：`ContextBuilder("base", budget=ContextBudget(context_window=64000))` → `Agent(provider, registry, context)`。CLI 使用 `uv run personal-agent`；`/context status` 只报告安全统计，不调用模型或创建 Run。
 
 `tests/test_compaction.py` 用 Fake Provider/MockTransport 检查长短会话、窗口/输出预算、检查点、重启、增量边界、有界 SQL/解码和失败恢复；`tests/test_persistent_runtime.py` 保留持久化及取消语义；Memory/Recall 回归继续验证共享、取证与授权独立。运行 `uv run pytest`，不需要真实 Key。
+
+## V0.7 Reflection 边界
+
+ContextBuilder/prepare()/Compaction 算法不变。Reflection 通过独立 CLI/Service 读取原始 completed Run，不使用当前 Summary 作为事实，不推进 Compaction 边界。批准后的 Core 仍由下一次 for_request() 编译最新值，Deferred 仍按需读取；不注入候选或伪造用户审批消息。两条流程及测试见[Reflection](reflection.md)。

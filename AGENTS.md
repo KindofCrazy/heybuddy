@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.6 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.7 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction 和手动审批的 Reflection。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -56,7 +56,7 @@
 - 参数化 SQL；query、limit、窗口、片段和总输出都设上限。SQLite VM 预算不能当作同步 I/O 的硬取消保证。
 - 普通对话默认提供 recall_search / recall_get，ContextBuilder 不自动全库搜索，不把结果默认注入后续新会话或写成 Core Memory。
 - Recall 输出为低信任历史证据，不能授予 Memory 权限或修改 Base。不得执行、补齐、重试任何历史 Tool Call；cancelled/interrupted/running 当前不提供查询入口。
-- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。没有 Reflection 或后台回填；Context Compaction 只更新会话工作摘要，不影响 Recall 原始证据；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
+- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。Reflection 仅显式触发并独立审阅，Recall 没有后台回填；Context Compaction 只更新会话工作摘要，不影响 Recall 原始证据；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
 
 ## Context 与 Compaction 边界
 
@@ -65,7 +65,16 @@
 - Summary 仅属于 Conversation，以低信任 user JSON 注入，不作为原始消息，不写 Core/Deferred、不授予权限。摘要请求复用 Provider、空工具列表、独立预算和超时，返回调用时不得执行。
 - schema 3 以 context_runs 维护派生范围/大小索引，context_summaries 保存当前摘要；正文、完整 Run 边界、修订和 checksum 原子提交。失败批次不推进，之前已提交批次保留；不修改/删除原 Journal，不自动重试或续跑工具。
 - 正常 history/build/prepare/resume/commit 路径不得全量反序列化会话；页查询先核对元数据预算再读有限 payload。完整 load_messages 审计和 Recall 继续保留。
-- 不可缩减或超预算时明确停止；摘要有损，校验不是针对本机恶意修改的认证。没有后台压缩、递归摘要树、Reflection 或自动长期记忆提取。
+- 不可缩减或超预算时明确停止；摘要有损，校验不是针对本机恶意修改的认证。Compaction 不触发 Reflection 或自动长期记忆写入，没有后台压缩或递归摘要树。
+
+## Reflection 的边界
+
+- ReflectionService 是手动流程，不是新 Agent Loop；复用同一 Provider，无副作用工具。默认当前会话只处理 completed 原始 Run，有界读取；不把 Compaction Summary 当事实，不复用压缩进度。
+- 每条候选必须验证实际提供的 Conversation/Run/sequence 和精确引文；confirmed 至少含用户证据，语义仍需人类审阅。不确定或冲突不能自动升级为确定写入。
+- 先读相关 Core/Deferred 再生成结构化计划，展示具体理由、目标、局部 Diff、expected_hash 和来源；未批准前不改 Markdown。审批只能来自可信 CLI/Host、绑定计划与条目，不注册为模型可调用工具。
+- schema 4 用 reflection_progress/reflection_plans 保存独立进度与有界审阅状态；空结果、拒绝/跳过也保存处理结果。未决计划不重复提取；所有条目终结时关闭与进度同事务提交。
+- Apply 复用 MemoryFS/index 的路径、Agent、隐私、容量、hash、短锁及原子发布；一项成功不因后一项失败而撤销。approved/applying 先落库，文件成功而记账失败保留不明确状态；禁止盲目重写，显式只读 reconcile 核对内容/索引。部分成功的 skip/reject 不等于回滚。
+- 不新增长期 Memory 权威副本、Git/Snapshot、后台反思、多 Agent、定时学习或任务调度；日志不打印私人候选/引文，review 是用户显式查看私人计划。
 
 ## 核心模块说明文档
 
@@ -84,7 +93,7 @@ Python 3.13、uv、Pydantic v2、asyncio、官方 OpenAI Python SDK、pytest/pyt
 
 ## 测试与交付
 
-核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。V0.5 还需覆盖旧格式无损迁移/中断/冲突、编辑器可见性、单文件原子替换、索引缺项/悬空/部分失败与显式补链、Deferred 分页、路径及 Junction 隔离和 CLI 重启渐进读取。V0.6 另需覆盖有界历史读取、预算与增量边界、工具/Provider 重放、摘要事务回滚、取消/进程退出和重启恢复；测试应验证行为与契约，而不是机械重复实现。
+核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。V0.5 还需覆盖旧格式无损迁移/中断/冲突、编辑器可见性、单文件原子替换、索引缺项/悬空/部分失败与显式补链、Deferred 分页、路径及 Junction 隔离和 CLI 重启渐进读取。V0.6 另需覆盖有界历史读取、预算与增量边界、工具/Provider 重放、摘要事务回滚、取消/进程退出和重启恢复；V0.7 另覆盖来源验证、计划/审批、拒绝/跳过、重复/纠正、独立增量进度、schema 3→4、文件/SQLite/索引部分失败和 CLI 真实进程退出恢复；测试应验证行为与契约，而不是机械重复实现。
 
 ## Git 提交流程与信息
 
@@ -103,4 +112,4 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.6 增加会话 Context Budget、完整 Run 分批压缩与持久工作摘要，不实现 Git-backed Memory、日常版本恢复、远程同步、自动记忆提取、向量/Embedding、Reflection、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+V0.7 增加手动 Reflection、证据验证、整合计划和批准后的 MemoryFS 写入，不实现 Git-backed Memory、日常版本恢复、远程同步、后台自动记忆提取、向量/Embedding、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话；不继续开发 V0.8 Background Task Runtime。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。

@@ -86,13 +86,17 @@ def page(
     through: int | None = None,
     max_runs: int = 32,
     max_bytes: int = 262144,
+    completed_only: bool = False,
 ) -> HistoryPage:
     if not 1 <= max_runs <= 64 or not 1 <= max_bytes <= 2_097_152 or after < 0:
         raise ValueError("Invalid history page budget")
+    status_filter = (
+        "r.status='completed'" if completed_only else "r.status IN ('completed','failed')"
+    )
     rows = db.execute(
         "SELECT c.* FROM context_runs c JOIN runs r ON c.run_id=r.id "
         "WHERE c.conversation_id=? AND c.last_sequence>? AND c.last_sequence<=? "
-        "AND r.status IN ('completed','failed') ORDER BY c.last_sequence LIMIT ?",
+        f"AND {status_filter} ORDER BY c.last_sequence LIMIT ?",
         (
             conversation_id,
             after,

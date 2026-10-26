@@ -41,3 +41,16 @@ run_cli() 用 Settings.context_budget() 构造 SessionManager；context() 将同
 `/context status` 在 chat() 中直接调用 diagnostics()，不创建 Run、不调用模型，显示显式窗口、输出预留、输入上限、本地估算、服务端 usage（可用时）、摘要边界/修订/大小、当前加载页规模和最近压缩结果；不显示摘要、消息或 reasoning 正文。首次请求前 estimated_tokens 为空表示尚无实际准备记录，不是精确零 token。bad checkpoint/预算或数据库错误返回安全诊断。
 
 启动必须配置 AGENT_CONTEXT_WINDOW，帮助入口仍不读配置。长会话达到水位或分页资源条件时先摘要再正常请求；当前 Run 太大或摘要失败返回明确状态，CLI 继续接收下一次用户请求，不自动重试工具。实际路径见[Compaction](compaction.md)，测试见 `tests/test_config_cli.py` 和 `tests/test_compaction.py`。
+
+## V0.7 手动 Reflection 命令
+
+`_run_session()` 使用 ReflectionRepository(store, sessions.agent.id)、同一 MemoryFS/Provider、ContextBudget 和 Settings.reflection_policy() 装配 ReflectionService，传给 chat()。`/reflect` 命令在普通 Agent.run() 之外分派，不保存为聊天消息或创建新 Run；/resume 后始终使用当前 Conversation，长期 Markdown 仍按 Agent 共享。
+
+- `/reflect`：处理当前会话一批尚未审阅的 completed Run，或返回已有待审阅计划。
+- `/reflect status`：只显示独立边界、活动计划 ID 与逐项状态，无模型调用/消息正文。
+- `/reflect review [plan_id]`：展示候选、来源、理由、目标、Diff、hash 与结果；已关闭计划也可按 ID 查询。
+- `/reflect apply <plan_id> <item_id|all>`：可信显式批准；只执行未完成且适用的操作，review 候选不自动升级。
+- `/reflect reject|skip <plan_id> <item_id|all>`：持久记录决定，不撤销已经发生的文件副作用。
+- `/reflect reconcile <plan_id> <item_id>`：只读核对 applying/partial/uncertain 项，不重写文件；确认 hash 与索引后记账。
+
+未完整提供审批参数只显示用法。ReflectionError/Memory 错误只显示安全代码；HistoryError 明确提示文件可能已完成、不自动重试。Provider await 取消时按原 CLI 退出语义处理，未保存的生成结果不会推进状态；已存计划跨重启可恢复。真实执行路径及离线子进程验证见[Reflection](reflection.md)和 tests/test_reflection.py。
