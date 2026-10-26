@@ -15,6 +15,8 @@ from personal_agent.core.memory import CoreMemoryError
 from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory.store import MemoryStore
 from personal_agent.memory.tools import register_memory_tools
+from personal_agent.recall.service import Recall
+from personal_agent.recall.tools import register_recall_tools
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.tools.builtin import create_builtin_registry
@@ -27,7 +29,7 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
 ) -> None:
-    write("HeyBuddy V0.3.1 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write("HeyBuddy V0.4 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
     write("记忆授权仅对本轮有效：/memory read|edit|restore <请求>；edit 不授权恢复。")
     if sessions is not None:
         write(sessions.status())
@@ -110,6 +112,7 @@ async def run_cli(settings: Settings) -> None:
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryStore) -> None:
     tools = create_builtin_registry(settings.tool_timeout_seconds)
     register_memory_tools(tools, memory)
+    register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
     # Disable SDK retries: each loop round is exactly one bounded model request.
     async with AsyncOpenAI(
         api_key=settings.api_key.get_secret_value(),
@@ -128,7 +131,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.3.1 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.4 CLI")
     parser.parse_args()
     try:
         settings = load_settings()

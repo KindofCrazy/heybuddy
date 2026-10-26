@@ -34,3 +34,8 @@ HTTPS 校验只保证配置的初始地址符合传输策略，不验证模型�
 - `test_environment_base_url_cannot_bypass_https_policy`
 
 运行：`uv run pytest tests/test_config_cli.py`。测试隔离环境和临时配置，不读取真实 `.env`。
+
+
+## V0.4 Recall 的运行要求
+
+未新增环境变量或依赖。Python 自带 SQLite 必须支持 FTS5 trigram（本地验证为 3.47.1）；schema 2 初始化回填失败会以原有存储启动错误退出，不降低成无界扫描。搜索和输出上限是 Recall 模块中的保守常量；短词范围限制始终在工具描述及结果中说明。只做索引重建的宿主 API 不需要配置模型或 API Key。

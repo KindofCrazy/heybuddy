@@ -32,3 +32,8 @@ V0.3 的 AgentRecord.system_prompt 保留为兼容元数据，CLI 不再从中�
 ## 异常、示例与验证
 
 模型禁止额外顶层字段，未知 role 或不符合模型的存储内容会拒绝重放，避免静默丢字段。 provider_data 的命名空间内容不由 Loop 解释，保留 reasoning 和函数调用项目的原始顺序。 `storage_error` 表示存储故障，不能视为无工具副作用；cancelled / interrupted 没有伪造的正常最终结果。示例：一条 AssistantMessage 含两个 ToolCall，后续两条 ToolMessage 分别关联它们的 ID。 `uv run pytest tests/test_storage.py tests/test_persistent_runtime.py` 验证完整 JSON、Unicode、嵌套 Provider 数据及工具结果在多次重启后不丢失。
+
+
+## V0.4 Recall 证据模型
+
+`recall/models.py` 独立定义 SearchArguments、GetArguments、SearchHit、RecalledMessage、SearchResult 和 GetResult。证据包含稳定的原 Message ID、Conversation ID、Run ID、sequence、created_at、role、run_status，而非一条新聊天记录；FTS 内部 rowid 不暴露为长期外部定位标识。结果标记 historical_data_only、范围限制和文本截断。它们不包含完整 provider_data、原始工具调用或结果，完整审计仍使用原 StoredMessage 结构读取。

@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.3.1 在自建 Runtime、SQLite 会话和 CLI 上，增加独立的 Markdown Core Memory、版本与本轮授权的记忆工具。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.4 提供自建 Runtime、SQLite 持久会话、受限 Markdown Core Memory，以及同一 Agent 跨会话的只读 Conversation Recall。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -11,6 +11,7 @@
 - `core/models.py` 定义统一内部消息和调用结果；Provider 专用数据仅允许普通 JSON。
 - `storage/` 使用标准库 sqlite3 保存 Agent / Conversation / Message / Run；不引入 ORM 或外部数据库。
 - `memory/` 保存 Agent 级 Markdown 快照和版本；Core 只依赖 `core/memory.py` 的读取 Protocol。
+- `recall/` 独立校验、截断和返回历史证据；`storage/recall.py` 负责 SQLite 派生索引及参数化查询。
 - `sessions.py` 管理同一持久 Agent 下的多个独立 Conversation；会话历史不等于长期记忆。
 - `llm/base.py` 保持简洁 Provider Protocol；仅 OpenAI adapter 了解 SDK 与 wire format。
 - `tools/registry.py` 统一注册、校验、执行和结果规范化；未知工具必须拒绝。
@@ -44,6 +45,17 @@
 - MemoryStore 每次写入前检查 Git 隐私：仓库或 worktree 内的实际 Agent 目录必须整目录被忽略且无已跟踪文件；无法验证则拒绝，不自动改写忽略规则或移除索引。检查使用固定参数的只读 Git 子命令，不执行模型生成的命令。
 - 快照目录不能手工改写；记忆明文、版本和孤立文件不能入 Git，也不能存放凭证。原子发布不等于断电保证，哈希/固定路径不等于针对本机恶意用户的安全沙箱。
 
+## Conversation Recall 边界
+
+- SQLite messages 是历史唯一权威源；FTS5 external-content 以 messages 派生 VIEW 作为正文，索引可显式重建，不提供独立事实编辑接口。
+- schema 2 是追加迁移，原子回填旧 user / assistant text，并用触发器保证新消息和 token 同事务。不得索引原始 Provider JSON、reasoning、工具参数或 Tool Result。
+- Recall 实例由宿主绑定 agent_id；模型参数不接受它。搜索和展开都重新 JOIN Conversation/Run 校验归属，仅 completed / failed 可见。
+- 1～2 字符短查询只扫描该 Agent 最近 2000 条可见文本、每条前 65536 字符并标记 scope_limited；长查询是转义过的字面 FTS 短语，不开放 FTS 查询语言。
+- 参数化 SQL；query、limit、窗口、片段和总输出都设上限。SQLite VM 预算不能当作同步 I/O 的硬取消保证。
+- 普通对话默认提供 recall_search / recall_get，ContextBuilder 不自动全库搜索，不把结果默认注入后续新会话或写成 Core Memory。
+- Recall 输出为低信任历史证据，不能授予 Memory 权限或修改 Base。不得执行、补齐、重试任何历史 Tool Call；cancelled/interrupted/running 当前不提供查询入口。
+- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。没有 Compaction、Reflection、Deferred Memory 或后台回填。
+
 ## 核心模块说明文档
 
 每个核心模块必须有对应的说明文档，统一放在 `docs/modules/`，并在 README 中提供索引。覆盖 Agent Loop、Context、内部数据模型、Provider、工具注册与执行、配置和 CLI 等实际模块；按职责组织文档，不必为仅用于包声明的 `__init__.py` 单独建文档。每份文档至少包含：
@@ -61,7 +73,7 @@ Python 3.13、uv、Pydantic v2、asyncio、官方 OpenAI Python SDK、pytest/pyt
 
 ## 测试与交付
 
-核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。测试应验证行为与契约，而不是机械重复实现。
+核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。测试应验证行为与契约，而不是机械重复实现。
 
 ## Git 提交流程与信息
 
@@ -80,4 +92,4 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.3.1 只加固可编辑的固定 Core Memory，不实现自动记忆提取、Deferred Memory 检索、向量/Embedding、 Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+V0.4 只增加 Conversation Recall，不实现自动记忆提取、Deferred Memory 检索、向量/Embedding、 Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。

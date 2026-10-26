@@ -42,3 +42,10 @@
 - `test_async_tool_timeout` 验证协程超时仍返回标准错误。
 
 运行：`uv run pytest tests/test_tools.py`，不调用真实 API。
+
+
+## V0.4 默认可用的只读 Recall Tools
+
+`recall/tools.py::register_recall_tools(registry, Recall(store, agent_id))` 注册 recall_search / recall_get，不设置 required_permission，因此普通对话可用。agent_id 是宿主绑定属性，两个参数模型都禁止额外字段；模型不能选择其他 Agent。函数只读旧历史，返回 Pydantic 证据模型，经 Registry 规范化为关联 call_id 的 JSON 结果。
+
+RecallError 映射为安全的 ToolExecutionError，SQL 异常和查询正文不进入日志。搜索结果 trust 为 historical_data_only，既不注册工具也不改变 Memory 权限。SQLite 读取采用同步有界查询，async def 不保证硬超时；不创建后台线程、自动重建或重试。完整路径与限制见[Recall](recall.md)，测试见 tests/test_recall_runtime.py。

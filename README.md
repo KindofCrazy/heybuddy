@@ -1,16 +1,16 @@
-# HeyBuddy — V0.3.1 Memory Hardening
+# HeyBuddy — V0.4 Conversation Recall
 
-一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，加入可编辑、跨会话共享的 Markdown Core Memory。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
+一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，并加入按需跨会话历史检索 Recall。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计
 
-持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。记忆只在本轮显式授权后通过受限工具修改，不自动从聊天提取，不检索其他会话。
+持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 只在本轮显式授权后通过受限工具修改，不自动从聊天提取；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
 不实现自动记忆提取、Deferred Memory 检索、向量/Embeddings、Reflection、Context Compaction、 Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。
 
 ## 安装与配置
 
-需要 [uv](https://docs.astral.sh/uv/)，Python 3.13；在项目根目录运行：
+需要 [uv](https://docs.astral.sh/uv/)，Python 3.13，且该 Python 的 SQLite 支持 FTS5 trigram；在项目根目录运行：
 
 ```powershell
 uv python install 3.13
@@ -85,6 +85,16 @@ Agent > （新会话可使用共享 Core Memory，无需加载旧会话）
 
 自定义目录如 `<仓库>/private-memory/heybuddy/`，可由用户在仓库 `.gitignore` 加入 `/private-memory/`。只有忽略个别文件不够；目录内已被 Git 跟踪的旧文件也必须先人工检查并移出索引，新增忽略规则不会自动保护它们。每次初始化或写入都会检查；仓库内检查需要可用的 Git，失败时停止，不悄悄换目录。
 
+## 使用 Conversation Recall
+
+正常对话不需要额外命令：先在一个会话讨论“先实现 Memory 是为了保存稳定偏好”，然后 `/new` 并问“我们之前为什么决定先实现 Memory？”。模型可调用 recall_search 搜索 Memory，再用 recall_get 展开来源，并引用 Conversation ID 回答；未找到证据时应明确说明。新会话不会默认加载旧会话，只有本次按需检索的结果进入当前对话。
+
+搜索只涉及同一 Agent 的 completed / failed Run 的 user / assistant 非空 text，不索引 Provider 原始 JSON、reasoning、工具参数或 Tool Result。搜索和展开都会验证 Agent 归属，模型不能指定 agent_id。旧工具调用只是审计数据，永不自动续跑或重试。
+
+三个字符及以上使用 FTS5 trigram 字面子串；一至两个字符使用有界 LIKE，只检索最近 2000 条符合条件的文本、每条前 65536 字符，并返回 scope_limited。query 最大 120 字符，limit 最大 5；展开 before / after 各最多 3，总数最多 7 条，总文本最多 8192 转义后 UTF-8 字节，单次数据 JSON 最多 12288 字节。结果带来源 ID、序号、时间、Run 状态和截断标记。全文索引的短词限制与选择理由见 [SQLite 官方文档](https://www.sqlite.org/fts5.html#the_trigram_tokenizer)。
+
+启动通过 schema 1→2 迁移原子回填已有文本，新消息与索引通过触发器同事务写入。索引只是候选定位，结果正文回到原始 messages 读取。损坏时返回安全错误，不自动修复或重试；关闭 CLI 后可在本地 Python 中通过 `SQLiteStore.rebuild_recall_index()` 显式重建，完整示例见 [Recall 模块](docs/modules/recall.md)。重建不需要 API Key，不修改原始历史。
+
 ## 架构与实际运行路径
 
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
@@ -104,7 +114,7 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.3.1 仍对应 schema 1。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.4.0 对应 schema 2，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、可重放历史、当前上下文和运行中消息；目前不压缩上下文。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -117,6 +127,7 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - [Provider 与 Responses 重放](docs/modules/provider.md)
 - [工具注册与超时契约](docs/modules/tools.md)
 - [Core Memory、版本及权限](docs/modules/memory.md)
+- [Conversation Recall、中文检索及重建](docs/modules/recall.md)
 - [SQLite、迁移及事务](docs/modules/storage.md)
 - [会话管理与 CLI](docs/modules/sessions-cli.md)
 - [配置与 API 地址校验](docs/modules/config.md)
@@ -178,8 +189,10 @@ uv run ruff format --check .
 uv build
 ```
 
-测试使用 Fake Provider、SDK MockTransport、临时 SQLite 和记忆目录，隔离真实配置并禁用外网，不需要真实 API Key，不消耗模型费用。覆盖重启恢复、会话隔离、完整消息/Provider JSON 重放、迁移回滚、数据库异常、批量工具调用中断、真实进程退出和多次重启，以及原有 Runtime 测试。 V0.3 另外覆盖跨会话记忆、更新冲突、失败回滚、大小限制、权限过期和 Base System Prompt 隔离。 Windows 沙箱临时目录受限时使用 `uv run pytest --basetemp=.pytest_cache/tmp`； asyncio 需要允许本地 socketpair，测试仍禁止外网。 uv 缓存目录不可写时设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
+测试使用 Fake Provider、SDK MockTransport、临时 SQLite 和记忆目录，隔离真实配置并禁用外网，不需要真实 API Key，不消耗模型费用。覆盖重启恢复、会话隔离、完整消息/Provider JSON 重放、迁移回滚、数据库异常、批量工具调用中断、真实进程退出和多次重启，以及原有 Runtime 测试。 V0.3 另外覆盖跨会话记忆、更新冲突、失败回滚、大小限制、权限过期和 Base System Prompt 隔离。 V0.4 另覆盖 Recall 旧库回填、索引事务回滚、字面检索、跨 Agent 隔离、展开限制、索引重建及恶意历史的权限边界。 Windows 沙箱临时目录受限时使用 `uv run pytest --basetemp=.pytest_cache/tmp`； asyncio 需要允许本地 socketpair，测试仍禁止外网。 uv 缓存目录不可写时设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
 
 ## 当前限制
 
-V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、跨会话检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；版本尚无自动清理。 Markdown 快照发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子指针不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。固定路径与完整性校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
+V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、语义检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；版本尚无自动清理。 Markdown 快照发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子指针不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。固定路径与完整性校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
+
+Recall 采用关键词子串与时间排序，尚无语义召回或分页；短查询和长消息正文会受范围/长度上限限制。SQLite 读取、回填与重建是同步操作，查询工作预算不是硬实时取消。索引错误可能使新消息事务失败，需要显式修复后继续；外部 VACUUM 等维护改变内部 rowid 后也应重建索引。

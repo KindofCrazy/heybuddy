@@ -230,7 +230,11 @@ def test_corrupt_message_is_reported_without_exposing_content(store):
     conv = conversation(store)
     complete_turn(store, conv.id)
     with sqlite3.connect(store.path) as db:
-        db.execute("UPDATE messages SET payload='private corrupt body'")
+        # FTS triggers now reject malformed JSON at write time. Use valid JSON
+        # with an invalid internal message shape to exercise the read validator.
+        db.execute(
+            "UPDATE messages SET payload=?", ('{"role":"user","text":{"private":"corrupt body"}}',)
+        )
     with pytest.raises(HistoryError) as caught:
         store.load_messages(conv.id, replayable_only=True)
     assert "private" not in str(caught.value)

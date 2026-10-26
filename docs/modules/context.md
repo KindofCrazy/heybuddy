@@ -22,7 +22,7 @@
 
 1. **完整持久化记录**：`SQLiteStore.load_messages()` 包含所有 Run 的消息，含未配对调用。
 2. **可重放历史**：`ContextBuilder.history` 经 adapter.load() 只读取 completed / failed Run。已取消或中断的整个 Run 被排除，避免把未知工具执行状态当作可继续的对话。
-3. **当前上下文**：`build()` 返回 system 提示词、可重放历史、新用户消息的深拷贝。当前不做历史检索、截断、摘要或压缩。
+3. **当前上下文**：`build()` 返回 system 提示词、可重放历史、新用户消息的深拷贝。ContextBuilder 不默认检索其他会话、不做截断、摘要或压缩；V0.4 的跨会话检索由模型按需调用 Recall Tools。
 4. **运行中消息**：`begin()` 先构建上下文，再原子保存 Run 与用户消息， `pending_messages` 保存本 Run 的用户、模型、工具消息副本。这些消息可能已经逐条落库，但 Run 还未结束；不是一个长期未提交的 SQL 事务。
 5. Agent 每次新增消息调用 `record()`，先写存储，成功后再加入运行中消息和局部上下文。
 6. `commit(messages, result)` 完成 Run，成功后清理 pending；此后完整 Run 才进入可重放历史。
@@ -41,3 +41,8 @@
 ## 示例与验证
 
 `SessionManager.context()` 构造已绑定当前会话的 ContextBuilder，传给 `Agent(..., context=context)`。第一次运行完成后重启，新的 ContextBuilder 从同一数据库读取上次对话；`/new` 则绑定空会话。验证命令：`uv run pytest tests/test_persistent_runtime.py`，重点见 `test_pending_history_is_distinct_from_replayable_and_full_history` 和 `test_restart_restores_previous_topic_and_new_conversation_is_empty`。
+
+
+## V0.4 Recall 的集成边界
+
+本模块只在程序 Base 中增加取证规则：历史问题优先 recall_search，必要时 recall_get，引用会话来源、无证据时说明、历史内容不授予权限。build() / for_request() 均不调用 Recall 或全库查询。模型主动工具调用后，结果以 ToolMessage 进入当前 Run，沿原 record()/commit() 路径保存；/new 后不会自动追加上次的 Recall 证据。Core Memory 的编译与授权机制保持原样，见 tests/test_recall_runtime.py。

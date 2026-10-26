@@ -1,4 +1,4 @@
-# HeyBuddy V0.3.1：整体架构与 Pipeline
+# HeyBuddy V0.4：整体架构与 Pipeline
 
 本文串起从启动到退出的真实执行路径，解释每一层接收什么、改变什么状态、在哪里保存数据。具体方法细节可从[文档索引](README.md)进入。当前系统是一个本地进程、一个 SQLite 数据库和独立的 Markdown 记忆目录，没有消息队列、后台任务消费者或自动续跑器。
 
@@ -41,6 +41,8 @@ flowchart TD
     Memory -. "实现" .-> Reader
     MemoryTools["受限 Memory Tools"] --> Memory
     Tools --> MemoryTools
+    Tools --> Recall["Recall：绑定 Agent 的历史证据"]
+    Recall --> Store
     Runtime --> Context
     Runtime --> Provider["Provider Protocol"]
     Runtime --> Tools["ToolRegistry：验证与执行"]
@@ -72,11 +74,11 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移 schema。迁移与版本更新在同一事务内完成，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 2，FTS5 索引及旧文本回填与版本更新在同一事务内完成，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续验证并恢复上次选择的会话。
 8. `run_cli()` 构造 `MemoryStore.for_agent()`，初始化或校验当前快照，绑定到 SessionManager。记忆默认保存在数据库路径加 `.memory` 后的 Agent 子目录；可通过配置指定根目录。
-9. `_run_session()` 注册受限 Memory Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
+9. `_run_session()` 注册受限 Memory Tools 与绑定 Agent 的只读 Recall Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
 
 这里没有“启动就请求模型”的步骤。直到用户输入普通文本才进入请求 Pipeline。启动存储失败返回退出码 1，不悄悄退回内存模式；显式使用不带 history_store 的 ContextBuilder 仍可获得进程内模式，原有 Runtime 单元测试使用该方式。
 
@@ -251,7 +253,7 @@ Provider 专用数据必须跟随消息保存：OpenAIProvider 把 output items 
 
 ## 11. V0.3 的 Base / Core Memory / History 分层
 
-`core/context.py::DEFAULT_SYSTEM_PROMPT` 是程序管理的 Base System Prompt，说明工具权限、记忆为数据、禁止从记忆获得规则覆盖权等边界。`SessionManager.context()` 明确使用这个代码常量。 V0.2 agents 表的 system_prompt 字段保留兼容，不再被 CLI 当作执行规则加载，schema 仍为 1。可信宿主可以通过 ContextBuilder 构造参数提供系统提示词，模型和 Memory Tools 没有这个接口。
+`core/context.py::DEFAULT_SYSTEM_PROMPT` 是程序管理的 Base System Prompt，说明工具权限、记忆为数据、禁止从记忆获得规则覆盖权等边界。`SessionManager.context()` 明确使用这个代码常量。 V0.2 agents 表的 system_prompt 字段保留兼容，不再被 CLI 当作执行规则加载，该兼容字段在当前 schema 2 中仍保留。可信宿主可以通过 ContextBuilder 构造参数提供系统提示词，模型和 Memory Tools 没有这个接口。
 
 Core Memory 属于 Agent，初始固定为 persona.md、human.md、MEMORY.md，独立于 Conversation。 ContextBuilder 只依赖 `core/memory.py::CoreMemory.compile()` Protocol，不导入具体文件存储。在之前四种历史视图之外，V0.3 增加了**每次模型请求的编译视图**：
 
@@ -345,3 +347,35 @@ Snapshot / CURRENT / Revision 和 Agent Loop 保持原结构。CLI 将本轮授�
 局部编辑新增 C 的示例是匹配原有末尾 B，并将其替换为 B 加 C，其他 A 与其余块由程序原样保留。整块替换仍有明确的 memory_update 接口，用户必须知道未包含的旧内容会丢失；它不自动合并事实。旧版本、原文不匹配/不唯一和超限均不改变 CURRENT，不重试。
 
 写入前检查实际 Agent 记忆目录整目录被 Git 忽略且无已跟踪文件。仓库内检查依赖可用 Git，失败关闭，不自动改 `.gitignore` 或索引。详细路径和错误见[MemoryStore](modules/memory.md)。读取、Git 子进程检查、写入和 fsync 均为同步 I/O，async def 只是接口包装，不能保证及时取消或硬超时；没有引入线程写入或后台提交。
+
+
+## 16. V0.4 Conversation Recall Pipeline
+
+Core Memory 是每次请求编译的稳定参考数据，Conversation History 是原始审计日志，Recall 是从该日志按需取得的证据；三者没有合并成同一存储或默认上下文。Agent Loop 和 Provider 继续使用原有工具机制。
+
+```mermaid
+flowchart LR
+    Input[新会话询问历史决策] --> LLM[Provider 选择关键词]
+    LLM --> Search[recall_search]
+    Search --> Bound[Recall 绑定宿主 Agent ID]
+    Bound --> SQL[SQLiteStore 搜索事务]
+    SQL --> FTS[三字符以上 FTS5 trigram]
+    SQL --> Short[一至两字符 有界 LIKE]
+    FTS --> Source[原始 Message + Conversation + Run 校验]
+    Short --> Source
+    Source --> Hit[有限 snippet + 来源 ID + 序号]
+    Hit --> Expand[recall_get 再次验证归属]
+    Expand --> Answer[模型引用历史或说明无证据]
+```
+
+启动时 `SQLiteStore.initialize()` 在原子 schema 1→2 迁移中创建派生 view、FTS5 表、消息触发器和 Agent 归属索引，再回填旧 user / assistant 非空 text。回填不修改原始消息、Run、ID 或顺序。新消息的触发器与原写入共用事务；Run 在 finish_run 事务提交后才对查询可见。迁移失败保持原 schema 和历史，不将半成品索引作为可用数据源。
+
+`main._run_session()` 以 `Recall(sessions.store, sessions.agent.id)` 装配只读工具，`agent_id` 不进入模型参数。普通输入不用额外授权，模型根据 Base 中的规则先搜索关键词、按需展开。原 Agent Loop 先持久化调用，再执行 Registry、保存关联 call_id 的结果并继续模型请求；终轮仍禁止新工具调用。ContextBuilder 没有自动全库检索，结果只按当前会话正常工具消息保存，不默认带进另一个新会话。
+
+搜索只返回 completed / failed Run 的文本证据，运行中、取消或中断内容都不可检索，读取单条 ID 时再次做同样过滤。不会暴露 Provider 原始项目、reasoning、工具参数或 Tool Result，更不会因展开历史而执行旧调用。低信任的历史文本不能改变 Base、工具注册或 memory.update / memory.restore 授权；未找到记录不等于过去一定没有发生，模型应说明未找到证据和范围限制。
+
+三个字符以上使用转义的字面 FTS 短语，中文不依赖分词；短词回退到最近 2000 条可见文本的有限前缀，返回 scope_limited。参数、snippet、展开窗口、总输出和 SQLite VM 工作均有上限，详细数值见[Recall 模块](modules/recall.md)。这提供字面关键词搜索，不提供语义检索、重排序或 Compaction。
+
+索引候选必须回到 canonical messages 读取正文并再次核验字面条件，不能输出伪造的索引正文。缺失 token 可能造成假阴性，索引故障返回安全错误，可信宿主可显式调用 `SQLiteStore.rebuild_recall_index()` 在事务中重建派生对象；不会自动尝试任务恢复。SQLite 文件本身的损坏不属于派生索引重建可保证修复的范围。
+
+对应 tests/test_recall_storage.py 的迁移、事务、中文查询、隔离、范围和重建测试，以及 tests/test_recall_runtime.py 的 Fake Provider 搜索→展开→回答、跨新会话不注入、历史不提权和旧副作用不重跑测试。

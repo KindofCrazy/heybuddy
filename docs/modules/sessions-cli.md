@@ -9,7 +9,7 @@
 1. `main()` 加载 Settings、配置安全日志，`asyncio.run(run_cli())` 打开数据库并显式迁移。
 2. `run_cli()` 标记遗留 Run，`SessionManager(store)` 加载或创建默认 Agent，读取该 Agent 的 last_conversation；首次创建空会话，其余恢复上次选择。
 3. `run_cli()` 按 Agent ID 初始化 MemoryStore，绑定 sessions.memory，再由 `_run_session()` 装配官方 SDK、Provider、内置工具、Agent，以及 `sessions.context()`。 CLI 和存储均不进入 Provider 接口。
-4. `chat()` 展示当前 Agent/Conversation/Run 状态，读取输入。普通文本调用 Agent.run()。 `/new` 创建空会话并保存选择；`/sessions` 列出当前 Agent 的会话并标记当前项； `/resume <id>` 校验归属、验证可重放历史后保存选择；`/status` 展示状态。
+4. `chat()` 展示当前 Agent/Conversation/Run 状态，读取输入。普通文本调用 Agent.run()；始终提供绑定当前 Agent 的 recall_search / recall_get，不需要记忆写入授权。 `/new` 创建空会话并保存选择；`/sessions` 列出当前 Agent 的会话并标记当前项； `/resume <id>` 校验归属、验证可重放历史后保存选择；`/status` 展示状态。
 5. 切换成功后只替换 Runtime 的 ContextBuilder，不重写 Loop，不混入上个会话的历史。失败时保留旧选择；会话管理命令不送给模型、不保存为聊天消息。
 6. exit / quit / EOF 正常退出；Ctrl+C 取消当前 Run，SDK 和数据库由上下文管理器关闭。再启动使用同一数据库路径，即可恢复之前选择的会话。
 
@@ -19,8 +19,13 @@ chat() 每次循环先设空权限。仅当本次输入匹配 `/memory read <请
 
 ## 异常与边界
 
-未知命令和缺少参数显示用法；不存在或其他 Agent 的会话不能切换。数据库启动失败不退回临时内存会话，返回退出码 1；配置错误返回 2。当前 Run 失败显示明确状态并继续读取输入，工具不会因历史恢复而重执行。中断状态有明确提示，完整记录可通过存储 API 查看；没有任务续跑、历史删除或跨会话记忆检索命令。多进程同时打开同一数据库会被拒绝；这是单人本地应用的明确约束。
+未知命令和缺少参数显示用法；不存在或其他 Agent 的会话不能切换。数据库启动失败不退回临时内存会话，返回退出码 1；配置错误返回 2。当前 Run 失败显示明确状态并继续读取输入，工具不会因历史恢复而重执行。中断状态有明确提示，完整记录可通过存储 API 查看；没有任务续跑或历史删除；V0.4 不需要额外检索命令，普通输入即可由模型选择 Recall Tools。多进程同时打开同一数据库会被拒绝；这是单人本地应用的明确约束。
 
 ## 示例与验证
 
 启动 `uv run personal-agent`，输入主题后退出；再次启动查看 `/status`，向模型追问前文。 `/new` 后上下文含程序 Base、共享 Core Memory 和新输入；用 `/sessions` 找到旧 ID，`/resume <id>` 恢复。验证命令：`uv run pytest tests/test_config_cli.py tests/test_persistent_runtime.py`，其中 `test_cli_session_commands_switch_and_restore_without_polluting_messages` 覆盖完整切换路径。
+
+
+## V0.4 无额外命令的 Recall
+
+`_run_session()` 在创建 Runtime 前把 Recall 绑定到 sessions.agent.id 并注册两项只读工具。/new 只替换 ContextBuilder，Recall 继续查询同一持久 Agent 下的历史；不把其他会话复制到当前上下文。用户直接问“我们之前为什么决定先实现 Memory？”即可由模型选择搜索→展开→回答；没有增加 /recall 管理命令。schema 2 初始化回填在接收输入前完成，坏索引不自动修复，显式修复 API 见[Recall 模块](recall.md)。

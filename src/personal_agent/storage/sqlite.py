@@ -18,10 +18,11 @@ from personal_agent.core.models import (
     TextMessage,
     ToolMessage,
 )
+from personal_agent.storage import recall
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -47,7 +48,8 @@ MIGRATIONS = {
         """CREATE TABLE client_state (
         agent_id TEXT PRIMARY KEY REFERENCES agents(id), conversation_id TEXT NOT NULL,
         FOREIGN KEY(conversation_id, agent_id) REFERENCES conversations(id, agent_id))""",
-    )
+    ),
+    2: recall.INDEX_SCHEMA,
 }
 
 
@@ -159,6 +161,21 @@ class SQLiteStore:
                 (record.id, record.name, record.system_prompt, record.created_at.isoformat()),
             )
         return record
+
+    def rebuild_recall_index(self) -> None:
+        """Explicitly replace only derived Recall objects, atomically, from messages."""
+        with self._transaction() as db:
+            recall.rebuild(db)
+
+    def search_recall(self, agent_id: str, query: str, limit: int) -> list[sqlite3.Row]:
+        with self._transaction() as db, recall.query_budget(db):
+            return recall.search(db, agent_id, query, limit)
+
+    def get_recall(
+        self, agent_id: str, message_id: str, before: int, after: int
+    ) -> list[sqlite3.Row]:
+        with self._transaction() as db, recall.query_budget(db):
+            return recall.get_window(db, agent_id, message_id, before, after)
 
     def get_agent(self, agent_id: str) -> AgentRecord | None:
         with self._transaction() as db:
