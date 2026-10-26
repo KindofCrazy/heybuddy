@@ -93,3 +93,17 @@ docs: 完善项目开发与提交规范
 ## 未来边界
 
 V0.4 只增加 Conversation Recall，不实现自动记忆提取、Deferred Memory 检索、向量/Embedding、 Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+
+## Agent skills
+
+### Issue tracker
+
+使用 to-spec、to-tickets、implement、triage 或 wayfinder 处理规格与任务时，先读 `docs/agents/issue-tracker.md`，使用 `KindofCrazy/heybuddy` 的 GitHub Issues。
+
+### Triage labels
+
+分诊前读取 `docs/agents/triage-labels.md`，按其中的角色映射应用标签。
+
+### Domain docs
+
+采用 single-context 布局。涉及领域术语或设计决策时，先读 `docs/agents/domain.md`，再读取相关术语表与 ADR。
