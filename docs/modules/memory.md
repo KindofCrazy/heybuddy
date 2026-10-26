@@ -2,7 +2,7 @@
 
 ## 职责与架构组成
 
-`src/personal_agent/memory/store.py::MemoryFS` 实现 `core/memory.py::CoreMemory.compile()`，并提供有界文件读取、目录元数据、摘要冲突检测和单文件原子替换。`memory/models.py` 定义三个固定 Core 块、`CoreMemoryData`、SHA256 摘要、简化 Frontmatter 解析和输出预算；摘要仅用于当前文件的乐观并发校验，不构成版本历史。`memory/index.py` 维护分层发现链；`memory/migration.py` 仅负责一次性 V0.4 导出；`memory/privacy.py` 保留写入前的 Git 隐私检查。`memory/tools.py::register_memory_tools()` 将这些能力接到现有 Registry。
+`src/personal_agent/memory/store.py::MemoryFS` 实现 `core/memory.py::CoreMemory.compile()`，并提供有界文件读取、目录元数据、摘要冲突检测和单文件原子替换。`memory/models.py` 定义三个固定 Core 块、`CoreMemoryData`、SHA256 摘要、简化 Frontmatter 解析和输出预算；摘要仅用于当前文件的乐观并发校验，不构成版本历史。`memory/index.py` 维护分层发现链、带校验标记的生成条目及修改后的索引同步；`memory/migration.py` 仅负责一次性 V0.4 导出；`memory/privacy.py` 保留写入前的 Git 隐私检查。`memory/tools.py::register_memory_tools()` 将这些能力接到现有 Registry。
 
 Agent Loop 和 ContextBuilder 不依赖 MemoryFS。前者执行原有工具循环，后者只通过 Protocol 编译 Core。SQLite 不增加 Memory 表，Deferred Markdown 是整理知识的唯一权威源；SQLite messages 仍是原始交流的唯一权威源。
 
@@ -33,7 +33,7 @@ description: HeyBuddy 的架构、设计取舍和开放问题。
 
 这是刻意受限的 Frontmatter 子集，不是完整 YAML：字段只能是 `name`（最多 80 字符）和 `description`（最多 240 字符），支持普通单行文本、JSON 双引号字符串及单引号字符串；不支持注释、列表、多行标量和额外键。用户可直接用 UTF-8 编辑器修改文件。
 
-所有索引链接统一**相对 Agent Memory Root**，不是相对当前 Markdown 文件。只识别代码围栏外的 `- [标签](路径): 说明` 条目。根索引写 `- [Projects](projects/MEMORY.md): 项目架构与设计决策。`；`projects/MEMORY.md` 写 `- [HeyBuddy](projects/heybuddy.md): HeyBuddy 的当前理解。`。每级索引指向直属主题文件或直属子目录索引，不能跳级。引用式链接、HTML、相对父目录路径和围栏内示例不会构成发现链；无效条目需人工审阅。
+所有索引链接统一**相对 Agent Memory Root**，不是相对当前 Markdown 文件。只识别代码围栏外的 `- [标签](路径): 说明` 条目。根索引写 `- [Projects](projects/MEMORY.md): 项目架构与设计决策。`；`projects/MEMORY.md` 写 `- [HeyBuddy](projects/heybuddy.md): HeyBuddy 的当前理解。`。每级索引指向直属主题文件或直属子目录索引，不能跳级。生成条目末尾可附带 `<!-- heybuddy-index:<SHA256> -->`，校验的是注释前可见条目的 UTF-8 字节；这仅表示该条目仍保持生成时的文字，不是版本历史、权限或认证。引用式链接、独立 HTML、相对父目录路径和围栏内示例不会构成发现链；无效条目需人工审阅。
 
 Agent ID 限定小写 ASCII 字母、数字、下划线或连字符，拒绝 Windows 大小写别名导致两个身份共用目录。目录和文件名称使用 ASCII 字母、数字、下划线或连字符，主题文件以 `.md` 结尾；正文和元数据支持中文。路径用 `/`，最多三层目录；拒绝空段、绝对路径、`..`、反斜杠、Windows 设备名/ADS/尾点、任意额外根文件及大小写不同的 `memory.md`。`versions/`、`skills/` 和隐藏目录不向模型开放。
 
@@ -53,21 +53,55 @@ Agent ID 限定小写 ASCII 字母、数字、下划线或连字符，拒绝 Win
 1. CLI 仅解析本次 `/memory edit <请求>`，将 `memory.read`、`memory.update` 和 `deferred.update` 传给 `Agent.run(permissions=...)`；下一次输入恢复空权限。普通自然语言、历史命令、Core/Deferred/Recall 文本均不能授权。
 2. Registry 同时过滤工具定义并在执行前复查权限，再以 ToolArguments 严格校验字段。
 3. 模型先读取目标。`memory_read` / `deferred_read` 返回当前 `hash`；修改携带 `expected_hash`，不再使用 `expected_version`。
-4. `MemoryFS.edit()` → `writing()` 检查隐私和路径，取得 `.write.lock`，读取完整有界文件并核对摘要；old_text 必须非空、精确唯一匹配，连重叠重复也拒绝。
+4. Core 工具仍调用 `MemoryFS.edit()` → `writing()` → `_edit_locked()`。Deferred 工具调用 `index.edit()`，先取得同一个 writing() 短锁，再调用 `_edit_locked()` 完成原有摘要/唯一匹配检查，随后在该锁下维护父索引，避免嵌套锁。old_text 必须非空、精确唯一匹配，连重叠重复也拒绝。
 5. 仅替换对应片段。Core 更改先验证三块的总编译容量；普通 Deferred 文件更改验证 Frontmatter 和文件字节上限。
 6. `replace()` → `atomic()` 在目标同目录写独占临时文件，flush/fsync，紧接替换前再次核对目标摘要或不存在条件，然后 `os.replace()`。失败不自动重试；遗留隐藏临时文件从不作为记忆读取。
 7. 工具返回新 hash，Agent 保存结果后继续。下一次请求重新读取最新 Core，后续 Deferred 读取也立即看到已发布内容。
 
-`memory_update` 是明确的整块替换，只接受固定 Core 块；它不保留被省略内容，应仅用于用户明确要求整块替换。`deferred_edit` 可编辑主题及子目录索引，不能修改根 Core。元数据描述变化后，父索引原有说明不会被自动覆盖，应在同次授权内明确维护。
+`memory_update` 是明确的整块替换，只接受固定 Core 块；它不保留被省略内容，应仅用于用户明确要求整块替换。`deferred_edit` 可编辑主题及子目录索引，不能直接编辑根 Core；元数据/概要的父入口同步仍属于 deferred.update 的受控维护范围，可能更新根入口。具体保护策略见下节。
 
 ### 创建与索引一致性
 
 1. `index.create()` 验证主题路径、Frontmatter、65536 字节上限及全树预算，取得写锁，拒绝已存在目标。
-2. 创建目录并先原子写入知识文件。`ensure_chain()` 从根向下创建缺失目录 MEMORY.md，向上层索引追加目录链接，最后向所在目录索引追加主题链接。默认概要来自主题描述；用户可进一步编辑为目录级摘要。
-3. 每个索引修改也独立核对摘要和原子替换。现有索引文字完整保留，已有目标链接不重复追加；未闭合代码围栏阻止发现时拒绝假成功。
+2. 创建目录并先原子写入知识文件。`ensure_chain()` 从根向下创建缺失目录 MEMORY.md，向上层索引追加目录链接，最后向所在目录索引追加主题链接。新目录统一采用中性概要“此目录整理按主题组织的长期知识；请查看下方索引选择相关主题。”，不从第一个主题推断范围，也不根据目录名称猜测用途。父入口只使用目录自身概要。添加主题不会覆盖已存在的目录说明；用户了解范围后可直接编辑或授权 Agent 将其完善为整体主题范围和读取时机。
+3. 新增目录和主题条目均附带内联 heybuddy-index 校验注释。每个索引修改也独立核对摘要和原子替换。现有索引文字完整保留，已有目标链接不重复追加；未闭合代码围栏阻止发现时拒绝假成功。
 4. 全部完成才返回 `created=true, indexed=true`。文件已创建但索引步骤失败，返回 `memory_index_incomplete`，明确文件可能存在且未回滚，不能盲目再次创建。
-5. `index.inspect()` / `deferred_index_check` 检测缺索引、缺父链接、无效/跳级链接、悬空链接和无效主题元数据。扫描拒绝危险路径及超预算树，不会静默跳过。
-6. `index.repair()` / `deferred_index_repair` 只创建缺失索引和追加缺失链接，不删除用户内容，不猜测悬空链接应该指向哪里。结果 `ok=false` 代表仍有问题；中途失败仍返回明确部分完成错误。修复是显式操作，不在启动或每次请求时自动运行。
+5. `index.inspect()` / `deferred_index_check` 检测缺索引、缺父链接、无效/跳级链接、悬空/重复链接、无效主题元数据，以及可确定陈旧的生成条目。生成标记仍在但文字已改写时返回 review 提示，不把人工描述与 Frontmatter 不同判为错误。扫描拒绝危险路径及超预算树，不会静默跳过。
+6. `index.repair()` / `deferred_index_repair` 创建缺失索引、追加缺失链接，并更新校验标记完整的陈旧生成条目；结果分别记录 additions/updates。不删除用户内容，不改写无标记或被人工修改的条目，不猜测悬空链接应该指向哪里。结果 `ok=false` 代表仍有问题；中途失败仍返回明确部分完成错误。修复是显式操作，不在启动或每次请求时自动运行。
+
+### 元数据变更与人工索引的保护
+
+Frontmatter `name/description` 描述主题文件本身；父索引说明可以描述**什么时候应该打开它**，两者无需文字相同。目录 MEMORY.md 描述整体范围，并给直属主题/子目录地图；根 MEMORY.md 让未来 Agent 在不知道文件名时选择第一层入口。
+
+`index.edit()` 比较修改前后的解析结果，而不是只看替换位置：
+
+- 普通正文编辑或仅改变 Frontmatter 的等价引号/格式，metadata_changed=false，index.status=not_needed，不读取或改写父索引。
+- name/description 变化时 metadata_changed=true；目录索引首段概要变化时 summary_changed=true。只有相关发现信息改变才维护直属父入口，不扫描或注入整棵树。
+- 父入口只有一个且 heybuddy-index 校验值仍与整条可见文字一致时，`maintain_link()` 按新元数据/目录概要更新该条目的字符区间，并更新标记；保留原换行、其余链接及无关文字。缺少目标链接时只补一条；已有重复目标时不猜测保留哪一条。
+- 旧 V0.5 无标记条目一律视作人工维护，即使恰好等于旧 Frontmatter 也不自动覆盖。被直接改写的生成条目同样保护；不会仅凭 description 不同认定它陈旧。用户要固定自己的读取时机说明，可去掉该条目末尾的生成注释。
+- 不做破坏性迁移：已有目录概要和旧入口不会自动重写或补标记。旧目录曾被首个主题限定时，需用户审阅后明确完善目录概要及父入口。
+
+不能安全同步时，deferred_edit 的外层 ToolResult.ok=false，error.code 为 memory_index_review 或 memory_index_incomplete；data 仍返回已保存文件的新 hash 及结构化状态，例如：
+
+```json
+{
+  "path": "projects/heybuddy.md",
+  "edited": true,
+  "complete": false,
+  "metadata_changed": true,
+  "summary_changed": false,
+  "index": {
+    "path": "projects/MEMORY.md",
+    "target": "projects/heybuddy.md",
+    "status": "review_required",
+    "reason": "custom_or_unmanaged_link"
+  }
+}
+```
+
+示例省略 hash。review_required 表示需要检查人工/无标记或重复条目；failed 表示索引 I/O、摘要冲突、容量等操作失败，reason 只返回安全错误码。edited=true 明确表示主题或目录文件已成功保存；不得重新应用已成功的编辑，也不声称已回滚。先查看 data.index.path，再在需要时明确编辑人工说明或调用授权修复。缺失索引和链接、完整标记的 stale_managed_link 可由原 deferred_index_repair 修复；人工说明和重复链接需要明确判断，不通过重新创建文件解决。
+
+`inspect()` 的 index_entry_review 只是“标记与已改写文字不符”的提示，不是内容语义错误。无标记的人工说明不参与 Frontmatter 文本一致性比较；检查通过不代表所有概念、用途和文字都经过语义验证。校验标记不是安全签名，持有本机写权限的用户仍可重写它；工具授权和路径隔离独立保持。
 
 ## 工具与权限
 
@@ -81,9 +115,9 @@ Agent ID 限定小写 ASCII 字母、数字、下划线或连字符，拒绝 Win
 | `deferred_create` | `deferred.update` | `path`, 带 Frontmatter 的完整 content |
 | `deferred_edit` | `deferred.update` | `path, old_text, new_text, expected_hash` |
 | `deferred_index_check` | 默认只读 | `offset=0`, `limit=20` |
-| `deferred_index_repair` | `deferred.update` | 无参数；只补缺项 |
+| `deferred_index_repair` | `deferred.update` | 无参数；补缺项和安全刷新生成条目 |
 
-`memory_history`、`memory_restore`、`memory.restore` 和 `/memory restore` 已移除；强制调用旧工具返回 unknown_tool。旧 memory.write 不能开启写入。可信嵌入入口自行选择本 Run 的最小权限；`deferred.update` 隐含创建时追加根发现链接的能力。`/memory repair` 是用户直接请求本地补链，不发送模型、不创建聊天 Run，也不改变下一轮权限。
+`memory_history`、`memory_restore`、`memory.restore` 和 `/memory restore` 已移除；强制调用旧工具返回 unknown_tool。旧 memory.write 不能开启写入。可信嵌入入口自行选择本 Run 的最小权限；`deferred.update` 隐含创建时追加根发现链接以及目录概要变更时安全更新根入口的能力。`/memory repair` 是用户直接请求本地补链，不发送模型、不创建聊天 Run，也不改变下一轮权限。
 
 ## 大小、隐私与异常边界
 
@@ -120,3 +154,5 @@ print(fs.read_file("projects/MEMORY.md"))
 ```
 
 `tests/test_memory_store.py` 覆盖外部编辑可见性、摘要冲突、并发受控写入、UTF-8/JSON 容量、路径与链接，以及真实进程在替换前后退出。`tests/test_memory_migration.py` 覆盖旧格式字节保留、备份和各阶段中断。`tests/test_memory_runtime.py` 保留 Core 的授权过期、刷新、Base 隔离和双存储窗口回归。`tests/test_deferred_memory.py` 覆盖分层创建、索引修复、局部更新、分页、安全、CLI 新会话/重启和 Recall 协作；`tests/test_memory_privacy.py` 验证 Git 隐私。运行 `uv run pytest`，均使用临时数据和 Fake Provider，保留网络禁用保护。
+
+V0.5.1 在同一测试文件增加多主题目录中性概要、正文编辑不写索引、元数据/目录概要安全同步、旧版无标记和人工改写保护、LF/CRLF/CR 换行保留、重复链接、父索引冲突、部分结果持久化，以及陈旧生成条目的显式修复。`tests/test_tools.py` 验证结构化失败数据沿用原 JSON 校验契约。

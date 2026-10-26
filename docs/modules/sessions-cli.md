@@ -17,7 +17,7 @@
 
 chat() 每次循环先设空权限。`/memory read <请求>` 授予本轮 memory.read；`/memory edit <请求>` 额外授予 memory.update 和 deferred.update，传给 Agent.run()。完整命令作为用户消息保存以供审计；下一次输入重置权限，历史、普通自然语言和 Memory 内容不能赋权。Deferred list/read/index_check 与 Recall 默认只读可用。`/memory restore` 已拒绝，不再暴露 History/Restore 工具或权限。
 
-`/memory check` 直接调用 `index.inspect()`；`/memory repair` 是用户对本地补链操作的显式授权，直接调用 `index.repair()`，不通过模型、不创建 Run，也不延续到下一次输入。检查分页结果包含 next_offset，可由 deferred_index_check 继续查看；修复只追加缺项，仍有悬空/无效链接时返回 ok=false，失败时明确提示部分操作可能已发生。工具参数和示例见[MemoryFS](memory.md)。
+`/memory check` 直接调用 `index.inspect()`；`/memory repair` 是用户对本地补链操作的显式授权，直接调用 `index.repair()`，不通过模型、不创建 Run，也不延续到下一次输入。检查分页结果包含 next_offset，可由 deferred_index_check 继续查看；修复补齐缺项并安全刷新标记完整的生成条目，保留人工说明；仍有悬空/无效/重复链接或标记改写提示时返回 ok=false，失败时明确提示部分操作可能已发生。工具参数和示例见[MemoryFS](memory.md)。
 
 main() 仅在运行期安装日志 handler，退出时恢复之前的日志配置并关闭 handler，避免多次嵌入调用复用已关闭的输出流。异常正文和私人路径不记录到日志。
 

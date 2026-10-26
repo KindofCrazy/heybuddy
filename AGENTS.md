@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.5 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引和同一 Agent 跨会话的只读 Conversation Recall。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.5.1 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引和同一 Agent 跨会话的只读 Conversation Recall。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -41,7 +41,7 @@
 - Core 工具仅操作固定块名；Deferred 工具仅接受 Agent 根内受限 Markdown 路径，拒绝绝对路径、穿越、Symlink/Junction、跨 Agent 和平台文件名绕过；不得获得 Base、工具注册、权限或代码执行接口。
 - 新增或修正优先 memory_edit / deferred_edit：old_text 必须非空且精确唯一匹配，new_text 只替换该片段；整块 Core 替换通过 memory_update 显式执行。写操作需文件 expected_hash，短写锁内检查冲突，同目录临时文件 flush/fsync 后原子替换；编辑器不参与锁，最后检查到 replace 有竞争窗口，不自动合并或重试。
 - 普通 Markdown 是唯一权威源，用户可直接编辑；不再创建 CURRENT、Snapshot、Revision 或日常版本备份。旧格式仅在一次性迁移读取：校验当前已提交内容，先唯一完整备份，再逐字节导出三个块；中断可补缺，不覆盖人工修改，不删除旧目录/备份；完成后正常运行只读新格式。
-- Deferred 按主题整理知识，目录含 MEMORY.md，普通文件含 name/description 单行 Frontmatter；所有 bullet 链接相对 Agent Memory Root，逐级发现。创建后补齐索引，部分失败不得报告整体成功；检查/修复有界且显式，修复只追加缺项，不静默删除用户内容。不得自动复制聊天、后台提取或全量注入 Deferred。
+- Deferred 按主题整理知识，目录含 MEMORY.md，普通文件含 name/description 单行 Frontmatter；所有 bullet 链接相对 Agent Memory Root，逐级发现。创建后补齐索引，部分失败不得报告整体成功；检查/修复有界且显式，修复补齐缺项，并仅刷新内联标记仍完整的生成条目；不覆盖人工/无标记说明，不静默删除用户内容。正文编辑不改父索引，元数据/目录概要变化时安全维护或返回包含已保存文件 hash、父索引路径与原因的部分完成错误。新目录概要保持中性，不借用首个主题的描述。不得自动复制聊天、后台提取或全量注入 Deferred。
 - 记忆工具的短本地提交不交给超时后继续执行的线程；同步磁盘步骤不能被 asyncio 超时中断。
 - 文件发布和 SQLite 无共同事务：结果写库失败不得声称已撤销记忆，不自动回滚或重试。
 - MemoryFS 每次写入前检查 Git 隐私：仓库或 worktree 内的实际 Agent 目录必须整目录被忽略且无已跟踪文件；无法验证则拒绝，不自动改写忽略规则或移除索引。检查使用固定参数的只读 Git 子命令，不执行模型生成的命令。

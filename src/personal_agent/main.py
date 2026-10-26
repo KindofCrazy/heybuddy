@@ -30,7 +30,7 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
 ) -> None:
-    write("HeyBuddy V0.5 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write("HeyBuddy V0.5.1 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
     if sessions is not None:
         write(sessions.status())
@@ -145,7 +145,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.5 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.5.1 CLI")
     parser.parse_args()
     try:
         settings = load_settings()

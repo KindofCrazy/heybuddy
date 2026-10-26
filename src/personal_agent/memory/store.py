@@ -202,18 +202,22 @@ class MemoryFS:
 
     def edit(self, relative: str, old_text: str, new_text: str, *, expected_hash: str) -> str:
         with self.writing():
-            path = self.path(relative)
-            raw = self.raw(path, self.max_bytes if relative in BLOCKS else FILE_BYTES)
-            if digest(raw) != expected_hash:
-                raise CoreMemoryError("memory_conflict", "Memory changed; read before editing.")
-            original = raw.decode("utf-8")
-            start = original.find(old_text)
-            if not old_text or start < 0 or original.find(old_text, start + 1) >= 0:
-                raise CoreMemoryError(
-                    "memory_edit_mismatch", "Original text must match exactly once."
-                )
-            text = original[:start] + new_text + original[start + len(old_text) :]
-            return self.replace(relative, text, expected_hash=expected_hash)
+            return self._edit_locked(relative, old_text, new_text, expected_hash=expected_hash)
+
+    def _edit_locked(
+        self, relative: str, old_text: str, new_text: str, *, expected_hash: str
+    ) -> str:
+        """Caller holds writing(); share the lock with associated index maintenance."""
+        path = self.path(relative)
+        raw = self.raw(path, self.max_bytes if relative in BLOCKS else FILE_BYTES)
+        if digest(raw) != expected_hash:
+            raise CoreMemoryError("memory_conflict", "Memory changed; read before editing.")
+        original = raw.decode("utf-8")
+        start = original.find(old_text)
+        if not old_text or start < 0 or original.find(old_text, start + 1) >= 0:
+            raise CoreMemoryError("memory_edit_mismatch", "Original text must match exactly once.")
+        text = original[:start] + new_text + original[start + len(old_text) :]
+        return self.replace(relative, text, expected_hash=expected_hash)
 
     def read_file(
         self, relative: str, *, offset: int = 0, limit: int = 4096, expected_hash: str | None = None

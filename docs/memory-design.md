@@ -37,7 +37,7 @@
 
 `MemoryFS.atomic()` 用目标同目录临时文件 + flush/fsync + 替换前摘要检查 + os.replace。受控写入共用已有 FileLock，不加事务框架。编辑器不参与锁，最后检查与替换之间仍有竞争窗口，文档明确这一限制。
 
-创建先保存主题，再逐个创建/更新各级索引；所有步骤完成才报告成功。中断可能留下孤立主题或缺链，返回明确部分完成错误，`index.inspect()` 可定位，授权 `index.repair()` 只追加缺项。悬空/无效链接不会被自动删除，不通过牺牲用户文字“修复一致性”。
+创建先保存主题，再逐个创建/更新各级索引；所有步骤完成才报告成功。中断可能留下孤立主题或缺链，返回明确部分完成错误，`index.inspect()` 可定位，授权 `index.repair()` 补齐缺项，并在 V0.5.1 安全刷新标记完整的生成条目。悬空/无效链接不会被自动删除，不通过牺牲用户文字“修复一致性”。
 
 旧格式迁移只保留一次性的读取与哈希验证代码，校验 CURRENT → 完整唯一备份 → 导出相同字节 → 标记迁移完成；中断有可重复、拒绝覆盖人工编辑的路径。正常运行没有第二套存储后端，见[迁移说明](memory-migration.md)。
 
@@ -46,3 +46,9 @@
 修改 `memory/store.py`、`models.py`、`tools.py`，增加小模块 `index.py` 和仅迁移用的 `migration.py`；继续复用 `privacy.py`、`file_lock.py`。配置处理新安装的用户数据位置与已知旧位置，CLI 调整本轮授权和本地索引维护命令，Base Prompt 描述层次与内容原则。ContextBuilder 的 compile Protocol、Agent Loop、ToolRegistry 执行机制和 SQLite schema/Recall 保持职责不变。相关测试和模块文档同步更新。
 
 不实现 Git-backed Memory、History/Restore、分支/worktree、远程同步、Reflection/Sleep Agent、后台任务、Scheduler、自动知识提取、全历史总结、Embedding/Vector DB、Context Compaction 或新的通信入口。未来只在明确需求出现后另行设计。
+
+## V0.5.1：目录范围与安全维护
+
+首次主题的 description 不能代表整个目录，因此创建和修复缺失目录时使用统一的中性概要，不根据目录名或首个文件推断用途；已有概要保留，由用户在范围明确后完善。Frontmatter 描述文件内容，父索引可描述读取时机，这与上面 Letta 维护约定的分工一致，不要求两者始终相同。
+
+新生成条目附带内联 heybuddy-index 注释，校验整条可见文字是否仍保持生成时状态。元数据或目录概要修改时只刷新校验完整的生成条目；普通正文编辑不改父索引。旧版无标记条目以及人工改写的条目均保留，不能安全同步就返回明确 review，索引写入失败则返回正文已保存的结构化错误。现有检查/修复入口可诊断重复、陈旧生成条目和人工修改标记，不扩展为语义判断器。没有索引数据库、后台任务或多文件事务；标记也不是认证或历史系统。更多执行路径与部分完成状态见 [MemoryFS 模块](modules/memory.md)。

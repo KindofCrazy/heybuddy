@@ -29,9 +29,9 @@
 
 ## 记忆工具的特殊执行边界
 
-`memory/tools.py::register_memory_tools()` 注册 Core read/edit/update，以及 Deferred list/read/create/edit/index_check/index_repair。Core 用 memory.read / memory.update；Deferred 读和检查默认可用，写与修复用 deferred.update。Registry 执行机制保持不变，同时过滤定义并复查本 Run 权限，旧 History/Restore 已移除。ToolExecutionError 将安全领域错误码转换为关联 call_id 的 ToolResult。
+`memory/tools.py::register_memory_tools()` 注册 Core read/edit/update，以及 Deferred list/read/create/edit/index_check/index_repair。Core 用 memory.read / memory.update；Deferred 读和检查默认可用，写与修复用 deferred.update。Registry 执行机制保持不变，同时过滤定义并复查本 Run 权限，旧 History/Restore 已移除。ToolExecutionError 将安全领域错误码转换为关联 call_id 的 ToolResult。可选 data 保留部分完成的结构化信息，也通过既有 JSON/非有限数校验；格式非法返回安全 execution_error，不输出原始值。
 
-记忆工具是无 await 磁盘步骤的异步包装，不在线程中留下超时后继续执行的写入。磁盘读取、Git 隐私检查和 flush/fsync 会阻塞事件循环，超时不是硬截止。局部编辑使用 expected_hash 与唯一原文匹配；创建涉及多个文件，索引失败明确返回部分完成错误，不自动回滚或重试。具体参数、字节预算及运行路径见[MemoryFS](memory.md)，对应 `tests/test_memory_runtime.py` 和 `tests/test_deferred_memory.py`。
+记忆工具是无 await 磁盘步骤的异步包装，不在线程中留下超时后继续执行的写入。磁盘读取、Git 隐私检查和 flush/fsync 会阻塞事件循环，超时不是硬截止。局部编辑使用 expected_hash 与唯一原文匹配；创建和元数据变更可能涉及多个文件，索引失败明确返回部分完成错误；deferred_edit 的 ok=false 可以同时携带 data.edited=true、新 hash、父索引路径和安全原因码，不自动回滚或重试。具体参数、字节预算及运行路径见[MemoryFS](memory.md)，对应 `tests/test_memory_runtime.py` 和 `tests/test_deferred_memory.py`。
 
 ## 阅读与验证
 

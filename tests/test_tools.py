@@ -171,3 +171,23 @@ async def test_sync_timeout_reports_unknown_completion_and_thread_can_finish_lat
         await task
     # A late completion must not turn the earlier timeout result into success.
     assert not result.ok
+
+
+@pytest.mark.parametrize(
+    "payload", [{"edited": True, "complete": False}, {"value": object()}, {"value": float("nan")}]
+)
+async def test_sanitized_tool_failure_data_uses_json_contract(payload, caplog):
+    from personal_agent.tools.registry import ToolExecutionError
+
+    async def fail(_):
+        raise ToolExecutionError("partial", "Partial operation; no retry.", data=payload)
+
+    tools = ToolRegistry()
+    tools.register(Tool("partial", "partial", ToolArguments, fail))
+    result = await tools.execute(ToolCall(id="partial-call", name="partial", arguments="{}"))
+    assert not result.ok and result.call_id == "partial-call"
+    if "edited" in payload:
+        assert result.error.code == "partial" and result.data == payload
+    else:
+        assert result.error.code == "execution_error" and result.data is None
+        assert "value" not in result.error.message + caplog.text

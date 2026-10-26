@@ -37,3 +37,5 @@ AgentRecord.system_prompt 保留为兼容元数据，CLI 不从中加载 Base。
 ## V0.4 Recall 证据模型
 
 `recall/models.py` 独立定义 SearchArguments、GetArguments、SearchHit、RecalledMessage、SearchResult 和 GetResult。证据包含稳定的原 Message ID、Conversation ID、Run ID、sequence、created_at、role、run_status，而非一条新聊天记录；FTS 内部 rowid 不暴露为长期外部定位标识。结果标记 historical_data_only、范围限制和文本截断。它们不包含完整 provider_data、原始工具调用或结果，完整审计仍使用原 StoredMessage 结构读取。
+
+V0.5.1 的 `memory/models.py::summary()` 仅在提取目录概要时统一 LF/CRLF/CR，避免将换行差异误诊为父入口陈旧；不重写原文件字节。索引条目保留原始字符区间，由 index.edit()/maintain_link() 维护；执行与边界见[MemoryFS](memory.md)，验证见 `tests/test_deferred_memory.py::test_metadata_edit_updates_only_intact_generated_entry`。

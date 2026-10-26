@@ -70,7 +70,7 @@ def metadata(text: str) -> tuple[str, str]:
 
 
 def summary(text: str) -> str:
-    paragraphs = re.split(r"\n\s*\n", text.replace("\r\n", "\n"))
+    paragraphs = re.split(r"\n\s*\n", text.replace("\r\n", "\n").replace("\r", "\n"))
     return next(
         (
             p.strip()[:240]

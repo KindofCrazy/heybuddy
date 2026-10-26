@@ -1,4 +1,4 @@
-# HeyBuddy — V0.5 Lightweight Memory
+# HeyBuddy — V0.5.1 Memory Index Hardening
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
@@ -101,7 +101,11 @@ Deferred 只读工具 deferred_list / deferred_read / deferred_index_check 默�
 
 普通文件可直接用 UTF-8 编辑器查看和修改，重新读取即生效；过期 hash 拒绝覆盖。受控写入有短锁和同目录原子替换，外部编辑器与 Agent 最后检查/替换之间仍有小竞争窗口，避免同时编辑同一文件。Deferred 文件最多 65536 字节，目录列举每页最多 10 条；读取返回 truncated/next_offset，可传上次 hash 继续读取。工具 data JSON 上限 16384 字节。
 
-文件写入与索引更新是多个单文件操作，索引步骤失败返回 memory_index_incomplete，不声称整体成功。先 `/memory check`，再明确 `/memory repair` 补齐缺项；修复只追加，不删除用户的无效或悬空链接。检查有界全树和索引目标，各最多 500 项；分页问题详情也可经 deferred_index_check 继续查询。
+文件写入与索引更新是多个单文件操作，索引步骤失败返回 memory_index_incomplete，不声称整体成功。先 `/memory check`，再明确 `/memory repair` 补齐缺项；修复补齐缺项并刷新校验完整的生成条目，不删除用户的无效、重复或悬空链接，也不改写人工/无标记说明。检查有界全树和索引目标，各最多 500 项；分页问题详情也可经 deferred_index_check 继续查询。
+
+新目录使用中性概要，不把首个主题的 description 当作整个目录用途；添加主题保留已有目录说明。用户了解目录范围后，可直接完善概要或通过 deferred_edit 修改，完整生成标记的父入口会随之更新。Frontmatter description 描述文件内容，父索引也可描述何时读取，两者不必相同。
+
+V0.5.1 新生成条目有内联 heybuddy-index 校验注释。正文编辑不改父索引；name/description 变化只自动刷新仍保持生成原文的条目。旧无标记或人工改写条目会保留，并返回具体 index.path/reason 供 review。索引维护失败时工具 ok=false，但 data.edited=true 表示文件已保存，附带新 hash；不要盲目重试正文编辑，先检查索引。已有私人目录不自动迁移重写，完整策略见[Memory 模块](docs/modules/memory.md)。
 
 `memory_history` / `memory_restore`、`memory.restore` 和 `/memory restore` 已移除。旧 Snapshot 的 CURRENT、versions 保留但迁移完成后不再使用；迁移前建立唯一完整备份，逐字节导出旧 Core，断点可继续，遇到新文件人工更改则拒绝覆盖。见[迁移步骤与冲突处理](docs/memory-migration.md)。长期恢复依赖用户备份，V0.5 没有版本链。
 
@@ -136,7 +140,7 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.5.0 对应 schema 2，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.5.1 对应 schema 2，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、可重放历史、当前上下文和运行中消息；目前不压缩上下文。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 

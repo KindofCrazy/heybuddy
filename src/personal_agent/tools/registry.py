@@ -17,9 +17,10 @@ JSON_VALUE = TypeAdapter(JsonValue)
 class ToolExecutionError(Exception):
     """A tool's intentional, sanitized domain failure."""
 
-    def __init__(self, code: str, message: str) -> None:
+    def __init__(self, code: str, message: str, *, data: JsonValue = None) -> None:
         super().__init__(message)
         self.code = code
+        self.data = data
 
 
 class ToolArguments(BaseModel):
@@ -73,12 +74,13 @@ class ToolRegistry:
     async def execute(
         self, call: ToolCall, *, permissions: frozenset[str] = frozenset()
     ) -> ToolResult:
-        def failure(code: str, message: str) -> ToolResult:
+        def failure(code: str, message: str, *, data: JsonValue = None) -> ToolResult:
             logger.warning("tool_failed name=%s call_id=%s code=%s", call.name, call.id, code)
             return ToolResult(
                 call_id=call.id,
                 name=call.name,
                 ok=False,
+                data=data,
                 error=ToolError(code=code, message=message),
             )
 
@@ -137,7 +139,12 @@ class ToolRegistry:
                 "Do not automatically retry.",
             )
         except ToolExecutionError as exc:
-            return failure(exc.code, str(exc))
+            try:
+                error_data = JSON_VALUE.validate_python(exc.data)
+                json.dumps(error_data, allow_nan=False)
+            except (ValidationError, TypeError, ValueError):
+                return failure("execution_error", "Tool returned invalid failure data.")
+            return failure(exc.code, str(exc), data=error_data)
         except Exception as exc:
             logger.warning(
                 "tool_exception name=%s call_id=%s type=%s",

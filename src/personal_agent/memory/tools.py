@@ -91,15 +91,25 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         return index.create(fs, args.path, args.content)
 
     async def deferred_edit(args: EditArguments) -> dict:
-        if "/" not in args.path:
-            raise CoreMemoryError("invalid_path", "Use Core tools to edit root memory.")
-        value = fs.edit(args.path, args.old_text, args.new_text, expected_hash=args.expected_hash)
-        return {
-            "path": args.path,
-            "hash": value,
-            "edited": True,
-            "index_note": "If metadata or links changed, check and maintain parent descriptions.",
-        }
+        result = bounded(
+            index.edit(
+                fs, args.path, args.old_text, args.new_text, expected_hash=args.expected_hash
+            )
+        )
+        if not result["complete"]:
+            code = (
+                "memory_index_review"
+                if result["index"]["status"] == "review_required"
+                else "memory_index_incomplete"
+            )
+            raise ToolExecutionError(
+                code,
+                "Topic/index edit was saved, but parent discovery maintenance is incomplete. "
+                "See data.index.path/reason; do not repeat the saved edit. "
+                "Review or repair the index.",
+                data=result,
+            )
+        return result
 
     async def check(args: CheckArguments) -> dict:
         return index.inspect(fs, offset=args.offset, limit=args.limit)
@@ -175,24 +185,27 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
             "deferred_edit",
             "Read first, then replace one unique exact span with latest "
             "expected_hash. Preserve other content; prefer updating an "
-            "existing topic. Index links are relative to Memory Root.",
+            "existing topic. Intact generated parent entries follow metadata/summary changes. "
+            "On partial failure, data.edited=true means the file was saved: do not retry it; "
+            "review data.index.path/reason. Custom and unmarked index text is preserved.",
             EditArguments,
             deferred_edit,
             "deferred.update",
         ),
         (
             "deferred_index_check",
-            "Check missing indexes/links and dangling/invalid root-relative "
-            "bullet links. Results are paginated; no writes.",
+            "Check missing/dangling/invalid/duplicate root-relative links, stale generated entries "
+            "and edited-marker review hints. Custom prose need not match Frontmatter. "
+            "Results are paginated; no writes.",
             CheckArguments,
             check,
             None,
         ),
         (
             "deferred_index_repair",
-            "Append missing links and create missing indexes; preserve all "
-            "existing text. Dangling links remain for review; ok=false means "
-            "issues remain. No rollback or automatic retries.",
+            "Add missing indexes/links and refresh only intact generated entries. "
+            "Preserve custom/unmarked text. Dangling/duplicate/edited-marker issues remain "
+            "for review; data.ok=false means issues remain. No rollback or automatic retries.",
             RepairArguments,
             repair,
             "deferred.update",
