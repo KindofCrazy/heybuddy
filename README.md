@@ -1,12 +1,14 @@
-# HeyBuddy — V0.4 Conversation Recall
+# HeyBuddy — V0.5 Lightweight Memory
 
-一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，并加入按需跨会话历史检索 Recall。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
+一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计
 
 持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 只在本轮显式授权后通过受限工具修改，不自动从聊天提取；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
-不实现自动记忆提取、Deferred Memory 检索、向量/Embeddings、Reflection、Context Compaction、 Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。
+三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
+
+不实现自动记忆提取、向量/Embeddings、Reflection、Context Compaction、Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。设计参考与取舍见[Letta Code 调研](docs/memory-design.md)，升级前请阅读[迁移说明](docs/memory-migration.md)。
 
 ## 安装与配置
 
@@ -26,8 +28,8 @@ OPENAI_MODEL=your-responses-api-model
 # 使用 DeepSeek 时可设置以下地址及模型 deepseek-flash
 # OPENAI_BASE_URL=https://api.deepseek.com
 AGENT_DATABASE_PATH=.heybuddy/heybuddy.sqlite3
-# 留空则为数据库路径加 .memory，再以 Agent ID 隔离
-# AGENT_MEMORY_ROOT=.heybuddy/core-memory
+# 新安装默认用户数据目录；已有数据库旁的 .memory 目录继续原地使用
+# AGENT_MEMORY_ROOT=D:/private-data/heybuddy-memory
 AGENT_CORE_MEMORY_MAX_BYTES=8192
 AGENT_MAX_ROUNDS=10
 AGENT_REQUEST_TIMEOUT_SECONDS=60
@@ -37,7 +39,7 @@ AGENT_LOG_LEVEL=INFO
 
 Key 和模型名必填，其余均有默认值。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
 
-数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或自动备份。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 推荐放在仓库外；仓库内实际 Agent 记忆目录必须整目录被 Git 忽略且没有已跟踪文件，否则初始化或写入会被拒绝。程序不会自动改写忽略规则或移除索引。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
+数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或日常自动备份；旧格式迁移会创建一次性完整备份。新安装 Memory 默认在 Windows `%LOCALAPPDATA%/HeyBuddy/memory/`（其他系统 `~/.local/share/heybuddy/memory/`），并按 Agent ID 隔离；已有 `<database_path>.memory/<agent_id>/` 继续原地使用。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 推荐放在仓库外；仓库内实际 Agent 记忆目录必须整目录被 Git 忽略且没有已跟踪文件，否则初始化或写入会被拒绝。程序不会自动改写忽略规则或移除索引。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
 
 ## 启动与会话命令
 
@@ -55,9 +57,10 @@ uv run personal-agent --help
 | `/new` | 在同一 Agent 下新建并切换到空会话 |
 | `/sessions` | 列出会话 ID、更新时间，并标记当前会话 |
 | `/resume <conversation_id>` | 根据完整 ID 恢复已有会话 |
-| `/memory read <请求>` | 本轮允许读取记忆和版本历史工具 |
-| `/memory edit <请求>` | 本轮允许读取、局部编辑与显式整块替换，不允许恢复 |
-| `/memory restore <请求>` | 本轮允许读取与恢复完整快照，不允许普通更新 |
+| `/memory read <请求>` | 本轮允许读取固定 Core 块和内容摘要 |
+| `/memory edit <请求>` | 本轮允许 Core 与 Deferred 创建/编辑及索引补链 |
+| `/memory check` | 本地检查缺失索引/链接、悬空/无效链接，不调用模型 |
+| `/memory repair` | 用户直接授权本地补齐缺失索引/链接，保留原文，不调用模型 |
 | `/status` | 查看 Agent、当前 Conversation、Run 状态和中断提示 |
 | `exit` / `quit` / EOF | 正常退出 |
 
@@ -65,25 +68,44 @@ uv run personal-agent --help
 
 例如第一次输入“我正在开发 HeyBuddy，准备参考 Letta Code 设计长期记忆”，然后退出。第二次使用同一数据库启动并问“我们之前准备怎样实现 Memory？”，Provider 会收到恢复的前文。输入 `/new` 后再提问，则包含程序 Base System Prompt、共享 Core Memory 与新输入；可通过 `/resume` 返回旧会话。
 
-## 使用可编辑记忆
+## 使用长期记忆
 
 ```text
-你 > /memory edit 请记住：我正在开发 HeyBuddy，希望回答使用简洁中文。写入 human.md。
-Agent > （模型调用 memory_edit 后确认；成功必须以工具返回为准）
+你 > /memory edit 请记住我偏好简洁中文，整合到 human.md 的已有原则。
+你 > /memory edit 为 HeyBuddy 创建项目记忆，记录目前架构和已确认的设计决策。
+Agent > （先查看索引，读取已有主题；无现有主题时调用 deferred_create 并补齐发现链）
 你 > /new
-你 > 我正在做什么项目？我喜欢怎样的回答？
-Agent > （新会话可使用共享 Core Memory，无需加载旧会话）
-你 > /memory read 请读取 human.md，并列出最近的记忆版本。
-你 > /memory restore 请先查看历史，将记忆恢复到版本 <完整版本 ID>。
+你 > HeyBuddy 目前采用什么架构？
+Agent > （从 Core 根索引 → projects/MEMORY.md → projects/heybuddy.md 按需读取）
+你 > /memory edit 把已有项目记忆中的某条设计决策改为新决定，保留其他内容。
+你 > /memory check
+你 > /memory repair
 ```
 
-重启后同样加载已提交记忆。每次请求编译最新版本，允许工具的 Run 内更新也会在下一轮生效。读取和版本工具为 memory_read / memory_history；新增或修正优先用 memory_edit，显式整块替换用 memory_update，恢复用独立授权的 memory_restore。嵌入入口的权限改为 memory.read / memory.update / memory.restore；旧 memory.write 不再授予操作。更新必须携带最新 expected_version；连续更新两个块时，第二次需要第一次返回的新版本。恢复创建新版本，不删除历史。不要在记忆中存放 API Key 或其他凭证。
+Core 固定为 persona.md、human.md、MEMORY.md，每次请求重新编译，总容量默认 8192 UTF-8 字节（含 JSON）；不把 Deferred 正文全部拼入 Prompt。Root MEMORY.md 兼顾重要原则和顶层知识目录的用途/何时打开说明。Deferred 目录拥有自己的 MEMORY.md，普通主题文件有两个单行 Frontmatter 字段：
 
-磁盘布局是 `<memory_root>/<agent_id>/versions/<version>/{persona.md,human.md,MEMORY.md,revision.json}`， CURRENT 原子选择当前版本。版本目录不可直接编辑，改动会破坏哈希校验；本地维护可使用 `MemoryStore.update(block, content, expected_version=...)`，详见[模块文档](docs/modules/memory.md)。 Base System Prompt 由程序维护，Core Memory 以 user 角色 JSON 数据注入，没有修改系统规则和工具权限的接口。
+```markdown
+---
+name: heybuddy
+description: HeyBuddy 的架构、设计决策和开放问题。
+---
 
-局部编辑使用 `old_text` / `new_text`，要求原文非空且精确匹配一次；新增内容可匹配末尾事实并在替换文本中保留它。例如已有 `A\nB\n`，将 `B\n` 替换为 `B\nC\n`，结果为 `A\nB\nC\n`。旧版本、找不到原文、重复匹配和超限都拒绝发布新快照，不自动重试。整块替换仍可明确请求，但不会自动保留被省略的内容。
+# HeyBuddy
 
-自定义目录如 `<仓库>/private-memory/heybuddy/`，可由用户在仓库 `.gitignore` 加入 `/private-memory/`。只有忽略个别文件不够；目录内已被 Git 跟踪的旧文件也必须先人工检查并移出索引，新增忽略规则不会自动保护它们。每次初始化或写入都会检查；仓库内检查需要可用的 Git，失败时停止，不悄悄换目录。
+当前采用自建 asyncio Harness 和 SQLite Conversation Recall。
+```
+
+目录与主题按内容组织，不按聊天日期建日志。所有索引使用相对 Agent Memory Root 的链接：根写 `- [Projects](projects/MEMORY.md): 项目架构与设计取舍。`，子索引写 `- [HeyBuddy](projects/heybuddy.md): HeyBuddy 的当前理解。`。新文件通过各级索引发现；name/description 用于有界目录列举，正文只在相关时读取。
+
+Deferred 只读工具 deferred_list / deferred_read / deferred_index_check 默认可用；Core 读取工具 memory_read 使用 `/memory read` 或 `/memory edit` 授权。写入必须本轮显式 `/memory edit`：优先 memory_edit / deferred_edit 局部替换，显式整块替换才用 memory_update；deferred_create 创建时不覆盖旧文件并自动补链。读取返回 hash，写入携带 expected_hash；old_text 必须非空且精确唯一匹配。自然语言“记住”和旧会话里的授权不授予当前写权限。
+
+普通文件可直接用 UTF-8 编辑器查看和修改，重新读取即生效；过期 hash 拒绝覆盖。受控写入有短锁和同目录原子替换，外部编辑器与 Agent 最后检查/替换之间仍有小竞争窗口，避免同时编辑同一文件。Deferred 文件最多 65536 字节，目录列举每页最多 10 条；读取返回 truncated/next_offset，可传上次 hash 继续读取。工具 data JSON 上限 16384 字节。
+
+文件写入与索引更新是多个单文件操作，索引步骤失败返回 memory_index_incomplete，不声称整体成功。先 `/memory check`，再明确 `/memory repair` 补齐缺项；修复只追加，不删除用户的无效或悬空链接。检查有界全树和索引目标，各最多 500 项；分页问题详情也可经 deferred_index_check 继续查询。
+
+`memory_history` / `memory_restore`、`memory.restore` 和 `/memory restore` 已移除。旧 Snapshot 的 CURRENT、versions 保留但迁移完成后不再使用；迁移前建立唯一完整备份，逐字节导出旧 Core，断点可继续，遇到新文件人工更改则拒绝覆盖。见[迁移步骤与冲突处理](docs/memory-migration.md)。长期恢复依赖用户备份，V0.5 没有版本链。
+
+Base System Prompt 由程序维护，Core 继续以 user 角色 JSON 数据注入；Deferred 工具返回也只是低信任 ToolMessage。记忆不能改变 Base、工具注册或权限。自定义仓库内目录仍须整目录忽略且无已跟踪文件；程序每次写前验证，不自动改 Git。不要在记忆中存放 API Key、Token 或密码。详细工具参数和实际调用路径见[MemoryFS 模块](docs/modules/memory.md)。
 
 ## 使用 Conversation Recall
 
@@ -114,19 +136,20 @@ main → SQLiteStore.initialize / recover_incomplete_runs → SessionManager
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.4.0 对应 schema 2，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.5.0 对应 schema 2，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、可重放历史、当前上下文和运行中消息；目前不压缩上下文。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
 模块文档均包含架构组成、真实入口/执行顺序、异常边界和验证方法：
 
 - [整体架构与端到端 Pipeline](docs/architecture.md)
+- [V0.5 设计调研](docs/memory-design.md) 与 [迁移说明](docs/memory-migration.md)
 - [Agent Loop](docs/modules/agent.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
 - [内部及持久化数据模型](docs/modules/models.md)
 - [Provider 与 Responses 重放](docs/modules/provider.md)
 - [工具注册与超时契约](docs/modules/tools.md)
-- [Core Memory、版本及权限](docs/modules/memory.md)
+- [MemoryFS、分层索引及权限](docs/modules/memory.md)
 - [Conversation Recall、中文检索及重建](docs/modules/recall.md)
 - [SQLite、迁移及事务](docs/modules/storage.md)
 - [会话管理与 CLI](docs/modules/sessions-cli.md)
@@ -189,10 +212,12 @@ uv run ruff format --check .
 uv build
 ```
 
-测试使用 Fake Provider、SDK MockTransport、临时 SQLite 和记忆目录，隔离真实配置并禁用外网，不需要真实 API Key，不消耗模型费用。覆盖重启恢复、会话隔离、完整消息/Provider JSON 重放、迁移回滚、数据库异常、批量工具调用中断、真实进程退出和多次重启，以及原有 Runtime 测试。 V0.3 另外覆盖跨会话记忆、更新冲突、失败回滚、大小限制、权限过期和 Base System Prompt 隔离。 V0.4 另覆盖 Recall 旧库回填、索引事务回滚、字面检索、跨 Agent 隔离、展开限制、索引重建及恶意历史的权限边界。 Windows 沙箱临时目录受限时使用 `uv run pytest --basetemp=.pytest_cache/tmp`； asyncio 需要允许本地 socketpair，测试仍禁止外网。 uv 缓存目录不可写时设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
+测试使用 Fake Provider、SDK MockTransport、临时 SQLite 和记忆目录，隔离真实配置并禁用外网，不需要真实 API Key，不消耗模型费用。覆盖重启恢复、会话隔离、完整消息/Provider JSON 重放、迁移回滚、数据库异常、批量工具调用中断、真实进程退出和多次重启，以及原有 Runtime 测试。 Core 回归覆盖跨会话记忆、更新冲突、原子写失败、大小限制、权限过期和 Base System Prompt 隔离。 Recall 测试覆盖 旧库回填、索引事务回滚、字面检索、跨 Agent 隔离、展开限制、索引重建及恶意历史的权限边界。 V0.5 增加旧格式迁移中断、编辑器可见性、索引补链/部分失败、Deferred 分页、Junction 和 CLI 重启渐进读取测试。 Windows 沙箱临时目录受限时使用 `uv run pytest --basetemp=.pytest_cache/tmp`； asyncio 需要允许本地 socketpair，测试仍禁止外网。 uv 缓存目录不可写时设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
 
 ## 当前限制
 
-V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、语义检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；版本尚无自动清理。 Markdown 快照发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子指针不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。固定路径与完整性校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
+V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。会话历史会完整加载并随请求发送，暂无 token 预算、压缩、语义检索、自动备份或数据加密。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
 
 Recall 采用关键词子串与时间排序，尚无语义召回或分页；短查询和长消息正文会受范围/长度上限限制。SQLite 读取、回填与重建是同步操作，查询工作预算不是硬实时取消。索引错误可能使新消息事务失败，需要显式修复后继续；外部 VACUUM 等维护改变内部 rowid 后也应重建索引。
+
+外部编辑器不参与受控写锁，最后摘要检查与 replace 仍有竞争窗口；多文件索引无整体事务，需显式检查/修复。索引只支持约定的根相对 Markdown bullet 链接和简化 Frontmatter，不提供任意 YAML、无限目录或自动语义搜索。迁移保留的旧目录及备份由用户手动清理。

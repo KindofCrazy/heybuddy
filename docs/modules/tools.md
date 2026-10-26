@@ -29,7 +29,9 @@
 
 ## 记忆工具的特殊执行边界
 
-`memory/tools.py` 注册五个固定工具，分别使用 memory.read / memory.update / memory.restore 权限；权限默认空集合，Agent 将本轮宿主授权同时传入 definitions 和 execute，不依赖模型自律。 ToolExecutionError 将安全领域错误码（如 memory_conflict）转换为标准 ToolResult。memory_edit 以唯一原文匹配保护局部修改，memory_update 保留显式整块替换；memory_restore 独立授权。记忆读取、Git 隐私检查和提交均是协程包装的同步 I/O，没有 await 点，不在线程中执行有副作用的写入。它会短暂阻塞事件循环，timeout 无法强制打断文件系统操作；并不改变一般同步工具的超时契约。具体授权、冲突和版本路径见[MemoryStore](memory.md)，测试见 tests/test_memory_runtime.py。
+`memory/tools.py::register_memory_tools()` 注册 Core read/edit/update，以及 Deferred list/read/create/edit/index_check/index_repair。Core 用 memory.read / memory.update；Deferred 读和检查默认可用，写与修复用 deferred.update。Registry 执行机制保持不变，同时过滤定义并复查本 Run 权限，旧 History/Restore 已移除。ToolExecutionError 将安全领域错误码转换为关联 call_id 的 ToolResult。
+
+记忆工具是无 await 磁盘步骤的异步包装，不在线程中留下超时后继续执行的写入。磁盘读取、Git 隐私检查和 flush/fsync 会阻塞事件循环，超时不是硬截止。局部编辑使用 expected_hash 与唯一原文匹配；创建涉及多个文件，索引失败明确返回部分完成错误，不自动回滚或重试。具体参数、字节预算及运行路径见[MemoryFS](memory.md)，对应 `tests/test_memory_runtime.py` 和 `tests/test_deferred_memory.py`。
 
 ## 阅读与验证
 

@@ -14,7 +14,7 @@ Recall 是从历史中取证的只读能力，与 Core Memory 的稳定事实和
 | `main.py::_run_session` | 创建 Recall(sessions.store, sessions.agent.id)，注册普通对话可用的工具 |
 | `core/context.py` | Base 中加入取证、来源引用、无证据时说明和低信任规则；不自动搜索 |
 
-Agent Loop、Provider、MemoryStore 不需要识别 Recall 类型，继续通过普通工具调用循环处理结果。Recall 没有新的数据库连接、独立事实文件、后台更新任务或自动任务恢复能力。
+Agent Loop、Provider、MemoryFS 不需要识别 Recall 类型，继续通过普通工具调用循环处理结果。Recall 没有新的数据库连接、独立事实文件、后台更新任务或自动任务恢复能力。
 
 ## 为什么使用 trigram，以及中文的取舍
 

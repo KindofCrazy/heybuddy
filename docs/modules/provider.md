@@ -2,7 +2,7 @@
 
 ## 架构组成
 
-`llm/base.py::Provider` 是接受内部消息和 ToolDefinition、返回 ModelResponse 的 Protocol。 `llm/openai_provider.py::OpenAIProvider` 是唯一具体适配器，使用官方 AsyncOpenAI Responses API。 SQLite、MemoryStore、CLI 和会话选择都不进入 Provider；Agent 也不使用 SDK 响应对象。
+`llm/base.py::Provider` 是接受内部消息和 ToolDefinition、返回 ModelResponse 的 Protocol。 `llm/openai_provider.py::OpenAIProvider` 是唯一具体适配器，使用官方 AsyncOpenAI Responses API。 SQLite、MemoryFS、CLI 和会话选择都不进入 Provider；Agent 也不使用 SDK 响应对象。
 
 ## 实际运行路径
 

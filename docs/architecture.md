@@ -1,17 +1,17 @@
-# HeyBuddy V0.4：整体架构与 Pipeline
+# HeyBuddy V0.5：整体架构与 Pipeline
 
 本文串起从启动到退出的真实执行路径，解释每一层接收什么、改变什么状态、在哪里保存数据。具体方法细节可从[文档索引](README.md)进入。当前系统是一个本地进程、一个 SQLite 数据库和独立的 Markdown 记忆目录，没有消息队列、后台任务消费者或自动续跑器。
 
 ## 1. 先区分实体、执行器和执行次数
 
-| 概念           | 当前实现                               | 生命周期与职责                                                             |
-| -------------- | -------------------------------------- | -------------------------------------------------------------------------- |
-| 持久 Agent     | `storage/models.py::AgentRecord`     | 数据库中的身份、名称；system_prompt 保留为兼容元数据；CLI 默认 ID 为 `heybuddy`          |
-| Conversation   | `ConversationRecord`                 | 属于一个 Agent；隔离聊天历史，退出进程后仍存在                             |
-| Message        | `StoredMessage` 包装内部 `Message` | 属于一个 Conversation 和一个 Run，保存完整结构及顺序                       |
-| Run            | `RunRecord`                          | 一次普通用户输入的处理过程，包含零个或多个已收到的模型响应、工具结果与终态 |
-| Runtime 执行器 | `core/agent.py::Agent`               | 进程内 Python 对象，执行手写循环；不是数据库中的 Agent 实体                |
-| round          | `_run()` 的一次循环                  | 一次模型请求；一个 Run 可以消耗多个 round                                  |
+| 概念           | 当前实现                               | 生命周期与职责                                                                    |
+| -------------- | -------------------------------------- | --------------------------------------------------------------------------------- |
+| 持久 Agent     | `storage/models.py::AgentRecord`     | 数据库中的身份、名称；system_prompt 保留为兼容元数据；CLI 默认 ID 为 `heybuddy` |
+| Conversation   | `ConversationRecord`                 | 属于一个 Agent；隔离聊天历史，退出进程后仍存在                                    |
+| Message        | `StoredMessage` 包装内部 `Message` | 属于一个 Conversation 和一个 Run，保存完整结构及顺序                              |
+| Run            | `RunRecord`                          | 一次普通用户输入的处理过程，包含零个或多个已收到的模型响应、工具结果与终态        |
+| Runtime 执行器 | `core/agent.py::Agent`               | 进程内 Python 对象，执行手写循环；不是数据库中的 Agent 实体                       |
+| round          | `_run()` 的一次循环                  | 一次模型请求；一个 Run 可以消耗多个 round                                         |
 
 因此，“一个 Agent 有多个会话”说的是数据库实体关系；“Agent Loop”说的是 Runtime 的执行职责。 CLI 可以复用同一个 Runtime，切换它绑定的 ContextBuilder，持久 Agent 的身份不会因此改变。 `/new`、`/sessions`、`/resume`、`/status` 是管理命令，不创建聊天 Run。
 
@@ -36,7 +36,7 @@ flowchart TD
     CLI["main.py：配置、装配、输入输出"] --> Sessions["SessionManager：身份和会话选择"]
     CLI --> Runtime["Agent：有界执行循环"]
     CLI --> Context["ContextBuilder：上下文和 Run 生命周期"]
-    CLI --> Memory["MemoryStore：Markdown 快照与版本"]
+    CLI --> Memory["MemoryFS：Core 与分层 Deferred Markdown"]
     Context --> Reader["CoreMemory Protocol"]
     Memory -. "实现" .-> Reader
     MemoryTools["受限 Memory Tools"] --> Memory
@@ -60,7 +60,7 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 
 | 边界                | 输入                              | 输出               | 谁理解具体协议                              |
 | ------------------- | --------------------------------- | ------------------ | ------------------------------------------- |
-| CLI → Runtime      | 用户文本、本轮权限集合             | `RunResult`      | CLI 理解交互命令，Runtime 不理解 slash 命令 |
+| CLI → Runtime      | 用户文本、本轮权限集合            | `RunResult`      | CLI 理解交互命令，Runtime 不理解 slash 命令 |
 | Runtime → Provider | 内部消息、`ToolDefinition`      | `ModelResponse`  | OpenAIProvider 理解 Responses API           |
 | Runtime → Registry | `ToolCall`                      | `ToolResult`     | Registry 理解参数模型与执行函数             |
 | Context → History  | 用户消息、消息追加、结束/中断通知 | Run ID、可重放消息 | SQLiteConversationHistory 绑定会话          |
@@ -77,7 +77,7 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 5. `SQLiteStore.initialize()` 显式迁移到 schema 2，FTS5 索引及旧文本回填与版本更新在同一事务内完成，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续验证并恢复上次选择的会话。
-8. `run_cli()` 构造 `MemoryStore.for_agent()`，初始化或校验当前快照，绑定到 SessionManager。记忆默认保存在数据库路径加 `.memory` 后的 Agent 子目录；可通过配置指定根目录。
+8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。
 9. `_run_session()` 注册受限 Memory Tools 与绑定 Agent 的只读 Recall Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
 
 这里没有“启动就请求模型”的步骤。直到用户输入普通文本才进入请求 Pipeline。启动存储失败返回退出码 1，不悄悄退回内存模式；显式使用不带 history_store 的 ContextBuilder 仍可获得进程内模式，原有 Runtime 单元测试使用该方式。
@@ -159,12 +159,12 @@ sequenceDiagram
 
 ## 5. 四种历史视图：已写入与可重放并非同一回事（请求编译见第 11 节）
 
-| 视图           | 读取位置                                     | 包含内容                                    | 用途                             |
-| -------------- | -------------------------------------------- | ------------------------------------------- | -------------------------------- |
-| 完整持久化历史 | `SQLiteStore.load_messages()`              | 所有 Run 的消息，包括未完成调用             | 审计、诊断，不直接全量送入模型   |
-| 可重放历史     | `ContextBuilder.history` → adapter.load() | 仅 completed / failed Run，且通过结构校验   | 构建下一次输入的上下文           |
-| 工作消息链     | `_run()` 的局部 `messages`               | system、可重放历史、新输入、本 Run 后续消息 | for_request 编译前的基础链 |
-| 运行中消息     | `ContextBuilder.pending_messages`          | 仅当前 Run 的用户、模型、工具消息副本       | 跟踪尚未结束的 Run               |
+| 视图           | 读取位置                                     | 包含内容                                    | 用途                           |
+| -------------- | -------------------------------------------- | ------------------------------------------- | ------------------------------ |
+| 完整持久化历史 | `SQLiteStore.load_messages()`              | 所有 Run 的消息，包括未完成调用             | 审计、诊断，不直接全量送入模型 |
+| 可重放历史     | `ContextBuilder.history` → adapter.load() | 仅 completed / failed Run，且通过结构校验   | 构建下一次输入的上下文         |
+| 工作消息链     | `_run()` 的局部 `messages`               | system、可重放历史、新输入、本 Run 后续消息 | for_request 编译前的基础链     |
+| 运行中消息     | `ContextBuilder.pending_messages`          | 仅当前 Run 的用户、模型、工具消息副本       | 跟踪尚未结束的 Run             |
 
 pending 消息可以已经逐条持久化；“Run 未完成”不表示持有一个一直不提交的 SQL 事务。例如正在执行工具时，调用已在数据库中，但整个 Run 仍是 running，尚未进入正常可重放历史。这种区分避免“数据库中有一条调用”被误解为“下次启动应继续执行它”。
 
@@ -250,104 +250,63 @@ Provider 专用数据必须跟随消息保存：OpenAIProvider 把 output items 
 
 上表源码路径以 `src/personal_agent/` 为根；存储测试位于 `tests/test_storage.py`，跨模块测试位于 `tests/test_persistent_runtime.py`。它们使用临时数据库、Fake Provider 和 MockTransport，可以在不使用真实 API Key、不支付模型费用的情况下观察整条 Pipeline。
 
+## 11. V0.5：Base / Core / Deferred / Recall
 
-## 11. V0.3 的 Base / Core Memory / History 分层
-
-`core/context.py::DEFAULT_SYSTEM_PROMPT` 是程序管理的 Base System Prompt，说明工具权限、记忆为数据、禁止从记忆获得规则覆盖权等边界。`SessionManager.context()` 明确使用这个代码常量。 V0.2 agents 表的 system_prompt 字段保留兼容，不再被 CLI 当作执行规则加载，该兼容字段在当前 schema 2 中仍保留。可信宿主可以通过 ContextBuilder 构造参数提供系统提示词，模型和 Memory Tools 没有这个接口。
-
-Core Memory 属于 Agent，初始固定为 persona.md、human.md、MEMORY.md，独立于 Conversation。 ContextBuilder 只依赖 `core/memory.py::CoreMemory.compile()` Protocol，不导入具体文件存储。在之前四种历史视图之外，V0.3 增加了**每次模型请求的编译视图**：
+程序 `DEFAULT_SYSTEM_PROMPT` 是可信 Base，SessionManager 不从旧 agents.system_prompt 恢复执行规则。ContextBuilder 只依赖 `CoreMemory.compile()`，每次请求自动注入三块 Core 的 JSON 数据；MEMORY.md 已包含顶层 Deferred 入口，不再额外拼接全部目录正文。
 
 ```text
-ContextBuilder.begin() → 工作消息链：Base + 可重放历史 + 本轮用户消息
-Agent 追加 assistant / tool → 工作消息链持续增长
-每次 Provider.generate 前：ContextBuilder.for_request(工作消息链)
-  system: 程序 Base System Prompt
-  user:   JSON {kind: agent_core_memory, trust: data_only, version: ..., blocks: ...}
-          当前 Conversation 可重放历史
-  user:   本轮输入
-          本轮新增 assistant / tool 消息
+ContextBuilder.begin → Base + 当前会话可重放历史 + 本次输入
+Agent._run 每次 Provider.generate 前 → ContextBuilder.for_request
+  system: 程序 Base
+  user: JSON {kind: agent_core_memory, trust: data_only, blocks: ...}
+  当前会话历史 + 本 Run 消息
+模型按需 → deferred_read(目录 MEMORY.md) → deferred_list(元数据)
+         → deferred_read(有关主题) → 正常 ToolMessage → 下一次请求
+历史取证 → recall_search / recall_get → 正常 ToolMessage
 ```
 
-记忆通过标准 JSON 编码，不能拼接出新的消息角色。Base 明确拒绝记忆中的权限、规则覆盖或执行代码要求。这保证数据没有 system 角色及程序权限，不能证明模型永远不受恶意文本影响。自动注入的记忆不加入 pending 或 SQLite，避免每轮持久化旧快照；memory_read 工具结果和用户消息仍是正常审计历史，可能保留旧记忆内容。当前版本没有历史 token 预算或压缩。
+Core 保存稳定人格、用户信息、重要原则和顶层地图。Deferred 保存按主题提炼的长期理解、取舍与开放问题；Recall 保留原始历史证据。三者不自动互相复制。目录 name/description 和概要帮助判断是否深入；未来请求通过 Core 根地图逐级发现，而不是依赖模型猜到已有文件名。
 
-每次请求都重新编译，所以同一 Run 修改记忆后，下一轮立即获得新版本；不会一直使用 Run 开始时的缓存。总大小按编译后的 JSON UTF-8 字节计，默认 8192，包含三块、版本及转义开销。拒绝超限而不静默截断；请求前读取损坏/超限返回 memory_error，不发出该次模型请求。
+Core 编译上限默认 8192 UTF-8 字节，包含 JSON 开销；Deferred 新增正文不扩大这个预算。编译不写 pending/SQLite；工具结果正常审计保存。编译错误停止该次 Provider 请求，返回 memory_error。同 Run 写入后下一次请求读取最新 Core，新会话和重启同样共享最新文件，但不继承别的 Conversation 聊天。
 
-## 12. 显式授权与记忆修改 Pipeline
-
-```mermaid
-sequenceDiagram
-    participant CLI
-    participant A as Agent
-    participant C as ContextBuilder
-    participant T as ToolRegistry
-    participant M as MemoryStore
-    CLI->>A: run('/memory edit ...', permissions=read+update)
-    A->>C: begin；保存用户消息及 running Run
-    A->>C: for_request；获取最新记忆
-    A->>A: 请求模型；先持久化 assistant 调用
-    A->>T: execute(call, permissions)
-    T->>T: 名称、权限、参数校验
-    T->>M: update(block, content, expected_version)
-    M->>M: 写锁下校验版本、写完整快照、替换 CURRENT
-    M-->>T: 新版本或明确错误
-    T-->>A: 关联 call_id 的 ToolResult
-    A->>C: record；结果落库
-    A->>C: for_request；重新编译新版本
-    A->>A: 下一轮模型请求 / 最终回答 / finish
-```
-
-普通输入不授予 Memory Tools 权限，但每次请求仍自动包含有界 Core Memory 数据。 `/memory read <请求>` 本轮开启 memory_read / memory_history； `/memory edit <请求>` 再开启 memory_edit / memory_update；`/memory restore <请求>` 只额外开启 memory_restore，两种写权限互不包含。完整命令作为正常用户消息保存，供审计；它不是会话管理命令。权限由 CLI 解析本次输入后通过 `Agent.run(..., permissions=...)` 传入，默认空集合，结束即失效。自然语言“记住”、历史命令和记忆内容均不能授权后续 Run。嵌入入口的可信宿主也必须显式传权限。
-
-Registry 同时过滤模型工具定义并在执行前复查权限；模型凭空请求受限工具返回 permission_denied。工具参数只允许固定块名和版本，不能传路径或改权限。局部编辑精确替换唯一原文，显式整块替换仍使用 memory_update，恢复复制完整旧快照；三种操作都要求当前 expected_version；冲突返回 memory_conflict，不自动合并或重试。终轮策略优先于授权：即使有写权限，最后一轮的新工具调用也不会执行。
-
-## 13. 文件版本提交与数据库事务的交界
-
-实际布局如下；root 默认是数据库路径加 `.memory`，再以 Agent ID 隔离：
+## 12. 本轮授权和写入路径
 
 ```text
-<root>/heybuddy/
-  CURRENT                       # 唯一已提交版本指针
-  .write.lock                   # OS 写锁，进程退出释放
-  versions/<32位版本>/
-    persona.md
-    human.md
-    MEMORY.md
-    revision.json               # parent、action、时间、内容 SHA-256
+/memory edit 请求 → Agent.run(memory.read + memory.update + deferred.update)
+  → Provider 读取当前内容/hash → 请求局部编辑或创建
+  → 调用先落库 → Registry 复查权限与严格参数
+  → MemoryFS.writing：路径/隐私检查 + 短 FileLock
+  → edit 核对 expected_hash + old_text 精确唯一匹配
+  → 验证文件和 Core 总容量/Frontmatter
+  → 同目录临时文件 + flush/fsync → 再核对摘要 → os.replace
+  → 返回新 hash → ToolResult 落库 → 下一轮模型请求
 ```
 
-`MemoryStore._publish()` 在新目录写完整三块和元数据，逐文件 flush/fsync；写临时 CURRENT 并 fsync，最后通过 os.replace 发布指针，这是提交点和最后一个可能失败的发布步骤。读者只读取一次 CURRENT，随后读取同一不可变版本，因此不会看到混合的新旧文件。写者持短期写锁，在锁内核对 expected_version。恢复版本同样生成新提交，保留 parent 与 restored_from，不会移动指针抹去更新历史。只有 CURRENT 的祖先可被恢复，孤立目录和其他 Agent 的版本被拒绝。
+`/memory read` 只额外授权固定 Core 读取；普通对话默认提供 Deferred 列举、分段读取、索引检查和原有 Recall。所有写入都需要可信入口明确授权，且只持续当前 Run。自然语言、旧命令、记忆内容不能赋权。Core 使用固定 block，Deferred 使用 Agent 根内受限路径，模型没有 agent_id 参数。最终轮拒绝新工具的策略保持不变。
 
-提交前失败保留旧快照；新目录可能残留为不可达孤立版本，不作为历史展示或自动恢复。提交后进程退出，下次读取新版本。该方案保证进程崩溃边界的一致视图，不承诺断电级持久性：未做目录 fsync，不保证网络文件系统语义，也没有自动版本清理/备份。不可直接修改版本目录里的 Markdown，否则完整性校验失败；通过 MemoryStore API 或授权工具修改。
+`memory_history`、`memory_restore` 和 `/memory restore` 已移除；没有 Revision、恢复授权或伪装的新历史接口。局部编辑优先，memory_update 仍是需用户明确请求的完整 Core 块替换。旧 expected_version 改为目标文件的 expected_hash。
 
-SQLite 与记忆文件**没有共同事务**：记忆已经发布而 ToolResult 落库失败时，新记忆保留，Run 标记 interrupted，不自动撤销或重试。审计必须区分“记忆已提交”和“Run 已完成”。 Memory Tools 用无 await 点的协程包装同步读取、Git 检查和提交，不将写操作交给超时后可能继续运行的线程。因此磁盘操作会阻塞事件循环，超时不能打断这些同步步骤；未来若处理大型数据需另行设计隔离。
+## 13. 文件、索引和 SQLite 的边界
 
-固定文件名、版本格式、哈希及链接检查防止模型参数越界；本地文件系统仍是可信操作员边界，不抵御同一 OS 用户恶意篡改元数据或竞争替换祖先路径。记忆与历史均为明文，不得存放凭证。
+正常布局是 `<memory_root>/<agent_id>/{persona.md,human.md,MEMORY.md,topics/...}`，用户可直接编辑普通 Markdown。默认新数据在用户目录；已有数据库旁 `.memory` 目录原地继续使用。没有每次更新复制三块的成本，摘要也不保存旧版本。
 
-## 14. 设计参考与 V0.3 验证
+单文件原子替换确保正常本地进程崩溃时读到旧或新完整内容；受控写入有短锁。编辑器不参与锁，摘要核对到替换之间仍有竞争窗口，不支持跨文件完整快照或断电保证。磁盘 I/O 和 Git 隐私检查仍同步执行，asyncio 超时不能强制中断，写入不留在后台线程。
 
-本次核对用户提供的本地 Letta Code checkout，参考 [Core Memory 维护约定](https://github.com/letta-ai/letta-code/blob/main/src/skills/builtin/maintaining-core-memory/SKILL.md) 与 [system-prompt compilation](https://github.com/letta-ai/letta-code/blob/main/src/backend/local/system-prompt-compilation.ts)。采用固定 Markdown 核心文件与 Conversation 分离的思路，但将记忆限制为低优先级数据，不照搬自主系统提示词学习、递归目录索引或 Deferred Memory 检索。
+`index.create()` 先创建主题，再由 `ensure_chain()` 创建缺失目录索引、逐级追加父链接。全部成功才返回 indexed=true；后续失败返回 memory_index_incomplete，明确保留已经发生的效果。`index.inspect()` 检查缺失/悬空/跳级/无效链接，`index.repair()` 只追加缺项，保留用户文字。根容量不足同样可能造成部分完成，需要检查后整理 Core；不偷偷提高限制或删除内容。
 
-`tests/test_memory_store.py` 验证原子发布、并发冲突、版本恢复、字节限制、篡改和真实进程退出； `tests/test_memory_runtime.py` 验证跨会话/重启共享、每轮刷新、权限过期、不可覆盖 Base、失败回滚、双存储提交窗口与终轮拒绝。全部使用临时目录和 Fake Provider，禁止真实网络。后续再设计版本保留策略、token 预算、自动提取和更强文件隔离；本轮不预建相应模块。
+文件发布与 SQLite ToolResult 保存无共同事务。后者失败返回 storage_error 并中断 Run，文件可能已经成功，不撤销或自动重试。ToolMessage 不伪装用户消息；记忆文本始终是低信任数据，不能覆盖系统或工具权限。
 
+## 14. V0.4 一次性迁移
 
-## 15. V0.3.1 Memory Hardening Pipeline
+`memory/migration.py::initialize_files()` 检测 CURRENT/versions，校验当前已提交版本的三个块和哈希，先建立唯一完整备份，再原子导出相同字节到根文件。`.migration-v05` 仅记录备份位置及是否完成；中断后从已固定的备份恢复导出，只补缺失且一致的目标，遇到人工编辑拒绝覆盖。成功后正常读写不再访问旧格式，不会删除旧目录或备份。
 
-Snapshot / CURRENT / Revision 和 Agent Loop 保持原结构。CLI 将本轮授权分为 memory.read、memory.update、memory.restore；`/memory edit` 不能调用恢复，`/memory restore` 不授予更新，旧 memory.write 不再启用任何受限工具。Registry 仍同时过滤定义与检查实际执行，历史和记忆文本不能授予权限。
+迁移前的校验/备份失败不更改源；导出中断保留源和备份。新文件已存在时不会静默覆盖，部分新格式也不会自动初始化抹掉原文。完整步骤与人工处理见[迁移说明](memory-migration.md)。只保留这段迁移读取代码，没有永久双存储、版本数据库或新历史系统。
 
-```text
-/memory edit 请求 → Agent.run(read + update) → Provider 请求 memory_edit
-  → 先持久化调用 → Registry 权限及 Schema 校验
-  → Store.edit：检查 Git 私密性 → 取得写锁 → 校验 expected_version
-  → old_text 非空且恰好匹配一次 → 只替换匹配片段
-  → 校验编译大小 → 原有完整快照发布流程 → 工具结果落库
-  → 下一轮 for_request 获取新版本
-/memory restore 请求 → Agent.run(read + restore) → 原有恢复发布流程
-```
+## 15. 设计依据与验证路径
 
-局部编辑新增 C 的示例是匹配原有末尾 B，并将其替换为 B 加 C，其他 A 与其余块由程序原样保留。整块替换仍有明确的 memory_update 接口，用户必须知道未包含的旧内容会丢失；它不自动合并事实。旧版本、原文不匹配/不唯一和超限均不改变 CURRENT，不重试。
+[Letta Code 源码调研](memory-design.md) 区分上游真实实现、V0.4 已有能力和本次取舍。采用分层 MEMORY.md、name/description、渐进读取与主题理解；不复制 Git-backed MemFS、system prompt learning、Reflection/worktree、远程同步或自动提取。
 
-写入前检查实际 Agent 记忆目录整目录被 Git 忽略且无已跟踪文件。仓库内检查依赖可用 Git，失败关闭，不自动改 `.gitignore` 或索引。详细路径和错误见[MemoryStore](modules/memory.md)。读取、Git 子进程检查、写入和 fsync 均为同步 I/O，async def 只是接口包装，不能保证及时取消或硬超时；没有引入线程写入或后台提交。
-
+`tests/test_memory_store.py` 验证原子文件写、进程退出、编辑器更改、冲突、路径和容量；`test_memory_migration.py` 验证字节保留、完整备份、重复/中断迁移；`test_deferred_memory.py` 验证索引链、分页读取、部分失败/补链、CLI 新会话/重启和 Recall 协作；`test_memory_runtime.py` 保留 Runtime 授权与双存储窗口测试。全部离线，不调用真实模型。
 
 ## 16. V0.4 Conversation Recall Pipeline
 
@@ -372,7 +331,7 @@ flowchart LR
 
 `main._run_session()` 以 `Recall(sessions.store, sessions.agent.id)` 装配只读工具，`agent_id` 不进入模型参数。普通输入不用额外授权，模型根据 Base 中的规则先搜索关键词、按需展开。原 Agent Loop 先持久化调用，再执行 Registry、保存关联 call_id 的结果并继续模型请求；终轮仍禁止新工具调用。ContextBuilder 没有自动全库检索，结果只按当前会话正常工具消息保存，不默认带进另一个新会话。
 
-搜索只返回 completed / failed Run 的文本证据，运行中、取消或中断内容都不可检索，读取单条 ID 时再次做同样过滤。不会暴露 Provider 原始项目、reasoning、工具参数或 Tool Result，更不会因展开历史而执行旧调用。低信任的历史文本不能改变 Base、工具注册或 memory.update / memory.restore 授权；未找到记录不等于过去一定没有发生，模型应说明未找到证据和范围限制。
+搜索只返回 completed / failed Run 的文本证据，运行中、取消或中断内容都不可检索，读取单条 ID 时再次做同样过滤。不会暴露 Provider 原始项目、reasoning、工具参数或 Tool Result，更不会因展开历史而执行旧调用。低信任的历史文本不能改变 Base、工具注册或 memory.update / deferred.update 授权；未找到记录不等于过去一定没有发生，模型应说明未找到证据和范围限制。
 
 三个字符以上使用转义的字面 FTS 短语，中文不依赖分词；短词回退到最近 2000 条可见文本的有限前缀，返回 scope_limited。参数、snippet、展开窗口、总输出和 SQLite VM 工作均有上限，详细数值见[Recall 模块](modules/recall.md)。这提供字面关键词搜索，不提供语义检索、重排序或 Compaction。
 

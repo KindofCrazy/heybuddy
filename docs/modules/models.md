@@ -18,7 +18,7 @@
 
 例如 OpenAI function_call 的项目 id 与 call_id 可以不同；适配器取 call_id 作为内部 ToolCall.id，工具结果必须关联这个值。不能用数据库 Message ID 或 SDK 项目 id 替换工具调用 ID。
 
-V0.3 的 AgentRecord.system_prompt 保留为兼容元数据，CLI 不再从中加载 Base。 `memory/models.py` 的 MemoryRevision / MemorySnapshot 独立保存块、版本、父版本、恢复来源与哈希，不在 SQLite 新增 Memory 表；Core Memory 不能替代消息和 Run。RunResult 新增 memory_error，表示请求前记忆编译失败；正常保存该停止记录时 RunRecord 为 failed。
+AgentRecord.system_prompt 保留为兼容元数据，CLI 不从中加载 Base。V0.5 的 `memory/models.py::CoreMemoryData` 只持三个块及当前文件摘要，替代 MemoryRevision/MemorySnapshot；摘要派生自普通 Markdown，不保存历史，也不新增 SQLite Memory 表。`render_memory()` 只注入 kind/trust/blocks，读取工具返回 hash 供 expected_hash 检查。RunResult.memory_error 表示请求前编译失败，正常保存停止记录后持久 Run 状态为 failed。
 
 ## 实际数据路径
 

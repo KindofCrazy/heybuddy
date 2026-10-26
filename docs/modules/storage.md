@@ -41,7 +41,7 @@ Run 状态：running；成功结束为 completed；有完整停止说明的模�
 
 ## 与 Markdown Memory 的提交边界
 
-Core Memory 继续不放进聊天表；V0.4 schema 2 只增加 Recall 派生对象。SessionManager.context 使用程序 Base， agents.system_prompt 保留原值但不作为执行规则。MemoryStore 通过 Agent ID 在外部目录隔离。记忆 CURRENT 发布和 SQLite ToolResult 追加没有共同事务；前者成功、后者失败时，记忆保留新版本，Run interrupted，不自动撤销/重试。对应 tests/test_memory_runtime.py 的双存储失败测试；文件发布见[记忆模块](memory.md)。
+Core Memory 继续不放进聊天表；V0.4 schema 2 只增加 Recall 派生对象。SessionManager.context 使用程序 Base， agents.system_prompt 保留原值但不作为执行规则。MemoryFS 通过 Agent ID 在外部目录隔离。记忆单文件原子发布和 SQLite ToolResult 追加没有共同事务；前者成功、后者失败时，记忆保留已写入的新内容，Run interrupted，不自动撤销/重试。对应 tests/test_memory_runtime.py 的双存储失败测试；文件发布见[记忆模块](memory.md)。
 
 ## 示例与验证
 

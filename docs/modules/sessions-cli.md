@@ -8,14 +8,18 @@
 
 1. `main()` 加载 Settings、配置安全日志，`asyncio.run(run_cli())` 打开数据库并显式迁移。
 2. `run_cli()` 标记遗留 Run，`SessionManager(store)` 加载或创建默认 Agent，读取该 Agent 的 last_conversation；首次创建空会话，其余恢复上次选择。
-3. `run_cli()` 按 Agent ID 初始化 MemoryStore，绑定 sessions.memory，再由 `_run_session()` 装配官方 SDK、Provider、内置工具、Agent，以及 `sessions.context()`。 CLI 和存储均不进入 Provider 接口。
+3. `run_cli()` 按 Agent ID 初始化或迁移 MemoryFS，绑定 sessions.memory，再由 `_run_session()` 装配官方 SDK、Provider、内置工具、Agent，以及 `sessions.context()`。 CLI 和存储均不进入 Provider 接口。
 4. `chat()` 展示当前 Agent/Conversation/Run 状态，读取输入。普通文本调用 Agent.run()；始终提供绑定当前 Agent 的 recall_search / recall_get，不需要记忆写入授权。 `/new` 创建空会话并保存选择；`/sessions` 列出当前 Agent 的会话并标记当前项； `/resume <id>` 校验归属、验证可重放历史后保存选择；`/status` 展示状态。
 5. 切换成功后只替换 Runtime 的 ContextBuilder，不重写 Loop，不混入上个会话的历史。失败时保留旧选择；会话管理命令不送给模型、不保存为聊天消息。
 6. exit / quit / EOF 正常退出；Ctrl+C 取消当前 Run，SDK 和数据库由上下文管理器关闭。再启动使用同一数据库路径，即可恢复之前选择的会话。
 
 ## 记忆授权的实际路径
 
-chat() 每次循环先设空权限。仅当本次输入匹配 `/memory read <请求>`、`/memory edit <请求>` 或 `/memory restore <请求>`，且入口配置了 sessions.memory 时，授予本轮读取、读取+更新或读取+恢复权限；edit 与 restore 互不授予对方能力，再传入 Agent.run()。完整授权命令保留在用户消息中供审计；它与不创建 Run 的会话管理命令不同。错误格式只显示用法，不调用模型。下次输入重置权限，历史中的命令不能恢复授权。 ContextBuilder 每次自动注入共享记忆并不需要工具权限；普通对话无法调用修改工具。 CLI 不解析“请记住”等自然语言来授予权限，模型不能替用户确认。验证见 tests/test_memory_runtime.py 的 CLI、授权过期和跨会话测试。
+chat() 每次循环先设空权限。`/memory read <请求>` 授予本轮 memory.read；`/memory edit <请求>` 额外授予 memory.update 和 deferred.update，传给 Agent.run()。完整命令作为用户消息保存以供审计；下一次输入重置权限，历史、普通自然语言和 Memory 内容不能赋权。Deferred list/read/index_check 与 Recall 默认只读可用。`/memory restore` 已拒绝，不再暴露 History/Restore 工具或权限。
+
+`/memory check` 直接调用 `index.inspect()`；`/memory repair` 是用户对本地补链操作的显式授权，直接调用 `index.repair()`，不通过模型、不创建 Run，也不延续到下一次输入。检查分页结果包含 next_offset，可由 deferred_index_check 继续查看；修复只追加缺项，仍有悬空/无效链接时返回 ok=false，失败时明确提示部分操作可能已发生。工具参数和示例见[MemoryFS](memory.md)。
+
+main() 仅在运行期安装日志 handler，退出时恢复之前的日志配置并关闭 handler，避免多次嵌入调用复用已关闭的输出流。异常正文和私人路径不记录到日志。
 
 ## 异常与边界
 

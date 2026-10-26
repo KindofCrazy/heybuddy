@@ -23,9 +23,9 @@ class Agent:
 
     def __init__(
         self,
-        provider: Provider,
-        tools: ToolRegistry,
-        context: ContextBuilder | None = None,
+        provider: Provider,  # communicate with LLM
+        tools: ToolRegistry,  # register, validate and execute tools
+        context: ContextBuilder | None = None,  # build context
         *,
         max_rounds: int = 10,
         request_timeout_seconds: float = 60,
@@ -42,6 +42,10 @@ class Agent:
         self._lock = asyncio.Lock()
 
     async def run(self, user_input: str, *, permissions: frozenset[str] = frozenset()) -> RunResult:
+        """
+        External Lifecycle
+        """
+
         if not user_input.strip():
             raise ValueError("User input cannot be empty")
         permissions = frozenset(permissions)
@@ -62,7 +66,7 @@ class Agent:
                 )
             except asyncio.CancelledError:
                 self._abort_context(cancelled=True)
-                raise
+                raise  # raise error to let the external layers know
 
     def _abort_context(self, *, cancelled: bool = False) -> None:
         try:
@@ -71,6 +75,10 @@ class Agent:
             logger.error("history_interrupt_failed")
 
     async def _run(self, messages: list[Message], *, permissions: frozenset[str]) -> RunResult:
+        """
+        Internal Agent Loop
+        """
+
         def append(message: Message) -> None:
             # Save assistant calls before any execution and each result before the
             # next tool. A write failure stops the run; external effects cannot roll back.

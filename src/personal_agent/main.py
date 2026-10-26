@@ -1,19 +1,20 @@
 import argparse
 import asyncio
+import json
 import logging
 import sys
 from collections.abc import Callable
-from pathlib import Path
 
 from openai import AsyncOpenAI
 from pydantic import ValidationError
 
-from personal_agent.config import Settings, load_settings
+from personal_agent.config import Settings, load_settings, memory_root_for
 from personal_agent.core.agent import Agent
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.llm.openai_provider import OpenAIProvider
-from personal_agent.memory.store import MemoryStore
+from personal_agent.memory import index
+from personal_agent.memory.store import MemoryFS
 from personal_agent.memory.tools import register_memory_tools
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
@@ -29,8 +30,8 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
 ) -> None:
-    write("HeyBuddy V0.4 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
-    write("记忆授权仅对本轮有效：/memory read|edit|restore <请求>；edit 不授权恢复。")
+    write("HeyBuddy V0.5 — /new /sessions /resume <id> /status；exit 或 quit 退出。")
+    write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
     if sessions is not None:
         write(sessions.status())
     while True:
@@ -46,9 +47,24 @@ async def chat(
         permissions: frozenset[str] = frozenset()
         if user_input.split(maxsplit=1)[0] == "/memory":
             parts = user_input.split(maxsplit=2)
-            if len(parts) != 3 or parts[1] not in {"read", "edit", "restore"}:
+            if len(parts) == 2 and parts[1] in {"check", "repair"}:
+                if sessions is None or not isinstance(sessions.memory, MemoryFS):
+                    write("记忆错误 > 当前入口未配置 MemoryFS。")
+                    continue
+                try:
+                    report = (
+                        index.repair(sessions.memory)
+                        if parts[1] == "repair"
+                        else index.inspect(sessions.memory)
+                    )
+                    write(json.dumps(report, ensure_ascii=False))
+                except CoreMemoryError as exc:
+                    write(f"记忆错误 [{exc.code}] > {exc}")
+                continue
+            if len(parts) != 3 or parts[1] not in {"read", "edit"}:
                 write(
-                    "命令用法：/memory read <请求> | /memory edit <请求> | /memory restore <请求>"
+                    "命令用法：/memory read <请求> | /memory edit <请求> | /memory "
+                    "check | /memory repair；History/Restore 已移除。"
                 )
                 continue
             if sessions is None or sessions.memory is None:
@@ -56,9 +72,7 @@ async def chat(
                 continue
             permissions = frozenset({"memory.read"})
             if parts[1] == "edit":
-                permissions |= {"memory.update"}
-            elif parts[1] == "restore":
-                permissions |= {"memory.restore"}
+                permissions |= {"memory.update", "deferred.update"}
         elif user_input.startswith("/"):
             if sessions is None:
                 write("错误 > 当前入口未配置持久化会话。")
@@ -102,14 +116,14 @@ async def run_cli(settings: Settings) -> None:
         if recovered:
             print(f"发现 {recovered} 个未完成 Run，已标记 interrupted；不会重试工具。")
         sessions = SessionManager(store)
-        root = settings.memory_root or Path(str(settings.database_path) + ".memory")
-        memory = MemoryStore.for_agent(root, sessions.agent.id, max_bytes=settings.memory_max_bytes)
+        root = memory_root_for(settings, sessions.agent.id)
+        memory = MemoryFS.for_agent(root, sessions.agent.id, max_bytes=settings.memory_max_bytes)
         memory.initialize()
         sessions.memory = memory
         await _run_session(settings, sessions, memory)
 
 
-async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryStore) -> None:
+async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
     tools = create_builtin_registry(settings.tool_timeout_seconds)
     register_memory_tools(tools, memory)
     register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
@@ -131,7 +145,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.4 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.5 CLI")
     parser.parse_args()
     try:
         settings = load_settings()
@@ -147,6 +161,7 @@ def main() -> int:
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
     logger = logging.getLogger("personal_agent")
+    previous_logging = (logger.handlers[:], logger.level, logger.propagate)
     logger.handlers = [handler]
     logger.setLevel(settings.log_level)
     logger.propagate = False
@@ -169,6 +184,10 @@ def main() -> int:
         else:
             print(f"记忆错误 [{exc.code}]：请检查记忆目录、完整性和容量配置。", file=sys.stderr)
         return 1
+    finally:
+        logger.handlers, previous_level, logger.propagate = previous_logging
+        logger.setLevel(previous_level)
+        handler.close()
     return 0
 
 

@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.4 提供自建 Runtime、SQLite 持久会话、受限 Markdown Core Memory，以及同一 Agent 跨会话的只读 Conversation Recall。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.5 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引和同一 Agent 跨会话的只读 Conversation Recall。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -10,7 +10,7 @@
 - `core/context.py` 独立构建上下文，通过 `core/history.py` 的 Protocol 访问历史，不了解 SQLite。
 - `core/models.py` 定义统一内部消息和调用结果；Provider 专用数据仅允许普通 JSON。
 - `storage/` 使用标准库 sqlite3 保存 Agent / Conversation / Message / Run；不引入 ORM 或外部数据库。
-- `memory/` 保存 Agent 级 Markdown 快照和版本；Core 只依赖 `core/memory.py` 的读取 Protocol。
+- `memory/` 保存 Agent 级普通 Markdown 与分层 MEMORY.md 索引；Core 只依赖 `core/memory.py` 的读取 Protocol。
 - `recall/` 独立校验、截断和返回历史证据；`storage/recall.py` 负责 SQLite 派生索引及参数化查询。
 - `sessions.py` 管理同一持久 Agent 下的多个独立 Conversation；会话历史不等于长期记忆。
 - `llm/base.py` 保持简洁 Provider Protocol；仅 OpenAI adapter 了解 SDK 与 wire format。
@@ -37,13 +37,15 @@
 - Core Memory 固定为 persona.md、human.md、MEMORY.md，按 Agent ID 共享，不归属 Conversation。
 - ContextBuilder.for_request 每次请求编译最新记忆，以 user 角色 JSON 数据注入；不拼接进 system。不将自动注入的记忆写入 pending / 会话历史，正常工具结果仍需完整保存。
 - 编译大小按 UTF-8 字节计算，包含 JSON 开销；默认 8192，超限拒绝，不静默截断。
-- /memory read、/memory edit 和 /memory restore 仅授权当前 Run；更新使用 memory.update，恢复使用独立的 memory.restore，互不包含；旧 memory.write 不授予操作。可信入口通过 Agent.run 的 permissions 显式传入。普通自然语言、历史消息、记忆内容不能自行获得授权，Registry 同时过滤定义并在执行前复查。
-- 记忆工具仅操作固定块名；不得获得路径、Base、工具注册、权限或代码执行接口。
-- 新增或修正优先 memory_edit：old_text 必须非空且精确唯一匹配，new_text 只替换该片段；整块替换通过 memory_update 显式执行。写操作需 expected_version，写锁内检查冲突；完整不可变快照写完后原子替换 CURRENT。恢复生成新版本，不抹去历史；只允许恢复已提交祖先，不自动恢复孤立目录或重试冲突。
+- /memory read、/memory edit 仅授权当前 Run；Core 使用 memory.read / memory.update，Deferred 写入使用 deferred.update，Deferred 读取默认可用；History/Restore 工具、命令和权限已移除，旧 memory.write 不授予操作。可信入口通过 Agent.run 的 permissions 显式传入。普通自然语言、历史消息、记忆内容不能自行获得授权，Registry 同时过滤定义并在执行前复查。
+- Core 工具仅操作固定块名；Deferred 工具仅接受 Agent 根内受限 Markdown 路径，拒绝绝对路径、穿越、Symlink/Junction、跨 Agent 和平台文件名绕过；不得获得 Base、工具注册、权限或代码执行接口。
+- 新增或修正优先 memory_edit / deferred_edit：old_text 必须非空且精确唯一匹配，new_text 只替换该片段；整块 Core 替换通过 memory_update 显式执行。写操作需文件 expected_hash，短写锁内检查冲突，同目录临时文件 flush/fsync 后原子替换；编辑器不参与锁，最后检查到 replace 有竞争窗口，不自动合并或重试。
+- 普通 Markdown 是唯一权威源，用户可直接编辑；不再创建 CURRENT、Snapshot、Revision 或日常版本备份。旧格式仅在一次性迁移读取：校验当前已提交内容，先唯一完整备份，再逐字节导出三个块；中断可补缺，不覆盖人工修改，不删除旧目录/备份；完成后正常运行只读新格式。
+- Deferred 按主题整理知识，目录含 MEMORY.md，普通文件含 name/description 单行 Frontmatter；所有 bullet 链接相对 Agent Memory Root，逐级发现。创建后补齐索引，部分失败不得报告整体成功；检查/修复有界且显式，修复只追加缺项，不静默删除用户内容。不得自动复制聊天、后台提取或全量注入 Deferred。
 - 记忆工具的短本地提交不交给超时后继续执行的线程；同步磁盘步骤不能被 asyncio 超时中断。
 - 文件发布和 SQLite 无共同事务：结果写库失败不得声称已撤销记忆，不自动回滚或重试。
-- MemoryStore 每次写入前检查 Git 隐私：仓库或 worktree 内的实际 Agent 目录必须整目录被忽略且无已跟踪文件；无法验证则拒绝，不自动改写忽略规则或移除索引。检查使用固定参数的只读 Git 子命令，不执行模型生成的命令。
-- 快照目录不能手工改写；记忆明文、版本和孤立文件不能入 Git，也不能存放凭证。原子发布不等于断电保证，哈希/固定路径不等于针对本机恶意用户的安全沙箱。
+- MemoryFS 每次写入前检查 Git 隐私：仓库或 worktree 内的实际 Agent 目录必须整目录被忽略且无已跟踪文件；无法验证则拒绝，不自动改写忽略规则或移除索引。检查使用固定参数的只读 Git 子命令，不执行模型生成的命令。
+- 记忆明文、迁移备份、旧版本和孤立文件不能入 Git，也不能存放凭证；默认新数据放在源码外的用户数据目录。原子发布不等于断电保证，摘要/路径校验不等于针对本机恶意用户的安全沙箱。
 
 ## Conversation Recall 边界
 
@@ -54,7 +56,7 @@
 - 参数化 SQL；query、limit、窗口、片段和总输出都设上限。SQLite VM 预算不能当作同步 I/O 的硬取消保证。
 - 普通对话默认提供 recall_search / recall_get，ContextBuilder 不自动全库搜索，不把结果默认注入后续新会话或写成 Core Memory。
 - Recall 输出为低信任历史证据，不能授予 Memory 权限或修改 Base。不得执行、补齐、重试任何历史 Tool Call；cancelled/interrupted/running 当前不提供查询入口。
-- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。没有 Compaction、Reflection、Deferred Memory 或后台回填。
+- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。没有 Compaction、Reflection 或后台回填；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
 
 ## 核心模块说明文档
 
@@ -73,7 +75,7 @@ Python 3.13、uv、Pydantic v2、asyncio、官方 OpenAI Python SDK、pytest/pyt
 
 ## 测试与交付
 
-核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。测试应验证行为与契约，而不是机械重复实现。
+核心测试必须离线、无真实 Key、无 API 费用；使用 Fake Provider 和 MockTransport。保留 tests/conftest.py 中的网络禁用保护；不要调用真实 API 作为自动化验证。修改后运行 `uv run pytest`、`uv run ruff check .`、`uv run ruff format --check .`。涉及打包/入口时运行 `uv build` 和 CLI 启动检查。只汇报实际运行过的验证。覆盖直答、连续与批量工具调用、未知工具、非法参数、执行异常、API/超时、轮数上限及 ID 关联。 V0.2 还需覆盖临时数据库迁移、重启恢复、会话隔离、完整 Provider 数据重放、事务失败及运行中断。 V0.3 还需覆盖跨会话/重启记忆、冲突、发布失败回滚、大小限制、授权过期、Base 边界及双存储提交窗口。V0.4 还需覆盖 schema 1→2 回填、索引事务/重建、中文/英文/混合查询、跨会话与跨 Agent、输出边界、未结束 Run 和低信任证据。V0.5 还需覆盖旧格式无损迁移/中断/冲突、编辑器可见性、单文件原子替换、索引缺项/悬空/部分失败与显式补链、Deferred 分页、路径及 Junction 隔离和 CLI 重启渐进读取。测试应验证行为与契约，而不是机械重复实现。
 
 ## Git 提交流程与信息
 
@@ -92,4 +94,4 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.4 只增加 Conversation Recall，不实现自动记忆提取、Deferred Memory 检索、向量/Embedding、 Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+V0.5 仅增加轻量 File-based Core/Deferred Memory 与分层索引，不实现 Git-backed Memory、日常版本恢复、远程同步、自动记忆提取、向量/Embedding、Reflection、Context Compaction、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。

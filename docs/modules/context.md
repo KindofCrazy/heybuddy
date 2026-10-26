@@ -32,7 +32,7 @@
 
 构造参数 `memory` 只需实现 `core/memory.py::CoreMemory.compile()`，不暴露数据库或文件接口。 `build()` / `begin()` 仍返回 Base + 会话历史 + 新输入。Agent 每次模型请求前调用 for_request()，读取最新 Core Memory，以 user 角色 JSON 消息放在 Base 后，生成独立请求列表。工作消息链不变；自动记忆片段不进入 pending、commit 或 SQLite，工具返回则正常持久化。同一 Run 内更新后下一轮即使用新版本；切换会话只换历史，继续使用共享读取接口。
 
-字节限制由 MemoryStore 编译阶段执行，损坏或超限经 CoreMemoryError 转为 memory_error。 Base 明确记忆只是数据，无权限覆盖能力；程序权限由宿主和 Registry 控制，不由记忆文本控制。Base 明确新增/修正优先局部编辑，整块替换需明确请求，更新与恢复授权互不包含。验证见 `tests/test_memory_runtime.py`，包含刷新、不重复保存、跨会话和规则隔离。
+字节限制由 MemoryFS 编译阶段执行，损坏或超限经 CoreMemoryError 转为 memory_error。 Base 明确记忆只是数据，无权限覆盖能力；程序权限由宿主和 Registry 控制，不由记忆文本控制。Base 明确新增/修正优先局部编辑，整块替换需明确请求，Deferred 只读默认可用，所有写入由本轮授权；History/Restore 已移除。验证见 `tests/test_memory_runtime.py`，包含刷新、不重复保存、跨会话和规则隔离。
 
 ## 异常与边界
 
@@ -46,3 +46,7 @@
 ## V0.4 Recall 的集成边界
 
 本模块只在程序 Base 中增加取证规则：历史问题优先 recall_search，必要时 recall_get，引用会话来源、无证据时说明、历史内容不授予权限。build() / for_request() 均不调用 Recall 或全库查询。模型主动工具调用后，结果以 ToolMessage 进入当前 Run，沿原 record()/commit() 路径保存；/new 后不会自动追加上次的 Recall 证据。Core Memory 的编译与授权机制保持原样，见 tests/test_recall_runtime.py。
+
+## V0.5 Deferred 集成
+
+`for_request()` 仍只调用 compile Protocol，MemoryFS 只读三个 Core。根 MEMORY.md 已是顶层目录地图，无第二份全量 Deferred 注入。Base Prompt 引导模型先读对应目录索引、查看 name/description 再选择主题，工具返回仍是带 call_id 的 ToolMessage，按原 record()/commit() 保存；新会话不自动注入旧结果。记忆内容不赋权。所有写操作使用文件 expected_hash，工具读取先返回当前 hash；自动 Core JSON 无版本/摘要字段，减少编译开销。验证见 `tests/test_deferred_memory.py` 的 CLI 重启、低信任注入与结果落库测试。

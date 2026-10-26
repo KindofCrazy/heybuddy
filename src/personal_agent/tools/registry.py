@@ -82,13 +82,16 @@ class ToolRegistry:
                 error=ToolError(code=code, message=message),
             )
 
+        # CHECK 1: Is tool existed?
         tool = self._tools.get(call.name)
         if tool is None:
             return failure("unknown_tool", "Tool is not registered.")
+        # CHECK 2: Permission?
         if tool.required_permission is not None and tool.required_permission not in permissions:
             return failure(
                 "permission_denied", "This tool requires explicit permission for this run."
             )
+        # CHECK 3: Pydantic parameters
         try:
             arguments = tool.arguments.model_validate_json(call.arguments)
         except ValidationError as exc:

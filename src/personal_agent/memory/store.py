@@ -1,276 +1,327 @@
-"""Immutable Markdown snapshots published with one atomic CURRENT pointer swap."""
+"""Agent-scoped editable Markdown with short locks and atomic single-file writes."""
 
-import hashlib
 import os
 import re
+import stat
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Self
 from uuid import uuid4
-
-from pydantic import ValidationError
 
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.file_lock import FileLock, FileLockError
 from personal_agent.memory.models import (
     BLOCKS,
+    FILE_BYTES,
+    MAX_DEPTH,
+    MAX_ENTRIES,
     BlockName,
-    MemoryRevision,
-    MemorySnapshot,
+    CoreMemoryData,
+    bounded,
+    clip,
+    digest,
+    metadata,
     render_memory,
+    summary,
 )
 from personal_agent.memory.privacy import require_private_directory
 
 DEFAULT_BLOCKS = {"persona.md": "# Persona\n", "human.md": "# Human\n", "MEMORY.md": "# Memory\n"}
+SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
+RESERVED = {
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    *(f"com{i}" for i in range(10)),
+    *(f"lpt{i}" for i in range(10)),
+}
 
 
-class MemoryStore:
+class MemoryFS:
     def __init__(self, root: Path, *, max_bytes: int = 8192) -> None:
-        if max_bytes < 512:
-            raise ValueError("Core Memory limit must be at least 512 UTF-8 bytes")
+        if not 512 <= max_bytes <= 1_048_576:
+            raise ValueError("Core Memory limit must be between 512 and 1048576 bytes")
         self.root = root.absolute()
         self.max_bytes = max_bytes
 
     @classmethod
     def for_agent(cls, root: Path, agent_id: str, *, max_bytes: int = 8192) -> Self:
-        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", agent_id):
-            raise CoreMemoryError("invalid_agent", "Invalid memory agent identifier.")
+        if not re.fullmatch(r"[a-z0-9_-]{1,64}", agent_id) or agent_id.lower() in RESERVED:
+            raise CoreMemoryError(
+                "invalid_agent", "Memory agent identifiers must use lowercase portable names."
+            )
         return cls(root / agent_id, max_bytes=max_bytes)
 
     @staticmethod
-    def _guard(path: Path) -> None:
-        if path.is_symlink() or path.is_junction():
-            raise CoreMemoryError("invalid_memory", "Memory paths cannot be links.")
+    def guard(path: Path) -> None:
+        # Resolve alone hides junctions. Check all ancestors, even above Memory Root.
+        for part in (path, *path.parents):
+            if part.is_symlink() or part.is_junction():
+                raise CoreMemoryError("invalid_path", "Memory paths cannot contain links.")
+            if part.exists():
+                info = part.stat(follow_symlinks=False)
+                if getattr(info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+                    raise CoreMemoryError(
+                        "invalid_path", "Memory paths cannot contain reparse points."
+                    )
+                if part.is_file() and info.st_nlink > 1:
+                    raise CoreMemoryError("invalid_path", "Memory files cannot be hard links.")
 
-    def _check_layout(self) -> None:
-        for path in (self.root, self.root / "versions", self.root / "CURRENT"):
-            self._guard(path)
+    def path(self, relative: str, *, directory: bool = False) -> Path:
+        if directory and relative == "":
+            self.guard(self.root)
+            return self.root
+        parts = relative.split("/")
+        names = parts if directory else [*parts[:-1], parts[-1].removesuffix(".md")]
+        directories = parts if directory else parts[:-1]
+        if (
+            len(parts) - (not directory) > MAX_DEPTH
+            or any(not SEGMENT.fullmatch(name) or name.lower() in RESERVED for name in names)
+            or any(name.lower() in {"versions", "skills"} for name in directories)
+            or (not directory and not relative.endswith(".md"))
+            or (not directory and len(parts) == 1 and relative not in BLOCKS)
+            or (not directory and parts[-1].lower() == "memory.md" and parts[-1] != "MEMORY.md")
+        ):
+            raise CoreMemoryError(
+                "invalid_path", "Use bounded root-relative Markdown paths with /."
+            )
+        result = self.root.joinpath(*parts)
+        self.guard(result)
+        if not result.resolve().is_relative_to(self.root.resolve()):
+            raise CoreMemoryError("invalid_path", "Path is outside the agent memory root.")
+        return result
 
     @contextmanager
-    def _writing(self) -> Iterator[None]:
+    def io(self) -> Iterator[None]:
         try:
-            self._check_layout()
-            require_private_directory(self.root)
-            self.root.mkdir(parents=True, exist_ok=True)
-            self._guard(self.root / ".write.lock")
-            with FileLock(self.root / ".write.lock"):
-                yield
+            yield
         except FileLockError:
             raise CoreMemoryError(
-                "memory_busy", "Memory is being updated; retry only after review."
+                "memory_busy", "Memory is being updated; review before retrying."
             ) from None
-        except OSError:
+        except (OSError, UnicodeError):
             raise CoreMemoryError(
                 "memory_io_error", "Memory filesystem operation failed."
             ) from None
-        except (UnicodeError, ValidationError):
-            raise CoreMemoryError("invalid_memory", "Memory data cannot be validated.") from None
 
-    def _read_bytes(self, path: Path, limit: int) -> bytes:
-        self._guard(path)
+    @contextmanager
+    def writing(self) -> Iterator[None]:
+        with self.io():
+            self.guard(self.root / ".write.lock")
+            require_private_directory(self.root)
+            self.root.mkdir(parents=True, exist_ok=True)
+            with FileLock(self.root / ".write.lock"):
+                yield
+
+    def raw(self, path: Path, limit: int = FILE_BYTES) -> bytes:
+        self.guard(path)
+        if not stat.S_ISREG(path.stat().st_mode):
+            raise CoreMemoryError("invalid_path", "Memory reads require regular files.")
         with path.open("rb") as stream:
-            data = stream.read(limit + 1)
-        if len(data) > limit:
-            raise CoreMemoryError(
-                "memory_too_large", "Core Memory exceeds its configured size limit."
-            )
-        return data
+            raw = stream.read(limit + 1)
+        if len(raw) > limit:
+            raise CoreMemoryError("memory_too_large", "Memory file exceeds its byte limit.")
+        return raw
 
-    @staticmethod
-    def _version(value: str) -> str:
-        if not re.fullmatch(r"[0-9a-f]{32}", value):
-            raise CoreMemoryError("invalid_version", "Invalid memory version identifier.")
-        return value
-
-    def _current_version(self) -> str:
-        self._check_layout()
-        return self._version(self._read_bytes(self.root / "CURRENT", 64).decode("ascii").strip())
-
-    def _revision(self, version: str) -> MemoryRevision:
-        directory = self.root / "versions" / self._version(version)
-        self._guard(directory)
+    def atomic(self, path: Path, raw: bytes, *, expected_hash: str | None) -> None:
+        """Caller holds writing(). None means create-only; recheck just before replace."""
+        self.guard(path)
+        temporary = path.with_name(f".{path.name}-{uuid4().hex}.tmp")
         try:
-            revision = MemoryRevision.model_validate_json(
-                self._read_bytes(directory / "revision.json", 4096)
+            with temporary.open("xb") as stream:
+                stream.write(raw)
+                stream.flush()
+                os.fsync(stream.fileno())
+            self.guard(path)
+            if expected_hash is None:
+                if path.exists():
+                    raise CoreMemoryError(
+                        "memory_conflict", "File already exists; read before editing."
+                    )
+            elif (
+                not path.exists()
+                or digest(self.raw(path, max(FILE_BYTES, self.max_bytes))) != expected_hash
+            ):
+                raise CoreMemoryError("memory_conflict", "Memory changed; read before editing.")
+            os.replace(temporary, path)
+        finally:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass  # A leftover hidden temporary file is never a memory source.
+
+    def initialize(self) -> CoreMemoryData:
+        from personal_agent.memory.migration import initialize_files
+
+        with self.writing():
+            initialize_files(self)
+            return self.read()
+
+    def read(self) -> CoreMemoryData:
+        with self.io():
+            raws = {name: self.raw(self.path(name), self.max_bytes) for name in BLOCKS}
+            data = CoreMemoryData(
+                blocks={name: raw.decode("utf-8") for name, raw in raws.items()},
+                hashes={name: digest(raw) for name, raw in raws.items()},
             )
-        except (OSError, UnicodeError, ValidationError):
-            raise CoreMemoryError(
-                "invalid_memory", "Memory revision cannot be validated."
-            ) from None
-        if revision.version != version or set(revision.hashes) != set(BLOCKS):
-            raise CoreMemoryError("invalid_memory", "Invalid memory revision metadata.")
-        return revision
+            self.check_core(data)
+            return data
 
-    def _load(self, version: str) -> MemorySnapshot:
-        directory = self.root / "versions" / self._version(version)
-        revision = self._revision(version)
-        blocks = {}
-        for block in BLOCKS:
-            raw = self._read_bytes(directory / block, self.max_bytes)
-            if hashlib.sha256(raw).hexdigest() != revision.hashes[block]:
-                raise CoreMemoryError("invalid_memory", "Memory revision integrity check failed.")
-            blocks[block] = raw.decode("utf-8")
-        snapshot = MemorySnapshot(revision=revision, blocks=blocks)
-        self._check_size(snapshot)
-        return snapshot
-
-    def _check_size(self, snapshot: MemorySnapshot) -> None:
-        if len(render_memory(snapshot).encode("utf-8")) > self.max_bytes:
+    def check_core(self, data: CoreMemoryData) -> None:
+        if len(render_memory(data).encode("utf-8")) > self.max_bytes:
             raise CoreMemoryError(
                 "memory_too_large", "Compiled Core Memory exceeds its UTF-8 byte limit."
             )
 
-    def read(self) -> MemorySnapshot:
-        try:
-            return self._load(self._current_version())
-        except (OSError, UnicodeError, ValidationError):
-            raise CoreMemoryError("invalid_memory", "Memory cannot be read or validated.") from None
-
     def compile(self) -> str:
         return render_memory(self.read())
 
-    def initialize(self) -> MemorySnapshot:
-        with self._writing():
-            if (self.root / "CURRENT").exists():
-                return self.read()
-            versions = self.root / "versions"
-            versions.mkdir(exist_ok=True)
-            if any(versions.iterdir()):
-                raise CoreMemoryError(
-                    "invalid_memory",
-                    "Memory pointer is missing; existing versions will not be reset.",
-                )
-            return self._publish(dict(DEFAULT_BLOCKS), parent=None, action="initialize")
+    def replace(self, relative: str, text: str, *, expected_hash: str | None) -> str:
+        path = self.path(relative)
+        raw = text.encode("utf-8")
+        if len(raw) > (self.max_bytes if relative in BLOCKS else FILE_BYTES):
+            raise CoreMemoryError("memory_too_large", "Memory file exceeds its byte limit.")
+        if relative in BLOCKS:
+            data = self.read()
+            data.blocks[relative] = text
+            data.hashes[relative] = digest(raw)
+            self.check_core(data)
+        elif path.name != "MEMORY.md":
+            metadata(text)
+        self.atomic(path, raw, expected_hash=expected_hash)
+        return digest(raw)
 
-    @staticmethod
-    def _write_file(path: Path, data: bytes) -> None:
-        with path.open("xb") as stream:
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-
-    def _publish(
-        self,
-        blocks: dict[BlockName, str],
-        *,
-        parent: str | None,
-        action: str,
-        restored_from: str | None = None,
-    ) -> MemorySnapshot:
-        revision = MemoryRevision(
-            version=uuid4().hex,
-            parent=parent,
-            action=action,
-            restored_from=restored_from,
-            created_at=datetime.now(UTC),
-            hashes={
-                name: hashlib.sha256(blocks[name].encode("utf-8")).hexdigest() for name in BLOCKS
-            },
-        )
-        snapshot = MemorySnapshot(revision=revision, blocks=blocks)
-        self._check_size(snapshot)
-        directory = self.root / "versions" / revision.version
-        directory.mkdir()
-        for name in BLOCKS:
-            self._write_file(directory / name, blocks[name].encode("utf-8"))
-        self._write_file(directory / "revision.json", revision.model_dump_json().encode("utf-8"))
-        pointer = self.root / f".CURRENT-{revision.version}.tmp"
-        try:
-            self._write_file(pointer, (revision.version + "\n").encode("ascii"))
-            # Linearization point and final fallible step. Before this succeeds,
-            # readers still see the previous entire snapshot, never a mixed set.
-            os.replace(pointer, self.root / "CURRENT")
-        finally:
-            try:
-                pointer.unlink(missing_ok=True)
-            except OSError:
-                pass
-        # Failed pre-publication snapshots are unreachable, kept for manual diagnosis.
-        return snapshot
-
-    def update(self, block: BlockName, content: str, *, expected_version: str) -> MemorySnapshot:
-        """Explicit full-block replacement; prefer edit() for incremental changes."""
+    def update(self, block: BlockName, content: str, *, expected_hash: str) -> CoreMemoryData:
         if block not in BLOCKS:
-            raise CoreMemoryError(
-                "invalid_block", "Only persona.md, human.md and MEMORY.md are writable."
-            )
-        with self._writing():
-            current = self.read()
-            if current.revision.version != expected_version:
-                raise CoreMemoryError(
-                    "memory_conflict", "Memory changed; read the current revision before editing."
-                )
-            blocks = dict(current.blocks)
-            blocks[block] = content
-            return self._publish(blocks, parent=expected_version, action="update")
+            raise CoreMemoryError("invalid_block", "Only fixed Core Memory blocks are writable.")
+        with self.writing():
+            self.replace(block, content, expected_hash=expected_hash)
+            return self.read()
 
-    def edit(
-        self, block: BlockName, old_text: str, new_text: str, *, expected_version: str
-    ) -> MemorySnapshot:
-        """Replace one exact, nonempty, unique span without touching other text."""
-        if block not in BLOCKS:
-            raise CoreMemoryError("invalid_block", "Only fixed Core Memory blocks are editable.")
-        if not old_text:
-            raise CoreMemoryError("memory_edit_mismatch", "Original text must be nonempty.")
-        with self._writing():
-            current = self.read()
-            if current.revision.version != expected_version:
+    def edit(self, relative: str, old_text: str, new_text: str, *, expected_hash: str) -> str:
+        with self.writing():
+            path = self.path(relative)
+            raw = self.raw(path, self.max_bytes if relative in BLOCKS else FILE_BYTES)
+            if digest(raw) != expected_hash:
                 raise CoreMemoryError("memory_conflict", "Memory changed; read before editing.")
-            original = current.blocks[block]
+            original = raw.decode("utf-8")
             start = original.find(old_text)
-            # A second match can overlap the first (e.g. 'aa' inside 'aaa').
-            if start < 0 or original.find(old_text, start + 1) >= 0:
+            if not old_text or start < 0 or original.find(old_text, start + 1) >= 0:
                 raise CoreMemoryError(
-                    "memory_edit_mismatch",
-                    "Original text must match exactly once; read before editing.",
+                    "memory_edit_mismatch", "Original text must match exactly once."
                 )
-            blocks = dict(current.blocks)
-            blocks[block] = original[:start] + new_text + original[start + len(old_text) :]
-            return self._publish(blocks, parent=expected_version, action="update")
+            text = original[:start] + new_text + original[start + len(old_text) :]
+            return self.replace(relative, text, expected_hash=expected_hash)
 
-    def history(self, *, limit: int = 20) -> list[MemoryRevision]:
-        if not 1 <= limit <= 100:
-            raise ValueError("History limit must be between 1 and 100")
-        try:
-            version = self._current_version()
-            revisions = []
-            seen = set()
-            while version is not None and len(revisions) < limit:
-                if version in seen:
-                    raise CoreMemoryError(
-                        "invalid_memory", "Memory revision chain contains a cycle."
-                    )
-                seen.add(version)
-                revision = self._revision(version)
-                revisions.append(revision)
-                version = revision.parent
-            return revisions
-        except (OSError, UnicodeError, ValidationError):
-            raise CoreMemoryError("invalid_memory", "Memory history cannot be validated.") from None
+    def read_file(
+        self, relative: str, *, offset: int = 0, limit: int = 4096, expected_hash: str | None = None
+    ) -> dict:
+        if relative in {"persona.md", "human.md"}:
+            raise CoreMemoryError("invalid_path", "Use memory_read for fixed Core blocks.")
+        if not 0 <= offset <= max(FILE_BYTES, self.max_bytes) or not 6 <= limit <= 8192:
+            raise CoreMemoryError("invalid_range", "Invalid character offset or byte budget.")
+        with self.io():
+            raw = self.raw(
+                self.path(relative), self.max_bytes if relative == "MEMORY.md" else FILE_BYTES
+            )
+            current_hash = digest(raw)
+            if expected_hash is not None and expected_hash != current_hash:
+                raise CoreMemoryError("memory_conflict", "Memory changed between read fragments.")
+            text = raw.decode("utf-8")
+            if offset > len(text):
+                raise CoreMemoryError("invalid_range", "Offset is past the end of the file.")
+            content = clip(text[offset:], limit)
+            end = offset + len(content)
+            return bounded(
+                {
+                    "trust": "data_only",
+                    "path": relative,
+                    "hash": current_hash,
+                    "content": content,
+                    "offset": offset,
+                    "truncated": end < len(text),
+                    "next_offset": end if end < len(text) else None,
+                    "total_characters": len(text),
+                }
+            )
 
-    def restore(self, version: str, *, expected_version: str) -> MemorySnapshot:
-        self._version(version)
-        with self._writing():
-            current = self.read()
-            if current.revision.version != expected_version:
-                raise CoreMemoryError("memory_conflict", "Memory changed; review before restoring.")
-            # Only ancestors of the committed pointer are restorable, not orphans
-            # left behind by a failed publication or snapshots from another agent.
-            cursor = current.revision
-            seen = set()
-            while cursor.version != version:
-                if cursor.version in seen or cursor.parent is None:
+    def children(self, directory: str) -> list[Path]:
+        path = self.path(directory, directory=True)
+        entries = []
+        with os.scandir(path) as stream:
+            for entry in stream:
+                if entry.name.startswith(".") or (
+                    directory == "" and entry.name in {"CURRENT", "versions"}
+                ):
+                    continue
+                if len(entries) >= MAX_ENTRIES:
                     raise CoreMemoryError(
-                        "unknown_version", "Version is not in committed memory history."
+                        "memory_entry_limit", "Directory exceeds its entry budget."
                     )
-                seen.add(cursor.version)
-                cursor = self._revision(cursor.parent)
-            target = self._load(version)
-            return self._publish(
-                dict(target.blocks),
-                parent=expected_version,
-                action="restore",
-                restored_from=version,
+                self.guard(Path(entry.path))
+                entries.append(Path(entry.path))
+        return sorted(entries, key=lambda item: item.name)
+
+    def list_directory(self, directory: str = "", *, offset: int = 0, limit: int = 10) -> dict:
+        if not 0 <= offset <= MAX_ENTRIES or not 1 <= limit <= 10:
+            raise CoreMemoryError("invalid_range", "Invalid directory page.")
+        with self.io():
+            children = self.children(directory)
+            entries = []
+            for path in children[offset : offset + limit]:
+                relative = path.relative_to(self.root).as_posix()
+                if path.is_dir():
+                    self.path(relative, directory=True)
+                    index = self.path(relative + "/MEMORY.md")
+                    text = self.raw(index).decode("utf-8") if index.exists() else ""
+                    entries.append(
+                        {
+                            "path": relative,
+                            "kind": "directory",
+                            "name": path.name,
+                            "description": clip(summary(text), 512),
+                            "index_missing": not index.exists(),
+                        }
+                    )
+                else:
+                    self.path(relative)
+                    raw = self.raw(path, self.max_bytes if relative in BLOCKS else FILE_BYTES)
+                    name, description = (
+                        (path.stem, summary(raw.decode("utf-8")))
+                        if path.name == "MEMORY.md" or relative in BLOCKS
+                        else metadata(raw.decode("utf-8"))
+                    )
+                    entries.append(
+                        {
+                            "path": relative,
+                            "kind": "file",
+                            "name": clip(name, 240),
+                            "description": clip(description, 512),
+                            "metadata_truncated": name != clip(name, 240)
+                            or description != clip(description, 512),
+                            "hash": digest(raw),
+                        }
+                    )
+            index_path = self.path(f"{directory}/MEMORY.md" if directory else "MEMORY.md")
+            index_summary = (
+                summary(
+                    self.raw(index_path, self.max_bytes if not directory else FILE_BYTES).decode(
+                        "utf-8"
+                    )
+                )
+                if index_path.exists()
+                else ""
+            )
+            end = offset + limit
+            return bounded(
+                {
+                    "trust": "data_only",
+                    "directory": directory,
+                    "summary": clip(index_summary, 512),
+                    "entries": entries,
+                    "has_more": end < len(children),
+                    "next_offset": end if end < len(children) else None,
+                }
             )

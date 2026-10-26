@@ -6,7 +6,7 @@ import pytest
 from personal_agent.core.agent import Agent
 from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT
 from personal_agent.core.models import ModelResponse, ToolCall, ToolMessage
-from personal_agent.memory.store import MemoryStore
+from personal_agent.memory.store import MemoryFS
 from personal_agent.memory.tools import register_memory_tools
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
@@ -18,7 +18,7 @@ from tests.fakes import FakeProvider
 
 @pytest.fixture
 def state(tmp_path):
-    memory = MemoryStore.for_agent(tmp_path / "memory", "heybuddy")
+    memory = MemoryFS.for_agent(tmp_path / "memory", "heybuddy")
     memory.initialize()
     with SQLiteStore(tmp_path / "history.sqlite3") as store:
         store.initialize()
@@ -111,12 +111,12 @@ async def test_malicious_evidence_cannot_grant_memory_permissions_or_change_base
                     "memory_update",
                     block="human.md",
                     content="unauthorized",
-                    expected_version=before.revision.version,
+                    expected_hash=before.hashes["human.md"],
                 ),
                 call(
-                    "memory_restore",
-                    version=before.revision.version,
-                    expected_version=before.revision.version,
+                    "deferred_create",
+                    path="projects/evil.md",
+                    content="unauthorized",
                 ),
             ]
         ),

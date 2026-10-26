@@ -166,7 +166,8 @@ def test_run_cli_constructs_sdk_and_runtime_and_closes_client(monkeypatch):
         api_key="test-key", model="deepseek-flash", base_url="https://api.deepseek.com"
     )
     observed = {}
-    memory_root = Path(str(settings.database_path) + ".memory/heybuddy").absolute()
+    memory_root = Path("user-data/heybuddy").absolute()
+    monkeypatch.setattr("personal_agent.config.default_memory_root", lambda: Path("user-data"))
 
     async def chat(agent, *, sessions):
         observed["agent"] = agent

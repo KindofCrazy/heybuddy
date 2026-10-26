@@ -75,3 +75,23 @@ def load_settings(env_file: Path | None = None) -> Settings:
         if value is not None:
             data[field] = value
     return Settings.model_validate(data)
+
+
+def default_memory_root() -> Path:
+    """User data, outside source checkouts by default; no additional dependency."""
+    if os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData/Local")))
+        return base / "HeyBuddy" / "memory"
+    return Path.home() / ".local/share/heybuddy/memory"
+
+
+def memory_root_for(settings: Settings, agent_id: str) -> Path:
+    if settings.memory_root is not None:
+        return settings.memory_root
+    # Preserve the known V0.4 location on upgrade and subsequent restarts. Do not
+    # scan unrelated paths or silently copy private data to another location.
+    adjacent = Path(str(settings.database_path) + ".memory")
+    agent = adjacent / agent_id
+    if agent.exists() or agent.is_symlink() or agent.is_junction():
+        return adjacent
+    return default_memory_root()

@@ -1,3 +1,5 @@
+"""File contracts: editor visibility, optimistic hashes, confinement and atomic publication."""
+
 import json
 import os
 import subprocess
@@ -9,382 +11,239 @@ import pytest
 
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.memory.models import BLOCKS
-from personal_agent.memory.store import MemoryStore
+from personal_agent.memory.store import MemoryFS
 
 
 @pytest.fixture
 def memory(tmp_path):
-    store = MemoryStore.for_agent(tmp_path / "memory", "heybuddy")
-    store.initialize()
-    return store
+    fs = MemoryFS.for_agent(tmp_path / "memory", "heybuddy")
+    fs.initialize()
+    return fs
 
 
-def test_initialize_creates_versioned_markdown_and_is_idempotent(memory):
-    original = memory.read()
-    assert set(original.blocks) == set(BLOCKS)
-    for name in BLOCKS:
-        assert (
-            memory.root / "versions" / original.revision.version / name
-        ).read_text() == original.blocks[name]
-    assert memory.initialize() == original
-    assert len(memory.history()) == 1
+def test_plain_markdown_is_authoritative_and_reopen_is_idempotent(memory):
+    before = memory.read()
+    assert set(before.blocks) == set(BLOCKS)
+    assert not (memory.root / "CURRENT").exists()
+    assert not (memory.root / "versions").exists()
+    for block in BLOCKS:
+        assert (memory.root / block).read_bytes().decode() == before.blocks[block]
+    (memory.root / "human.md").write_bytes("编辑器直接修改\r\n".encode())
+    reopened = MemoryFS(memory.root)
+    assert reopened.initialize().blocks["human.md"] == "编辑器直接修改\r\n"
+    assert reopened.compile() == memory.compile()
+    assert not hasattr(memory, "history") and not hasattr(memory, "restore")
 
 
-def test_different_agents_do_not_share_memory_or_versions(tmp_path):
-    first = MemoryStore.for_agent(tmp_path, "first")
-    second = MemoryStore.for_agent(tmp_path, "second")
-    initial = first.initialize()
-    other = second.initialize()
-    updated = first.update("human.md", "first user", expected_version=initial.revision.version)
-    assert second.read() == other
-    assert first.read() == updated
-    with pytest.raises(CoreMemoryError) as caught:
-        second.restore(updated.revision.version, expected_version=other.revision.version)
-    assert caught.value.code == "unknown_version"
+def test_per_agent_isolation(memory, tmp_path):
+    other = MemoryFS.for_agent(tmp_path / "memory", "other")
+    before = other.initialize()
+    memory.update("human.md", "user one", expected_hash=memory.read().hashes["human.md"])
+    assert other.read() == before
 
 
-def test_update_reopen_and_restore_preserve_committed_history(memory):
-    first = memory.read()
-    second = memory.update(
-        "human.md", "用户喜欢简洁中文。", expected_version=first.revision.version
-    )
-    reopened = MemoryStore(memory.root)
-    assert reopened.read() == second
-    restored = reopened.restore(first.revision.version, expected_version=second.revision.version)
-    assert restored.blocks == first.blocks
-    assert restored.revision.version not in {first.revision.version, second.revision.version}
-    assert restored.revision.parent == second.revision.version
-    assert restored.revision.restored_from == first.revision.version
-    assert [item.version for item in reopened.history()] == [
-        restored.revision.version,
-        second.revision.version,
-        first.revision.version,
-    ]
-
-
-def test_partial_edit_adds_c_while_preserving_a_b_and_other_blocks(memory):
-    initial = memory.read()
-    before = memory.update(
-        "human.md", "# Human\n- A\n- B\n", expected_version=initial.revision.version
-    )
-    after = memory.edit("human.md", "- B\n", "- B\n- C\n", expected_version=before.revision.version)
-    assert after.blocks["human.md"] == "# Human\n- A\n- B\n- C\n"
-    assert after.blocks["persona.md"] == before.blocks["persona.md"]
-    assert after.blocks["MEMORY.md"] == before.blocks["MEMORY.md"]
-    assert after.revision.parent == before.revision.version
-    assert MemoryStore(memory.root).read() == after
+def test_partial_edit_preserves_unrelated_text(memory):
+    before = memory.update("human.md", "A\nB\n", expected_hash=memory.read().hashes["human.md"])
+    value = memory.edit("human.md", "B\n", "B\nC\n", expected_hash=before.hashes["human.md"])
+    assert memory.read().blocks == {**before.blocks, "human.md": "A\nB\nC\n"}
+    assert value == memory.read().hashes["human.md"]
 
 
 @pytest.mark.parametrize(
-    "old_text,new_text,stale,code",
-    [
-        ("- B\n", "- B\n- C\n", True, "memory_conflict"),
-        ("- missing\n", "- C\n", False, "memory_edit_mismatch"),
-        ("- B ", "- C\n", False, "memory_edit_mismatch"),
-        ("", "- C\n", False, "memory_edit_mismatch"),
-        ("- B\n", "你" * 9000, False, "memory_too_large"),
-    ],
-    ids=["stale", "missing", "whitespace", "empty", "oversized"],
+    "content,old", [("A B B", "B"), ("aaa", "aa"), ("A", ""), ("A", "missing")]
 )
-def test_rejected_partial_edits_leave_pointer_history_and_blocks_unchanged(
-    memory, old_text, new_text, stale, code
-):
-    initial = memory.read()
-    before = memory.update(
-        "human.md", "# Human\n- A\n- B\n", expected_version=initial.revision.version
-    )
-    history = memory.history()
-    pointer = (memory.root / "CURRENT").read_bytes()
+def test_ambiguous_empty_or_missing_spans_leave_file_unchanged(memory, content, old):
+    before = memory.update("human.md", content, expected_hash=memory.read().hashes["human.md"])
     with pytest.raises(CoreMemoryError) as caught:
-        memory.edit(
-            "human.md",
-            old_text,
-            new_text,
-            expected_version=initial.revision.version if stale else before.revision.version,
-        )
-    assert caught.value.code == code
-    assert memory.read() == before
-    assert memory.history() == history
-    assert (memory.root / "CURRENT").read_bytes() == pointer
-
-
-@pytest.mark.parametrize("content,anchor", [("A B B", "B"), ("aaa", "aa")])
-def test_partial_edit_rejects_ambiguous_including_overlapping_matches(memory, content, anchor):
-    before = memory.update("human.md", content, expected_version=memory.read().revision.version)
-    with pytest.raises(CoreMemoryError) as caught:
-        memory.edit("human.md", anchor, "C", expected_version=before.revision.version)
+        memory.edit("human.md", old, "C", expected_hash=before.hashes["human.md"])
     assert caught.value.code == "memory_edit_mismatch"
     assert memory.read() == before
 
 
-def test_partial_edit_can_correct_or_delete_only_a_matched_span(memory):
-    before = memory.update("human.md", "A B C", expected_version=memory.read().revision.version)
-    changed = memory.edit("human.md", "B", "D", expected_version=before.revision.version)
-    deleted = memory.edit("human.md", " D", "", expected_version=changed.revision.version)
-    assert changed.blocks["human.md"] == "A D C"
-    assert deleted.blocks["human.md"] == "A C"
-
-
-def test_partial_edit_publication_failure_keeps_previous_snapshot(memory, monkeypatch):
+def test_external_editor_stale_hash_is_rejected(memory):
     before = memory.read()
-
-    def fail(*args):
-        raise OSError("private-path")
-
-    monkeypatch.setattr("personal_agent.memory.store.os.replace", fail)
+    (memory.root / "human.md").write_bytes(b"external editor content")
     with pytest.raises(CoreMemoryError) as caught:
-        memory.edit("human.md", "# Human", "# Human\nC", expected_version=before.revision.version)
-    assert caught.value.code == "memory_io_error"
-    assert memory.read() == before
-    assert len(memory.history()) == 1
-
-
-@pytest.mark.parametrize("operation", ["update", "restore"])
-def test_stale_versions_are_rejected_without_overwrite(memory, operation):
-    stale = memory.read().revision.version
-    other = MemoryStore(memory.root)
-    current = other.update("human.md", "new", expected_version=stale)
-    with pytest.raises(CoreMemoryError) as caught:
-        if operation == "update":
-            memory.update("human.md", "stale", expected_version=stale)
-        else:
-            memory.restore(stale, expected_version=stale)
+        memory.edit("human.md", "# Human", "lost update", expected_hash=before.hashes["human.md"])
     assert caught.value.code == "memory_conflict"
-    assert memory.read() == current
-    assert len(memory.history()) == 2
+    assert memory.read().blocks["human.md"] == "external editor content"
 
 
-def test_concurrent_editors_cannot_lose_an_update(memory):
-    expected = memory.read().revision.version
+def test_external_change_while_temp_is_flushed_is_detected(memory, monkeypatch):
+    before = memory.read()
+    original = os.fsync
+
+    def editor(fd):
+        original(fd)
+        (memory.root / "human.md").write_bytes(b"editor won")
+
+    monkeypatch.setattr("personal_agent.memory.store.os.fsync", editor)
+    with pytest.raises(CoreMemoryError) as caught:
+        memory.update("human.md", "stale", expected_hash=before.hashes["human.md"])
+    assert caught.value.code == "memory_conflict"
+    assert memory.read().blocks["human.md"] == "editor won"
+
+
+def test_concurrent_controlled_writers_cannot_lose_an_update(memory):
+    expected = memory.read().hashes["human.md"]
     ready = Barrier(2)
 
     def edit(text):
-        store = MemoryStore(memory.root)
+        fs = MemoryFS(memory.root)
         ready.wait(timeout=3)
         try:
-            return store.update("human.md", text, expected_version=expected).revision.version
+            return fs.update("human.md", text, expected_hash=expected).blocks["human.md"]
         except CoreMemoryError as exc:
             return exc.code
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         outcomes = list(pool.map(edit, ["first", "second"]))
-    failures = [item for item in outcomes if item in {"memory_busy", "memory_conflict"}]
-    assert len(failures) == 1
-    assert len(memory.history()) == 2
+    assert sum(item in {"memory_busy", "memory_conflict"} for item in outcomes) == 1
     assert memory.read().blocks["human.md"] in {"first", "second"}
 
 
-@pytest.mark.parametrize("operation", ["update", "restore"])
-def test_pointer_publication_failure_rolls_back_visible_snapshot(memory, monkeypatch, operation):
-    first = memory.read()
-    current = memory.update("human.md", "current", expected_version=first.revision.version)
-    history = memory.history()
+@pytest.mark.parametrize("failure", ["fsync", "replace"])
+def test_failed_single_file_write_keeps_previous_bytes(memory, monkeypatch, failure):
+    before = memory.read()
 
-    def fail_replace(*args):
-        raise OSError("private filesystem path")
+    def fail(*args):
+        raise OSError("private-path-secret")
 
-    monkeypatch.setattr("personal_agent.memory.store.os.replace", fail_replace)
+    monkeypatch.setattr(f"personal_agent.memory.store.os.{failure}", fail)
     with pytest.raises(CoreMemoryError) as caught:
-        if operation == "update":
-            memory.update("persona.md", "uncommitted", expected_version=current.revision.version)
-        else:
-            memory.restore(first.revision.version, expected_version=current.revision.version)
+        memory.update("human.md", "unpublished", expected_hash=before.hashes["human.md"])
     assert caught.value.code == "memory_io_error"
-    assert "private" not in str(caught.value)
-    assert memory.read() == current
-    assert memory.history() == history
-
-
-def test_partial_snapshot_write_never_changes_current(memory, monkeypatch):
-    before = memory.read()
-    write = memory._write_file
-
-    def fail_second(path, data):
-        if path.name == "human.md":
-            raise OSError("disk full")
-        write(path, data)
-
-    monkeypatch.setattr(memory, "_write_file", fail_second)
-    with pytest.raises(CoreMemoryError):
-        memory.update("persona.md", "unpublished", expected_version=before.revision.version)
+    assert "private-path" not in str(caught.value)
     assert memory.read() == before
-    assert len(memory.history()) == 1
-
-
-def test_reader_observes_old_whole_snapshot_until_pointer_swap(memory, monkeypatch):
-    before = memory.read()
-    replace = os.replace
-    observations = []
-
-    def inspect_then_replace(source, destination):
-        observations.append(MemoryStore(memory.root).read())
-        replace(source, destination)
-
-    monkeypatch.setattr("personal_agent.memory.store.os.replace", inspect_then_replace)
-    after = memory.update("human.md", "new content", expected_version=before.revision.version)
-    assert observations == [before]
-    assert memory.read() == after
+    assert not list(memory.root.glob("*.tmp"))
 
 
 @pytest.mark.parametrize("content", ["你" * 200, "\n" * 400, '"' * 400, "\x00" * 100])
-def test_limit_counts_compiled_utf8_including_json_escaping(tmp_path, content):
-    memory = MemoryStore(tmp_path / "small", max_bytes=512)
-    original = memory.initialize()
-    assert len(content) <= 512
+def test_budget_counts_utf8_and_json_escaping(tmp_path, content):
+    fs = MemoryFS(tmp_path / "small", max_bytes=512)
+    before = fs.initialize()
     with pytest.raises(CoreMemoryError) as caught:
-        memory.update("human.md", content, expected_version=original.revision.version)
+        fs.update("human.md", content, expected_hash=before.hashes["human.md"])
     assert caught.value.code == "memory_too_large"
-    assert memory.read() == original
+    assert fs.read() == before
 
 
-def test_exact_compiled_limit_and_one_byte_over(tmp_path):
-    memory = MemoryStore(tmp_path / "boundary", max_bytes=512)
-    initial = memory.initialize()
-    encoded_value_size = (
-        len(json.dumps(initial.blocks["human.md"], ensure_ascii=False).encode()) - 2
-    )
-    overhead = len(memory.compile().encode()) - encoded_value_size
+def test_exact_core_budget_and_shared_capacity(tmp_path):
+    fs = MemoryFS(tmp_path / "small", max_bytes=512)
+    before = fs.initialize()
+    escaped = len(json.dumps(before.blocks["human.md"], ensure_ascii=False).encode()) - 2
+    overhead = len(fs.compile().encode()) - escaped
     content = "x" * (512 - overhead)
-    current = memory.update("human.md", content, expected_version=initial.revision.version)
-    assert len(memory.compile().encode()) == 512
-    with pytest.raises(CoreMemoryError, match="limit"):
-        memory.update("human.md", content + "x", expected_version=current.revision.version)
-    assert memory.read() == current
-
-
-def test_all_blocks_share_one_budget(tmp_path):
-    memory = MemoryStore(tmp_path / "total", max_bytes=512)
-    current = memory.initialize()
-    current = memory.update("human.md", "h" * 150, expected_version=current.revision.version)
+    current = fs.update("human.md", content, expected_hash=before.hashes["human.md"])
+    assert len(fs.compile().encode()) == 512
     with pytest.raises(CoreMemoryError):
-        memory.update("persona.md", "p" * 250, expected_version=current.revision.version)
-    assert memory.read() == current
-
-
-def test_smaller_budget_still_lists_history_and_rejects_oversized_restore(memory):
-    initial = memory.read()
-    large = memory.update("human.md", "x" * 1000, expected_version=initial.revision.version)
-    current = memory.update("human.md", "small", expected_version=large.revision.version)
-    small_store = MemoryStore(memory.root, max_bytes=512)
-    assert small_store.read() == current
-    assert len(small_store.history()) == 3
-    with pytest.raises(CoreMemoryError) as caught:
-        small_store.restore(large.revision.version, expected_version=current.revision.version)
-    assert caught.value.code == "memory_too_large"
-    assert small_store.read() == current
+        fs.update("persona.md", "extra bytes" * 10, expected_hash=current.hashes["persona.md"])
+    with pytest.raises(CoreMemoryError):
+        fs.update("human.md", content + "x", expected_hash=current.hashes["human.md"])
+    assert fs.read() == current
 
 
 @pytest.mark.parametrize(
-    "block", ["../.env", "/tmp/outside.md", "base_system_prompt", "tools.json", "persona.md/../x"]
+    "path",
+    [
+        "../other/human.md",
+        "/tmp/escape.md",
+        "C:/escape.md",
+        "x\\evil.md",
+        "x/../y.md",
+        "x//y.md",
+        "x/.env",
+        "x/nul.md",
+        "x/CON.md",
+        "x/bad name.md",
+        "x/a.md:stream",
+        "x/a.md.",
+        "x/memory.md",
+        "a/b/c/d/e.md",
+        "other.md",
+        "versions/ab.md",
+        ".git/config.md",
+    ],
 )
-def test_only_fixed_block_names_can_be_updated(memory, block):
-    before = memory.read()
+def test_paths_reject_escape_and_platform_aliases(memory, path):
     with pytest.raises(CoreMemoryError) as caught:
-        memory.update(block, "overwrite", expected_version=before.revision.version)
-    assert caught.value.code == "invalid_block"
-    assert memory.read() == before
+        memory.read_file(path)
+    assert caught.value.code == "invalid_path"
 
 
-@pytest.mark.parametrize("version", ["../outside", "a" * 31, "A" * 32, "z" * 32])
-def test_restore_cannot_traverse_paths(memory, version):
-    before = memory.read()
+@pytest.mark.parametrize("agent_id", ["../other", "", "nul", "a/b", "C:", "a" * 65, "HeyBuddy"])
+def test_agent_ids_cannot_escape_root(tmp_path, agent_id):
     with pytest.raises(CoreMemoryError):
-        memory.restore(version, expected_version=before.revision.version)
-    assert memory.read() == before
+        MemoryFS.for_agent(tmp_path, agent_id)
 
 
-def test_unpublished_or_foreign_revisions_cannot_be_restored(memory, monkeypatch, tmp_path):
-    before = memory.read()
-    with monkeypatch.context() as patch:
-        patch.setattr(
-            "personal_agent.memory.store.os.replace", lambda *args: (_ for _ in ()).throw(OSError())
-        )
-        with pytest.raises(CoreMemoryError):
-            memory.update("human.md", "orphan", expected_version=before.revision.version)
-    orphan = next(
-        path.name
-        for path in (memory.root / "versions").iterdir()
-        if path.name != before.revision.version
-    )
-    other = MemoryStore.for_agent(tmp_path / "other", "another")
-    foreign = other.initialize().revision.version
-    for version in [orphan, foreign]:
-        with pytest.raises(CoreMemoryError) as caught:
-            memory.restore(version, expected_version=before.revision.version)
-        assert caught.value.code == "unknown_version"
-    assert memory.read() == before
-
-
-def test_modified_markdown_fails_integrity_check_without_being_injected(memory):
-    current = memory.read()
-    path = memory.root / "versions" / current.revision.version / "human.md"
-    path.write_text("private tampered instructions", encoding="utf-8")
-    with pytest.raises(CoreMemoryError) as caught:
-        memory.compile()
-    assert caught.value.code == "invalid_memory"
-    assert "private" not in str(caught.value)
-
-
-def test_invalid_current_pointer_never_resets_existing_memory(memory):
-    pointer = memory.root / "CURRENT"
-    pointer.write_text("invalid-private-pointer", encoding="utf-8")
-    with pytest.raises(CoreMemoryError):
-        memory.initialize()
-    assert pointer.read_text() == "invalid-private-pointer"
-
-
-def test_missing_pointer_with_existing_versions_is_not_reinitialized(memory):
-    (memory.root / "CURRENT").unlink()
-    with pytest.raises(CoreMemoryError, match="will not be reset"):
-        memory.initialize()
-
-
-def test_memory_rejects_symlinked_pointer(memory, tmp_path):
-    pointer = memory.root / "CURRENT"
-    destination = tmp_path / "outside"
-    destination.write_bytes(pointer.read_bytes())
-    pointer.unlink()
+def test_symlinked_file_or_parent_is_rejected(memory, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "topic.md").write_bytes(b"private")
+    directory = memory.root / "linked"
     try:
-        pointer.symlink_to(destination)
+        directory.symlink_to(outside, target_is_directory=True)
     except OSError:
         pytest.skip("OS does not allow creating symlinks")
     with pytest.raises(CoreMemoryError, match="links"):
-        memory.read()
+        memory.read_file("linked/topic.md")
+    with pytest.raises(CoreMemoryError, match="links"):
+        MemoryFS.for_agent(directory, "nested").initialize()
 
 
-def test_agent_id_cannot_escape_memory_root(tmp_path):
+def test_hardlink_cannot_read_another_agent(memory, tmp_path):
+    directory = memory.root / "topics"
+    directory.mkdir()
+    outside = tmp_path / "secret.md"
+    outside.write_bytes(b"private")
+    os.link(outside, directory / "secret.md")
+    with pytest.raises(CoreMemoryError, match="hard links"):
+        memory.read_file("topics/secret.md")
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows junction contract")
+def test_windows_junction_is_rejected(memory, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    junction = memory.root / "linked"
+    # Fixed test fixture paths; no shell-derived deletion or moving.
+    result = subprocess.run(
+        ["cmd", "/c", "mklink", "/J", str(junction), str(outside)], capture_output=True
+    )
+    assert result.returncode == 0
+    assert junction.is_junction()
     with pytest.raises(CoreMemoryError):
-        MemoryStore.for_agent(tmp_path, "../other")
+        MemoryFS(junction / "nested").initialize()
+    with pytest.raises(CoreMemoryError):
+        memory.list_directory()
+    junction.rmdir()
 
 
 @pytest.mark.parametrize("phase", ["before", "after"])
-def test_process_exit_at_publication_boundary_never_exposes_partial_snapshot(memory, phase):
+def test_process_exit_at_atomic_replace_keeps_complete_old_or_new_file(memory, phase):
     before = memory.read()
     script = """
 import os,sys
 from pathlib import Path
-from personal_agent.memory.store import MemoryStore
-store=MemoryStore(Path(sys.argv[1]))
+from personal_agent.memory.store import MemoryFS
+fs=MemoryFS(Path(sys.argv[1]))
 replace=os.replace
-def crash_at_publication(source,destination):
+
+def crash(source,destination):
     if sys.argv[2]=='after':
         replace(source,destination)
     os._exit(0)
-os.replace=crash_at_publication
-store.update('human.md','child committed',expected_version=store.read().revision.version)
+os.replace=crash
+fs.update('human.md','child committed',expected_hash=fs.read().hashes['human.md'])
 """
-    process = subprocess.run(
+    result = subprocess.run(
         [sys.executable, "-c", script, str(memory.root), phase], capture_output=True, timeout=10
     )
-    assert process.returncode == 0, process.stderr.decode()
+    assert result.returncode == 0, result.stderr.decode()
     after = memory.read()
-    if phase == "before":
-        assert after == before
-        assert len(memory.history()) == 1
-    else:
-        assert after.blocks["human.md"] == "child committed"
-        assert after.blocks["persona.md"] == before.blocks["persona.md"]
-        assert after.blocks["MEMORY.md"] == before.blocks["MEMORY.md"]
-        assert len(memory.history()) == 2
-    # The child's writer lock must also have been released by the OS.
-    memory.update("human.md", "parent edit", expected_version=after.revision.version)
+    assert after.blocks["human.md"] == (
+        before.blocks["human.md"] if phase == "before" else "child committed"
+    )
+    fs = MemoryFS(memory.root)
+    fs.update("human.md", "parent edit", expected_hash=after.hashes["human.md"])
