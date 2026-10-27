@@ -254,12 +254,22 @@ class LearningRepository:
                 result[key] = json.loads(result[key])
             return result
 
-    def save(self, jid: str, state: str, now: datetime, *, operations=None, error="", metrics=None):
+    def save(
+        self,
+        jid: str,
+        state: str,
+        now: datetime,
+        *,
+        operations=None,
+        error="",
+        metrics=None,
+        sources=None,
+    ):
         old = self.get(jid)
         with self.store._transaction() as db:
             changed = db.execute(
                 "UPDATE memory_learning_jobs SET state=?,updated_at=?,operations=?,"
-                "error=?,metrics=? "
+                "error=?,metrics=?,sources=? "
                 "WHERE id=? AND agent_id=? AND state=? AND updated_at=?",
                 (
                     state,
@@ -267,6 +277,7 @@ class LearningRepository:
                     json.dumps(operations if operations is not None else old["operations"]),
                     error,
                     json.dumps(metrics if metrics is not None else old["metrics"]),
+                    json.dumps(sources if sources is not None else old["sources"]),
                     jid,
                     self.agent_id,
                     old["state"],

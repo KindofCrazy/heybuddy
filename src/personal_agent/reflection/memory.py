@@ -42,14 +42,18 @@ def read_comparison(fs: MemoryFS, paths: list[str], known: set[str]) -> dict[str
 def plan_item(
     fs: MemoryFS,
     item_id: int,
-    candidate: Candidate,
+    candidate: Candidate | None,
     decision: Decision,
     comparison: dict[str, str],
     catalog: list[dict],
 ) -> PlanItem:
     item = PlanItem(id=item_id, candidate=candidate, decision=decision.model_copy(deep=True))
     change = item.decision
-    if candidate.confidence == "uncertain" and change.action in {"create", "update"}:
+    if (
+        candidate is not None
+        and candidate.confidence == "uncertain"
+        and change.action in {"create", "update"}
+    ):
         change.action = "review"
         change.reason = "Uncertain evidence requires a new confirmed source before writing."
         change.path = change.old_text = change.new_text = ""

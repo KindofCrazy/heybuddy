@@ -8,6 +8,7 @@ from personal_agent.core.compaction import redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.learning.models import FileDecision, LearningPolicy, Targets
+from personal_agent.memory.models import digest
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError
 from personal_agent.reflection.memory import catalogue, plan_item, read_comparison
@@ -272,7 +273,7 @@ class MemoryLearningService:
             )
             return await self._execute(jid, refs, records, hints, retry=retry)
 
-    async def _execute(self, jid, refs, records, hints, *, retry=False):
+    async def _execute(self, jid, refs, records, hints, *, retry=False, proposer=None):
         old = self.repository.get(jid)
         if old["state"] == "completed" or old["state"] == "requires_reconciliation":
             return {"outcome": old["state"], "job_id": jid}
@@ -283,7 +284,11 @@ class MemoryLearningService:
         self.repository.save(jid, "processing", self.clock.now())
         receipts = []
         try:
-            items = await self.propose(records, hints) if records else []
+            items = (
+                (await proposer())
+                if proposer
+                else (await self.propose(records, hints) if records else [])
+            )
             # A publication receipt is durable BEFORE the first file write. No bodies in SQLite.
             self._fresh(refs)
             writes = [
@@ -295,7 +300,8 @@ class MemoryLearningService:
             self.repository.save(jid, "processing", self.clock.now(), operations=receipts)
             for n, item in enumerate(writes):
                 await asyncio.sleep(0)
-                self._fresh(refs)
+                if "memory" not in refs:
+                    self._fresh(refs)
                 item.state = "applying"
                 receipts[n] = self._receipt(item)
                 self.repository.save(jid, "processing", self.clock.now(), operations=receipts)
@@ -339,6 +345,15 @@ class MemoryLearningService:
             }
 
     def _fresh(self, refs):
+        if "memory" in refs:
+            from personal_agent.memory.models import digest
+
+            for source in refs["memory"]:
+                with self.memory.io():
+                    current = self.memory.raw(self.memory.path(source["path"]))
+                if digest(current) != source["hash"]:
+                    raise HistoryError("Curator memory changed before publication.")
+            return
         fresh, _, _ = self.repository.snapshot(
             [r["id"] for r in refs["runs"]],
             [e["id"] for e in refs["episodes"]],
@@ -371,3 +386,43 @@ class MemoryLearningService:
         state = "completed" if complete else "requires_reconciliation"
         self.repository.save(jid, state, self.clock.now(), operations=operations)
         return {"outcome": state, "job_id": jid}
+
+    def retry_job(self, jid: str) -> dict:
+        """Explicit host retry: inspect every prior receipt before permitting fresh planning."""
+        job = self.repository.get(jid)
+        if job["state"] == "requires_reconciliation":
+            verified = self.reconcile(jid)
+            if verified["outcome"] == "completed":
+                return verified
+            job = self.repository.get(jid)
+            current = {}
+            for op in job["operations"]:
+                path = self.memory.path(op["path"])
+                with self.memory.io():
+                    value = digest(self.memory.raw(path)) if path.exists() else None
+                if value == op["after_hash"] and op["state"] != "applied":
+                    return {"outcome": "requires_reconciliation", "error_code": "index_incomplete"}
+                if value not in {op["before_hash"], op["after_hash"]}:
+                    return {"outcome": "requires_reconciliation", "error_code": "content_changed"}
+                if value is not None:
+                    current[op["path"]] = value
+            sources = job["sources"]
+            if "memory" in sources:
+                for source in sources["memory"]:
+                    with self.memory.io():
+                        current[source["path"]] = digest(
+                            self.memory.raw(self.memory.path(source["path"]))
+                        )
+                sources["memory"] = [{"path": p, "hash": h} for p, h in current.items()]
+            self.repository.save(
+                jid,
+                "pending",
+                self.clock.now(),
+                operations=[],
+                sources=sources,
+                metrics={"reconciled_receipts": job["operations"]},
+            )
+            return {"outcome": "pending", "job_id": jid, "replanned_after_verified_receipts": True}
+        if job["state"] == "failed":
+            self.repository.save(jid, "pending", self.clock.now())
+        return {"outcome": self.repository.get(jid)["state"], "job_id": jid}

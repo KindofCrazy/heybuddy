@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 
 from personal_agent.automation.service import MemoryAutomation
 from personal_agent.core.history import HistoryError
+from personal_agent.learning.curator import MemoryCurator
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.organization.budget import CycleProvider, MaintenanceBudget
 from personal_agent.organization.clock import Clock, SystemClock
@@ -75,12 +76,14 @@ class OrganizationRuntime:
         threads: ThreadOrganizer | None = None,
         clock: Clock | None = None,
         learning: MemoryLearningService | None = None,
+        curator: MemoryCurator | None = None,
     ) -> None:
         self.episodes = episodes
         self.automation = automation
         self.threads = threads
         self.clock = clock or SystemClock()
         self.learning = learning
+        self.curator = curator
         self._learning_first = True
         self.schedule_repository = ScheduleRepository(episodes.repository)
         self._stream_id: str | None = None
@@ -174,6 +177,7 @@ class OrganizationRuntime:
         error = ""
         time_limited = False
         learning_ran = False
+        curator_ran = False
         learning_first = self._learning_first
 
         def observe(stage: str, report: dict) -> bool:
@@ -256,6 +260,20 @@ class OrganizationRuntime:
                             continue
                     if not policy.enabled:
                         break
+                    if (
+                        idle
+                        and self.curator
+                        and not curator_ran
+                        and self.curator.due()
+                        and (learning_first or attempts > 0)
+                        and budget.requests < policy.maintenance_requests
+                    ):
+                        curator_ran = True
+                        attempts += 1
+                        report = await self._execute("curator", self.curator.run())
+                        if not observe("curator", report):
+                            break
+                        continue
                     if self.threads:
                         status = self.threads.repository.status()
                         due = self._thread_remaining(current) <= 0
@@ -417,6 +435,9 @@ class OrganizationRuntime:
             "current_stage": self.current_stage,
             "learning": self.learning.status() if self.learning else None,
             "learning_last_report": self.last_report.get("learning"),
+            "curator": self.curator.status()
+            if self.curator and self.learning.policy.enabled
+            else None,
             "next_finalize_at": (
                 datetime.fromisoformat(state["provisional_ended_at"])
                 + timedelta(seconds=self.episodes.policy.revision_seconds)
@@ -467,14 +488,16 @@ class OrganizationRuntime:
             return
         write(json.dumps(result, ensure_ascii=False))
 
-    async def learning_command(self, text: str) -> dict:
+    async def learning_command(self, text: str, *, curator=False) -> dict:
         if self.learning is None:
             return {"outcome": "disabled"}
         if text == "status":
-            return self.learning.status()
+            return self.curator.status() if curator and self.curator else self.learning.status()
         parts = text.split()
         if len(parts) == 2 and parts[0] == "reconcile":
             return self.learning.reconcile(parts[1])
+        if len(parts) == 2 and parts[0] == "retry":
+            return self.learning.retry_job(parts[1])
         if text not in {"run", "retry"}:
             return {"usage": "/memory learning status|run|retry|reconcile <job_id>"}
         model = self.learning.model
@@ -484,6 +507,8 @@ class OrganizationRuntime:
         try:
             async with asyncio.timeout(self.episodes.policy.maintenance_seconds):
                 self.learning.poll()
+                if curator:
+                    return await self.curator.run(force=True, retry=text == "retry")
                 report = await self.learning.learn_priority(retry=text == "retry")
                 if report["outcome"] == "no_learning_work":
                     report = await self.learning.learn_batch(force=True, retry=text == "retry")

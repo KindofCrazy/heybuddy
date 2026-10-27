@@ -14,6 +14,7 @@ from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
+from personal_agent.learning.curator import MemoryCurator
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory import index
@@ -111,12 +112,14 @@ async def _chat(
             continue
         elif user_input.split(maxsplit=1)[0] == "/memory":
             parts = user_input.split(maxsplit=2)
-            if len(parts) == 3 and parts[1] == "learning":
+            if len(parts) == 3 and parts[1] in {"learning", "curator"}:
                 if organization is None or organization.learning is None:
                     write("Memory > 当前入口未配置 P2 Learning。")
                     continue
                 try:
-                    report = await organization.learning_command(parts[2])
+                    report = await organization.learning_command(
+                        parts[2], curator=parts[1] == "curator"
+                    )
                     write(json.dumps(report, ensure_ascii=False))
                 except (HistoryError, CoreMemoryError, ReflectionError, OrganizationError):
                     write("Memory > 学习失败；检查状态，文件可能已保存，不会盲目重写。")
@@ -317,6 +320,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
             ),
             automation=automation,
             learning=learning,
+            curator=MemoryCurator(learning, settings.curator_policy()),
             threads=ThreadOrganizer(
                 thread_repository,
                 OrganizerModel(

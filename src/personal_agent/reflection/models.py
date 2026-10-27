@@ -79,7 +79,7 @@ class Consolidation(Model):
 
 class PlanItem(Model):
     id: int
-    candidate: Candidate
+    candidate: Candidate | None
     decision: Decision
     before_hash: str | None = None
     after_hash: str | None = None
