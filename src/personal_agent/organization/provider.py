@@ -45,10 +45,17 @@ class OrganizerModel:
             raise OrganizationError("input_budget")
         self.metrics["requests"] = 1
         try:
-            async with asyncio.timeout(self.policy.timeout_seconds):
+            async with asyncio.timeout(self.policy.timeout_seconds) as deadline:
                 response = await self.provider.generate(
                     request, [], max_output_tokens=self.policy.output_tokens
                 )
+                # A provider may swallow cooperative cancellation. Do not publish
+                # that late suggestion after foreground preemption or a deadline.
+                if deadline.expired():
+                    raise TimeoutError
+                task = asyncio.current_task()
+                if task is not None and task.cancelling():
+                    raise asyncio.CancelledError
         except asyncio.CancelledError:
             raise
         except OrganizationError as error:

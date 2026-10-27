@@ -95,6 +95,12 @@ async def test_cross_day_episodes_share_thread_with_idempotent_latest_state(stat
     assert not any(e.thread_dirty for e in repo.list(stream))
     with db._transaction() as connection:
         assert connection.execute("SELECT COUNT(*) FROM thread_versions").fetchone()[0] == 2
+        version = connection.execute(
+            "SELECT payload FROM thread_versions WHERE thread_id=? AND revision=?",
+            (updated.id, updated.revision),
+        ).fetchone()[0]
+        assert json.loads(version)["source_revision"] == updated.source_revision
+        assert json.loads(version)["dirty"] == updated.dirty
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 

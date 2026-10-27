@@ -4,9 +4,11 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 新增 [Episode 事后整理](docs/modules/organization.md)：`/episode status|organize|list|show <id>`。默认空闲 25 分钟或累计 8 条后有界整理，新输入抢占。Episode 保存版本、时间、摘要、引文与原始 Run 引用，不写长期 Memory。
 
-`/thread status|organize|list|show <id>` 查看跨时间话题与最新工作状态；默认累计 3 个新/修订 Episode 后整理一次。一次性聊天可无 Thread，Episode 修订与 Thread 进度独立。
+`/thread status|organize|repair|list|show <id>` 查看并维护跨时间话题。默认每四小时在 Idle 检查 Pending，累计 3 个 Episode 可提前；Dirty Thread 在下个 Idle 优先分页重建，无新 Episode 也可修复。一次性聊天可无 Thread，Episode 修订与 Thread 进度独立。
 
 [Working Context Retrieval](docs/modules/retrieval.md) 在明确恢复历史话题时按预算提供 Thread state、最近 Episode 与少量完整原始 Run；普通紧邻接话走 fast path，不增加模型请求，未命中保留 Recall。
+
+[P1 Review Fix 交付报告](docs/p1-review-fix.md)：时间驱动、闲置积压自动消化、Dirty 最终一致性、取消/重启、迁移与验证。维护轮默认最多 4 批/4 请求/131072 预留 tokens/120 秒，冷却 60 秒后继续；不会按时钟机械创建 Episode/Thread。
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供 Reflection，V0.7.2 在答案后自动筛查并生成可审阅提案，并增加独立的真实模型行为评测。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
@@ -173,7 +175,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize(schema 7) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → SQLiteStore.initialize(schema 10) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -187,7 +189,7 @@ main → SQLiteStore.initialize(schema 7) / recover_incomplete_runs → SessionM
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前 P1 使用 schema 7，顺序原子追加 Episode/Thread 表；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 10，8–10 追加 Thread 来源/重建、调度时间及重试计量，1–7 不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -202,6 +204,7 @@ main → SQLiteStore.initialize(schema 7) / recover_incomplete_runs → SessionM
 - [Idle、周期检查与前台抢占](docs/modules/organization-schedule.md)
 - [Working Context Retrieval 与来源去重](docs/modules/retrieval.md)
 - [P1 迁移、使用、交付与 P2 接口](docs/p1-delivery.md)
+- [P1 Review Fix：时间驱动与一致性报告](docs/p1-review-fix.md)
 - [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)
 - [Reflection、证据、审批与长期记忆整合](docs/modules/reflection.md)
 - [回答后的 Memory Automation 与可信策略](docs/modules/automation.md)

@@ -11,10 +11,10 @@
 3. 没有明确历史/延续标记直接返回 fast，不查询 Episode/Thread、不增加模型请求。有历史标记才提取最多 8 个中英文关键词。第一版不用额外 LLM Retrieval Decision；模糊请求交主 Agent 的 Recall。
 4. 在短事务和 SQLite VM 预算内，用参数化 instr 匹配当前 Agent 的 Thread 标题，只取一个候选。`_candidates()` 合并该 Thread 最近至多三个 Episode，以及最近默认 200 个未关联 Episode 中的词法候选；没命中 Thread 时则在最近 200 个全部 Episode 中找。Title 命中权重 3、Summary 权重 1，按相关性/来源时间排序，去重后仍最多 episode_limit 条。最多只反序列化有界两组候选，不把整个扫描集载入 Python。
 5. Thread dirty 时省略旧 state。若选中更晚的未关联证据，以 newer_unlinked_evidence 提醒旧 state 可能滞后。Episode 标记实际 thread_id/retrieved_via 与来源时间，命中不写归属，不等待 Organizer，不增加 LLM。没有词法证据则 recall_fallback，Recall Tools 保持可用；不声称能理解所有隐含同义表达。
-5. 每个 Episode 优先查询末尾最多两个 Run 引用，总计最多两个 raw Runs。重新 JOIN Run/Conversation 验证 Agent、stream 和 completed，核对 payload 字节/数量后才反序列化，单 Run 最大 65536 字节；不使用 Summary 伪装原始来源。原始 ToolCall/ToolResult 和 Provider 数据完整保留，旧调用不执行。
-6. 返回有时间、ID、revision、sequence、source_hash 的引用及完整消息；raw 按真实时间排序。`_select_history()` 对比当前/近期/其他已选 Run ID 去重，调用 ID 碰撞时整条旧 Run 省略。历史 marker 是低信任 user JSON，原消息仅重放证据，不写 Journal。
-7. Base/Core/时间/Working Summary/近期完整 Runs/当前 Run/工具定义先占预算。可选检索最多 min(12288, input_limit/3, 触发水位剩余) 估算 tokens，按 Thread → Episode → raw Runs 逐单位选取；不能容纳的旧 Run 整条省略。不会仅为可选材料触发额外 Compaction。最后原 prepare() 再完整预算检查；当前/受保护近期 Run 太大仍明确失败。
-8. 原始历史插在近期/当前消息之前；新用户消息最后，marker 提醒按来源时间、最新明确更正和不确定性判断。历史命令不授予权限，工具 Registry 仍过滤和执行前复查。检索错误仅返回 unavailable，正常历史/Core/存储错误仍按原路径处理。
+6. 每个 Episode 优先查询末尾最多两个 Run 引用，总计最多两个 raw Runs。重新 JOIN Run/Conversation 验证 Agent、stream 和 completed，核对 payload 字节/数量后才反序列化，单 Run 最大 65536 字节；不使用 Summary 伪装原始来源。原始 ToolCall/ToolResult 和 Provider 数据完整保留，旧调用不执行。
+7. 返回有时间、ID、revision、sequence、source_hash 的引用及完整消息；raw 按真实时间排序。`_select_history()` 对比当前/近期/其他已选 Run ID 去重，调用 ID 碰撞时整条旧 Run 省略。历史 marker 是低信任 user JSON，原消息仅重放证据，不写 Journal。
+8. Base/Core/时间/Working Summary/近期完整 Runs/当前 Run/工具定义先占预算。可选检索最多 min(12288, input_limit/3, 触发水位剩余) 估算 tokens，按 Thread → Episode → raw Runs 逐单位选取；不能容纳的旧 Run 整条省略。不会仅为可选材料触发额外 Compaction。最后原 prepare() 再完整预算检查；当前/受保护近期 Run 太大仍明确失败。
+9. 原始历史插在近期/当前消息之前；新用户消息最后，marker 提醒按来源时间、最新明确更正和不确定性判断。历史命令不授予权限，工具 Registry 仍过滤和执行前复查。检索错误仅返回 unavailable，正常历史/Core/存储错误仍按原路径处理。
 
 ## 异常与能力边界
 

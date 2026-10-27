@@ -21,6 +21,8 @@ schema 10 增加有界自动恢复：同源失败默认 300 秒起指数退避�
 
 重建摘要仍有损，宿主校验证明来源集合与版本一致，不能保证真实模型语义完美。单 Episode 超预算时明确失败；不截断为假成功。没有改写 Journal、MemoryFS、Reflection 或 Compaction 进度。
 
+普通 Thread 发布会在关联触发器执行、最终 dirty/source_revision 确定后保存本事务版本，避免审计 JSON 还停留在关联前的来源版本。Repair 发布的 last_active_at 依据当前成员，可在移走最新成员后回退；这不是按空闲时间关闭话题。
+
 ## 阅读与验证
 
 运行 `uv run pytest tests/test_thread_repair.py tests/test_threads.py`；`test_moved_or_detached_episode_is_never_old_thread_repair_evidence` 是最小例子。覆盖 X→Y、No Thread、保留成员/空 owner、分页/取消/恢复、失败 retry、source revision CAS 和 schema 7→8 回滚。该模块只提供一个有界修复步骤，自动 Idle 触发由 OrganizationRuntime 统一装配。

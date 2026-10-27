@@ -271,6 +271,15 @@ class ThreadRepository:
                 ).fetchone()
                 if not removed and not pending and not (previous and previous.dirty):
                     db.execute("UPDATE topic_threads SET dirty=0 WHERE id=?", (target,))
+                # The version created in this transaction records the FINAL
+                # source epoch/dirty flag, after relationship triggers have run.
+                published = self._thread(db, target)
+                raw = published.model_dump_json()
+                db.execute("UPDATE topic_threads SET payload=? WHERE id=?", (raw, target))
+                db.execute(
+                    "UPDATE thread_versions SET payload=? WHERE thread_id=? AND revision=?",
+                    (raw, target, published.revision),
+                )
             db.execute(
                 "INSERT INTO thread_batches VALUES (?,?,?)",
                 (

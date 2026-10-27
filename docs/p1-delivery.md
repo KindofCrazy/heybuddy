@@ -1,4 +1,6 @@
-# P1 交付、迁移与使用
+# P1 初版交付、迁移与使用（历史基线 4f7a6f8）
+
+本文保留初版 P1 的交付与当时限制；当前时间驱动、Dirty Repair、积压与取消行为以 [P1 Review Fix](p1-review-fix.md) 和模块文档为准。下文 schema 7、单批触发及缺少 Dirty 重建的限制已在 Review Fix 中修复，不代表当前 HEAD。
 
 本轮完成 Continuous Conversation、Episode、Thread 和 Working Context 的实际接线。原 Agent Loop、Provider、ToolRegistry、Run Journal、MemoryFS、Recall 和 Reflection 继续工作。整体图和完整入口顺序见 [实际架构](architecture.md)，细节见 [Organization](modules/organization.md) 与 [Retrieval](modules/retrieval.md)。发行包版本号仍保留 0.7.2，本轮功能名为 P1，数据库 schema 为 7。
 

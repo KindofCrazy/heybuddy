@@ -84,6 +84,10 @@ class OrganizationRuntime:
         self._activity_key: str | None = None
         self._idle_base = self.clock.monotonic()
         self._initial_idle = 0.0
+        self._thread_due_key: str | None = None
+        self._thread_deadline = self.clock.monotonic()
+        self._cooldown_key: str | None = None
+        self._cooldown_deadline = self.clock.monotonic()
         self.current_stage: str | None = None
         self.input = AsyncInput()
         self.task: asyncio.Task | None = None
@@ -127,6 +131,30 @@ class OrganizationRuntime:
             return await operation
         finally:
             self.current_stage = None
+
+    def _thread_remaining(self, state: dict) -> float:
+        key = state["thread_due_at"]
+        if key != self._thread_due_key:
+            self._thread_due_key = key
+            remaining = max(0, (datetime.fromisoformat(key) - self.clock.now()).total_seconds())
+            self._thread_deadline = self.clock.monotonic() + min(
+                self.episodes.policy.thread_interval_seconds, remaining
+            )
+        return max(0, self._thread_deadline - self.clock.monotonic())
+
+    def _cooldown_remaining(self, state: dict) -> float:
+        key = state["cooldown_until"]
+        if key != self._cooldown_key:
+            self._cooldown_key = key
+            remaining = (
+                max(0, (datetime.fromisoformat(key) - self.clock.now()).total_seconds())
+                if key
+                else 0
+            )
+            self._cooldown_deadline = self.clock.monotonic() + min(
+                self.episodes.policy.cooldown_seconds, remaining
+            )
+        return max(0, self._cooldown_deadline - self.clock.monotonic())
 
     async def _cycle(self, stream_id: str, state: dict, idle: bool) -> bool:
         policy = self.episodes.policy
@@ -183,7 +211,7 @@ class OrganizationRuntime:
                         continue
                     if self.threads:
                         status = self.threads.repository.status()
-                        due = now >= datetime.fromisoformat(current["thread_due_at"])
+                        due = self._thread_remaining(current) <= 0
                         if not status["pending_episodes_capped"] and due:
                             self.schedule_repository.thread_check(
                                 now, policy.thread_interval_seconds
@@ -206,6 +234,13 @@ class OrganizationRuntime:
                                     self.clock.now(), policy.thread_interval_seconds, success=True
                                 )
                             continue
+                    # Finalization is time driven even if an unrelated/broken
+                    # pending batch needs explicit retry; it never asks the LLM.
+                    if idle and self.episodes.repository.finalize(stream_id, policy, at=now):
+                        batches += 1
+                        attempts += 1
+                        successes.add("episode")
+                        continue
                     episode = self.episodes.repository.status(stream_id)
                     if (
                         episode["pending_runs_capped"]
@@ -219,13 +254,6 @@ class OrganizationRuntime:
                                 "episode", self.episodes.organize(stream_id, retry=False, at=now)
                             ),
                         ):
-                            break
-                    elif idle and not episode["pending_runs_capped"]:
-                        if self.episodes.repository.finalize(stream_id, policy, at=now):
-                            batches += 1
-                            attempts += 1
-                            successes.add("episode")
-                        else:
                             break
                     else:
                         break
@@ -241,8 +269,9 @@ class OrganizationRuntime:
                 "time_limited": time_limited,
             }
             if attempts:
+                finished_at = self.clock.now()
                 self.schedule_repository.cycle(
-                    self.clock.now(),
+                    finished_at,
                     batches,
                     budget.requests,
                     error,
@@ -250,6 +279,10 @@ class OrganizationRuntime:
                     policy.cooldown_seconds,
                     self.last_report["cycle"],
                 )
+                self._cooldown_key = (
+                    finished_at + timedelta(seconds=policy.cooldown_seconds)
+                ).isoformat()
+                self._cooldown_deadline = self.clock.monotonic() + policy.cooldown_seconds
         return bool(attempts)
 
     async def _background(self, stream_id: str, after_answer: bool) -> None:
@@ -264,16 +297,7 @@ class OrganizationRuntime:
             while not self._foreground:
                 state = self.schedule_repository.state(stream_id)
                 remaining = self._idle_remaining(state)
-                cooldown = (
-                    max(
-                        0,
-                        (
-                            datetime.fromisoformat(state["cooldown_until"]) - self.clock.now()
-                        ).total_seconds(),
-                    )
-                    if state["cooldown_until"]
-                    else 0
-                )
+                cooldown = self._cooldown_remaining(state)
                 if not state["run_active"] and not cooldown:
                     if await self._cycle(stream_id, state, remaining <= 0):
                         await self.clock.sleep(policy.cooldown_seconds)
@@ -284,9 +308,7 @@ class OrganizationRuntime:
                 if cooldown:
                     delays.append(cooldown)
                 if state["thread_due_at"]:
-                    until_thread = (
-                        datetime.fromisoformat(state["thread_due_at"]) - self.clock.now()
-                    ).total_seconds()
+                    until_thread = self._thread_remaining(state)
                     if until_thread > 0:
                         delays.append(until_thread)
                 await self.clock.sleep(min(delays))
@@ -328,6 +350,9 @@ class OrganizationRuntime:
             **state,
             "is_idle": not self._foreground and not state["run_active"] and remaining <= 0,
             "next_idle_at": (self.clock.now() + timedelta(seconds=remaining)).isoformat(),
+            "next_thread_check_at": (
+                self.clock.now() + timedelta(seconds=self._thread_remaining(state))
+            ).isoformat(),
             "background_running": bool(self.task and not self.task.done() and not self._foreground),
             "foreground_active": self._foreground,
             "has_backlog": bool(
