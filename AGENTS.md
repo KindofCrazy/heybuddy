@@ -1,5 +1,9 @@
 # Personal Agent 开发约束
 
+## P3 明确授权
+
+本轮用户明确允许本地只读 Character Package、被动人格上下文、有界后台短期状态及离线角色评测，复用既有 Main Agent、P1/P2 与维护预算。角色默认关闭，不自动替换用户 persona.md；P2 不得修改 Character Core。不实现主动消息、AttentionEngine、角色主动聊天或新的 Agent Loop。真实付费模型/评审调用仍须另行授权。
+
 ## P2 明确授权
 
 本轮用户明确要求完整 P2，允许 Host 控制的后台自动 Learning、Priority/Batch、低频 Curator 与 Adaptive Retrieval，复用现有 asyncio 调度和 MemoryFS。该请求优先于下文 V0.7/P1 的“无后台提取/不自动写入”阶段限制；手动 Reflection 审批、Main Agent 工具权限和 MemoryFS 安全边界继续保留。Learner/Curator 不自动修改 persona.md，不新增事实数据库或通用 Scheduler。真实付费模型测试仍需明确授权。
