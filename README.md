@@ -6,6 +6,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 `/thread status|organize|list|show <id>` 查看跨时间话题与最新工作状态；默认累计 3 个新/修订 Episode 后整理一次。一次性聊天可无 Thread，Episode 修订与 Thread 进度独立。
 
+[Working Context Retrieval](docs/modules/retrieval.md) 在明确恢复历史话题时按预算提供 Thread state、最近 Episode 与少量完整原始 Run；普通紧邻接话走 fast path，不增加模型请求，未命中保留 Recall。
+
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供 Reflection，V0.7.2 在答案后自动筛查并生成可审阅提案，并增加独立的真实模型行为评测。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计

@@ -1,5 +1,7 @@
 # Context Budget 与 Compaction
 
+P1 的 SUMMARY_PROMPT 将摘要明确限定为仍影响当前对话的工作目标、约束、进展与待续信息，保留来源时间、未确认建议和最新明确更正。存储/checksum/CAS、保护近期完整 Run 和原日志均不变；既有 context_summaries 继续使用，不删除或重建。可选 Thread/Episode/raw 检索只使用触发水位内剩余预算，不为旧参考材料额外启动压缩，见 [Retrieval](retrieval.md)。
+
 ## 职责与架构组成
 
 `core/budget.py::ContextBudget` 定义宿主明确指定的模型窗口、输入/输出预算和资源上限；`estimate_request()` 对内部消息、Provider JSON 和工具定义做保守估算。`core/compaction.py::compact_step()` 只负责一批完整历史 Run 的无工具摘要。`core/context.py::ContextBuilder.prepare()` 在每次正常 Provider 请求前决定是否压缩、保存进度、重建工作上下文。Core 不导入 SQLite 或 SDK。

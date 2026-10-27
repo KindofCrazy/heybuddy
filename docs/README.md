@@ -2,6 +2,8 @@
 
 [P1 Episode 与有界事后整理](modules/organization.md)：schema 6、来源校验、修订、空闲触发与前台抢占。
 
+[Working Context Retrieval](modules/retrieval.md)：相关 Thread/Episode、完整原始 Run、去重、时间来源与 ContextBudget。
+
 当前文档描述 V0.7 的实际实现。建议先看整体 Pipeline，再沿调用路径进入具体模块。
 
 ## 阅读顺序

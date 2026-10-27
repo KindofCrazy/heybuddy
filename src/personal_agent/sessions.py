@@ -4,6 +4,7 @@ from personal_agent.core.budget import ContextBudget
 from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemory
+from personal_agent.core.retrieval import ContextRetrieval
 from personal_agent.core.temporal import temporal_context
 from personal_agent.storage.history import SQLiteConversationHistory
 from personal_agent.storage.models import ConversationRecord
@@ -21,6 +22,7 @@ class SessionManager:
         self.budget = budget
         self.store = store
         self.memory = memory
+        self.retriever: ContextRetrieval | None = None
         self.agent = store.get_agent("heybuddy") or store.create_agent(
             "HeyBuddy", DEFAULT_SYSTEM_PROMPT, agent_id="heybuddy"
         )
@@ -34,6 +36,7 @@ class SessionManager:
             memory=self.memory,
             budget=self.budget,
             temporal=lambda: temporal_context(self.store.last_interaction(self.current.id)),
+            retriever=self.retriever,
         )
 
     def new(self) -> ConversationRecord:

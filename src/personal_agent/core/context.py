@@ -7,6 +7,7 @@ from personal_agent.core.compaction import compact_step
 from personal_agent.core.history import ConversationHistory, HistoryError, InMemoryHistory
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
+from personal_agent.core.retrieval import ContextRetrieval, RetrievalResult
 from personal_agent.llm.base import Provider
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -50,12 +51,17 @@ class ContextBuilder:
         memory: CoreMemory | None = None,
         budget: ContextBudget | None = None,
         temporal: Callable[[], dict] | None = None,
+        retriever: ContextRetrieval | None = None,
     ) -> None:
         self.system_prompt = system_prompt
         self._store = history_store if history_store is not None else InMemoryHistory()
         self.memory = memory
         self.budget = budget
         self.temporal = temporal
+        self.retriever = retriever
+        self._retrieval = RetrievalResult()
+        self._retrieval_loaded = False
+        self._selected_history: list[Message] = []
         self._pending: list[Message] = []
         self._run_id: str | None = None
         self._active = False
@@ -114,7 +120,58 @@ class ContextBuilder:
             )
         if self.temporal is not None:
             injected.append(TextMessage(role="user", text=json.dumps(self.temporal())))
-        return [messages[0], *injected, *messages[1:]]
+        return [messages[0], *injected, *self._selected_history, *messages[1:]]
+
+    def _retrieve(self) -> None:
+        if self._retrieval_loaded or self.retriever is None:
+            return
+        self._retrieval_loaded = True
+        try:
+            self._retrieval = self.retriever.retrieve(
+                self._pending[0].text,
+                frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
+            )
+        except Exception:
+            # Retrieval is optional. Journal/Core/budget errors on their normal
+            # paths are still fatal; failure here leaves Base + recent context.
+            self._retrieval = RetrievalResult(path="unavailable")
+        self._diagnostics["retrieval_path"] = self._retrieval.path
+
+    def _select_history(self, messages: list[Message], tools: list[ToolDefinition]) -> None:
+        self._selected_history = []
+        base = self.for_request(messages)
+        base_size = estimate_request(base, tools)
+        limit = self.budget.input_limit if self.budget else 262144
+        target = int(limit * self.budget.trigger_ratio) if self.budget else limit
+        allowance = min(12288, limit // 3, max(0, target - base_size))
+        recent = {turn.run_id for turn in self._page.turns} | {self._run_id}
+        call_ids = {
+            call.id
+            for message in [*self._page.messages, *self._pending]
+            for call in getattr(message, "tool_calls", [])
+        }
+        for item in self._retrieval.items:
+            if item.turn:
+                calls = {
+                    call.id
+                    for message in item.turn.messages
+                    for call in getattr(message, "tool_calls", [])
+                }
+                if item.turn.run_id in recent or calls & call_ids:
+                    continue
+            trial = [*self._selected_history, *item.messages()]
+            # Same estimator includes marker, internal messages, Provider JSON and
+            # tool framing. Whole Runs fit or are omitted, never truncated.
+            if estimate_request(trial, []) - estimate_request([], []) > allowance:
+                continue
+            self._selected_history = trial
+            if item.turn:
+                recent.add(item.turn.run_id)
+                call_ids.update(calls)
+        self._diagnostics["retrieved_items"] = sum(
+            isinstance(m, TextMessage) and m.text.startswith('{"kind": "working_context_reference"')
+            for m in self._selected_history
+        )
 
     def begin(self, user_input: str) -> list[Message]:
         """Create Run/user atomically; prepare history inside the failure-handled loop."""
@@ -125,6 +182,9 @@ class ContextBuilder:
         self._active = True
         self._pending = [user]
         self._page = None
+        self._retrieval = RetrievalResult()
+        self._retrieval_loaded = False
+        self._selected_history = []
         return [TextMessage(role="system", text=self.system_prompt), user]
 
     async def prepare(
@@ -132,6 +192,7 @@ class ContextBuilder:
     ) -> list[Message]:
         if self._page is None:
             self._load()
+        self._retrieve()
         steps = 0
         while True:
             messages[:] = [
@@ -139,6 +200,7 @@ class ContextBuilder:
                 *self._page.messages,
                 *self.pending_messages,
             ]
+            self._select_history(messages, tools)
             request = self.for_request(messages)
             estimated = estimate_request(request, tools)
             self._diagnostics["estimated_tokens"] = estimated
@@ -224,6 +286,7 @@ class ContextBuilder:
         self._run_id = None
         self._active = False
         self._page = None
+        self._selected_history = []
 
     def abort(self, *, cancelled: bool = False) -> None:
         try:
@@ -234,3 +297,4 @@ class ContextBuilder:
             self._run_id = None
             self._active = False
             self._page = None
+            self._selected_history = []

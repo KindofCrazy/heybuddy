@@ -28,6 +28,7 @@ from personal_agent.recall.tools import register_recall_tools
 from personal_agent.reflection.cli import command as reflection_command
 from personal_agent.reflection.models import ReflectionError
 from personal_agent.reflection.service import ReflectionService
+from personal_agent.retrieval import ContextRetriever
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.reflection import ReflectionRepository
@@ -252,6 +253,8 @@ async def run_cli(settings: Settings) -> None:
 
 
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
+    thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
+    sessions.retriever = ContextRetriever(thread_repository)
     tools = create_builtin_registry(settings.tool_timeout_seconds)
     register_memory_tools(tools, memory)
     register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
@@ -280,7 +283,6 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
         automation.repository.recover()
         repository = EpisodeRepository(sessions.store, sessions.agent.id)
         repository.recover()
-        thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
         thread_repository.recover()
         organization = OrganizationRuntime(
             EpisodeOrganizer(

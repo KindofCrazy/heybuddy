@@ -1,5 +1,7 @@
 # ContextBuilder 与会话工作上下文
 
+P1 Working Context：`core/retrieval.py::ContextRetrieval` 保持 Core 与 SQLite 隔离。begin() 清缓存，prepare() 首轮 `_retrieve()`，每轮 `_select_history()` 按当前预算重选，for_request() 将可选低信任材料插在近期/当前原始消息之前；commit/abort 清理注入窗口。Run/调用 ID 去重、完整 Provider 重放和剩余预算的真实链路见 [Retrieval](retrieval.md)。
+
 P1 增加可选宿主 `temporal` 回调。`for_request()` 在 Core/Summary 后加入 `core/temporal.py` 产生的本地带 offset 时间 JSON；所有分支沿用完整预算检查，不写入 pending 或 Journal。最小例子及跨时区验证见 `tests/test_continuous.py`；持久化入口通过 `SessionManager.context()` 装配。
 
 ## 职责与架构组成

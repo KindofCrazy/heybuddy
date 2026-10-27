@@ -102,11 +102,16 @@ def test_snapshot_hash_is_stable_and_contains_only_prompts(tmp_path):
     assert {"deferred_read", "recall_search", "memory_edit"} <= snapshot["tools"].keys()
 
 
-def test_deployed_prompts_match_measured_retained_snapshot(tmp_path):
+def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_scope(tmp_path):
     root = Path(__file__).resolve().parents[1] / "evals/prompts"
     retained = json.loads((root / "retained-candidate.json").read_text(encoding="utf-8"))
     baseline = json.loads((root / "phase1-baseline.json").read_text(encoding="utf-8"))
-    assert capture(tmp_path / "snapshot") == retained
+    p1 = json.loads((root / "p1-working-context.json").read_text(encoding="utf-8"))
+    assert capture(tmp_path / "snapshot") == p1
+    assert {key: value for key, value in p1.items() if key != "summary"} == {
+        key: value for key, value in retained.items() if key != "summary"
+    }
+    assert p1["summary"] != retained["summary"]  # Requested P1 scope, not a measured gain.
     assert retained["reflection"] == baseline["reflection"]
     assert retained["summary"] == baseline["summary"]
 
