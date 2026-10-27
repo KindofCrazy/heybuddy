@@ -1,6 +1,53 @@
-# HeyBuddy V0.7：整体架构与 Pipeline
+# HeyBuddy P1：整体架构与 Pipeline
 
-本文串起从启动到退出的真实执行路径，解释每一层接收什么、改变什么状态、在哪里保存数据。具体方法细节可从[文档索引](README.md)进入。当前系统是一个本地进程、一个 SQLite 数据库和独立的 Markdown 记忆目录，没有消息队列、后台任务消费者或自动续跑器。
+本文串起从启动到退出的真实执行路径。当前是一个本地进程、SQLite 和普通 Markdown；P1 增加有界 asyncio 事后整理及可抢占输入，没有消息队列、通用任务平台或工具续跑。先看下面 P1 路径，再读后续保留的 Journal、Provider、Memory、Reflection 细节。迁移、测试、限制与 P2 接口见 [P1 交付](p1-delivery.md)。
+
+## P1 实际执行架构
+
+```mermaid
+flowchart TD
+    Input["CLI / AsyncInput"] --> Stream["SessionManager / Continuous Stream"]
+    Stream --> Run["Agent.run / Run"]
+    Run --> Context["ContextBuilder / Working Context"]
+    Context --> Base["Base + Core + 本地时间 + Working Summary + 近期完整 Runs"]
+    Context --> Retrieval["ContextRetriever / 历史请求词法检索"]
+    Retrieval --> Topics["Thread state / Episode summaries / 完整历史 Runs"]
+    Topics --> DB[("SQLite schema 7 / 原始 Journal 与独立派生表")]
+    Context --> History["ConversationHistory Protocol / SQLiteConversationHistory"]
+    History --> DB
+    Run --> Provider["同一 Provider / 无 SDK 响应对象外泄"]
+    Run --> Tools["ToolRegistry / 当前 Run 权限"]
+    Tools --> Recall["Recall / 原始历史证据"]
+    Recall --> DB
+    Tools --> Memory["MemoryFS / Core 与 Deferred Markdown"]
+    Run --> Answer["保存终态 / 先显示答案"]
+    Answer --> Hook["OrganizationRuntime / 有界空闲与数量触发"]
+    Input -. "取消并等待 / 前台优先" .-> Hook
+    Hook --> Automation["原 MemoryAutomation / 原审批与精确授权"]
+    Automation --> Memory
+    Hook --> Episode["EpisodeOrganizer / 时间边界 + 语义分段 + 来源校验"]
+    Episode --> DB
+    Hook --> Thread["ThreadOrganizer / 低频话题组织与状态"]
+    Thread --> DB
+    Episode --> Provider
+    Thread --> Provider
+```
+
+Run 是执行与审计单位；Episode 是连续 Run 的事后时间/语义组织；Thread 是跨 Episode 的持续话题；Working Context 是单次请求的有限视图。Episode/Thread 没有 MemoryFS 或 Registry 写入接口，不执行历史工具。
+
+真实顺序：
+
+1. main() → run_cli() 取得数据库占用锁，initialize() 顺序原子迁移 1–7，recover_incomplete_runs() 只标记中断。
+2. SessionManager 沿用 client_state；没有选择时创建流，其他旧流不合并不删除。初始化 Core Memory，然后 _run_session() 装配 Provider、工具、ContextRetriever、原 Reflection/Automation、独立 Episode/Thread Repository 与 Organizer。
+3. chat() 启动持久进度检查；_chat() await AsyncInput.read()。只有读取终端在 daemon 线程，所有 SQLite 留在事件循环。
+4. 新输入先 await OrganizationRuntime.foreground()；取消后台模型等待并完成原状态记账，再 Agent.run() → ContextBuilder.begin() 原子创建 Run/用户消息。
+5. prepare() 读取有界历史；首轮 _retrieve() 走 fast 或历史检索，_select_history() 做来源/调用 ID 去重和剩余预算选择；for_request() 注入 Core、Summary、本地带 offset 时间与低信任历史。需要时按原完整 Run 前缀 Compaction；当前 Run 和受保护近期 Run 不拆开。
+6. Provider / ToolRegistry 继续原手写循环，每条调用先落库、每条结果在下一工具前落库。commit() 原子完成 Journal，先向 CLI 返回并显示答案。
+7. schedule() 用独立 asyncio task 执行原 MemoryAutomation 的内部顺序阶段，再等待默认 25 分钟空闲或累计 8 条。Episode 每次最多 8 条源记录、一次模型请求；不完整/失败 Run 明确跳过，不汇总为成功经历。publish() 原子校验源 hash/版本并更新派生表和独立 cursor。
+8. 达到默认 3 个新/修订 Episode 才触发一次 ThreadOrganizer；group/no_thread、状态与关联在独立事务 CAS 后提交。此后最多一次无模型 Finalize 检查，不循环吃完整 backlog。正常聊天成功不依赖整理成功。
+9. exit/EOF/Ctrl+C → chat() finally 取消整理 → SDK 关闭 → Store 释放占用锁。重启依据 Journal、cursor、dirty 状态继续纯派生整理，不重跑工具或 Memory Apply。
+
+时间存储使用 UTC aware 时间；Temporal Context 使用宿主操作系统当前本地 offset，显式展示 offset/时区和互动间隔，不用 UTC 日期代替本地日期。Summary/组织结果/历史命令不会授予权限。Core/Deferred 仍只有普通 Markdown 一个权威源。
 
 ## 1. 先区分实体、执行器和执行次数
 
@@ -78,7 +125,7 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移到 schema 4，顺序执行 Recall、Context 和 Reflection 对象迁移/旧索引回填，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 7，顺序执行 Recall、Context、Reflection、Automation、Episode 和 Thread 追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续校验摘要检查点并恢复上次选择的会话，不全量反序列化旧消息。
 8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。
@@ -227,7 +274,7 @@ stateDiagram-v2
 
 ## 8. 会话切换 Pipeline
 
-管理命令只在两次 Run 之间处理，当前没有后台 Run 与切换命令并发执行的路径。
+这些是开发者历史管理命令，普通持续聊天无需使用。命令在两次前台 Run 之间处理，先取消并等待事后整理停止，避免切换与发布交错。
 
 - `/new`：`SessionManager.new()` → `create_conversation(activate=True)`，原子新建空会话并更新 client_state；成功后 `agent.context = sessions.context()`。
 - `/resume <id>`：先查会话归属和可重放历史，再保存当前选择，最后替换 ContextBuilder。验证或保存失败时，旧选择不被修改。

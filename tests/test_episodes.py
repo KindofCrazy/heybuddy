@@ -13,6 +13,8 @@ from personal_agent.core.models import (
     TextMessage,
     TokenUsage,
     ToolCall,
+    ToolMessage,
+    ToolResult,
 )
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationPolicy
@@ -428,3 +430,69 @@ async def test_stable_finalize_without_model_and_reversed_time_rejected(state):
     seed(db, stream, at=datetime.now(UTC) - timedelta(hours=1))
     report = await organizer(repo).organize(stream)
     assert report["error_code"] == "nonmonotonic_time"
+
+
+async def test_tool_result_evidence_is_exact_projection_and_does_not_confirm_decision(state):
+    db, stream, repo = state
+    run_id = db.begin_run(stream, TextMessage(role="user", text="计算 HeyBuddy 数据"))
+    db.append_message(
+        run_id,
+        AssistantMessage(
+            tool_calls=[
+                ToolCall(
+                    id="calc",
+                    name="add_numbers",
+                    arguments='{"a":2,"b":3}',
+                )
+            ]
+        ),
+    )
+    db.append_message(
+        run_id,
+        ToolMessage(
+            result=ToolResult(
+                call_id="calc",
+                name="add_numbers",
+                ok=True,
+                data={"sum": 5},
+            )
+        ),
+    )
+    db.append_message(run_id, AssistantMessage(text="结果是 5。"))
+    db.finish_run(run_id, RunResult(status="completed", rounds=2))
+
+    def mutate(output, data):
+        source = data["runs"][0]
+        tool = source["messages"][2]
+        output["episodes"][0]["highlights"] = [
+            {
+                "kind": "event",
+                "content": "计算返回结果",
+                "attribution": "uncertain",
+                "sources": [
+                    {
+                        "conversation_id": stream,
+                        "run_id": run_id,
+                        "sequence": tool["sequence"],
+                        "quote": tool["evidence"][:200],
+                    }
+                ],
+            }
+        ]
+
+    assert (await organizer(repo, SegmentProvider(mutate=mutate)).organize(stream))["outcome"] == (
+        "completed"
+    )
+    assert repo.list(stream)[0].highlights[0].sources[0].sequence == 3
+
+
+def test_source_sequence_gaps_cannot_be_relabelled_as_real_evidence(state):
+    db, stream, repo = state
+    run_id = seed(db, stream)
+    with db._transaction() as connection:
+        connection.execute(
+            "UPDATE messages SET sequence=3 WHERE run_id=? AND sequence=2", (run_id,)
+        )
+        connection.execute("UPDATE context_runs SET last_sequence=3 WHERE run_id=?", (run_id,))
+    with pytest.raises(HistoryError, match="not contiguous"):
+        repo.batch(stream, OrganizationPolicy())

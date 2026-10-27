@@ -16,7 +16,7 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 
-不实现后台自动学习、向量/Embeddings、Telegram/QQ/Gmail、后台 Worker 或 Scheduler，也不自动续跑中断任务。设计参考与取舍见[Letta Code 调研](docs/memory-design.md)，升级前请阅读[迁移说明](docs/memory-migration.md)。
+P1 只增加本地进程内有界事后整理与输入抢占，不实现通用后台任务平台、向量/Embeddings、Telegram/QQ/Gmail 或工具续跑。[P1 交付与迁移说明](docs/p1-delivery.md)包含实际架构、执行链路、验证、限制与 P2 接口；旧 Markdown 迁移另见[记忆迁移说明](docs/memory-migration.md)。
 
 ## 安装与配置
 
@@ -173,21 +173,21 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize(schema 5) / recover_incomplete_runs → SessionManager(ContextBudget)
+main → SQLiteStore.initialize(schema 7) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
-       ContextBuilder.prepare → 有界历史 + 必要的分批摘要 → 编译 Core/Summary（不写入原始聊天历史）
+       ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
        Provider.generate（内部消息 / 本轮授权的工具定义）
           ↓ record：先保存模型调用
        ToolRegistry.execute → 保存结果 → 下一轮模型请求
           ↓ commit：完成 Run 状态
-       RunResult → CLI
+       RunResult → CLI 先显示答案 → 可抢占的 MemoryAutomation / 空闲 Episode → 低频 Thread
 ```
 
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.7.2 对应 schema 5，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前 P1 使用 schema 7，顺序原子追加 Episode/Thread 表；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -197,6 +197,9 @@ main → SQLiteStore.initialize(schema 5) / recover_incomplete_runs → SessionM
 - [V0.5 设计调研](docs/memory-design.md) 与 [迁移说明](docs/memory-migration.md)
 - [Agent Loop](docs/modules/agent.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
+- [Episode、Thread 与有界事后整理](docs/modules/organization.md)
+- [Working Context Retrieval 与来源去重](docs/modules/retrieval.md)
+- [P1 迁移、使用、交付与 P2 接口](docs/p1-delivery.md)
 - [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)
 - [Reflection、证据、审批与长期记忆整合](docs/modules/reflection.md)
 - [回答后的 Memory Automation 与可信策略](docs/modules/automation.md)
@@ -289,7 +292,7 @@ V0.7.1 分离 Reflection API 总输出预算（含 reasoning，默认 16384 toke
 
 ## V0.7.2 Memory Automation（Phase 1）
 
-普通 Run 成功后先展示回答，再顺序进行 LLM Worthiness 检查，有价值才复用 Reflection 生成原有可审阅计划。默认 suggest，未批准不写 Markdown；没有后台 Worker。调用/预算/等待有界，失败不改变已完成的回答，也不自动重试。已有计划时提示积压，新历史不会被覆盖或误标写入。
+普通 Run 成功后先展示回答，再顺序进行 LLM Worthiness 检查，有价值才复用 Reflection 生成原有可审阅计划。P1 在本地可抢占的异步钩子内执行，下一次输入取消并等待记账结束。默认 suggest，未批准不写 Markdown；调用/预算/等待有界，失败不改变已完成的回答，也不自动重试。已有计划时提示积压，新历史不会被覆盖或误标写入。
 
 ```text
 /memory automation status

@@ -2,6 +2,8 @@
 
 P1 的 Settings.organization_policy() 构造可信 OrganizationPolicy，所有 `organization_` 字段按 `AGENT_ORGANIZATION_` 环境变量映射。校验数量、超时、字节/输出预算和递增的 weak/strong/split 时间阈值；模型不能修改配置。完整参数、运行链路与离线测试见 [Organization](organization.md)。
 
+Settings.retrieval_policy() 对应 `AGENT_RETRIEVAL_EPISODE_LIMIT`（1–3，默认 3）、RAW_RUN_LIMIT（1–3，默认 2）、MAX_RUN_BYTES（默认 65536）、OPTIONAL_TOKENS（默认 12288）及 SCAN_EPISODES（默认 200）。ContextBuilder 使用同一可选 tokens 上限并进一步按总窗口和触发水位缩减；检索器只负责相关性，不能扩大预算。Organization 的 SOURCE_BYTES/RESPONSE_BYTES 分别限制原始来源和可见输出，默认 65536/32768，与 tokens 独立。配置测试见 tests/test_config_cli.py。
+
 ## 职责与架构组成
 
 `src/personal_agent/config.py::Settings` 继承 ContextBudget，使用 Pydantic 校验密钥、模型名、Base URL、轮数、超时、日志级别、数据库路径与记忆大小/根目录；密钥以 `SecretStr` 保存。 `ENV_FIELDS` 映射环境变量到内部字段，`load_settings()` 只读取指定文件或当前目录的 `.env`。 `main.py::main()` 加载配置，`run_cli()` 根据配置装配 SDK 客户端和 Runtime。这里不执行 API 请求，不解析 SDK 响应，也不搜索父目录凭证。

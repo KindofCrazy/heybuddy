@@ -13,7 +13,9 @@ from personal_agent.organization.models import OrganizationError, OrganizationPo
 
 
 class OrganizerModel:
-    def __init__(self, provider: Provider, budget: ContextBudget, policy: OrganizationPolicy):
+    def __init__(
+        self, provider: Provider, budget: ContextBudget, policy: OrganizationPolicy
+    ) -> None:
         self.provider = provider
         self.policy = policy
         self.input_limit = min(

@@ -3,7 +3,7 @@
 import re
 from datetime import datetime
 
-from personal_agent.core.retrieval import RetrievalItem, RetrievalResult
+from personal_agent.core.retrieval import RetrievalItem, RetrievalPolicy, RetrievalResult
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.recall import query_budget
 from personal_agent.storage.threads import ThreadRepository
@@ -31,8 +31,9 @@ def keywords(text: str) -> list[str]:
 
 
 class ContextRetriever:
-    def __init__(self, repository: ThreadRepository):
+    def __init__(self, repository: ThreadRepository, policy: RetrievalPolicy | None = None) -> None:
         self.repository = repository
+        self.policy = policy or RetrievalPolicy()
         self.episodes: EpisodeRepository = repository.episodes
 
     def retrieve(self, user_input: str, exclude_run_ids: frozenset[str]) -> RetrievalResult:
@@ -71,8 +72,8 @@ class ContextRetriever:
                 )
                 rows = db.execute(
                     "SELECT e.id FROM episodes e JOIN conversations c ON c.id=e.stream_id "
-                    "WHERE e.thread_id=? AND c.agent_id=? ORDER BY e.ended_at DESC,e.id LIMIT 3",
-                    (thread.id, self.repository.agent_id),
+                    "WHERE e.thread_id=? AND c.agent_id=? ORDER BY e.ended_at DESC,e.id LIMIT ?",
+                    (thread.id, self.repository.agent_id, self.policy.episode_limit),
                 ).fetchall()
             else:
                 # Bounded recent metadata fallback. Old rare topics remain accessible
@@ -85,11 +86,16 @@ class ContextRetriever:
                 rows = db.execute(
                     "WITH recent AS MATERIALIZED (SELECT e.id,e.payload,e.ended_at FROM episodes e "
                     "JOIN conversations c ON c.id=e.stream_id WHERE c.agent_id=? "
-                    "ORDER BY e.ended_at DESC,e.id LIMIT 200) "
+                    "ORDER BY e.ended_at DESC,e.id LIMIT ?) "
                     "SELECT id FROM recent WHERE "
                     + episode_conditions
-                    + " ORDER BY ended_at DESC,id LIMIT 3",
-                    (self.repository.agent_id, *terms),
+                    + " ORDER BY ended_at DESC,id LIMIT ?",
+                    (
+                        self.repository.agent_id,
+                        self.policy.scan_episodes,
+                        *terms,
+                        self.policy.episode_limit,
+                    ),
                 ).fetchall()
             episodes = [self.episodes._episode(db, row[0]) for row in rows]
             for episode in episodes:
@@ -112,20 +118,25 @@ class ContextRetriever:
             selected = set(exclude_run_ids)
             used = 0
             for episode in episodes:
-                if len(items) >= 8 or used >= 2:
+                if len(items) >= 8 or used >= self.policy.raw_run_limit:
                     break
                 rows = db.execute(
                     "SELECT r.rowid AS position,r.* FROM episode_runs er JOIN runs r "
                     "ON r.id=er.run_id AND r.conversation_id=er.stream_id "
                     "JOIN conversations c ON c.id=r.conversation_id "
                     "WHERE er.episode_id=? AND er.stream_id=? AND c.agent_id=? "
-                    "AND r.status='completed' ORDER BY er.ordinal DESC LIMIT 2",
-                    (episode.id, episode.stream_id, self.repository.agent_id),
+                    "AND r.status='completed' ORDER BY er.ordinal DESC LIMIT ?",
+                    (
+                        episode.id,
+                        episode.stream_id,
+                        self.repository.agent_id,
+                        self.policy.raw_run_limit,
+                    ),
                 ).fetchall()
                 for row in rows:
-                    if row["id"] in selected or used >= 2:
+                    if row["id"] in selected or used >= self.policy.raw_run_limit:
                         continue
-                    source = self.episodes._source(db, row, 65536)
+                    source = self.episodes._source(db, row, self.policy.max_run_bytes)
                     if not source.turn:
                         continue
                     items.append(

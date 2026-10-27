@@ -244,7 +244,11 @@ async def run_cli(settings: Settings) -> None:
         recovered = store.recover_incomplete_runs()
         if recovered:
             print(f"发现 {recovered} 个未完成 Run，已标记 interrupted；不会重试工具。")
-        sessions = SessionManager(store, budget=settings.context_budget())
+        sessions = SessionManager(
+            store,
+            budget=settings.context_budget(),
+            optional_history_tokens=settings.retrieval_optional_tokens,
+        )
         root = memory_root_for(settings, sessions.agent.id)
         memory = MemoryFS.for_agent(root, sessions.agent.id, max_bytes=settings.memory_max_bytes)
         memory.initialize()
@@ -254,7 +258,7 @@ async def run_cli(settings: Settings) -> None:
 
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
     thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
-    sessions.retriever = ContextRetriever(thread_repository)
+    sessions.retriever = ContextRetriever(thread_repository, settings.retrieval_policy())
     tools = create_builtin_registry(settings.tool_timeout_seconds)
     register_memory_tools(tools, memory)
     register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
@@ -309,7 +313,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.7.2 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy P1 Continuous CLI")
     parser.parse_args()
     try:
         settings = load_settings()

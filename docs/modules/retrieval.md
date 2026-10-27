@@ -17,6 +17,8 @@
 
 ## 异常与能力边界
 
+以上 3 Episode、2 raw Run、65536 字节、12288 tokens、200 个最近 Episode 均为 RetrievalPolicy 默认值；宿主 Settings 的 AGENT_RETRIEVAL_* 可在有界范围内调小/调整，详见 [配置](config.md)。
+
 词法相关性不等于语义检索，关键词可能漏掉同义词或命中宽泛话题，且当前不做模型消歧。Thread 候选标题 SQL 有 VM 预算；Episode fallback 只覆盖最近 200 条，较旧内容由 Recall 主动搜索。dirty Thread 可能要等后续关联 Episode 刷新；不会用过时 state 覆盖最新消息。摘要/提示词不能保证真实模型始终正确区分建议、假设和决定，需要独立 live 评测。
 
 没有新长期 Memory 副本。Working Summary 继续使用原 context_summaries/checksum/事务边界，只调整为保留影响当前对话的目标、约束、进展和待续信息，不承担几个月的生平总结；旧检查点不删除、不重建。

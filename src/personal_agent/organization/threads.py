@@ -25,7 +25,7 @@ THREAD_PROMPT = (
 
 
 class ThreadOrganizer:
-    def __init__(self, repository: ThreadRepository, model: OrganizerModel):
+    def __init__(self, repository: ThreadRepository, model: OrganizerModel) -> None:
         self.repository = repository
         self.model = model
         self.policy = model.policy

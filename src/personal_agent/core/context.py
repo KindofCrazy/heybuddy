@@ -52,6 +52,7 @@ class ContextBuilder:
         budget: ContextBudget | None = None,
         temporal: Callable[[], dict] | None = None,
         retriever: ContextRetrieval | None = None,
+        optional_history_tokens: int = 12288,
     ) -> None:
         self.system_prompt = system_prompt
         self._store = history_store if history_store is not None else InMemoryHistory()
@@ -59,6 +60,9 @@ class ContextBuilder:
         self.budget = budget
         self.temporal = temporal
         self.retriever = retriever
+        if not 512 <= optional_history_tokens <= 32768:
+            raise ValueError("Invalid optional history budget")
+        self.optional_history_tokens = optional_history_tokens
         self._retrieval = RetrievalResult()
         self._retrieval_loaded = False
         self._selected_history: list[Message] = []
@@ -143,7 +147,7 @@ class ContextBuilder:
         base_size = estimate_request(base, tools)
         limit = self.budget.input_limit if self.budget else 262144
         target = int(limit * self.budget.trigger_ratio) if self.budget else limit
-        allowance = min(12288, limit // 3, max(0, target - base_size))
+        allowance = min(self.optional_history_tokens, limit // 3, max(0, target - base_size))
         recent = {turn.run_id for turn in self._page.turns} | {self._run_id}
         call_ids = {
             call.id

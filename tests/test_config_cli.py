@@ -244,3 +244,22 @@ def test_reflection_settings_separate_api_tokens_and_visible_bytes(monkeypatch, 
     assert settings.context_window == 1048576
     assert settings.reflection_policy().output_tokens == 16384
     assert settings.reflection_policy().response_max_bytes == 32768
+
+
+def test_organization_and_retrieval_host_configuration_is_bounded(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_MODEL", "test-model")
+    monkeypatch.setenv("AGENT_CONTEXT_WINDOW", "64000")
+    monkeypatch.setenv("AGENT_ORGANIZATION_IDLE_SECONDS", "1200")
+    monkeypatch.setenv("AGENT_ORGANIZATION_SOURCE_BYTES", "32768")
+    monkeypatch.setenv("AGENT_RETRIEVAL_EPISODE_LIMIT", "1")
+    monkeypatch.setenv("AGENT_RETRIEVAL_OPTIONAL_TOKENS", "4096")
+    settings = load_settings(tmp_path / "absent.env")
+    assert settings.organization_policy().idle_seconds == 1200
+    assert settings.organization_policy().source_bytes == 32768
+    assert settings.retrieval_policy().episode_limit == 1
+    assert settings.retrieval_policy().optional_tokens == 4096
+    with pytest.raises(ValidationError):
+        Settings(
+            api_key="test", model="test", context_window=64000, organization_weak_gap_seconds=10000
+        )

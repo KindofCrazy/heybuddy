@@ -259,6 +259,19 @@ async def test_low_frequency_runtime_hook_and_thread_commands(state):
         await runtime.close()
 
 
+async def test_status_only_finalization_keeps_semantically_current_thread_state(state):
+    db, stream, repo = state
+    seed(db, stream, at=datetime.now(UTC) - timedelta(seconds=2))
+    await organizer(repo).organize(stream)
+    service = thread_service(db)
+    await service.organize()
+    episode = repo.list(stream)[0]
+    assert repo.finalize(stream, OrganizationPolicy(revision_seconds=1))
+    assert repo.get(episode.id).revision == episode.revision + 1
+    assert not repo.get(episode.id).thread_dirty
+    assert not service.repository.get(episode.thread_id).dirty
+
+
 def test_schema_seven_migration_failure_preserves_episode_tables(tmp_path, monkeypatch):
     from personal_agent.storage import sqlite as storage
     from personal_agent.storage.sqlite import SQLiteStore

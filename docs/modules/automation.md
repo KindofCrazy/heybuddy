@@ -4,7 +4,7 @@ P1 接线更新：生产 CLI 先展示答案，再由 OrganizationRuntime 的可
 
 ## 职责与架构组成
 
-`automation/service.py::MemoryAutomation` 是轻量应用服务，在普通 Run 完成并向用户展示答案后顺序执行。它不创建新 Agent Loop，不在每个工具 round 后运行，不启动后台任务。`automation/models.py` 定义可信 AutomationPolicy、严格 Worthiness 模型；`automation/meter.py::MeteredProvider` 只计量自动记忆额外请求；`storage/automation.py::AutomationRepository` 绑定 Agent 保存状态。ReflectionService、MemoryFS、ToolRegistry 和原 Journal 继续承担原职责。
+`automation/service.py::MemoryAutomation` 是轻量应用服务，在普通 Run 完成并向用户展示答案后顺序执行内部阶段。它不创建新 Agent Loop，不在每个工具 round 后运行；后台生命周期由 P1 宿主钩子管理。`automation/models.py` 定义可信 AutomationPolicy、严格 Worthiness 模型；`automation/meter.py::MeteredProvider` 只计量自动记忆额外请求；`storage/automation.py::AutomationRepository` 绑定 Agent 保存状态。ReflectionService、MemoryFS、ToolRegistry 和原 Journal 继续承担原职责。
 
 LLM 决定历史有无长期价值、如何提取/去重/纠正与组织知识；宿主决定触发时机、源范围、预算、权限、来源验证和实际发布。Worthiness 不授予权限，模型输出多一个 approved 字段会被严格 Schema 拒绝。
 
@@ -43,7 +43,7 @@ Provider/JSON/来源/预算/数据库失败保留诊断，已结束普通 Run �
 
 ## 成本、等待与诊断
 
-默认每次最多 4 次额外模型请求（Worthiness 一次 + Reflection 至多三次），保守输入加预留输出总量 131072，整段等待最多 180 秒；底层各阶段仍有独立超时。没有后台并发，答案先显示，但输入提示要等检查返回；Ctrl+C 可退出。同步短 SQLite/Memory 步骤不是可硬取消 I/O。
+默认每次最多 4 次额外模型请求（Worthiness 一次 + Reflection 至多三次），保守输入加预留输出总量 131072，整段等待最多 180 秒；底层各阶段仍有独立超时。生产 CLI 在这段检查等待模型时继续接收输入，先取消检查再运行新聊天；嵌入入口未传 OrganizationRuntime 时仍等待检查完成。同步短 SQLite/Memory 步骤不是可硬取消 I/O。
 
 MeteredProvider 分开记录自动请求数、预留 token、已报告 input/output/reasoning、usage_complete、耗时及候选数；reasoning 包含在 output 里，不能再次相加。Usage 缺失时计数仅表示已知部分，不是精确零费用；进程崩溃期间可能有未知调用，诊断不是账单。明确 retry 累计已知计数，预算约束每次用户触发的尝试。不从价格表自动猜账单。
 

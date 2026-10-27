@@ -9,6 +9,14 @@ from personal_agent.core.history import HistoryTurn
 from personal_agent.core.models import Message, Model, TextMessage
 
 
+class RetrievalPolicy(Model):
+    episode_limit: int = Field(default=3, ge=1, le=3)
+    raw_run_limit: int = Field(default=2, ge=1, le=3)
+    max_run_bytes: int = Field(default=65536, ge=1024, le=131072)
+    optional_tokens: int = Field(default=12288, ge=512, le=32768)
+    scan_episodes: int = Field(default=200, ge=3, le=1000)
+
+
 class RetrievalItem(Model):
     reference: dict[str, JsonValue]
     turn: HistoryTurn | None = None

@@ -35,7 +35,7 @@ SCHEMA = (
 
 
 class ThreadRepository:
-    def __init__(self, store: SQLiteStore, agent_id: str):
+    def __init__(self, store: SQLiteStore, agent_id: str) -> None:
         self.store = store
         self.agent_id = agent_id
         self.episodes = EpisodeRepository(store, agent_id)
@@ -98,7 +98,12 @@ class ThreadRepository:
 
     def status(self) -> dict:
         with self.store._transaction() as db:
-            return {**self._state(db), "pending_episodes_capped": len(self._pending(db, 17))}
+            count = db.execute(
+                "SELECT COUNT(*) FROM (SELECT 1 FROM episodes e JOIN conversations c "
+                "ON c.id=e.stream_id WHERE c.agent_id=? AND e.thread_dirty=1 LIMIT 17)",
+                (self.agent_id,),
+            ).fetchone()[0]
+            return {**self._state(db), "pending_episodes_capped": count}
 
     def recover(self) -> None:
         with self.store._transaction() as db:

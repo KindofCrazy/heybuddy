@@ -260,3 +260,21 @@ async def test_retrieved_historical_commands_cannot_authorize_memory_writes(stat
     assert any(r["source"]["kind"] == "historical_run" for r in references(provider.requests[0]))
     assert "memory_update" not in {t.name for t in provider.tools[0]}
     assert memory.read() == before
+
+
+async def test_host_config_can_limit_episode_and_raw_run_retrieval(state):
+    from personal_agent.core.retrieval import RetrievalPolicy
+
+    db, stream, repo = state
+    await seed_days(db, stream, repo, days=3)
+    await thread_service(db).organize()
+    retrieval = ContextRetriever(
+        ThreadRepository(db, "heybuddy"),
+        RetrievalPolicy(
+            episode_limit=1,
+            raw_run_limit=1,
+        ),
+    )
+    result = retrieval.retrieve("继续昨天 HeyBuddy", frozenset())
+    assert sum(item.reference["kind"] == "episode" for item in result.items) == 1
+    assert sum(item.turn is not None for item in result.items) == 1

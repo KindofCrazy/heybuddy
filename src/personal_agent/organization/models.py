@@ -7,7 +7,6 @@ from pydantic import AwareDatetime, Field, model_validator
 
 from personal_agent.core.history import HistoryTurn
 from personal_agent.core.models import Model
-from personal_agent.reflection.models import Evidence
 
 
 class OrganizationError(Exception):
@@ -39,11 +38,18 @@ class OrganizationPolicy(Model):
         return self
 
 
+class EvidenceRef(Model):
+    conversation_id: str = Field(min_length=1, max_length=128)
+    run_id: str = Field(min_length=1, max_length=128)
+    sequence: int = Field(ge=1)
+    quote: str = Field(min_length=1, max_length=512)
+
+
 class Highlight(Model):
     kind: Literal["event", "decision", "open_loop", "correction"]
     content: str = Field(min_length=1, max_length=1000)
     attribution: Literal["user_confirmed", "assistant_suggestion", "uncertain"]
-    sources: list[Evidence] = Field(min_length=1, max_length=4)
+    sources: list[EvidenceRef] = Field(min_length=1, max_length=4)
 
 
 class Segment(Model):

@@ -28,6 +28,10 @@
 
 ## 持久化、异常与边界
 
+稳定 Finalize 只改变 status/revision 时沿用 thread_dirty，避免语义内容未变却把 Thread state 标过期；重新分段、追加或摘要改变仍标记待更新。EvidenceRef 是组织器自己的小模型，允许单字精确引文，不继承 Reflection 的候选/审批语义。Thread status 只统计有界 ID，不反序列化私人摘要。
+
+来源读取还验证完整 Run 的 sequence 连续性，避免用 first_sequence+index 假造不存在的引用。ToolResult 引文只能匹配模型实际看到的脱敏、至多 1024 字符投影；它不计作用户确认，decision/correction 仍必须有真实用户证据。对应测试在 tests/test_episodes.py。
+
 migration 6 追加 episodes、episode_runs、episode_versions、episode_organizer_progress、episode_skips 和索引；同批创建空 topic_threads，以允许真实外键，行为由独立 Thread 服务承担。迁移不修改 1–5，不搬移旧 Run、Summary、Reflection 或消息。
 
 episode_runs.run_id 主键防重复，Run/stream 和 Episode/stream 复合外键校验归属。versions 只存有界派生快照，不复制原始聊天。进度与 Compaction/Reflection 独立。模型、格式、来源或事务失败不推进 cursor，自动失败不付费重复，手动 organize 才 retry。等待模型无 SQLite 长事务。提交前崩溃可重算，提交后不重复；未知 usage 不当作零费用。纯派生重算不执行历史工具。

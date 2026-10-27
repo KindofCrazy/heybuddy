@@ -18,8 +18,10 @@ class SessionManager:
         *,
         memory: CoreMemory | None = None,
         budget: ContextBudget | None = None,
+        optional_history_tokens: int = 12288,
     ) -> None:
         self.budget = budget
+        self.optional_history_tokens = optional_history_tokens
         self.store = store
         self.memory = memory
         self.retriever: ContextRetrieval | None = None
@@ -37,6 +39,7 @@ class SessionManager:
             budget=self.budget,
             temporal=lambda: temporal_context(self.store.last_interaction(self.current.id)),
             retriever=self.retriever,
+            optional_history_tokens=self.optional_history_tokens,
         )
 
     def new(self) -> ConversationRecord:

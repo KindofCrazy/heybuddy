@@ -68,7 +68,7 @@ SCHEMA = (
 
 
 class EpisodeRepository:
-    def __init__(self, store: SQLiteStore, agent_id: str):
+    def __init__(self, store: SQLiteStore, agent_id: str) -> None:
         self.store = store
         self.agent_id = agent_id
 
@@ -213,6 +213,8 @@ class EpisodeRepository:
             if len(page.turns) != 1 or page.turns[0].run_id != row["id"]:
                 raise HistoryError("Completed source has no complete context index.")
             turn = page.turns[0]
+            if turn.last_sequence - turn.first_sequence + 1 != len(turn.messages):
+                raise HistoryError("Episode source sequence is not contiguous.")
         try:
             return Source(
                 position=row["position"],
@@ -317,7 +319,7 @@ class EpisodeRepository:
         db.execute(
             "INSERT INTO episode_versions VALUES (?,?,?)", (episode.id, episode.revision, raw)
         )
-        if episode.thread_id:
+        if episode.thread_id and episode.thread_dirty:
             db.execute("UPDATE topic_threads SET dirty=1 WHERE id=?", (episode.thread_id,))
 
     def publish(
@@ -345,7 +347,6 @@ class EpisodeRepository:
                     update={
                         "status": "finalized",
                         "revision": previous.revision + 1,
-                        "thread_dirty": True,
                     }
                 )
                 self._write(db, finalized, existing=True)
@@ -379,6 +380,5 @@ class EpisodeRepository:
                 return False
             episode.status = "finalized"
             episode.revision += 1
-            episode.thread_dirty = True
             self._write(db, episode, existing=True)
             return True

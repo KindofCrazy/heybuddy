@@ -4,7 +4,7 @@
 
 [Working Context Retrieval](modules/retrieval.md)：相关 Thread/Episode、完整原始 Run、去重、时间来源与 ContextBudget。
 
-当前文档描述 V0.7 的实际实现。建议先看整体 Pipeline，再沿调用路径进入具体模块。
+当前文档描述 P1 与兼容的 V0.7.2 Memory/Reflection。先看 [P1 交付、迁移和 P2 接口](p1-delivery.md)，再沿整体 Pipeline 阅读模块。
 
 ## 阅读顺序
 

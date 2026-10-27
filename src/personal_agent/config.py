@@ -8,6 +8,7 @@ from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, mod
 
 from personal_agent.automation.models import AutomationPolicy
 from personal_agent.core.budget import ContextBudget
+from personal_agent.core.retrieval import RetrievalPolicy
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.reflection.models import ReflectionPolicy
 
@@ -37,6 +38,13 @@ class Settings(ContextBudget):
     organization_split_gap_seconds: int = Field(default=10800, ge=1)
     organization_revision_seconds: int = Field(default=10800, ge=1, le=86400)
     organization_thread_threshold: int = Field(default=3, ge=2, le=16)
+    organization_response_bytes: int = Field(default=32768, ge=1024, le=65536)
+    organization_source_bytes: int = Field(default=65536, ge=1024, le=262144)
+    retrieval_episode_limit: int = Field(default=3, ge=1, le=3)
+    retrieval_raw_run_limit: int = Field(default=2, ge=1, le=3)
+    retrieval_max_run_bytes: int = Field(default=65536, ge=1024, le=131072)
+    retrieval_optional_tokens: int = Field(default=12288, ge=512, le=32768)
+    retrieval_scan_episodes: int = Field(default=200, ge=3, le=1000)
 
     reflection_input_tokens: int = Field(default=16384, ge=2048, le=262144)
     reflection_output_tokens: int = Field(default=16384, ge=256, le=65536)
@@ -70,6 +78,11 @@ class Settings(ContextBudget):
                 for name in OrganizationPolicy.model_fields
                 if hasattr(self, "organization_" + name)
             }
+        )
+
+    def retrieval_policy(self) -> RetrievalPolicy:
+        return RetrievalPolicy(
+            **{name: getattr(self, "retrieval_" + name) for name in RetrievalPolicy.model_fields}
         )
 
     def automation_policy(self) -> AutomationPolicy:
@@ -126,6 +139,11 @@ class Settings(ContextBudget):
 
 
 ENV_FIELDS = {
+    **{
+        "AGENT_" + name.upper(): name
+        for name in Settings.model_fields
+        if name.startswith("retrieval_")
+    },
     **{
         "AGENT_ORGANIZATION_" + name.removeprefix("organization_").upper(): name
         for name in Settings.model_fields

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from personal_agent.core.compaction import projection, redact
 from personal_agent.core.history import HistoryError
-from personal_agent.core.models import TextMessage
+from personal_agent.core.models import TextMessage, ToolMessage
 from personal_agent.organization.models import (
     Episode,
     OrganizationError,
@@ -70,7 +70,12 @@ def validate(
                 if not 0 <= index < len(source.turn.messages):
                     raise OrganizationError("invalid_evidence")
                 message = source.turn.messages[index]
-                if not hasattr(message, "text") or ref.quote not in redact(message.text):
+                visible = (
+                    redact(message.result.model_dump_json())[:1024]
+                    if isinstance(message, ToolMessage)
+                    else redact(message.text)
+                )
+                if ref.quote not in visible:
                     raise OrganizationError("invalid_evidence")
                 user_evidence |= isinstance(message, TextMessage) and message.role == "user"
             if (
@@ -83,7 +88,7 @@ def validate(
 
 
 class EpisodeOrganizer:
-    def __init__(self, repository: EpisodeRepository, model: OrganizerModel):
+    def __init__(self, repository: EpisodeRepository, model: OrganizerModel) -> None:
         self.repository = repository
         self.model = model
         self.policy = model.policy
