@@ -25,6 +25,14 @@ class TopicProvider(FakeProvider):
 
     async def generate(self, messages, tools, *, max_output_tokens=None):
         data = json.loads(messages[1].text)
+        if "previous_rebuild" in data:
+            response = {
+                "current_state": data["previous_rebuild"]
+                + " ".join(e["summary"] for e in data["episodes"]),
+                "status": "active",
+            }
+            self.responses.append(ModelResponse(text=json.dumps(response, ensure_ascii=False)))
+            return await super().generate(messages, tools, max_output_tokens=max_output_tokens)
         episodes = data["episodes"]
         existing = data["existing_threads"]
         ids = [e["id"] for e in episodes]
@@ -162,6 +170,8 @@ async def test_episode_revision_dirties_thread_and_relinks_split_consistently(st
     assert service.repository.get(original.thread_id).dirty
     assert (await service.organize())["outcome"] == "completed"
     assert all(e.thread_id == original.thread_id for e in repo.list(stream))
+    assert service.repository.get(original.thread_id).dirty
+    assert (await service.repair())["outcome"] == "repaired"
     assert not service.repository.get(original.thread_id).dirty
     assert len(service.repository.list()) == 1
 

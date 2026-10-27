@@ -1,5 +1,7 @@
 # Episode 与事后整理
 
+Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移动/解除关联后的旧 owner 不再依赖新 Episode 才能维护；`/thread repair` 分页重建当前实际成员，最终 CAS 才发布 clean state。无成员时宿主明确归档，不调用 LLM。
+
 ## Thread 独立组织层（schema 7）
 
 `organization/threads.py::ThreadOrganizer` 处理已生成且 thread_dirty 的 Episode；`storage/threads.py::ThreadRepository` 按 Agent 保存最新 Thread、版本和有界批次来源。Thread 只描述持续话题及当前工作状态，memory_ref 保留宿主接口，模型不能写它，不创建 Semantic Memory。

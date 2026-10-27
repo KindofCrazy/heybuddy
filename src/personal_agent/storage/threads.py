@@ -51,6 +51,7 @@ class ThreadRepository:
             if value.id != row["id"] or value.revision != row["revision"]:
                 raise ValueError
             value.dirty = bool(row["dirty"])
+            value.source_revision = row["source_revision"]
             return value
         except (ValueError, ValidationError):
             raise HistoryError("Stored Thread is invalid.") from None
@@ -103,13 +104,27 @@ class ThreadRepository:
                 "ON c.id=e.stream_id WHERE c.agent_id=? AND e.thread_dirty=1 LIMIT 17)",
                 (self.agent_id,),
             ).fetchone()[0]
-            return {**self._state(db), "pending_episodes_capped": count}
+            dirty = db.execute(
+                "SELECT COUNT(*) FROM (SELECT 1 FROM topic_threads "
+                "WHERE agent_id=? AND dirty=1 LIMIT 65)",
+                (self.agent_id,),
+            ).fetchone()[0]
+            return {
+                **self._state(db),
+                "pending_episodes_capped": count,
+                "dirty_threads_capped": dirty,
+            }
 
     def recover(self) -> None:
         with self.store._transaction() as db:
             db.execute(
                 "UPDATE thread_organizer_state SET state='pending',error_code='' "
                 "WHERE agent_id=? AND state='running'",
+                (self.agent_id,),
+            )
+            db.execute(
+                "UPDATE thread_repairs SET state='pending' WHERE state='running' AND thread_id IN "
+                "(SELECT id FROM topic_threads WHERE agent_id=?)",
                 (self.agent_id,),
             )
 
@@ -192,11 +207,20 @@ class ThreadRepository:
                     status=group.status,
                     memory_ref=previous.memory_ref if previous else None,
                     revision=previous.revision + 1 if previous else 1,
-                    dirty=bool(pending_outside),
+                    dirty=bool(
+                        pending_outside
+                        or previous
+                        and previous.dirty
+                        or any(
+                            e.thread_id == thread_id and new_targets.get(e.id) != thread_id
+                            for e in episodes
+                        )
+                    ),
                 )
                 raw = value.model_dump_json()
                 db.execute(
-                    "INSERT INTO topic_threads VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
+                    "INSERT INTO topic_threads (id,agent_id,revision,dirty,last_active_at,payload) "
+                    "VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
                     "revision=excluded.revision,dirty=excluded.dirty,last_active_at=excluded.last_active_at,"
                     "payload=excluded.payload",
                     (
@@ -221,6 +245,21 @@ class ThreadRepository:
                     "UPDATE episodes SET thread_id=?,thread_dirty=0 WHERE id=?",
                     (new_targets.get(episode.id), episode.id),
                 )
+            # Link triggers invalidate both owners. A state based on a previously
+            # dirty owner or on an owner losing members cannot become clean just
+            # because the reassignment model emitted a new string.
+            for group in decision.groups:
+                target = new_targets[group.episode_ids[0]]
+                previous = known.get(target)
+                removed = any(
+                    e.thread_id == target and new_targets.get(e.id) != target for e in episodes
+                )
+                pending = db.execute(
+                    "SELECT 1 FROM episodes WHERE thread_id=? AND thread_dirty=1 LIMIT 1",
+                    (target,),
+                ).fetchone()
+                if not removed and not pending and not (previous and previous.dirty):
+                    db.execute("UPDATE topic_threads SET dirty=0 WHERE id=?", (target,))
             db.execute(
                 "INSERT INTO thread_batches VALUES (?,?,?)",
                 (

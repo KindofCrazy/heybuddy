@@ -198,6 +198,7 @@ main → SQLiteStore.initialize(schema 7) / recover_incomplete_runs → SessionM
 - [Agent Loop](docs/modules/agent.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
 - [Episode、Thread 与有界事后整理](docs/modules/organization.md)
+- [Dirty Thread 的当前来源重建与一致性](docs/modules/thread-repair.md)
 - [Working Context Retrieval 与来源去重](docs/modules/retrieval.md)
 - [P1 迁移、使用、交付与 P2 接口](docs/p1-delivery.md)
 - [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)

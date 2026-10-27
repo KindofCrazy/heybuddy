@@ -133,12 +133,14 @@ class OrganizationRuntime:
                 result = self.threads.repository.status()
             elif parts == ["/thread", "organize"]:
                 result = await self.threads.organize()
+            elif parts == ["/thread", "repair"]:
+                result = await self.threads.repair()
             elif parts == ["/thread", "list"]:
                 result = [t.model_dump(mode="json") for t in self.threads.repository.list()]
             elif len(parts) == 3 and parts[:2] == ["/thread", "show"]:
                 result = self.threads.repository.get(parts[2]).model_dump(mode="json")
             else:
-                write("用法：/thread status|organize|list|show <id>")
+                write("用法：/thread status|organize|repair|list|show <id>")
                 return
         elif parts == ["/episode", "status"]:
             result = {**self.episodes.repository.status(stream_id), "last_report": self.last_report}

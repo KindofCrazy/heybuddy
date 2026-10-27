@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+schema 8 的 `storage/maintenance.py::CONSISTENCY_SCHEMA` 增加 Thread source_revision、关联/语义变更失效触发器、重建检查点和归一化来源表。1–7 定义原样保留，Journal 不改；事务路径及验证见 [Thread Repair](thread-repair.md)。
+
 schema 7 的 `storage/threads.py::ThreadRepository` 追加独立 Thread 状态、版本及批次审计，原子更新 Episode 关联和待更新标志。schema 6 的 Thread 外键插入/更新触发器复核同 Agent 归属。组织层只改派生表，不重写 Journal。
 
 schema 6 仅追加 Episode、版本、归一化 Run 关联、独立进度/skip，以及预留真实外键所需的 topic_threads。`storage/episodes.py::EpisodeRepository` 负责有界来源和 CAS 短事务；原 1–5 迁移不改，所有旧 Conversation/Message/Run/Summary/Reflection 原位保留。见 [Organization](organization.md)。

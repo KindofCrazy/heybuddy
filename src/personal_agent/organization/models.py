@@ -109,6 +109,23 @@ class Thread(Model):
     memory_ref: str | None = None
     revision: int = Field(default=1, ge=1)
     dirty: bool = False
+    source_revision: int = Field(default=0, ge=0)
+
+
+class ThreadRepair(Model):
+    current_state: str = Field(min_length=1, max_length=2000)
+    status: Literal["active", "paused", "closed"] = "active"
+
+
+class RepairPage(Model):
+    thread: Thread
+    revision: int
+    after_time: str
+    after_id: str
+    working_state: str
+    source_count: int
+    episodes: list[Episode]
+    has_more: bool
 
 
 class ThreadGroup(Model):
