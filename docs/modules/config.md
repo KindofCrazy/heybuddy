@@ -79,3 +79,8 @@ Reflection 输入不足时只在触发 /reflect 时明确失败，不因未使�
 V0.7.1 修正旧版将 output_tokens 同时当 JSON 字节上限的混用。输入上限仍减去完整 API 总输出额度与 safety_margin，不能为增加输出忽略模型窗口；可见 JSON 另外限长，再进入 Pydantic、来源和文件校验。默认额度提高是为推理预留空间，不能保证任意响应必然完成，也不会无限增加额度或重试。
 
 目前 [DeepSeek 模型元数据](https://api-docs.deepseek.com/api/list-models/)声明 deepseek-flash 总窗口为 1048576 tokens；本地可显式配置 AGENT_CONTEXT_WINDOW=1048576。未知模型仍必须由用户指定；最大窗口不会自动全量加载历史或 Deferred Memory。已有配置值优先于新默认值。
+
+
+## V0.7.2 Phase 1 集成
+
+V0.7.2 新增 AGENT_MEMORY_AUTOMATION=suggest、AGENT_MEMORY_AUTOMATION_MAX_REQUESTS=4、AGENT_MEMORY_AUTOMATION_MAX_TOKENS=131072、AGENT_MEMORY_AUTOMATION_TIMEOUT_SECONDS=180。AGENT_MEMORY_AUTO_CREATE_GRANTS 为精确 knowledge/ 路径到 Markdown SHA256 的 JSON 对象，默认空；Settings.automation_policy() 校验模式、路径/摘要/预算，不从记忆和聊天获得授权。

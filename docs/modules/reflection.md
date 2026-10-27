@@ -98,3 +98,8 @@ TokenUsage 增加可选 reasoning_tokens；OpenAIProvider 在拒绝非 completed
 EXTRACT/CONSOLIDATE 明确区分有长期价值的纠正与一次性假设/虚构示例的免责声明；没有对应错误事实时，不把后者扩写成永久用户规则。提示词改善仍需真实提案审阅，不能用 Fake Provider 测试宣称语义质量保证。
 
 测试增加正常中文 JSON 超过旧 4096 字节但在独立上限内可接受、JSON 仍有硬上限、总 usage 超限继续拒绝、Provider 不完整原因与推理计数脱敏传递，以及 CLI 在 consolidation 失败后保留原记忆/进度。真实模型的诊断和复测结果见[真实验证记录](../reflection-live-validation.md)。
+
+
+## V0.7.2 Phase 1 集成
+
+V0.7.2 自动提案复用同一 ReflectionService；reflect(through=...) 限定已判断范围，人工调用不传时行为不变。apply 的可信 approval_source 记录 human 或 host_exact_grant，不向模型暴露。Worthiness 成功阴性筛查可以无提案地推进已审阅范围；完整来源与状态区分见[Automation](automation.md)。

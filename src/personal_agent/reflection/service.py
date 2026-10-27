@@ -3,6 +3,7 @@
 import asyncio
 import json
 from datetime import UTC, datetime
+from typing import Literal
 from uuid import uuid4
 
 from pydantic import ValidationError
@@ -88,6 +89,7 @@ class ReflectionService:
         if memory.root.name != repository.agent_id:
             raise ReflectionError("agent_memory_mismatch")
         memory.guard(memory.root)
+        self.context_budget = context_budget
         self.repository = repository
         self.memory = memory
         self.provider = provider
@@ -191,7 +193,9 @@ class ReflectionService:
             if candidate.confidence == "confirmed" and not user:
                 raise ReflectionError("unconfirmed_evidence")
 
-    async def reflect(self, conversation_id: str) -> ReflectionPlan | None:
+    async def reflect(
+        self, conversation_id: str, *, through: int | None = None
+    ) -> ReflectionPlan | None:
         async with self._lock:
             if self.input_limit < 2048:
                 raise ReflectionError("reflection_budget")
@@ -203,6 +207,7 @@ class ReflectionService:
                 conversation_id,
                 after,
                 max_runs=self.policy.page_runs,
+                through=through,
                 max_bytes=min(2_097_152, self.input_limit),
             )
             selected = []
@@ -313,7 +318,14 @@ class ReflectionService:
                 )
         return self.repository.save(plan, expected_revision=plan.revision)
 
-    def apply(self, conversation_id: str, plan_id: str, item_id: int | None) -> ReflectionPlan:
+    def apply(
+        self,
+        conversation_id: str,
+        plan_id: str,
+        item_id: int | None,
+        *,
+        approval_source: Literal["human", "host_exact_grant"] = "human",
+    ) -> ReflectionPlan:
         """Trusted host approval only; never registered as an Agent tool."""
         plan = self._plan(conversation_id, plan_id)
         selected = [item.id for item in plan.items if item_id is None or item.id == item_id]
@@ -332,6 +344,7 @@ class ReflectionService:
                 continue
             item.state = "approved"
             item.approved_at = item.approved_at or datetime.now(UTC).isoformat()
+            item.approval_source = item.approval_source or approval_source
             plan = self.repository.save(plan, expected_revision=plan.revision)
             item = next(item for item in plan.items if item.id == target)
             if change.action in {"no_op", "reject"}:

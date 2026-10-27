@@ -1,4 +1,4 @@
-# HeyBuddy — V0.7.1 Reflection & Memory Consolidation
+# HeyBuddy — V0.7.2 Reflection & Memory Consolidation
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供显式提取、审阅批准后写入的长期记忆学习流程。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
@@ -165,7 +165,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize(schema 4) / recover_incomplete_runs → SessionManager(ContextBudget)
+main → SQLiteStore.initialize(schema 5) / recover_incomplete_runs → SessionManager(ContextBudget)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → 有界历史 + 必要的分批摘要 → 编译 Core/Summary（不写入原始聊天历史）
@@ -179,7 +179,7 @@ main → SQLiteStore.initialize(schema 4) / recover_incomplete_runs → SessionM
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.7.1 对应 schema 4，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.7.2 对应 schema 5，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -191,6 +191,7 @@ main → SQLiteStore.initialize(schema 4) / recover_incomplete_runs → SessionM
 - [ContextBuilder 与历史边界](docs/modules/context.md)
 - [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)
 - [Reflection、证据、审批与长期记忆整合](docs/modules/reflection.md)
+- [回答后的 Memory Automation 与可信策略](docs/modules/automation.md)
 - [内部及持久化数据模型](docs/modules/models.md)
 - [Provider 与 Responses 重放](docs/modules/provider.md)
 - [工具注册与超时契约](docs/modules/tools.md)
@@ -276,3 +277,19 @@ V0.7.1 分离 Reflection API 总输出预算（含 reasoning，默认 16384 toke
 使用 deepseek-flash 时，可将 AGENT_CONTEXT_WINDOW 明确设为 1048576；这是目前[官方模型元数据](https://api-docs.deepseek.com/api/list-models/)给出的总输入/输出窗口。程序仍要求宿主显式指定，不按模型名静默猜测。
 
 诊断、预算修复与真实提案质量对照见 [V0.7.1 真实模型验证](docs/reflection-live-validation.md)。
+
+## V0.7.2 Memory Automation（Phase 1）
+
+普通 Run 成功后先展示回答，再顺序进行 LLM Worthiness 检查，有价值才复用 Reflection 生成原有可审阅计划。默认 suggest，未批准不写 Markdown；没有后台 Worker。调用/预算/等待有界，失败不改变已完成的回答，也不自动重试。已有计划时提示积压，新历史不会被覆盖或误标写入。
+
+```text
+/memory automation status
+/memory automation off
+/memory automation suggest
+/memory automation run
+/reflect review
+/reflect apply <plan_id> <item_id|all>
+/memory automation retry
+```
+
+AGENT_MEMORY_AUTOMATION 可配置 off/suggest/auto。auto 只接受事前审核的 knowledge/ 新文件精确路径与 Markdown SHA256 授权，限小文件，不自动修改 Core 或旧知识；未匹配则保留审阅，不能由模型输出开启。这个保守模式不是通用自主写入，详情与全部配置见[Memory Automation](docs/modules/automation.md)。

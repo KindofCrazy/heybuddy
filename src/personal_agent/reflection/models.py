@@ -86,6 +86,7 @@ class PlanItem(Model):
         "uncertain",
     ] = "pending"
     approved_at: str | None = None
+    approval_source: Literal["human", "host_exact_grant"] | None = None
     result_code: str = ""
     saved_hash: str | None = None
     index_issue: dict[str, str] = Field(default_factory=dict)

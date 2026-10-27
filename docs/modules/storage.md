@@ -81,3 +81,8 @@ SQLite 表本身假设由应用追加使用，外部直接篡改已覆盖的原�
 新计划保存前，在短事务内验证独立进度和本批来源 Run/hash 未变；计划用有界 JSON、revision 与 checksum 保存。后续 save() 用 expected_revision 做 CAS；全部条目已应用/拒绝/跳过时，关闭计划和审阅进度同事务提交。空候选也保存关闭记录。字段、来源与批准状态见[Reflection](reflection.md)。
 
 应用先保存 approved/applying，再调用现有 MemoryFS，结果单独提交。数据库失败不能回滚 Markdown，也不能把已写内容说成未发生。恢复时仍为 applying/partial 的操作不重写，显式 reconcile 仅核对并记账。测试 `tests/test_reflection.py` 覆盖 schema 3→4 回滚、源变更、CAS、审批写库失败、文件成功后写库失败及真实进程退出。
+
+
+## V0.7.2 Phase 1 集成
+
+schema 5 追加 storage/automation.py 的 automation_batches 与范围/活动唯一索引。绑定 Agent 检查归属；成功负判断和 reflection_progress 同事务提交，未完成或失败不能推进。原计划、原日志、Recall 与 Compaction 表不改写；已保存计划的 batch 关联可按源范围补记，不重复执行。见[Automation](automation.md)。

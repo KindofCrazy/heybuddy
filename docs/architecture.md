@@ -409,3 +409,8 @@ schema 4 增加 reflection_progress 与 reflection_plans；后一表保存有界
 SQLite 与文件没有共同事务。逐项 applying 先落库，文件发布后若记账失败或进程退出，重启不会重复写入；显式 reconcile 核对 after_hash、发现链及具体过期元数据条目后记账。不能核实时保持 partial/uncertain，用户处理剩余计划。一个已成功项不会因为后项失败而被撤销或重新执行。
 
 每个 Reflection 模型阶段均有独立输入/输出预算、超时、无工具 JSON 校验。程序验证 ID/引文存在，不证明候选语义一定正确；人工审阅仍是事实和修改批准边界。详细模型、状态、实际函数路径、命令与限制见[Reflection 模块](modules/reflection.md)。不实现 V0.8 Background Task Runtime。
+
+
+## V0.7.2 Phase 1 集成
+
+V0.7.2 Phase 1 在 CLI 已展示 completed 答案后顺序执行 MemoryAutomation → Worthiness → 原 Reflection → Host Policy；Agent Loop 不承担自动审批。schema 5 保存独立 batch 决策/计量，阴性筛查原子推进审阅边界，阳性提案沿用原计划。完整实际路径见[Memory Automation](modules/automation.md)。

@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.7.1 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction 和手动审批的 Reflection。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.7.2 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction 和手动审批的 Reflection。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -56,7 +56,7 @@
 - 参数化 SQL；query、limit、窗口、片段和总输出都设上限。SQLite VM 预算不能当作同步 I/O 的硬取消保证。
 - 普通对话默认提供 recall_search / recall_get，ContextBuilder 不自动全库搜索，不把结果默认注入后续新会话或写成 Core Memory。
 - Recall 输出为低信任历史证据，不能授予 Memory 权限或修改 Base。不得执行、补齐、重试任何历史 Tool Call；cancelled/interrupted/running 当前不提供查询入口。
-- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。Reflection 仅显式触发并独立审阅，Recall 没有后台回填；Context Compaction 只更新会话工作摘要，不影响 Recall 原始证据；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
+- 索引失败返回安全错误，不自动重试/重建；显式重建只改派生对象，事务失败不能损坏原历史。Reflection 可由回答后的 Worthiness 触发并独立审阅，Recall 没有后台回填；Context Compaction 只更新会话工作摘要，不影响 Recall 原始证据；Deferred 与 Recall 独立，前者保存整理理解，后者保存历史证据。
 
 ## Context 与 Compaction 边界
 
@@ -69,7 +69,7 @@
 
 ## Reflection 的边界
 
-- ReflectionService 是手动流程，不是新 Agent Loop；复用同一 Provider，无副作用工具。默认当前会话只处理 completed 原始 Run，有界读取；不把 Compaction Summary 当事实，不复用压缩进度。
+- ReflectionService 由手动入口或回答后的有界 MemoryAutomation 复用，不是新 Agent Loop；复用同一 Provider，无副作用工具。默认当前会话只处理 completed 原始 Run，有界读取；不把 Compaction Summary 当事实，不复用压缩进度。
 - 每条候选必须验证实际提供的 Conversation/Run/sequence 和精确引文；confirmed 至少含用户证据，语义仍需人类审阅。不确定或冲突不能自动升级为确定写入。
 - 先读相关 Core/Deferred 再生成结构化计划，展示具体理由、目标、局部 Diff、expected_hash 和来源；未批准前不改 Markdown。审批只能来自可信 CLI/Host、绑定计划与条目，不注册为模型可调用工具。
 - schema 4 用 reflection_progress/reflection_plans 保存独立进度与有界审阅状态；空结果、拒绝/跳过也保存处理结果。未决计划不重复提取；所有条目终结时关闭与进度同事务提交。
@@ -114,3 +114,7 @@ docs: 完善项目开发与提交规范
 ## 未来边界
 
 V0.7 增加手动 Reflection、证据验证、整合计划和批准后的 MemoryFS 写入，不实现 Git-backed Memory、日常版本恢复、远程同步、后台自动记忆提取、向量/Embedding、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话；不继续开发 V0.8 Background Task Runtime。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+
+## V0.7.2 Automation 边界
+
+默认 suggest：先展示普通 completed 答案，再顺序执行最多四次额外模型请求。off 保留手动反思；auto 只接受可信配置对小型 knowledge/ create 的精确内容摘要授权，Core/更新/纠正/不确定和未授权内容不自动写。模型不能修改模式、grants 或权限。schema 5 的成功阴性判断可原子推进已审阅范围，但不表示有计划/批准/写入；不同状态保留，失败需显式 retry，已存计划/已写文件不盲目重做。禁止在本轮开发后台 Runtime、Scheduler、ToolCallReviewer。

@@ -164,3 +164,8 @@ V0.5.1 在同一测试文件增加多主题目录中性概要、正文编辑不�
 Core 局部更新仍调用 MemoryFS.edit()，Deferred 更新/创建仍调用 index.edit()/create()；路径、Frontmatter、容量、expected_hash、短锁、Git 隐私和原子发布规则全部保留。计划显示具体修改及自动索引补链范围。编辑器改变目标后拒绝旧计划；索引失败保留已写 hash 与父索引原因，不重试已成功正文。用户可显式修复索引并 reconcile；元数据仍过期不能确认完整成功。
 
 SQLite 只记录候选、批准、片段和状态，Markdown 仍是后续读取的唯一权威源。Reflection 不直接追加原始聊天日志，Compaction 也不触发它。完整调用、部分完成和崩溃窗口见[Reflection](reflection.md)，验证见 tests/test_reflection.py。
+
+
+## V0.7.2 Phase 1 集成
+
+V0.7.2 的 MemoryAutomation 默认只自动提案；受限 auto 必须匹配可信宿主对 knowledge/ 新文件的精确路径及内容 SHA256，不能改 Core/旧文件/纠正。写入仍调用 ReflectionService.apply 和原 MemoryFS/index。见[Automation](automation.md)。

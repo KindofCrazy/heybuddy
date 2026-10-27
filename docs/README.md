@@ -33,3 +33,5 @@
 源码位置均相对于项目根目录，使用实际类名、函数名定位。图中的调用顺序对应当前代码，不是未来功能的设计草图；测试入口见各模块文档及整体架构末尾的验证映射。
 
 [V0.7.1 Reflection 真实验证](reflection-live-validation.md)：真实模型额度诊断、提案质量对照及实测边界。
+
+[Memory Automation](modules/automation.md)：成功回答后的 Worthiness、原 Reflection、可信写入范围、持久状态与额外成本。

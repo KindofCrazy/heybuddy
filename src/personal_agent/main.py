@@ -8,6 +8,7 @@ from collections.abc import Callable
 from openai import AsyncOpenAI
 from pydantic import ValidationError
 
+from personal_agent.automation.service import MemoryAutomation
 from personal_agent.config import Settings, load_settings, memory_root_for
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
@@ -35,9 +36,10 @@ async def chat(
     *,
     sessions: SessionManager | None = None,
     reflection: ReflectionService | None = None,
+    automation: MemoryAutomation | None = None,
 ) -> None:
     write(
-        "HeyBuddy V0.7.1 — /new /sessions /resume <id> /status /context status /reflect；"
+        "HeyBuddy V0.7.2 — /new /sessions /resume <id> /status /context status /reflect；"
         "exit 或 quit 退出。"
     )
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
@@ -56,6 +58,22 @@ async def chat(
         permissions: frozenset[str] = frozenset()
         if user_input.split(maxsplit=1)[0] == "/memory":
             parts = user_input.split(maxsplit=2)
+            if len(parts) == 3 and parts[1] == "automation":
+                if automation is None or sessions is None:
+                    write("Memory > 当前入口未配置 Automation。")
+                    continue
+                if parts[2] in {"off", "suggest", "auto"}:
+                    automation.set_mode(parts[2])
+                    write(f"Memory > automation={parts[2]}；仅当前进程生效。")
+                elif parts[2] == "status":
+                    write(json.dumps(automation.status(sessions.current.id), ensure_ascii=False))
+                elif parts[2] in {"run", "retry"}:
+                    write("Memory > 正在检查未处理历史；普通回答已完成，可 Ctrl+C 退出。")
+                    report = await automation.run(sessions.current.id, retry=parts[2] == "retry")
+                    write("Memory > " + json.dumps(report, ensure_ascii=False))
+                else:
+                    write("用法：/memory automation off|suggest|auto|status|run|retry")
+                continue
             if len(parts) == 2 and parts[1] in {"check", "repair"}:
                 if sessions is None or not isinstance(sessions.memory, MemoryFS):
                     write("记忆错误 > 当前入口未配置 MemoryFS。")
@@ -147,6 +165,22 @@ async def chat(
             write(f"Agent > {result.text}")
         else:
             write(f"错误 [{result.status}] > {result.error}")
+        if (
+            automation is not None
+            and sessions is not None
+            and automation.policy.mode != "off"
+            and result.status == "completed"
+        ):
+            write(
+                "Memory > 后续记忆检查（"
+                + automation.policy.mode
+                + "）；回答已完成，最多四次额外请求。"
+            )
+            try:
+                report = await automation.run(sessions.current.id)
+                write("Memory > " + json.dumps(report, ensure_ascii=False))
+            except (HistoryError, CoreMemoryError):
+                write("Memory > 检查存储失败；普通回答已保存，不会自动重试。")
     write("再见。")
 
 
@@ -189,11 +223,13 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
             settings.context_budget(),
             settings.reflection_policy(),
         )
-        await chat(agent, sessions=sessions, reflection=reflection)
+        automation = MemoryAutomation(reflection, settings.automation_policy())
+        automation.repository.recover()
+        await chat(agent, sessions=sessions, reflection=reflection, automation=automation)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.7.1 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.7.2 CLI")
     parser.parse_args()
     try:
         settings = load_settings()

@@ -56,3 +56,8 @@ run_cli() 用 Settings.context_budget() 构造 SessionManager；context() 将同
 未完整提供审批参数只显示用法。ReflectionError/Memory 错误只显示安全代码；HistoryError 明确提示文件可能已完成、不自动重试。Provider await 取消时按原 CLI 退出语义处理，未保存的生成结果不会推进状态；已存计划跨重启可恢复。真实执行路径及离线子进程验证见[Reflection](reflection.md)和 tests/test_reflection.py。
 
 V0.7.1 的 Reflection 模型失败会附加阶段及安全 ProviderDiagnostics（状态、固定停止原因、计数），不输出未完成正文或推理。看到 max_output_tokens 时应检查 API 总输出额度；可见 JSON 则独立受 AGENT_REFLECTION_RESPONSE_MAX_BYTES 约束，不自动加额度重试。
+
+
+## V0.7.2 Phase 1 集成
+
+V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()；模式 off 不触发。/memory automation off|suggest|auto|status|run|retry 由可信 CLI 解析，不注册为工具，运行中模式只在当前进程有效。用户处理完计划后，下次 completed Run 或显式 run 继续积压；失败/cancel 不改变普通 Run 终态。

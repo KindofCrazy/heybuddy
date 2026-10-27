@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import dotenv_values
-from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator
+from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, model_validator
 
+from personal_agent.automation.models import AutomationPolicy
 from personal_agent.core.budget import ContextBudget
 from personal_agent.reflection.models import ReflectionPolicy
 
@@ -29,6 +30,33 @@ class Settings(ContextBudget):
     reflection_response_max_bytes: int = Field(default=32768, ge=1024, le=131072)
     reflection_timeout_seconds: float = Field(default=60, gt=0)
     reflection_page_runs: int = Field(default=8, ge=1, le=32)
+
+    memory_automation: Literal["off", "suggest", "auto"] = "suggest"
+    memory_auto_create_grants: dict[str, str] = Field(default_factory=dict)
+    memory_automation_max_requests: int = Field(default=4, ge=1, le=4)
+    memory_automation_max_tokens: int = Field(default=131072, ge=4096, le=524288)
+    memory_automation_timeout: float = Field(default=180, gt=0)
+
+    @field_validator("memory_auto_create_grants", mode="before")
+    @classmethod
+    def parse_grants(cls, value):
+        import json
+
+        return json.loads(value) if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def valid_automation(self):
+        self.automation_policy()
+        return self
+
+    def automation_policy(self) -> AutomationPolicy:
+        return AutomationPolicy(
+            mode=self.memory_automation,
+            auto_create_grants=self.memory_auto_create_grants,
+            max_requests=self.memory_automation_max_requests,
+            max_tokens=self.memory_automation_max_tokens,
+            timeout_seconds=self.memory_automation_timeout,
+        )
 
     def reflection_policy(self) -> ReflectionPolicy:
         return ReflectionPolicy(
@@ -75,6 +103,11 @@ class Settings(ContextBudget):
 
 
 ENV_FIELDS = {
+    "AGENT_MEMORY_AUTOMATION": "memory_automation",
+    "AGENT_MEMORY_AUTO_CREATE_GRANTS": "memory_auto_create_grants",
+    "AGENT_MEMORY_AUTOMATION_MAX_REQUESTS": "memory_automation_max_requests",
+    "AGENT_MEMORY_AUTOMATION_MAX_TOKENS": "memory_automation_max_tokens",
+    "AGENT_MEMORY_AUTOMATION_TIMEOUT_SECONDS": "memory_automation_timeout",
     "AGENT_REFLECTION_INPUT_TOKENS": "reflection_input_tokens",
     "AGENT_REFLECTION_OUTPUT_TOKENS": "reflection_output_tokens",
     "AGENT_REFLECTION_RESPONSE_MAX_BYTES": "reflection_response_max_bytes",

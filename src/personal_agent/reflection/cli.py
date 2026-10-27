@@ -31,7 +31,8 @@ def render(plan: ReflectionPlan) -> str:
             f"Relations: {change.relations}",
             f"Target: {change.path or '(no write)'}",
             f"Expected hash: {item.before_hash}; saved hash: {item.saved_hash}",
-            f"Approved at: {item.approved_at}",
+            f"Approved at: {item.approved_at}; source: {item.approval_source}",
+            f"Proposed hash: {item.after_hash}",
             f"Result: {item.result_code or 'not approved'}",
             f"Index issue: {item.index_issue}",
         ]
