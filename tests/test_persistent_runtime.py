@@ -57,7 +57,7 @@ async def test_restart_restores_previous_topic_and_new_conversation_is_empty(tmp
             )
             result = await runtime(provider, sessions).run("我们之前准备怎样实现 Memory？")
             assert result.status == "completed"
-            assert provider.requests[0][1].text == topic
+            assert provider.requests[0][2].text == topic
             assert len(store.list_runs(first_id)) == restart + 2
     with SQLiteStore(path) as store:
         sessions = start(store)
@@ -65,7 +65,7 @@ async def test_restart_restores_previous_topic_and_new_conversation_is_empty(tmp
         new_id = sessions.current.id
         provider = FakeProvider(ModelResponse(text="这是新会话。"))
         await runtime(provider, sessions).run("hello")
-        assert len(provider.requests[0]) == 2
+        assert len(provider.requests[0]) == 3
         assert len(store.load_messages(first_id)) == 8
         assert len(store.load_messages(new_id)) == 2
     with SQLiteStore(path) as store:
@@ -107,7 +107,7 @@ async def test_complete_provider_items_replay_through_sdk_after_restart(tmp_path
         async with make_client(handle) as client:
             result = await runtime(OpenAIProvider(client, "test-model"), sessions).run("continue")
         assert result.text == "remembered"
-        assert requests[0]["input"] == expected
+        assert requests[0]["input"][:1] + requests[0]["input"][2:] == expected
         assert reasoning in requests[0]["input"]
         outputs = [
             item for item in requests[0]["input"] if item.get("type") == "function_call_output"
@@ -171,7 +171,7 @@ async def test_cancel_mid_batch_preserves_partial_journal_without_retry(tmp_path
         sessions = start(store)
         provider = FakeProvider(ModelResponse(text="new request only"))
         await runtime(provider, sessions, tools).run("continue")
-        assert len(provider.requests[0]) == 2
+        assert len(provider.requests[0]) == 3
         assert store.load_messages(sessions.current.id)[:3] == audit
     assert effects == ["first"]
 
@@ -238,7 +238,7 @@ async def test_result_write_failure_stops_batch_and_keeps_prior_history(tmp_path
         assert store.list_runs(sessions.current.id)[-1].status == "interrupted"
         assert len(agent.context.history) == 2
         assert (await agent.run("next")).status == "completed"
-        assert [item.text for item in provider.requests[1]] == [
+        assert [item.text for item in provider.requests[1][:1] + provider.requests[1][2:]] == [
             sessions.agent.system_prompt,
             "old input",
             "old answer",
@@ -335,8 +335,8 @@ async def test_cli_session_commands_switch_and_restore_without_polluting_message
         await chat(agent, read=lambda _: next(commands), write=output.append, sessions=sessions)
         assert len(sessions.list()) == 2
         assert sessions.current.id == original
-        assert len(provider.requests[1]) == 2
-        assert [item.text for item in provider.requests[2]][1:] == [
+        assert len(provider.requests[1]) == 3
+        assert [item.text for item in provider.requests[2]][2:] == [
             "first input",
             "first",
             "third input",

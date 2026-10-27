@@ -4,6 +4,7 @@ from personal_agent.core.budget import ContextBudget
 from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemory
+from personal_agent.core.temporal import temporal_context
 from personal_agent.storage.history import SQLiteConversationHistory
 from personal_agent.storage.models import ConversationRecord
 from personal_agent.storage.sqlite import SQLiteStore
@@ -32,6 +33,7 @@ class SessionManager:
             history_store=SQLiteConversationHistory(self.store, self.current.id),
             memory=self.memory,
             budget=self.budget,
+            temporal=lambda: temporal_context(self.store.last_interaction(self.current.id)),
         )
 
     def new(self) -> ConversationRecord:

@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running Run 的开始时间，`LIMIT 1`，不加载消息正文。供宿主时间上下文计算互动间隔；不会因午夜或长间隔修改 Run/Conversation 归属。
+
 先看[整体架构与 Pipeline](../architecture.md)的请求时序和事务表，再对照本模块的方法。
 
 ## 架构组成

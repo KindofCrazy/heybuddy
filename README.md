@@ -1,4 +1,6 @@
-# HeyBuddy — V0.7.2 Memory Automation & Behavior Evaluation
+# HeyBuddy — P1 Continuous Conversation
+
+P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即可持续聊天；`/new`、`/sessions`、`/resume` 仅保留为开发者历史管理命令。每次请求加入本地带时区时间与上次互动间隔，跨午夜不清空上下文。旧流不合并或删除，仍可通过 Recall 查到。
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供 Reflection，V0.7.2 在答案后自动筛查并生成可审阅提案，并增加独立的真实模型行为评测。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 

@@ -1,5 +1,11 @@
 # 会话管理与 CLI
 
+## P1 持续流
+
+普通启动自动沿用 `client_state` 上次选择的 Conversation；没有选择时创建第一条流。旧 Conversation、Run、Summary 和 Reflection 不迁移归属，不合并、不删除，Recall 仍按 Agent 查询。`/new`、`/sessions`、`/resume` 保留为开发者历史管理入口，普通聊天无需调用。
+
+`SessionManager.context()` 向 `ContextBuilder` 传递宿主时间回调。`for_request()` 每次请求用 `core/temporal.py::temporal_context()` 注入带本地 UTC offset 的当前时间、时区及距上个已终结 Run 开始时间的秒数；SQLite `last_interaction()` 只查一条元数据。时间信息以 user JSON 注入，参与预算，不写 Journal，也不授予权限。跨午夜不清空上下文。测试见 `tests/test_continuous.py`。
+
 ## 架构组成
 
 `sessions.py::SessionManager` 管理持久 Agent 和当前 Conversation；`main.py` 负责输入、命令和展示。默认每个数据库使用 Agent `heybuddy`，其名称和兼容 system_prompt 字段保存在 agents 表。存储支持多个 Agent 的记录关系，当前 CLI 不引入 Agent 创建/选择命令。一个 Agent 可有多个 Conversation，共享身份和 Core Memory，不共享聊天历史。Base 来自代码，不加载旧 agents.system_prompt。

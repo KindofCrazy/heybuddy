@@ -255,7 +255,7 @@ async def test_cli_create_restart_progressive_read_recall_and_expired_grants(tmp
         output = []
         await chat(agent, read=lambda _: next(inputs), write=output.append, sessions=sessions)
         assert "Agent > created" in output
-        assert len(provider.requests[-1]) == 3
+        assert len(provider.requests[-1]) == 4
         assert "deferred_create" not in {item.name for item in provider.tools[-1]}
         current_id = sessions.current.id
     fs = MemoryFS(fs.root)

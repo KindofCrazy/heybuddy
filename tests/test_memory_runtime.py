@@ -95,7 +95,7 @@ async def test_new_conversation_and_restart_share_memory_but_not_conversation_hi
         agent.context = sessions.context()
         provider.responses.append(ModelResponse(text="简洁中文"))
         await agent.run("我的语言偏好是什么？")
-        assert len(provider.requests[-1]) == 3  # base + memory + new user input
+        assert len(provider.requests[-1]) == 4  # base + memory + clock + new user input
         assert (
             json.loads(provider.requests[-1][1].text)["blocks"]["human.md"] == "用户偏好简洁中文。"
         )

@@ -39,7 +39,7 @@ async def chat(
     automation: MemoryAutomation | None = None,
 ) -> None:
     write(
-        "HeyBuddy V0.7.2 — /new /sessions /resume <id> /status /context status /reflect；"
+        "HeyBuddy P1 持续对话 — 自动恢复上次对话流；/status /context status /reflect；"
         "exit 或 quit 退出。"
     )
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")

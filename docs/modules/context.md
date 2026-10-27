@@ -1,5 +1,7 @@
 # ContextBuilder 与会话工作上下文
 
+P1 增加可选宿主 `temporal` 回调。`for_request()` 在 Core/Summary 后加入 `core/temporal.py` 产生的本地带 offset 时间 JSON；所有分支沿用完整预算检查，不写入 pending 或 Journal。最小例子及跨时区验证见 `tests/test_continuous.py`；持久化入口通过 `SessionManager.context()` 装配。
+
 ## 职责与架构组成
 
 `core/context.py::ContextBuilder` 负责一次 Run 的原始消息生命周期和每轮模型工作视图。它依赖 `core/history.py::ConversationHistory`、CoreMemory、Provider Protocol，不导入 SQLite 或 SDK。`core/budget.py` 管理预算，`core/compaction.py` 生成增量摘要；具体 SQLite 查询位于 `storage/context.py`，由 `storage/history.py::SQLiteConversationHistory` 绑定 Conversation。

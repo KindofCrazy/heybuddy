@@ -351,6 +351,15 @@ class SQLiteStore:
             ).fetchone()
         return counts[0], counts[1], latest[0] if latest else "none"
 
+    def last_interaction(self, conversation_id: str) -> datetime | None:
+        with self._transaction() as db:
+            row = db.execute(
+                "SELECT started_at FROM runs WHERE conversation_id=? AND status!='running' "
+                "ORDER BY started_at DESC,id DESC LIMIT 1",
+                (conversation_id,),
+            ).fetchone()
+        return datetime.fromisoformat(row[0]) if row else None
+
     def list_runs(self, conversation_id: str) -> list[RunRecord]:
         with self._transaction() as db:
             rows = db.execute(

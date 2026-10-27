@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections.abc import Callable
 
 from personal_agent.core.budget import ContextBudget, ContextError, estimate_request
 from personal_agent.core.compaction import compact_step
@@ -48,11 +49,13 @@ class ContextBuilder:
         history_store: ConversationHistory | None = None,
         memory: CoreMemory | None = None,
         budget: ContextBudget | None = None,
+        temporal: Callable[[], dict] | None = None,
     ) -> None:
         self.system_prompt = system_prompt
         self._store = history_store if history_store is not None else InMemoryHistory()
         self.memory = memory
         self.budget = budget
+        self.temporal = temporal
         self._pending: list[Message] = []
         self._run_id: str | None = None
         self._active = False
@@ -109,6 +112,8 @@ class ContextBuilder:
                     ),
                 )
             )
+        if self.temporal is not None:
+            injected.append(TextMessage(role="user", text=json.dumps(self.temporal())))
         return [messages[0], *injected, *messages[1:]]
 
     def begin(self, user_input: str) -> list[Message]:

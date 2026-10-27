@@ -61,7 +61,7 @@ async def test_new_conversation_can_search_expand_and_answer_from_prior_evidence
     result = await agent.run("我们之前为什么决定先实现 Memory？")
     assert result.status == "completed" and old_id in result.text
     assert (
-        len(provider.requests[0]) == 3
+        len(provider.requests[0]) == 4
     )  # base, bounded Core Memory, current input; no old history.
     assert {tool.name for tool in provider.tools[0]} >= {"recall_search", "recall_get"}
     assert not any(tool.name.startswith("memory_") for tool in provider.tools[0])
@@ -91,7 +91,7 @@ async def test_results_are_not_automatically_injected_into_another_new_conversat
     provider = FakeProvider(ModelResponse(text="new"))
     agent = Agent(provider, tools, context=sessions.context())
     await agent.run("另一个主题")
-    assert len(provider.requests[0]) == 3
+    assert len(provider.requests[0]) == 4
     assert not any(isinstance(message, ToolMessage) for message in provider.requests[0])
 
 
