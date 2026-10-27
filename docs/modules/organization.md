@@ -1,5 +1,15 @@
 # Episode 与事后整理
 
+## Thread 独立组织层（schema 7）
+
+`organization/threads.py::ThreadOrganizer` 处理已生成且 thread_dirty 的 Episode；`storage/threads.py::ThreadRepository` 按 Agent 保存最新 Thread、版本和有界批次来源。Thread 只描述持续话题及当前工作状态，memory_ref 保留宿主接口，模型不能写它，不创建 Semantic Memory。
+
+实际链路：OrganizationRuntime 完成一批 Episode 后查 pending_episodes_capped，默认达到 3 才调用一次 organize()；`/thread organize` 可立即触发。snapshot() 读取至多 page_runs 个待处理 Episode、最近 24 个 Thread 及 Episode 的旧 owner。模型返回 groups/no_thread 完整分配；宿主校验 ID、恰好覆盖、单一归属、Thread 不重复分组。publish() 短事务复查 Thread/Episode/独立进度，原子更新 Thread 状态/修订、Episode 关联/dirty、thread_versions、thread_batches 与进度。旧 owner 先标 dirty；仍有未处理关联修订时不把 Thread 错标为最新。
+
+优先匹配已提供的同一话题 Thread；闲聊可全 no_thread。active/paused/closed 的 Prompt 禁止仅因时间流逝关闭。last_active_at 由 Episode 真实时间计算，回填旧 Episode 不倒退时间。语义判断仍需真实评测。migration 7 只追加独立状态、版本、批次和 pending 索引，原 Journal 不改。退出按 dirty 集合重算，提交后不重复；失败阻止自动付费重试，手动 organize 才 retry。旧 Thread 移出 Episode 后可能保持 dirty，检索层应省略其旧 state，后续相关 Episode 再刷新，不自动全库重算。
+
+示例：`/episode organize` → `/thread organize` → `/thread list` → `/thread show <id>`；status 只显示状态。`tests/test_threads.py` 覆盖跨日聚合、闲聊、非法 ID、Revision 后重关联、事务回滚、取消/恢复、归属及 schema 6→7。
+
 ## 职责与架构组成
 
 `organization/models.py` 定义严格 Pydantic 模型、来源快照和可信 OrganizationPolicy。`organization/provider.py::OrganizerModel.ask()` 每批仅调用一次原 Provider，空工具、独立输入/总输出 tokens、可见字节、超时和 usage 检查。`organization/episodes.py::EpisodeOrganizer` 生成时间候选边界、语义分段、验证证据。`storage/episodes.py::EpisodeRepository` 绑定 Agent，负责有界读取、归属、修订和原子进度。`organization/runtime.py::OrganizationRuntime` 仅在 CLI 存活时触发整理，`AsyncInput` 只在 daemon 线程读取终端；SQLite 始终在主事件循环线程运行。

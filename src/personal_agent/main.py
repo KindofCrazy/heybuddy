@@ -22,6 +22,7 @@ from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationError
 from personal_agent.organization.provider import OrganizerModel
 from personal_agent.organization.runtime import OrganizationRuntime
+from personal_agent.organization.threads import ThreadOrganizer
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
 from personal_agent.reflection.cli import command as reflection_command
@@ -31,6 +32,7 @@ from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
+from personal_agent.storage.threads import ThreadRepository
 from personal_agent.tools.builtin import create_builtin_registry
 
 
@@ -95,7 +97,7 @@ async def _chat(
         if organization is not None:
             await organization.foreground()
         permissions: frozenset[str] = frozenset()
-        if user_input.split(maxsplit=1)[0] == "/episode":
+        if user_input.split(maxsplit=1)[0] in {"/episode", "/thread"}:
             if organization is None or sessions is None:
                 write("Episode > 当前入口未配置 Organizer。")
                 continue
@@ -278,6 +280,8 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
         automation.repository.recover()
         repository = EpisodeRepository(sessions.store, sessions.agent.id)
         repository.recover()
+        thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
+        thread_repository.recover()
         organization = OrganizationRuntime(
             EpisodeOrganizer(
                 repository,
@@ -286,6 +290,12 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
                 ),
             ),
             automation=automation,
+            threads=ThreadOrganizer(
+                thread_repository,
+                OrganizerModel(
+                    agent.provider, settings.context_budget(), settings.organization_policy()
+                ),
+            ),
         )
         await chat(
             agent,

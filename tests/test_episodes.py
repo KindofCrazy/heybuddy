@@ -352,7 +352,7 @@ def test_schema_five_upgrade_preserves_old_streams_summary_and_recall(tmp_path, 
         assert SessionManager(db).current.id == selected
         assert len(db.search_recall("heybuddy", "HeyBuddy", 5)) > 0
         assert db._connection.execute("PRAGMA foreign_key_check").fetchall() == []
-        assert db._connection.execute("PRAGMA user_version").fetchone()[0] == 6
+        assert db._connection.execute("PRAGMA user_version").fetchone()[0] == storage.SCHEMA_VERSION
 
 
 def test_schema_six_migration_is_atomic(tmp_path, monkeypatch):

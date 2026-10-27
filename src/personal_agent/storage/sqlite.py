@@ -22,11 +22,11 @@ from personal_agent.core.models import (
     RunResult,
     TextMessage,
 )
-from personal_agent.storage import automation, context, episodes, recall, reflection
+from personal_agent.storage import automation, context, episodes, recall, reflection, threads
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -58,6 +58,7 @@ MIGRATIONS = {
     4: reflection.SCHEMA,
     5: automation.SCHEMA,
     6: episodes.SCHEMA,
+    7: threads.SCHEMA,
 }
 
 

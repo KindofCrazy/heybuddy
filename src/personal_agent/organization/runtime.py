@@ -15,6 +15,7 @@ from personal_agent.automation.service import MemoryAutomation
 from personal_agent.core.history import HistoryError
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationError
+from personal_agent.organization.threads import ThreadOrganizer
 
 
 class AsyncInput:
@@ -64,10 +65,14 @@ class AsyncInput:
 
 class OrganizationRuntime:
     def __init__(
-        self, episodes: EpisodeOrganizer, automation: MemoryAutomation | None = None
+        self,
+        episodes: EpisodeOrganizer,
+        automation: MemoryAutomation | None = None,
+        threads: ThreadOrganizer | None = None,
     ) -> None:
         self.episodes = episodes
         self.automation = automation
+        self.threads = threads
         self.input = AsyncInput()
         self.task: asyncio.Task | None = None
         self.last_report: dict = {}
@@ -91,6 +96,11 @@ class OrganizationRuntime:
             if status["pending_runs_capped"] < policy.run_threshold:
                 await asyncio.sleep(max(0, policy.idle_seconds - elapsed))
             self.last_report = await self.episodes.organize(stream_id, retry=False)
+            if self.threads and (
+                self.threads.repository.status()["pending_episodes_capped"]
+                >= policy.thread_threshold
+            ):
+                self.last_report["thread"] = await self.threads.organize(retry=False)
             await asyncio.sleep(policy.revision_seconds)
             self.episodes.repository.finalize(stream_id, policy)
         except asyncio.CancelledError:
@@ -115,7 +125,22 @@ class OrganizationRuntime:
 
     async def command(self, stream_id: str, text: str, write: Callable[[str], None]) -> None:
         parts = text.split()
-        if parts == ["/episode", "status"]:
+        if parts and parts[0] == "/thread":
+            if self.threads is None:
+                write("Thread > 当前入口未配置 Thread Organizer。")
+                return
+            if parts == ["/thread", "status"]:
+                result = self.threads.repository.status()
+            elif parts == ["/thread", "organize"]:
+                result = await self.threads.organize()
+            elif parts == ["/thread", "list"]:
+                result = [t.model_dump(mode="json") for t in self.threads.repository.list()]
+            elif len(parts) == 3 and parts[:2] == ["/thread", "show"]:
+                result = self.threads.repository.get(parts[2]).model_dump(mode="json")
+            else:
+                write("用法：/thread status|organize|list|show <id>")
+                return
+        elif parts == ["/episode", "status"]:
             result = {**self.episodes.repository.status(stream_id), "last_report": self.last_report}
         elif parts == ["/episode", "organize"]:
             result = await self.episodes.organize(stream_id)
