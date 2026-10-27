@@ -152,6 +152,7 @@ class ThreadDecision(Model):
 
 
 def gap_kind(previous: datetime, current: datetime, policy: OrganizationPolicy) -> str:
+    """Classify adjacent user/Run start times; execution duration is not input proximity."""
     gap = (current - previous).total_seconds()
     if gap < 0:
         raise OrganizationError("nonmonotonic_time")

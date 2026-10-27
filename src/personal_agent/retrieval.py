@@ -1,9 +1,11 @@
 """Adaptive lexical retrieval over derived topics, then bounded complete raw Runs."""
 
 import re
+import sqlite3
 from datetime import datetime
 
 from personal_agent.core.retrieval import RetrievalItem, RetrievalPolicy, RetrievalResult
+from personal_agent.organization.models import Episode, Thread
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.recall import query_budget
 from personal_agent.storage.threads import ThreadRepository
@@ -35,6 +37,56 @@ class ContextRetriever:
         self.repository = repository
         self.policy = policy or RetrievalPolicy()
         self.episodes: EpisodeRepository = repository.episodes
+
+    def _candidates(
+        self, db: sqlite3.Connection, thread: Thread | None, terms: list[str]
+    ) -> list[Episode]:
+        ids = []
+        if thread:
+            ids = [
+                row[0]
+                for row in db.execute(
+                    "SELECT e.id FROM episodes e JOIN conversations c ON c.id=e.stream_id "
+                    "WHERE e.thread_id=? AND c.agent_id=? ORDER BY e.ended_at DESC,e.id LIMIT ?",
+                    (thread.id, self.repository.agent_id, self.policy.episode_limit),
+                )
+            ]
+        # Even a Thread hit may lag behind the latest unassigned Episode. Rank
+        # bounded recent metadata, without writing a relationship or asking an LLM.
+        score_sql = "+".join(
+            "(3*(instr(lower(title),lower(?))>0)+(instr(lower(summary),lower(?))>0))" for _ in terms
+        )
+        parameters = [term for term in terms for _ in range(2)]
+        rows = db.execute(
+            "WITH recent AS MATERIALIZED (SELECT e.id,e.ended_at,"
+            "json_extract(e.payload,'$.title') AS title,"
+            "json_extract(e.payload,'$.summary') AS summary "
+            "FROM episodes e JOIN conversations c ON c.id=e.stream_id "
+            "WHERE c.agent_id=? AND (? OR e.thread_id IS NULL) "
+            "ORDER BY e.ended_at DESC,e.id LIMIT ?), "
+            "ranked AS (SELECT id,ended_at," + score_sql + " AS match_score FROM recent) "
+            "SELECT id FROM ranked WHERE match_score>0 "
+            "ORDER BY match_score DESC,ended_at DESC,id LIMIT ?",
+            (
+                self.repository.agent_id,
+                thread is None,
+                self.policy.scan_episodes,
+                *parameters,
+                self.policy.episode_limit,
+            ),
+        ).fetchall()
+        ids = list(dict.fromkeys([*ids, *(row[0] for row in rows)]))
+        candidates = [self.episodes._episode(db, episode_id) for episode_id in ids]
+
+        def score(episode: Episode) -> tuple[int, datetime, str]:
+            match = sum(
+                3 * (term.lower() in episode.title.lower())
+                + (term.lower() in episode.summary.lower())
+                for term in terms
+            )
+            return match, episode.ended_at, episode.id
+
+        return sorted(candidates, key=score, reverse=True)[: self.policy.episode_limit]
 
     def retrieve(self, user_input: str, exclude_run_ids: frozenset[str]) -> RetrievalResult:
         if not HISTORY.search(user_input[:1024]):
@@ -70,34 +122,11 @@ class ContextRetriever:
                         }
                     )
                 )
-                rows = db.execute(
-                    "SELECT e.id FROM episodes e JOIN conversations c ON c.id=e.stream_id "
-                    "WHERE e.thread_id=? AND c.agent_id=? ORDER BY e.ended_at DESC,e.id LIMIT ?",
-                    (thread.id, self.repository.agent_id, self.policy.episode_limit),
-                ).fetchall()
-            else:
-                # Bounded recent metadata fallback. Old rare topics remain accessible
-                # through Recall instead of unbounded substring scans.
-                episode_conditions = " OR ".join(
-                    "instr(lower(json_extract(payload,'$.title')||' '||"
-                    "json_extract(payload,'$.summary')),lower(?))>0"
-                    for _ in terms
+            episodes = self._candidates(db, thread, terms)
+            if thread:
+                items[0].reference["newer_unlinked_evidence"] = any(
+                    e.thread_id is None and e.ended_at > thread.last_active_at for e in episodes
                 )
-                rows = db.execute(
-                    "WITH recent AS MATERIALIZED (SELECT e.id,e.payload,e.ended_at FROM episodes e "
-                    "JOIN conversations c ON c.id=e.stream_id WHERE c.agent_id=? "
-                    "ORDER BY e.ended_at DESC,e.id LIMIT ?) "
-                    "SELECT id FROM recent WHERE "
-                    + episode_conditions
-                    + " ORDER BY ended_at DESC,id LIMIT ?",
-                    (
-                        self.repository.agent_id,
-                        self.policy.scan_episodes,
-                        *terms,
-                        self.policy.episode_limit,
-                    ),
-                ).fetchall()
-            episodes = [self.episodes._episode(db, row[0]) for row in rows]
             for episode in episodes:
                 items.append(
                     RetrievalItem(
@@ -112,6 +141,10 @@ class ContextRetriever:
                             "summary": episode.summary,
                             "status": episode.status,
                             "run_ids": episode.run_ids,
+                            "thread_id": episode.thread_id,
+                            "retrieved_via": "thread"
+                            if thread and episode.thread_id == thread.id
+                            else "lexical_supplement",
                         }
                     )
                 )

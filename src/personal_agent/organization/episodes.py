@@ -118,12 +118,15 @@ class EpisodeOrganizer:
                     and len(previous.run_ids) + len(sources) <= self.policy.page_runs
                     and (sources[0].started_at - previous.ended_at).total_seconds()
                     <= self.policy.revision_seconds
-                    and gap_kind(previous.ended_at, sources[0].started_at, self.policy)
-                    != "required"
                 ):
                     previous_sources = self.repository.sources(previous, self.policy)
-                    if sum(s.payload_bytes for s in [*previous_sources, *sources]) <= (
-                        self.policy.source_bytes
+                    if (
+                        gap_kind(
+                            previous_sources[-1].started_at, sources[0].started_at, self.policy
+                        )
+                        != "required"
+                        and sum(s.payload_bytes for s in [*previous_sources, *sources])
+                        <= self.policy.source_bytes
                     ):
                         sources = [*previous_sources, *sources]
                     else:
@@ -140,10 +143,21 @@ class EpisodeOrganizer:
                     if source.ended_at is None or source.ended_at < source.started_at:
                         raise OrganizationError("invalid_source_time")
                     if last:
-                        kind = gap_kind(last.ended_at, source.started_at, self.policy)
+                        kind = gap_kind(last.started_at, source.started_at, self.policy)
                         if barrier:
                             kind = "required"
-                        boundaries.append({"before_run_id": source.run_id, "strength": kind})
+                        boundaries.append(
+                            {
+                                "before_run_id": source.run_id,
+                                "strength": kind,
+                                "start_gap_seconds": (
+                                    source.started_at - last.started_at
+                                ).total_seconds(),
+                                "previous_duration_seconds": (
+                                    last.ended_at - last.started_at
+                                ).total_seconds(),
+                            }
+                        )
                         if kind == "required":
                             required.add(source.run_id)
                     last = source
