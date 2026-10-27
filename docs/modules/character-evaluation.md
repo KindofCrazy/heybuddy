@@ -1,5 +1,9 @@
 # Character Evaluation
 
+本轮真实 API 结果见 [P3 live 检查](../p3-live-validation.md)。evaluate() 参数增加输出总 tokens 和请求超时，条件指纹包含二者；CLI --output-tokens 可显式控制包含 reasoning 的额度，默认 512 保留旧配置。真实对比建议 `--output-tokens 2048 --max-tokens 2200000`。Trace 在异常时也统计安全 usage，不保存未完成正文；日志标准化消息排除 provider_data，真实 Provider 仍收到原样的完整重放数据。
+
+`evaluation/character_state.py` 提供独立 --live smoke：main() 在载入配置前检查显式授权；run() 新建私有合成目录/SQLite/Memory，Clock 固定时间，Host 标记两条 completed Run，顺序调用 EpisodeOrganizer/StateService。最多 4 请求/200000 预留 tokens，Episode 输出 4096、State 输出 2048。第二个事件关闭话题，然后验证去重、有效期、无 Memory 写入与空工具；结果存本地 private-review.json，异常仅打印安全类型，失败检查返回非零。不调用 Main Agent、无 Apply 或主动聊天。该入口测模型更新与发布，Idle/抢占由原离线测试覆盖。最小执行为 `uv run python -m personal_agent.evaluation.character_state --live`，--help 不加载凭证；tests/test_character_evaluation.py 验证授权守卫。
+
 ## 职责与组成
 
 `evaluation/character_cases.py` 冻结 13 个合成情境、20 轮漂移和七个独立评分维度。`evaluation/character.py` 复用 evaluation.runner.Budget、真实 Agent/ContextBuilder/Provider Protocol/ToolRegistry，提供离线默认与显式 --live 的 E0/E1/E2 对比。没有额外 Judge、第二个角色 Agent 或写记忆工具。

@@ -1,5 +1,7 @@
 # P3 Character Persona & Behavior
 
+2026-10-28 已在用户授权下补做 [真实 API 效果检查](p3-live-validation.md)：deepseek-flash 的 E0/E1/E2 统一 2048 输出对比 96/96 轮完成，真实 Episode/State 两事件更新通过；记录了表现与缺陷，不能从单次固定夹具证明 E2 优势。下文的初始里程碑测试记录仍为当时的离线结果。
+
 ## 范围与基准
 
 初始 HEAD 为 `77674b61feb749b2050317df776d1ebf6af71bf8`，比任务中的参考 d6ac715 更新，包含完整 P2。P3 仅实现被动交互：本地 Character Package、同一 Main Agent 的情境化人格、短期状态和真实关系记忆利用；不主动发消息，不实现 AttentionEngine 或主动聊天调度。

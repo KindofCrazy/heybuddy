@@ -1,0 +1,257 @@
+{
+  "date": "2026-10-28",
+  "timezone": "Asia/Shanghai",
+  "baseline_commit": "664532a698f475f20f22b8fdd0ff7f15f7343a07",
+  "model": "deepseek-flash",
+  "real_api_requests": 206,
+  "credential_or_endpoint_details_included": false,
+  "raw_bodies_included": false,
+  "pilot": [
+    {
+      "variant": "E2",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 512,
+      "requests": 4,
+      "completed_turns": 3,
+      "turns": 3,
+      "failures": [],
+      "usage": {
+        "requests": 4,
+        "reserved_tokens": 74315,
+        "input_tokens": 15420,
+        "output_tokens": 664,
+        "reasoning_tokens": 257
+      },
+      "provider_usage_complete": true,
+      "median_turn_seconds": 2.705,
+      "total_call_seconds": 7.936,
+      "mean_answer_characters": 202.3,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    }
+  ],
+  "baseline_512": [
+    {
+      "variant": "E0",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 512,
+      "requests": 33,
+      "completed_turns": 30,
+      "turns": 32,
+      "failures": [
+        {
+          "case": "rebuttal",
+          "turn": 1,
+          "status": "provider_error"
+        },
+        {
+          "case": "professional",
+          "turn": 1,
+          "status": "provider_error"
+        }
+      ],
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 453705,
+        "input_tokens": 87300,
+        "output_tokens": 8176,
+        "reasoning_tokens": 4553
+      },
+      "provider_usage_complete": false,
+      "median_turn_seconds": 2.605,
+      "total_call_seconds": 86.582,
+      "mean_answer_characters": 185.2,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    },
+    {
+      "variant": "E1",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 512,
+      "requests": 33,
+      "completed_turns": 30,
+      "turns": 32,
+      "failures": [
+        {
+          "case": "research",
+          "turn": 1,
+          "status": "provider_error"
+        },
+        {
+          "case": "professional",
+          "turn": 1,
+          "status": "provider_error"
+        }
+      ],
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 697710,
+        "input_tokens": 133851,
+        "output_tokens": 7798,
+        "reasoning_tokens": 4282
+      },
+      "provider_usage_complete": false,
+      "median_turn_seconds": 2.308,
+      "total_call_seconds": 82.575,
+      "mean_answer_characters": 182.6,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    },
+    {
+      "variant": "E2",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 512,
+      "requests": 33,
+      "completed_turns": 31,
+      "turns": 32,
+      "failures": [
+        {
+          "case": "professional",
+          "turn": 1,
+          "status": "provider_error"
+        }
+      ],
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 705358,
+        "input_tokens": 139568,
+        "output_tokens": 7392,
+        "reasoning_tokens": 4079
+      },
+      "provider_usage_complete": false,
+      "median_turn_seconds": 2.181,
+      "total_call_seconds": 76.276,
+      "mean_answer_characters": 170.3,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    }
+  ],
+  "comparison_2048": [
+    {
+      "variant": "E0",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 2048,
+      "requests": 33,
+      "completed_turns": 32,
+      "turns": 32,
+      "failures": [],
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 504401,
+        "input_tokens": 91874,
+        "output_tokens": 10130,
+        "reasoning_tokens": 5433
+      },
+      "provider_usage_complete": true,
+      "median_turn_seconds": 2.497,
+      "total_call_seconds": 94.101,
+      "mean_answer_characters": 240.7,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    },
+    {
+      "variant": "E1",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 2048,
+      "requests": 33,
+      "completed_turns": 32,
+      "turns": 32,
+      "failures": [],
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 747835,
+        "input_tokens": 141143,
+        "output_tokens": 9221,
+        "reasoning_tokens": 4964
+      },
+      "provider_usage_complete": true,
+      "median_turn_seconds": 2.428,
+      "total_call_seconds": 85.833,
+      "mean_answer_characters": 220.1,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    },
+    {
+      "variant": "E2",
+      "model": "deepseek-flash",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "output_limit": 2048,
+      "requests": 33,
+      "completed_turns": 32,
+      "turns": 32,
+      "failures": [],
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 756230,
+        "input_tokens": 143439,
+        "output_tokens": 9939,
+        "reasoning_tokens": 5625
+      },
+      "provider_usage_complete": true,
+      "median_turn_seconds": 2.508,
+      "total_call_seconds": 89.476,
+      "mean_answer_characters": 226.6,
+      "semantic_scores": null,
+      "background_state_requests": 0
+    }
+  ],
+  "comparison_conditions_match": true,
+  "state_smoke": {
+    "checks": {
+      "no_duplicate_call": true,
+      "expired_without_call": true,
+      "memory_unchanged": true,
+      "empty_tools": true,
+      "state_updates_verified": true
+    },
+    "usage": {
+      "requests": 4,
+      "reserved_tokens": 53843,
+      "reserved_cost_usd": 0.0,
+      "exhausted": false,
+      "input_tokens": 9420,
+      "output_tokens": 2867,
+      "reasoning_tokens": 2001,
+      "usage_complete": true,
+      "estimated_cost_usd": null
+    },
+    "stage_requests": {
+      "state": 2,
+      "episode": 2
+    },
+    "verified_state_revisions": [
+      1,
+      2
+    ]
+  },
+  "aggregate_reported_usage_lower_bound": {
+    "input_tokens": 762015,
+    "output_tokens": 56187,
+    "reasoning_tokens": 31194
+  },
+  "usage_caveat": "Baseline Trace omitted usage for five incomplete responses; totals are lower bounds. Reasoning is included in output and must not be added again.",
+  "monetary_cost": null,
+  "review_kind": "coding_assistant_sampled_qualitative_review_not_independent_human_or_paid_judge",
+  "review_sample": "12 single-turn cases and drift turns 1/10/20 in each variant; two live state transitions",
+  "limitations": [
+    "one repetition",
+    "fixed teacher-forced history",
+    "fixed retrieval outputs",
+    "controlled E2 state fixture",
+    "no free-running dialogue",
+    "no blind semantic scorer"
+  ]
+}

@@ -24,7 +24,7 @@ from personal_agent.core.models import (
 from personal_agent.core.retrieval import RetrievalItem, RetrievalResult
 from personal_agent.evaluation.character_cases import CASES, RUBRIC
 from personal_agent.evaluation.runner import Budget, EvaluationLimit
-from personal_agent.llm.base import Provider
+from personal_agent.llm.base import Provider, ProviderError
 from personal_agent.memory.privacy import require_private_directory
 from personal_agent.tools.builtin import create_builtin_registry
 
@@ -112,23 +112,39 @@ class Trace:
         self.budget.reserve(messages, tools, max_output_tokens)
         row = {
             "input_estimated": estimate_request(messages, tools),
-            "messages": [m.model_dump(mode="json") for m in messages],
+            # SDK replay may contain plaintext reasoning as well as encrypted payloads.
+            # Keep it intact for the real Provider, but never copy it into review logs.
+            "messages": [m.model_dump(mode="json", exclude={"provider_data"}) for m in messages],
+            "provider_data_omitted": True,
             "tools": [t.model_dump(mode="json") for t in tools],
         }
         self.calls.append(row)
         start = perf_counter()
+        usage = None
         try:
             response = await self.provider.generate(
                 messages, tools, max_output_tokens=max_output_tokens
             )
-            self.budget.observe(response.usage)
+            usage = response.usage
             row.update(
                 text=response.text,
                 tool_calls=[t.model_dump() for t in response.tool_calls],
                 usage=response.usage.model_dump() if response.usage else None,
             )
             return response
+        except ProviderError as error:
+            usage = error.diagnostics.usage if error.diagnostics else None
+            row.update(
+                error_code=error.code,
+                status_code=error.status_code,
+                diagnostics=error.diagnostics.model_dump(exclude_none=True)
+                if error.diagnostics
+                else None,
+            )
+            raise
         finally:
+            self.budget.observe(usage)
+            row["usage"] = usage.model_dump(exclude_none=True) if usage else None
             row["seconds"] = perf_counter() - start
 
 
@@ -140,6 +156,7 @@ async def evaluate(
     case_ids=None,
     context_window=131072,
     output_tokens=512,
+    request_timeout_seconds=60,
     model="offline-script",
 ) -> dict:
     if variant not in {"E0", "E1", "E2"}:
@@ -190,7 +207,13 @@ async def evaluate(
                 temporal=lambda: {"now": "2026-01-02T10:00:00Z"},
             )
             start_calls = len(traced.calls)
-            result = await Agent(traced, tools, context=context, max_rounds=3).run(prompt)
+            result = await Agent(
+                traced,
+                tools,
+                context=context,
+                max_rounds=3,
+                request_timeout_seconds=request_timeout_seconds,
+            ).run(prompt)
             if budget.exhausted:
                 raise EvaluationLimit("evaluation_budget_exhausted")
             calls = traced.calls[start_calls:]
@@ -202,6 +225,7 @@ async def evaluate(
                 "state_fixture": state,
                 "context_window": context_window,
                 "output_tokens": output_tokens,
+                "request_timeout_seconds": request_timeout_seconds,
                 "tools": [t.model_dump() for t in tools.definitions()],
             }
             checks = {
@@ -234,6 +258,11 @@ async def evaluate(
     return {
         "variant": variant,
         "model": model,
+        "parameters": {
+            "output_tokens": output_tokens,
+            "request_timeout_seconds": request_timeout_seconds,
+            "context_window": context_window,
+        },
         "package_hash": package.fingerprint,
         "corpus_hash": digest([(c.id, c.prompts, c.expectation, c.retrieved) for c in CASES]),
         "history_mode": "teacher_forced_identical_across_variants",
@@ -265,7 +294,15 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path(".heybuddy/evaluations"))
     parser.add_argument("--max-requests", type=int, default=120)
     parser.add_argument("--max-tokens", type=int, default=2_000_000)
+    parser.add_argument(
+        "--output-tokens",
+        type=int,
+        default=512,
+        help="Per-request total output cap, including reasoning",
+    )
     args = parser.parse_args()
+    if not 256 <= args.output_tokens <= 8192:
+        parser.error("--output-tokens must be between 256 and 8192")
     selected = None if args.cases == "all" else set(args.cases.split(","))
     if selected is not None and not selected <= {c.id for c in CASES}:
         parser.error("Unknown case ID")
@@ -277,11 +314,18 @@ def main() -> int:
         budget = Budget(args.max_requests, args.max_tokens)
         variants = ["E0", "E1", "E2"] if args.variant == "all" else [args.variant]
 
-        async def execute(provider, model="offline-script", window=131072):
+        async def execute(provider, model="offline-script", window=131072, request_seconds=60):
             reports = []
             for variant in variants:
                 report = await evaluate(
-                    variant, provider, budget, case_ids=selected, context_window=window, model=model
+                    variant,
+                    provider,
+                    budget,
+                    case_ids=selected,
+                    context_window=window,
+                    model=model,
+                    output_tokens=args.output_tokens,
+                    request_timeout_seconds=request_seconds,
                 )
                 (folder / f"{variant}.json").write_text(
                     json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -316,7 +360,10 @@ def main() -> int:
             timeout=settings.request_timeout_seconds,
         ) as client:
             return await execute(
-                OpenAIProvider(client, settings.model), settings.model, settings.context_window
+                OpenAIProvider(client, settings.model),
+                settings.model,
+                settings.context_window,
+                settings.request_timeout_seconds,
             )
 
     try:

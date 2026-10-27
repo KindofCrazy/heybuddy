@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from personal_agent.evaluation.character import OfflineProvider, evaluate
+from personal_agent.evaluation.character import OfflineProvider, Trace, evaluate
 from personal_agent.evaluation.character_cases import CASES, RUBRIC
 from personal_agent.evaluation.runner import Budget, EvaluationLimit
 
@@ -58,3 +58,74 @@ def test_offline_cli_does_not_load_credentials_or_live_client(tmp_path, monkeypa
     summary = json.loads(capsys.readouterr().out)
     assert summary["live"] is False and summary["semantic_scores"] == "unreviewed"
     assert summary["usage"]["requests"] == 1
+
+
+async def test_incomplete_live_response_usage_is_counted_without_saving_body():
+    from personal_agent.core.models import ProviderDiagnostics, TextMessage, TokenUsage
+    from personal_agent.llm.base import ProviderError
+    from tests.fakes import FakeProvider
+
+    budget = Budget()
+    provider = Trace(
+        FakeProvider(
+            ProviderError(
+                "PRIVATE_UNFINISHED_BODY",
+                code="incomplete_response",
+                diagnostics=ProviderDiagnostics(
+                    status="incomplete",
+                    incomplete_reason="max_output_tokens",
+                    usage=TokenUsage(input_tokens=42, output_tokens=512, reasoning_tokens=500),
+                ),
+            )
+        ),
+        budget,
+    )
+    with pytest.raises(ProviderError):
+        await provider.generate(
+            [TextMessage(role="user", text="synthetic")], [], max_output_tokens=512
+        )
+    assert budget.report()["output_tokens"] == 512
+    assert budget.report()["reasoning_tokens"] == 500
+    assert provider.calls[0]["diagnostics"]["incomplete_reason"] == "max_output_tokens"
+    assert "PRIVATE_UNFINISHED_BODY" not in json.dumps(provider.calls)
+
+
+async def test_output_budget_is_part_of_paired_conditions():
+    reports = [
+        await evaluate(
+            "E2", OfflineProvider(), Budget(), case_ids={"smalltalk"}, output_tokens=limit
+        )
+        for limit in (512, 2048)
+    ]
+    assert reports[0]["results"][0]["condition_hash"] != reports[1]["results"][0]["condition_hash"]
+    assert reports[1]["parameters"]["output_tokens"] == 2048
+    assert reports[1]["usage"]["reserved_tokens"] - reports[0]["usage"]["reserved_tokens"] == 1536
+
+
+def test_real_state_smoke_requires_live_before_loading_configuration(monkeypatch):
+    from personal_agent.evaluation import character_state
+
+    def forbidden():
+        raise AssertionError("Must not load configuration without --live")
+
+    monkeypatch.setattr(character_state, "load_settings", forbidden)
+    monkeypatch.setattr("sys.argv", ["character_state"])
+    with pytest.raises(SystemExit) as stopped:
+        character_state.main()
+    assert stopped.value.code == 2
+
+
+async def test_trace_omits_reasoning_replay_without_mutating_actual_request():
+    from personal_agent.core.models import AssistantMessage, ModelResponse
+    from tests.fakes import FakeProvider
+
+    source = AssistantMessage(
+        text="visible",
+        provider_data={"openai": [{"type": "reasoning", "content": "PRIVATE_REASONING_TEXT"}]},
+    )
+    inner = FakeProvider(ModelResponse(text="visible answer"))
+    trace = Trace(inner, Budget())
+    await trace.generate([source], [], max_output_tokens=512)
+    assert "PRIVATE_REASONING_TEXT" not in json.dumps(trace.calls)
+    assert inner.requests[0][0] == source
+    assert source.provider_data["openai"][0]["content"] == "PRIVATE_REASONING_TEXT"

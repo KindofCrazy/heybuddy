@@ -1,5 +1,7 @@
 # HeyBuddy — P3 Passive Character Agent
 
+[P3 真实 API 效果检查](docs/p3-live-validation.md) 使用 deepseek-flash 完成 E0/E1/E2 对比和真实 Episode/State smoke，记录用量、实际表现、预算问题与局限；没有把 FakeProvider 或单次小样本当成角色质量证明。
+
 P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即可持续聊天；`/new`、`/sessions`、`/resume` 仅保留为开发者历史管理命令。每次请求加入本地带时区时间与上次互动间隔，跨午夜不清空上下文。旧流不合并或删除，仍可通过 Recall 查到。
 
 新增 [Episode 事后整理](docs/modules/organization.md)：`/episode status|organize|list|show <id>`。默认空闲 25 分钟或累计 8 条后有界整理，新输入抢占。Episode 保存版本、时间、摘要、引文与原始 Run 引用，不写长期 Memory。
