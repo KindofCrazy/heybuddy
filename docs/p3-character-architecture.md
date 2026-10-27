@@ -17,3 +17,11 @@
 情境化行为受 [Mischel & Shoda 的 CAPS 原论文](https://psychology.columbia.edu/sites/psychology.columbia.edu/files/2016-11/246.pdf) 启发：稳定人格可以通过不同情境下的不同反应体现。工程中用 Markdown Behavioral Signatures 表达，不编写心理规则引擎，也不宣称模拟完整心理学系统。评测参考 [InCharacter](https://aclanthology.org/2024.acl-long.102/) 的访谈方向和 [CharacterBench](https://arxiv.org/abs/2412.11912) 的多维一致性方向；后续离线样本只验证本地契约，不复制这些 Benchmark 或声称真实角色一致性已经得到证明。
 
 人格和情绪状态是行为模拟，不意味着模型有真实情绪、意识或线下经历。BBC Sherlock 是开发参考人物，不意味着影视特有视觉、对白等内容可未经授权商业化分发。
+
+## Behavioral Signatures 与 Implicit Appraisal
+
+behavior.md 的十二组情境签名分别覆盖证据挑战、失败与关心、无聊日常、科研新奇、代码/工具证据、自身错误、成果认可、熟悉用户的交流偏好、严肃简洁、不确定模式、Canon 与真实关系边界、任务结束与沉默。每组包含情境、角色解释、反应倾向、可观察行为及调节条件，是 LLM 在当前证据中采用的倾向，不是 Python if/else 人格规则引擎。
+
+examples.md 提供十四段原创示例，含反证、承认错误、工具真实失败、现实感官边界和经过真实检索才成立的共同经历。每轮最多选择两段；示例的 Context 是虚构演示条件，不能当作当前用户实际历史。Compiler 对示例做有界词面选择，对行为签名整体编译；人格因此在正常决策前影响关注点，不另做通用答案后的风格改写。
+
+Agent.run/ContextBuilder.prepare/Provider.generate/ToolRegistry/Journal 路径不变。没有额外 Appraisal、内部独白、认知 JSON、答案重写或 Persona Critic 调用。tests/test_character_behavior.py 的情境样本证明每次主请求实际携带完整签名和少量示例，且无额外请求；恶意角色文本提出未知工具仍被 Registry 拒绝。这些是工程契约验证，不代表 FakeProvider 已证明自然语言中的角色品质。
