@@ -1,5 +1,7 @@
 # 会话管理与 CLI
 
+P3 main._run_session() 在装配前加载角色包并设置 SessionManager.character，Agent 使用原 sessions.context()。同一编译器跨 Conversation 复用，角色启用时绑定 Host Run 标签、来源归属和 State 有效视图；默认 none 无角色/状态请求。foreground() 先抢占维护任务，再处理 `/character status|run|retry`，只返回安全调试状态，不注册模型入口或主动消息。细节见 [Character](character.md)、[State](character-state.md)；测试见 tests/test_character_context.py、tests/test_character_state.py。
+
 P2 `_run_session()` 在原 Provider/工具/Context 上装配 MemoryLearningService 与 MemoryCurator，传给唯一 OrganizationRuntime；ContextRetriever 同时绑定 MemoryFS 与受限只读 Preflight。输入依然先 foreground() 取消等待后台，再处理普通 Agent 或可信调试命令。`/memory learning status|run|retry|reconcile <job_id>|retry <job_id>`、`/memory curator status|run|retry` 不注册为模型写工具，不增加逐条审批流程；`/context status` 显示实际注入 Memory 数、预算和额外调用。debug 调用有共享额度及整轮超时，失败不打印候选/正文。P2 enabled 暂停旧 Automation 自动入口，旧计划仍能 /reflect 查看。tests/test_p2_cli.py 验证真实装配与只读命令，tests/test_p2_recovery.py 验证真正进程退出。
 
 ## P1 持续流

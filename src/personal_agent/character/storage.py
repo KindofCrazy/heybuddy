@@ -197,7 +197,10 @@ class CharacterStateRepository:
     ) -> None:
         episode = snapshot["episode"]
         with self.store._transaction() as db:
-            if self.episodes._episode(db, episode.id).revision != episode.revision:
+            if (
+                status in {"processing", "completed"}
+                and self.episodes._episode(db, episode.id).revision != episode.revision
+            ):
                 raise HistoryError("Character Episode source changed.")
             db.execute(
                 "INSERT INTO character_state_sources VALUES (?,?,?,?,?,?,?,?,?) "

@@ -357,3 +357,22 @@ async def test_old_evidence_in_a_new_revision_does_not_refresh_state(state):
     provider.mutate = cite_old
     assert not (await actor.run(force=True))["updated"]
     assert actor.repository.current() == before
+
+
+async def test_episode_revision_race_records_old_failure_and_keeps_new_source_eligible(state):
+    db, sessions, memory, clock, provider, actor = state
+    await episode(state)
+    candidate = actor.repository.candidate()
+
+    def revise(output, data):
+        with db._transaction() as connection:
+            connection.execute(
+                "UPDATE episodes SET revision=revision+1 WHERE id=?", (candidate["id"],)
+            )
+
+    provider.mutate = revise
+    assert (await actor.run(force=True))["outcome"] == "failed"
+    assert actor.repository.current() is None
+    newer = actor.repository.candidate()
+    assert newer["revision"] == candidate["revision"] + 1
+    assert actor.status()["counts"] == {"failed": 1}

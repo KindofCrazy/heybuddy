@@ -1,0 +1,153 @@
+{
+  "mode": "offline_fake_provider_only",
+  "semantic_quality_proven": false,
+  "real_api_requests": 0,
+  "latency_interpretation": "Fake local execution only; not model latency",
+  "results": [
+    {
+      "variant": "E0",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "cases": 13,
+      "turns": 32,
+      "contract_pass": true,
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 453172,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null
+      },
+      "state_update_requests": 0,
+      "semantic_scores": {
+        "Character Fidelity": {
+          "score": null,
+          "rubric": "0 通用/错身份；1 表面措辞；2 稳定独特价值与缺点；3 自然影响判断且不夸张"
+        },
+        "Situational Coherence": {
+          "score": null,
+          "rubric": "0 脱离情境；1 同一语气；2 随情境调节；3 调节自然且照顾用户目标"
+        },
+        "Behavioral Signature Consistency": {
+          "score": null,
+          "rubric": "0 相反；1 偶然符合；2 情境规律清晰；3 多轮规律与调节条件并存"
+        },
+        "State Continuity": {
+          "score": null,
+          "rubric": "0 乱跳/过期执着；1 只复述标签；2 合理延续与失效；3 状态影响轻微且不压过事实"
+        },
+        "Relationship Continuity": {
+          "score": null,
+          "rubric": "0 虚构共同经历；1 含混来源；2 正确使用偏好/纠正/证据；3 熟悉感自然且无越界"
+        },
+        "Task Reliability": {
+          "score": null,
+          "rubric": "0 错误或伪造；1 任务偏移；2 正确完成且尊重权限；3 证据/工具/限制表达清晰"
+        },
+        "Cost & Latency": {
+          "score": null,
+          "rubric": "记录模型/输出上限、主请求数、估算输入、usage、延迟；状态维护另计，不给词面分"
+        }
+      },
+      "estimated_input_tokens": 436276,
+      "total_fake_seconds": 0.0002305999951204285
+    },
+    {
+      "variant": "E1",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "cases": 13,
+      "turns": 32,
+      "contract_pass": true,
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 696627,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null
+      },
+      "state_update_requests": 0,
+      "semantic_scores": {
+        "Character Fidelity": {
+          "score": null,
+          "rubric": "0 通用/错身份；1 表面措辞；2 稳定独特价值与缺点；3 自然影响判断且不夸张"
+        },
+        "Situational Coherence": {
+          "score": null,
+          "rubric": "0 脱离情境；1 同一语气；2 随情境调节；3 调节自然且照顾用户目标"
+        },
+        "Behavioral Signature Consistency": {
+          "score": null,
+          "rubric": "0 相反；1 偶然符合；2 情境规律清晰；3 多轮规律与调节条件并存"
+        },
+        "State Continuity": {
+          "score": null,
+          "rubric": "0 乱跳/过期执着；1 只复述标签；2 合理延续与失效；3 状态影响轻微且不压过事实"
+        },
+        "Relationship Continuity": {
+          "score": null,
+          "rubric": "0 虚构共同经历；1 含混来源；2 正确使用偏好/纠正/证据；3 熟悉感自然且无越界"
+        },
+        "Task Reliability": {
+          "score": null,
+          "rubric": "0 错误或伪造；1 任务偏移；2 正确完成且尊重权限；3 证据/工具/限制表达清晰"
+        },
+        "Cost & Latency": {
+          "score": null,
+          "rubric": "记录模型/输出上限、主请求数、估算输入、usage、延迟；状态维护另计，不给词面分"
+        }
+      },
+      "estimated_input_tokens": 679731,
+      "total_fake_seconds": 0.00025570000070729293
+    },
+    {
+      "variant": "E2",
+      "corpus_hash": "de1542c6bc10f17f994ce0c59f950ed0e2cfad3bc34e4ccf0ebc28f88393d0b9",
+      "package_hash": "84703bd217b5ce6239b5e50a44abc2d282acc31ebc4bda13f4a81a0a30998d3d",
+      "cases": 13,
+      "turns": 32,
+      "contract_pass": true,
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 704803,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null
+      },
+      "state_update_requests": 0,
+      "semantic_scores": {
+        "Character Fidelity": {
+          "score": null,
+          "rubric": "0 通用/错身份；1 表面措辞；2 稳定独特价值与缺点；3 自然影响判断且不夸张"
+        },
+        "Situational Coherence": {
+          "score": null,
+          "rubric": "0 脱离情境；1 同一语气；2 随情境调节；3 调节自然且照顾用户目标"
+        },
+        "Behavioral Signature Consistency": {
+          "score": null,
+          "rubric": "0 相反；1 偶然符合；2 情境规律清晰；3 多轮规律与调节条件并存"
+        },
+        "State Continuity": {
+          "score": null,
+          "rubric": "0 乱跳/过期执着；1 只复述标签；2 合理延续与失效；3 状态影响轻微且不压过事实"
+        },
+        "Relationship Continuity": {
+          "score": null,
+          "rubric": "0 虚构共同经历；1 含混来源；2 正确使用偏好/纠正/证据；3 熟悉感自然且无越界"
+        },
+        "Task Reliability": {
+          "score": null,
+          "rubric": "0 错误或伪造；1 任务偏移；2 正确完成且尊重权限；3 证据/工具/限制表达清晰"
+        },
+        "Cost & Latency": {
+          "score": null,
+          "rubric": "记录模型/输出上限、主请求数、估算输入、usage、延迟；状态维护另计，不给词面分"
+        }
+      },
+      "estimated_input_tokens": 687907,
+      "total_fake_seconds": 0.000879300005180994
+    }
+  ],
+  "provider_usage_available": false
+}

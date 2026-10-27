@@ -1,5 +1,7 @@
 # 自动化行为评测
 
+P3 增加默认无需 Key/网络的 [Character Evaluation](character-evaluation.md)，固定 13 场景与 20 轮漂移，对比 E0/E1/E2。复用本模块 Budget，合成历史/检索相同；机械契约与七维人工语义评分分开，只有 --live 才创建真实客户端。
+
 ## P1 独立 smoke
 
 `evaluation/p1.py` 提供 `uv run python -m personal_agent.evaluation.p1 --live --max-requests 6 --max-tokens 196608`。没有 --live 时在加载配置前拒绝；--help 不读密钥。evaluate() 先建全新受隐私检查的合成目录，只生成固定四条带时间的聊天、普通 Markdown 和 SQLite；顺序调用 Episode/Thread、用合成 Working Summary 检查点模拟旧历史退出近期窗口，再运行真实 Agent/检索/Recall。无 Memory Apply、无自动 Memory 检查，不访问真实数据库。

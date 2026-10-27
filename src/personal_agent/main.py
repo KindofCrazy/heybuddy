@@ -395,7 +395,9 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy P2 Continuous CLI")
+    parser = argparse.ArgumentParser(
+        description="Personal Agent / HeyBuddy P3 Passive Character CLI"
+    )
     parser.parse_args()
     try:
         settings = load_settings()
