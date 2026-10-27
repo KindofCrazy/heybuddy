@@ -27,6 +27,12 @@ Core 只依赖 `core/character.py::CharacterContext` Protocol。SessionManager �
 
 AGENT_CHARACTER_ID 默认 none；sherlock_bbc 显式启用。main._run_session() 在装配 Agent 前读取包；配置或读取失败给出明确 CLI 错误。`/context status` 的 character 显示 ID、变体、包 hash、编译大小和额外 Appraisal 请求数（零），不显示私人上下文。tests/test_character_context.py 验证模式回退、磁盘保留、System 顺序、多轮工具身份、总预算、Lore 上限和会话隔离。
 
+## 关系引用与 P2
+
+ContextBuilder.for_request() 收集当前、可选检索和近期窗口中最多 32 个 Run ID，交给 CharacterContext.compile(source_run_ids=...)。宿主绑定 CharacterStateRepository.references()，重新 JOIN Agent 归属，返回 same_character/other_character/unattributed 标签，未找到/失败按未归属处理。标签是来源元数据，不是新事实；超预算可整段省略，缺失标签不能据此声称共同经历。只按角色 ID 判断参与，同角色包修订不抹除真实互动。
+
+P2 human.md 的明确偏好、纠正和主题知识仍通过原 Core/检索进入同一请求；语义 Markdown 是 Agent 级，不能证明某角色参与了某事件。固定 Host 文字要求跨角色/未标记历史用“记录显示”等中性表述；Canon 不成为真实关系。Learning 只增加抽取提示边界，写入目标验证仍禁止 persona.md/角色包。tests/test_character_relationship.py 通过真实 P2 Writer 验证偏好与纠正进入角色请求且身份未改，并验证实际 Run 归属标签；不声称完成多角色事实库迁移。
+
 ## 异常与验证
 
 `CharacterError.code` 区分 ID、缺失、链接、编码/读取和预算/章节错误。路径验证不是针对本机恶意并发文件替换的 OS 沙箱；允许标准安装器用 hardlink 安装只读包资源，不把它们误判为 Memory 私有文件。`tests/test_character_loader.py` 覆盖正常读取、修改检测、缺失/无效/超限和 Symlink/Junction 逃逸。最小示例：`CharacterLoader().load("sherlock_bbc")`；本模块不调用 Provider。

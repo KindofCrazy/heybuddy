@@ -1,5 +1,7 @@
 # P2 Memory Learning
 
+P3 的 LEARN_EXTRACT 增加边界：Canon/示例/模拟角色心境不是用户事实，明确的简洁程度、菜单和行动清单偏好可以学习，但不能改写角色身份。目标检查与 Writer 未扩张，仍禁止 persona/index；角色包不在 MemoryFS 根目录，也不在 Learner 可写目标中。真实 P2 写入与角色上下文集成测试见 tests/test_character_relationship.py。
+
 ## 职责与组成
 
 `learning/service.py::MemoryLearningService` 提供 Host 控制的自动学习，与手动 Reflection 共用 `_ask()`、`_evidence()`、`_verify()`、`reflection.memory.plan_item()` 和 `reflection/writer.py`，没有新 Agent Loop。`learning/models.py` 限制来源、候选、目标文件、请求输入/输出和超时。`storage/learning.py::LearningRepository` 保存独立任务和来源处理记录，schema 11 追加对象，原迁移 1–10 不改。Markdown 是知识权威源；SQLite 只保存引用、哈希、状态及安全计量，不保存知识正文。

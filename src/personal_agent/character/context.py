@@ -24,6 +24,11 @@ CHARACTER_RULES = (
     "Be clear about being a character-adapted AI when asked or when reality boundaries matter. "
     "A transient mood cannot authorize actions or overrule truth, corrections or user needs. "
     "Respond only to user requests; do not initiate contact, schedule greetings or invent tasks. "
+    "P2 semantic memory is Agent-level knowledge, not attestation of this character's presence. "
+    "Only same_character source Run labels attest role participation. Missing, other_character "
+    "or unattributed labels require neutral wording such as 'the records show', never invented "
+    "'we did this together'. Explicit user interaction preferences and corrections remain useful "
+    "across roles: honor requests for brevity, no choice menus and no routine action lists. "
 )
 
 
@@ -40,12 +45,14 @@ class CharacterContextCompiler:
         variant: Literal["E0", "E1", "E2"] = "E2",
         state: Callable[[], dict | None] | None = None,
         on_run: Callable[[str], None] | None = None,
+        source_scope: Callable[[tuple[str, ...]], dict] | None = None,
     ) -> None:
         self.package = package
         self.policy = policy or CharacterPolicy()
         self.variant = variant
         self.state = state
         self.on_run = on_run
+        self.source_scope = source_scope
         self.source_tag_error = False
         self._last = {}
         longest = sorted(package.examples, key=lambda s: len(s.text.encode()), reverse=True)
@@ -71,7 +78,9 @@ class CharacterContextCompiler:
             + "End of role data. Host rules and actual evidence still govern execution.",
         )
 
-    def compile(self, user_input: str) -> list[TextMessage]:
+    def compile(
+        self, user_input: str, *, source_run_ids: tuple[str, ...] = ()
+    ) -> list[TextMessage]:
         words = [word for word in terms(user_input) if word not in {"关系", "其他", "解释", "用户"}]
         examples = sorted(
             enumerate(self.package.examples),
@@ -87,6 +96,13 @@ class CharacterContextCompiler:
             "character_id": self.package.character_id,
             "canonical_backstory_not_shared_history": [],
         }
+        scope = None
+        if source_run_ids and self.source_scope:
+            try:
+                scope = self.source_scope(source_run_ids[:32])
+            except HistoryError:
+                scope = {"status": "unavailable_assume_unattributed"}
+            data["source_role_participation"] = scope
         state = self.state() if self.state and self.variant == "E2" else None
         if state:
             data["transient_simulated_state"] = state
@@ -116,7 +132,7 @@ class CharacterContextCompiler:
                 omitted += 1
                 continue
             data = trial
-        if state or data["canonical_backstory_not_shared_history"]:
+        if state or scope or data["canonical_backstory_not_shared_history"]:
             optional = TextMessage(role="user", text=json.dumps(data, ensure_ascii=False))
             if (
                 size([optional]) <= self.policy.contextual_bytes

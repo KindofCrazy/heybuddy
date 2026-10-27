@@ -121,7 +121,20 @@ class ContextBuilder:
                     "",
                 )
             )
-            character_messages = self.character.compile(query)
+            source_ids = tuple(
+                dict.fromkeys(
+                    [
+                        *([self._run_id] if self._run_id else []),
+                        *[item.turn.run_id for item in self._retrieval.items if item.turn],
+                        *(
+                            [turn.run_id for turn in reversed(self._page.turns)]
+                            if self._page
+                            else []
+                        ),
+                    ]
+                )
+            )[:32]
+            character_messages = self.character.compile(query, source_run_ids=source_ids)
             self._diagnostics["character"] = self.character.diagnostics()
         if self.memory is not None:
             compiled = self.memory.compile()

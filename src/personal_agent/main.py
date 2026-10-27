@@ -365,6 +365,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
                 settings.character_state_policy(),
             )
             sessions.character.on_run = character_repository.tag_run
+            sessions.character.source_scope = character_repository.references
             sessions.character.state = character_state.active
         organization = OrganizationRuntime(
             EpisodeOrganizer(

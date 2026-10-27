@@ -8,7 +8,9 @@ from personal_agent.core.models import TextMessage
 
 
 class CharacterContext(Protocol):
-    def compile(self, user_input: str) -> list[TextMessage]: ...
+    def compile(
+        self, user_input: str, *, source_run_ids: tuple[str, ...] = ()
+    ) -> list[TextMessage]: ...
     def diagnostics(self) -> dict: ...
 
 

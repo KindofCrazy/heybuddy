@@ -88,6 +88,30 @@ class CharacterStateRepository:
                 raise HistoryError("Character state is unavailable.")
             return dict(row)
 
+    def references(self, run_ids: tuple[str, ...]) -> dict:
+        """Bounded Host attribution only; no contents or cross-Agent labels are exposed."""
+        ids = tuple(dict.fromkeys(run_ids))[:32]
+        if not ids:
+            return {}
+        with self.store._transaction() as db:
+            rows = db.execute(
+                "SELECT r.id,t.character_id FROM runs r "
+                "JOIN conversations c ON c.id=r.conversation_id "
+                "LEFT JOIN character_runs t ON t.run_id=r.id AND t.agent_id=c.agent_id "
+                "WHERE c.agent_id=? AND r.id IN (" + ",".join("?" for _ in ids) + ")",
+                (self.agent_id, *ids),
+            ).fetchall()
+        return {
+            row["id"]: (
+                "unattributed"
+                if row["character_id"] is None
+                else "same_character"
+                if row["character_id"] == self.character_id
+                else "other_character"
+            )
+            for row in rows
+        }
+
     def current(self) -> CharacterState | None:
         row = self.row()
         if row["payload"] is None:
