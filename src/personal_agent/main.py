@@ -21,7 +21,7 @@ from personal_agent.memory import index
 from personal_agent.memory.store import MemoryFS
 from personal_agent.memory.tools import register_memory_tools
 from personal_agent.organization.episodes import EpisodeOrganizer
-from personal_agent.organization.models import OrganizationError
+from personal_agent.organization.models import OrganizationError, OrganizationPolicy
 from personal_agent.organization.provider import OrganizerModel
 from personal_agent.organization.runtime import OrganizationRuntime
 from personal_agent.organization.threads import ThreadOrganizer
@@ -278,7 +278,12 @@ async def run_cli(settings: Settings) -> None:
 
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
     thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
-    sessions.retriever = ContextRetriever(thread_repository, settings.retrieval_policy())
+    sessions.retriever = ContextRetriever(
+        thread_repository,
+        settings.retrieval_policy(),
+        memory=memory,
+        memory_policy=settings.memory_retrieval_policy(),
+    )
     tools = create_builtin_registry(settings.tool_timeout_seconds)
     register_memory_tools(tools, memory)
     register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
@@ -302,6 +307,17 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
             agent.provider,
             settings.context_budget(),
             settings.reflection_policy(),
+        )
+        retrieval_policy = settings.memory_retrieval_policy()
+        sessions.retriever.preflight_model = OrganizerModel(
+            agent.provider,
+            settings.context_budget(),
+            OrganizationPolicy(
+                input_tokens=retrieval_policy.input_tokens,
+                output_tokens=retrieval_policy.output_tokens,
+                timeout_seconds=retrieval_policy.timeout_seconds,
+                response_bytes=4096,
+            ),
         )
         automation = MemoryAutomation(reflection, settings.automation_policy())
         automation.repository.recover()

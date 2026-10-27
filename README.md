@@ -18,6 +18,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [P2 Memory Curator](docs/modules/curator.md) 低频整理小组 Markdown，去重、证据核对和有限拆分共用同一 Writer；不删除文件、不修改 persona，目标和索引成功前保留原文。`/memory curator status|run|retry` 用于调试。
 
+[P2 Adaptive Retrieval](docs/modules/retrieval.md) 沿 Memory Index 检索相关 Markdown，配合现有 Thread/Episode；短接话不增加模型调用，模糊历史问题可用一次有界只读 Preflight。`/context status` 查看预算和检索计量，`AGENT_MEMORY_RETRIEVAL_LLM_PREFLIGHT=false` 可关闭额外请求。
+
 P2 自动 Learning 默认启用，接管旧的回答后 Automation；首次启动只记录水位，不静默重学历史。普通路径在 Idle 按 Finalized Episode 数量/六小时等待触发；明确记住/决定/更正可后台优先处理。`/memory learning status|run|retry` 查看和调试，`AGENT_MEMORY_LEARNING_ENABLED=false` 关闭 P2 并恢复原 Automation 配置。含不确定发布的任务先用 `reconcile <job_id>` 核对，不盲目重写。
 
 持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；普通聊天默认在答案后自动判断长期价值并生成待审提案，批准后才写入；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。

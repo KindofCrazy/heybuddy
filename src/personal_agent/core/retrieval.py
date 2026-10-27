@@ -46,6 +46,8 @@ class RetrievalItem(Model):
 class RetrievalResult(Model):
     path: str = "fast"
     items: list[RetrievalItem] = Field(default_factory=list, max_length=8)
+    candidates: list[dict[str, JsonValue]] = Field(default_factory=list, max_length=16)
+    metrics: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class ContextRetrieval(Protocol):

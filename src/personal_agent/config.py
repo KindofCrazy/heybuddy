@@ -11,6 +11,7 @@ from personal_agent.core.budget import ContextBudget
 from personal_agent.core.retrieval import RetrievalPolicy
 from personal_agent.learning.curator import CuratorPolicy
 from personal_agent.learning.models import LearningPolicy
+from personal_agent.memory.retrieval import MemoryRetrievalPolicy
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.reflection.models import ReflectionPolicy
 
@@ -41,6 +42,11 @@ class Settings(ContextBudget):
     memory_curator_interval_seconds: float = Field(default=86400, gt=0, le=2592000)
     memory_curator_update_threshold: int = Field(default=12, ge=1, le=1000)
     memory_curator_long_file_bytes: int = Field(default=12000, ge=1024, le=32768)
+    memory_retrieval_enabled: bool = True
+    memory_retrieval_llm_preflight: bool = True
+    memory_retrieval_input_tokens: int = Field(default=8192, ge=4096, le=16384)
+    memory_retrieval_output_tokens: int = Field(default=2048, ge=256, le=4096)
+    memory_retrieval_timeout_seconds: float = Field(default=10, gt=0, le=30)
     organization_enabled: bool = True
     organization_idle_seconds: float = Field(default=1500, gt=0, le=86400)
     organization_run_threshold: int = Field(default=8, ge=1, le=64)
@@ -125,6 +131,15 @@ class Settings(ContextBudget):
             long_file_bytes=self.memory_curator_long_file_bytes,
         )
 
+    def memory_retrieval_policy(self) -> MemoryRetrievalPolicy:
+        return MemoryRetrievalPolicy(
+            enabled=self.memory_retrieval_enabled,
+            llm_preflight=self.memory_retrieval_llm_preflight,
+            input_tokens=self.memory_retrieval_input_tokens,
+            output_tokens=self.memory_retrieval_output_tokens,
+            timeout_seconds=self.memory_retrieval_timeout_seconds,
+        )
+
     def retrieval_policy(self) -> RetrievalPolicy:
         return RetrievalPolicy(
             **{name: getattr(self, "retrieval_" + name) for name in RetrievalPolicy.model_fields}
@@ -187,7 +202,9 @@ ENV_FIELDS = {
     **{
         "AGENT_" + name.upper(): name
         for name in Settings.model_fields
-        if name.startswith(("memory_learning_", "memory_priority_", "memory_curator_"))
+        if name.startswith(
+            ("memory_learning_", "memory_priority_", "memory_curator_", "memory_retrieval_")
+        )
     },
     **{
         "AGENT_" + name.upper(): name

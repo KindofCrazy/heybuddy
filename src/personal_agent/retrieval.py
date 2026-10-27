@@ -3,9 +3,19 @@
 import re
 import sqlite3
 from datetime import datetime
+from time import monotonic
 
 from personal_agent.core.retrieval import RetrievalItem, RetrievalPolicy, RetrievalResult
+from personal_agent.memory.retrieval import (
+    DEPENDENCY,
+    PREFLIGHT,
+    MemoryLookup,
+    MemoryRetrievalPolicy,
+    RetrievalChoice,
+)
+from personal_agent.memory.store import MemoryFS
 from personal_agent.organization.models import Episode, Thread
+from personal_agent.organization.provider import OrganizerModel
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.recall import query_budget
 from personal_agent.storage.threads import ThreadRepository
@@ -33,10 +43,22 @@ def keywords(text: str) -> list[str]:
 
 
 class ContextRetriever:
-    def __init__(self, repository: ThreadRepository, policy: RetrievalPolicy | None = None) -> None:
+    def __init__(
+        self,
+        repository: ThreadRepository,
+        policy: RetrievalPolicy | None = None,
+        *,
+        memory: MemoryFS | None = None,
+        memory_policy: MemoryRetrievalPolicy | None = None,
+        preflight_model: OrganizerModel | None = None,
+    ) -> None:
         self.repository = repository
         self.policy = policy or RetrievalPolicy()
         self.episodes: EpisodeRepository = repository.episodes
+        if memory is not None and memory.root.name != repository.agent_id:
+            raise ValueError("Agent Memory mismatch")
+        self.lookup = MemoryLookup(memory, memory_policy) if memory else None
+        self.preflight_model = preflight_model
 
     def _candidates(
         self, db: sqlite3.Connection, thread: Thread | None, terms: list[str]
@@ -88,10 +110,17 @@ class ContextRetriever:
 
         return sorted(candidates, key=score, reverse=True)[: self.policy.episode_limit]
 
-    def retrieve(self, user_input: str, exclude_run_ids: frozenset[str]) -> RetrievalResult:
-        if not HISTORY.search(user_input[:1024]):
+    def _historical(
+        self,
+        user_input: str,
+        exclude_run_ids: frozenset[str],
+        *,
+        thread_id: str | None = None,
+        episode_ids: list[str] | None = None,
+    ) -> RetrievalResult:
+        if not thread_id and episode_ids is None and not HISTORY.search(user_input[:1024]):
             return RetrievalResult()
-        terms = keywords(user_input)
+        terms = keywords(user_input) or (["history"] if thread_id or episode_ids else [])
         if not terms:
             return RetrievalResult(path="recall_fallback")
         with self.repository.store._transaction() as db, query_budget(db):
@@ -105,6 +134,13 @@ class ContextRetriever:
                 "ORDER BY last_active_at DESC,id LIMIT 1",
                 (self.repository.agent_id, *terms),
             ).fetchone()
+            if thread_id:
+                row = db.execute(
+                    "SELECT id FROM topic_threads WHERE id=? AND agent_id=?",
+                    (thread_id, self.repository.agent_id),
+                ).fetchone()
+            elif episode_ids is not None:
+                row = None
             items = []
             thread = self.repository._thread(db, row[0]) if row else None
             if thread:
@@ -122,7 +158,11 @@ class ContextRetriever:
                         }
                     )
                 )
-            episodes = self._candidates(db, thread, terms)
+            episodes = (
+                [self.episodes._episode(db, eid) for eid in episode_ids]
+                if episode_ids is not None
+                else self._candidates(db, thread, terms)
+            )
             if thread:
                 items[0].reference["newer_unlinked_evidence"] = any(
                     e.thread_id is None and e.ended_at > thread.last_active_at for e in episodes
@@ -198,3 +238,159 @@ class ContextRetriever:
                 path="thread" if thread else ("episode" if episodes else "recall_fallback"),
                 items=[*metadata, *raw],
             )
+
+    def retrieve(self, user_input: str, exclude_run_ids: frozenset[str]) -> RetrievalResult:
+        started = monotonic()
+        result = self._historical(user_input, exclude_run_ids)
+        if not self.lookup or not self.lookup.policy.enabled:
+            return result
+        if not DEPENDENCY.search(user_input[:1024]) and not result.items:
+            result.metrics = {
+                "mode": "fast",
+                "memory_files": 0,
+                "extra_requests": 0,
+                "elapsed_seconds": monotonic() - started,
+            }
+            return result
+        catalog = self.lookup.catalogue()
+        topic = " ".join(
+            str(item.reference.get("title", ""))
+            for item in result.items
+            if item.reference.get("kind") == "thread"
+        )
+        ranked = self.lookup.rank(catalog, user_input + " " + topic)
+        memories = self.lookup.read(
+            [r["path"] for _, r in ranked], catalog, user_input + " " + topic
+        )
+        reliable = bool(
+            ranked and (len(ranked) == 1 or (ranked[0][0] >= 3 and ranked[0][0] > ranked[1][0]))
+        )
+        result.items = self._merge(memories, result.items)
+        if memories:
+            result.path = "lexical"
+        elif result.path == "fast":
+            result.path = "recall_fallback"
+        candidates = []
+        if not reliable and result.path in {"recall_fallback", "lexical"}:
+            candidates.extend(
+                [r for _, r in ranked]
+                + [r for r in catalog if r["path"] not in {row["path"] for _, row in ranked}]
+            )
+            candidates = candidates[: max(1, self.lookup.policy.candidates - 4)]
+            for thread in self.repository.list(limit=2):
+                candidates.append(
+                    {
+                        "id": "thread:" + thread.id,
+                        "kind": "thread",
+                        "title": thread.title,
+                        "source_id": thread.id,
+                    }
+                )
+            with self.repository.store._transaction() as db:
+                rows = db.execute(
+                    "SELECT e.id,json_extract(e.payload,'$.title') AS title "
+                    "FROM episodes e JOIN conversations c ON c.id=e.stream_id "
+                    "WHERE c.agent_id=? ORDER BY e.ended_at DESC,e.id LIMIT 2",
+                    (self.repository.agent_id,),
+                ).fetchall()
+            candidates.extend(
+                {
+                    "id": "episode:" + r["id"],
+                    "kind": "episode",
+                    "source_id": r["id"],
+                    "title": r["title"],
+                }
+                for r in rows
+            )
+        result.candidates = candidates[: self.lookup.policy.candidates]
+        result.metrics = {
+            "mode": "lexical" if result.items else "recall_fallback",
+            "memory_files": len(memories),
+            "extra_requests": 0,
+            "elapsed_seconds": monotonic() - started,
+        }
+        return result
+
+    def _merge(self, memories, history):
+        content = "\n".join(str(i.reference.get("content", "")) for i in memories)
+        for item in history:
+            state = item.reference.get("current_state")
+            if state and str(state) in content:
+                item.reference["current_state"] = None
+                item.reference["state_covered_by_memory"] = True
+        return [*memories, *history][:8]
+
+    async def preflight(
+        self, user_input: str, exclude_run_ids: frozenset[str], result: RetrievalResult
+    ) -> RetrievalResult:
+        started = monotonic()
+        try:
+            return await self._preflight(user_input, exclude_run_ids, result)
+        except Exception:
+            requests = (
+                self.preflight_model.metrics.get("requests", 0) if self.preflight_model else 0
+            )
+            return RetrievalResult(
+                path="unavailable",
+                metrics={
+                    "mode": "recall_fallback",
+                    "extra_requests": requests,
+                    "memory_files": 0,
+                    "error_code": "retrieval_unavailable",
+                    "elapsed_seconds": float(result.metrics.get("elapsed_seconds", 0))
+                    + monotonic()
+                    - started,
+                },
+            )
+
+    async def _preflight(
+        self, user_input: str, exclude_run_ids: frozenset[str], result: RetrievalResult
+    ) -> RetrievalResult:
+        if (
+            not self.lookup
+            or not self.lookup.policy.llm_preflight
+            or not self.preflight_model
+            or not result.candidates
+        ):
+            return result
+        started = monotonic()
+        choice = await self.preflight_model.ask(
+            RetrievalChoice,
+            PREFLIGHT,
+            {"question": user_input[:2048], "candidates": result.candidates},
+        )
+        known = {row["id"]: row for row in result.candidates}
+        if len(set(choice.ids)) != len(choice.ids) or any(cid not in known for cid in choice.ids):
+            raise ValueError("Unknown retrieval choice")
+        chosen = [known[cid] for cid in choice.ids]
+        # Re-read fresh indexed catalogue and Agent-scoped history after model await.
+        catalog = self.lookup.catalogue()
+        memories = self.lookup.read(
+            [row["path"] for row in chosen if row["kind"] == "memory"], catalog, user_input
+        )
+        threads = [r["source_id"] for r in chosen if r["kind"] == "thread"]
+        episodes = [r["source_id"] for r in chosen if r["kind"] == "episode"]
+        history = (
+            self._historical(
+                user_input,
+                exclude_run_ids,
+                thread_id=threads[0] if threads else None,
+                episode_ids=episodes if episodes else None,
+            ).items
+            if threads or episodes
+            else []
+        )
+        result.items = self._merge(memories, history)
+        result.path = "llm_preflight" if result.items else "recall_fallback"
+        result.metrics.update(
+            {
+                "mode": result.path,
+                "memory_files": len(memories),
+                "extra_requests": 1,
+                "preflight_usage": self.preflight_model.metrics,
+                "elapsed_seconds": float(result.metrics.get("elapsed_seconds", 0))
+                + monotonic()
+                - started,
+            }
+        )
+        return result

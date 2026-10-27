@@ -2,7 +2,7 @@ import asyncio
 import json
 from collections.abc import Callable
 
-from personal_agent.core.budget import ContextBudget, ContextError, estimate_request
+from personal_agent.core.budget import ContextBudget, ContextError, estimate_request, estimate_value
 from personal_agent.core.compaction import compact_step
 from personal_agent.core.history import ConversationHistory, HistoryError, InMemoryHistory
 from personal_agent.core.memory import CoreMemory
@@ -126,7 +126,7 @@ class ContextBuilder:
             injected.append(TextMessage(role="user", text=json.dumps(self.temporal())))
         return [messages[0], *injected, *self._selected_history, *messages[1:]]
 
-    def _retrieve(self) -> None:
+    async def _retrieve(self) -> None:
         if self._retrieval_loaded or self.retriever is None:
             return
         self._retrieval_loaded = True
@@ -135,11 +135,19 @@ class ContextBuilder:
                 self._pending[0].text,
                 frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
             )
+            preflight = getattr(self.retriever, "preflight", None)
+            if preflight is not None:
+                self._retrieval = await preflight(
+                    self._pending[0].text,
+                    frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
+                    self._retrieval,
+                )
         except Exception:
             # Retrieval is optional. Journal/Core/budget errors on their normal
             # paths are still fatal; failure here leaves Base + recent context.
             self._retrieval = RetrievalResult(path="unavailable")
         self._diagnostics["retrieval_path"] = self._retrieval.path
+        self._diagnostics["retrieval"] = self._retrieval.metrics.copy()
 
     def _select_history(self, messages: list[Message], tools: list[ToolDefinition]) -> None:
         self._selected_history = []
@@ -154,7 +162,17 @@ class ContextBuilder:
             for message in [*self._page.messages, *self._pending]
             for call in getattr(message, "tool_calls", [])
         }
+        memory_seen = set()
+        memory_files = set()
+        memory_tokens = 0
+        budget_omitted = False
         for item in self._retrieval.items:
+            semantic = item.reference.get("kind") == "semantic_memory"
+            memory_key = item.reference.get("section_hash")
+            if semantic and (
+                memory_key in memory_seen or item.reference.get("path") in memory_files
+            ):
+                continue
             if item.turn:
                 calls = {
                     call.id
@@ -167,11 +185,23 @@ class ContextBuilder:
             # Same estimator includes marker, internal messages, Provider JSON and
             # tool framing. Whole Runs fit or are omitted, never truncated.
             if estimate_request(trial, []) - estimate_request([], []) > allowance:
+                budget_omitted = True
                 continue
             self._selected_history = trial
             if item.turn:
                 recent.add(item.turn.run_id)
                 call_ids.update(calls)
+            if semantic:
+                memory_seen.add(memory_key)
+                memory_files.add(item.reference.get("path"))
+                memory_tokens += estimate_value(item.reference)
+        self._diagnostics.setdefault("retrieval", {}).update(
+            {
+                "injected_memory_files": len(memory_files),
+                "memory_tokens_estimated": memory_tokens,
+                "budget_omitted": budget_omitted,
+            }
+        )
         self._diagnostics["retrieved_items"] = sum(
             isinstance(m, TextMessage) and m.text.startswith('{"kind": "working_context_reference"')
             for m in self._selected_history
@@ -196,7 +226,7 @@ class ContextBuilder:
     ) -> list[Message]:
         if self._page is None:
             self._load()
-        self._retrieve()
+        await self._retrieve()
         steps = 0
         while True:
             messages[:] = [
