@@ -54,3 +54,5 @@ run_cli() 用 Settings.context_budget() 构造 SessionManager；context() 将同
 - `/reflect reconcile <plan_id> <item_id>`：只读核对 applying/partial/uncertain 项，不重写文件；确认 hash 与索引后记账。
 
 未完整提供审批参数只显示用法。ReflectionError/Memory 错误只显示安全代码；HistoryError 明确提示文件可能已完成、不自动重试。Provider await 取消时按原 CLI 退出语义处理，未保存的生成结果不会推进状态；已存计划跨重启可恢复。真实执行路径及离线子进程验证见[Reflection](reflection.md)和 tests/test_reflection.py。
+
+V0.7.1 的 Reflection 模型失败会附加阶段及安全 ProviderDiagnostics（状态、固定停止原因、计数），不输出未完成正文或推理。看到 max_output_tokens 时应检查 API 总输出额度；可见 JSON 则独立受 AGENT_REFLECTION_RESPONSE_MAX_BYTES 约束，不自动加额度重试。

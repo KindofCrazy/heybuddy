@@ -12,7 +12,7 @@ from personal_agent.core.compaction import SECRET, projection, redact
 from personal_agent.core.history import HistoryTurn
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import Model, TextMessage
-from personal_agent.llm.base import Provider
+from personal_agent.llm.base import Provider, ProviderError
 from personal_agent.memory import index
 from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest
 from personal_agent.memory.store import MemoryFS
@@ -48,7 +48,10 @@ EXTRACT = BASE + (
     "Cite conversation_id, run_id, sequence and a literal quote from supplied messages. "
     "Confirmed facts require explicit user evidence; assistant speculation is not confirmation. "
     "Process in chronological order: later explicit user corrections supersede earlier decisions. "
-    "Merge related evidence, explain uncertainty and why the information is worth keeping."
+    "Merge related evidence, explain uncertainty and why the information is worth keeping. "
+    "Do not turn a one-off hypothetical idea or fictional example into a permanent prohibition. "
+    "Omit ephemeral disclaimers unless they correct an actually asserted durable fact. "
+    "Keep evidence quotes concise; include only enough to verify the claim."
 )
 SELECT = BASE + (
     "Select at most six existing relevant file paths from the complete bounded catalogue. "
@@ -67,7 +70,9 @@ CONSOLIDATE = BASE + (
     "For non-write actions path/old_text/new_text must be empty. Explain reasons and relationships "
     "among proposals. At most one write per target: merge related evidence during extraction, "
     "or mark dependent duplicates no_op/review with relations. "
-    "A candidate is not an approved write."
+    "A candidate is not an approved write. Reject one-off hypothetical/example disclaimers "
+    "when existing memory contains no corresponding false fact; generic caution is not a new "
+    "user preference. Favor a small number of useful changes and concise reasons."
 )
 
 
@@ -108,22 +113,29 @@ class ReflectionService:
         ]
 
     async def _ask[Result: Model](self, kind: type[Result], prompt: str, data: dict) -> Result:
+        stage = {Extraction: "extraction", Selection: "selection", Consolidation: "consolidation"}[
+            kind
+        ]
         if self.input_limit < 2048:
-            raise ReflectionError("reflection_budget")
+            raise ReflectionError("reflection_budget", stage=stage)
         request = self._request(kind, prompt, data)
         if estimate_request(request, []) > self.input_limit:
-            raise ReflectionError("reflection_input_budget")
+            raise ReflectionError("reflection_input_budget", stage=stage)
         try:
             async with asyncio.timeout(self.policy.timeout_seconds):
                 response = await self.provider.generate(
                     request, [], max_output_tokens=self.policy.output_tokens
                 )
+        except ProviderError as error:
+            raise ReflectionError(
+                "reflection_provider_error", stage=stage, diagnostics=error.diagnostics
+            ) from None
         except Exception:
-            raise ReflectionError("reflection_provider_error") from None
+            raise ReflectionError("reflection_provider_error", stage=stage) from None
         if (
             response.tool_calls
             or not response.text.strip()
-            or len(response.text.encode()) > self.policy.output_tokens
+            or len(response.text.encode()) > self.policy.response_max_bytes
             or SECRET.search(response.text)
             or (
                 response.usage
@@ -133,11 +145,11 @@ class ReflectionService:
                 )
             )
         ):
-            raise ReflectionError("invalid_reflection_output")
+            raise ReflectionError("invalid_reflection_output", stage=stage)
         try:
             return kind.model_validate_json(response.text)
         except (ValidationError, ValueError):
-            raise ReflectionError("invalid_reflection_output") from None
+            raise ReflectionError("invalid_reflection_output", stage=stage) from None
 
     def _evidence(self, conversation_id: str, turns: list[HistoryTurn]) -> list[dict]:
         data = []

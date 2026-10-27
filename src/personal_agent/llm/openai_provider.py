@@ -10,6 +10,7 @@ from personal_agent.core.models import (
     AssistantMessage,
     Message,
     ModelResponse,
+    ProviderDiagnostics,
     TextMessage,
     TokenUsage,
     ToolCall,
@@ -99,8 +100,44 @@ class OpenAIProvider:
             # SDK messages can include request bodies; never pass them to users/logs.
             raise ProviderError("OpenAI request failed.") from None
 
+        try:
+            usage = (
+                TokenUsage(
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                    reasoning_tokens=getattr(
+                        getattr(response.usage, "output_tokens_details", None),
+                        "reasoning_tokens",
+                        None,
+                    ),
+                )
+                if response.usage
+                else None
+            )
+        except (AttributeError, TypeError, ValidationError):
+            raise ProviderError(
+                "OpenAI returned malformed usage.", code="malformed_response"
+            ) from None
         if response.status != "completed":
-            raise ProviderError("OpenAI response did not complete.", code="incomplete_response")
+            status = (
+                response.status
+                if isinstance(response.status, str)
+                and response.status in {"incomplete", "failed", "in_progress", "cancelled"}
+                else "unknown"
+            )
+            reason = getattr(getattr(response, "incomplete_details", None), "reason", None)
+            safe_reason = (
+                reason
+                if isinstance(reason, str) and reason in {"max_output_tokens", "content_filter"}
+                else ("unknown" if reason is not None else None)
+            )
+            raise ProviderError(
+                "OpenAI response did not complete.",
+                code="incomplete_response",
+                diagnostics=ProviderDiagnostics(
+                    status=status, incomplete_reason=safe_reason, usage=usage
+                ),
+            )
         try:
             calls = []
             refusals = []
@@ -116,12 +153,7 @@ class OpenAIProvider:
                         "OpenAI returned an unsupported output item.", code="unsupported_output"
                     )
             return ModelResponse(
-                usage=TokenUsage(
-                    input_tokens=response.usage.input_tokens,
-                    output_tokens=response.usage.output_tokens,
-                )
-                if response.usage
-                else None,
+                usage=usage,
                 text=response.output_text or "\n".join(refusals),
                 tool_calls=calls,
                 provider_data={

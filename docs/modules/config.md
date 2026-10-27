@@ -69,8 +69,13 @@ Settings.reflection_policy() 只将以下参数传入 ReflectionPolicy，与普�
 | 环境变量 | 默认 | 边界 |
 | --- | --- | --- |
 | AGENT_REFLECTION_INPUT_TOKENS | 16384 | 2048～262144；实际还减去模型输出和安全余量 |
-| AGENT_REFLECTION_OUTPUT_TOKENS | 4096 | 256～16384；同时作为本地返回 JSON UTF-8 字节上限 |
+| AGENT_REFLECTION_OUTPUT_TOKENS | 16384 | 256～65536；API 总输出 tokens，含推理及可见正文 |
+| AGENT_REFLECTION_RESPONSE_MAX_BYTES | 32768 | 1024～131072；可见 JSON UTF-8 字节上限，与 tokens 独立 |
 | AGENT_REFLECTION_TIMEOUT_SECONDS | 60 | 每阶段独立有限正超时 |
 | AGENT_REFLECTION_PAGE_RUNS | 8 | 1～32 个完整 completed Run，每次手动处理一批 |
 
 Reflection 输入不足时只在触发 /reflect 时明确失败，不因未使用的 Reflection 预算阻止普通聊天或只读 review/status。每阶段包含 Schema/JSON 封装后重新检查；无重试或静默截断。候选/事实判断必须经用户审阅，见[Reflection](reflection.md)。
+
+V0.7.1 修正旧版将 output_tokens 同时当 JSON 字节上限的混用。输入上限仍减去完整 API 总输出额度与 safety_margin，不能为增加输出忽略模型窗口；可见 JSON 另外限长，再进入 Pydantic、来源和文件校验。默认额度提高是为推理预留空间，不能保证任意响应必然完成，也不会无限增加额度或重试。
+
+目前 [DeepSeek 模型元数据](https://api-docs.deepseek.com/api/list-models/)声明 deepseek-flash 总窗口为 1048576 tokens；本地可显式配置 AGENT_CONTEXT_WINDOW=1048576。未知模型仍必须由用户指定；最大窗口不会自动全量加载历史或 Deferred Memory。已有配置值优先于新默认值。

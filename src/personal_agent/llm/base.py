@@ -1,17 +1,23 @@
 from typing import Protocol
 
-from personal_agent.core.models import Message, ModelResponse, ToolDefinition
+from personal_agent.core.models import Message, ModelResponse, ProviderDiagnostics, ToolDefinition
 
 
 class ProviderError(Exception):
     """A sanitized model request or response failure."""
 
     def __init__(
-        self, message: str, *, code: str = "request_failed", status_code: int | None = None
+        self,
+        message: str,
+        *,
+        code: str = "request_failed",
+        status_code: int | None = None,
+        diagnostics: ProviderDiagnostics | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
         self.status_code = status_code
+        self.diagnostics = diagnostics
 
 
 class ProviderTimeout(ProviderError):

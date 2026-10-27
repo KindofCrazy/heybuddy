@@ -2,7 +2,7 @@
 
 ## 目标与当前范围
 
-本项目从零实现个人 Agent，当前 V0.7 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction 和手动审批的 Reflection。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
+本项目从零实现个人 Agent，当前 V0.7.1 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction 和手动审批的 Reflection。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
 
 ## 架构
 
@@ -74,6 +74,7 @@
 - 先读相关 Core/Deferred 再生成结构化计划，展示具体理由、目标、局部 Diff、expected_hash 和来源；未批准前不改 Markdown。审批只能来自可信 CLI/Host、绑定计划与条目，不注册为模型可调用工具。
 - schema 4 用 reflection_progress/reflection_plans 保存独立进度与有界审阅状态；空结果、拒绝/跳过也保存处理结果。未决计划不重复提取；所有条目终结时关闭与进度同事务提交。
 - Apply 复用 MemoryFS/index 的路径、Agent、隐私、容量、hash、短锁及原子发布；一项成功不因后一项失败而撤销。approved/applying 先落库，文件成功而记账失败保留不明确状态；禁止盲目重写，显式只读 reconcile 核对内容/索引。部分成功的 skip/reject 不等于回滚。
+- Reflection API 总输出 tokens（包含推理）与可见 JSON UTF-8 字节上限分别配置、分别校验。未完成响应只传递固定枚举状态/原因与数值用量，保留阶段；不打印未完成正文/推理，不自动加额度或重试。
 - 不新增长期 Memory 权威副本、Git/Snapshot、后台反思、多 Agent、定时学习或任务调度；日志不打印私人候选/引文，review 是用户显式查看私人计划。
 
 ## 核心模块说明文档

@@ -130,7 +130,7 @@ async def test_preference_evidence_approval_and_future_context(state):
     assert reflection.status(sessions.current.id)["through_sequence"] == 0
     assert [request[0].text for request in provider.requests] == [EXTRACT, SELECT, CONSOLIDATE]
     assert all(tools == [] for tools in provider.tools)
-    assert all(limit == 4096 for limit in provider.output_limits)
+    assert all(limit == 16384 for limit in provider.output_limits)
     assert all(estimate_request(request, []) <= 16384 for request in provider.requests)
     assert plan.items[0].candidate.evidence[0].run_id == run
     assert "before span" in render(plan) and FACT in render(plan)
@@ -754,3 +754,60 @@ async def test_metadata_edit_partial_cannot_be_reconciled_while_parent_is_stale(
         raw.replace("HeyBuddy 架构决策", "HeyBuddy 当前架构和开放问题"), encoding="utf-8"
     )
     assert reflection.reconcile(sessions.current.id, plan.id, 1).closed
+
+
+async def test_visible_json_byte_budget_is_independent_of_reasoning_output_budget(state):
+    from personal_agent.reflection.models import Extraction
+
+    db, sessions, memory, run = state
+    fact = candidate(sessions.current.id, run, content="简洁" * 500)
+    fact["reason"] = "依据" * 300
+    text = json.dumps({"candidates": [fact]}, ensure_ascii=False)
+    assert 4096 < len(text.encode()) < 32768
+    response = ModelResponse(
+        text=text, usage=TokenUsage(input_tokens=100, output_tokens=3000, reasoning_tokens=500)
+    )
+    provider = FakeProvider(response)
+    reflection = service(db, memory, provider, output_tokens=4096)
+    extracted = await reflection._ask(Extraction, EXTRACT, {"history": []})
+    assert extracted.candidates[0].content == fact["content"]
+    assert provider.output_limits == [4096]
+    bounded = service(
+        db, memory, FakeProvider(response), output_tokens=16384, response_max_bytes=1024
+    )
+    with pytest.raises(ReflectionError, match="invalid_reflection_output"):
+        await bounded._ask(Extraction, EXTRACT, {"history": []})
+
+
+async def test_consolidation_error_reaches_cli_with_safe_stage_reason_and_usage(state):
+    from personal_agent.core.models import ProviderDiagnostics
+
+    db, sessions, memory, run = state
+    provider = scripted([candidate(sessions.current.id, run)], [decision()])
+    provider.responses[-1] = ProviderError(
+        "private incomplete body",
+        code="incomplete_response",
+        diagnostics=ProviderDiagnostics(
+            status="incomplete",
+            incomplete_reason="max_output_tokens",
+            usage=TokenUsage(input_tokens=2000, output_tokens=4096, reasoning_tokens=3800),
+        ),
+    )
+    reflection = service(db, memory, provider)
+    agent = Agent(FakeProvider(), ToolRegistry(), context=sessions.context())
+    inputs = iter(["/reflect", "quit"])
+    output = []
+    await chat(
+        agent,
+        read=lambda _: next(inputs),
+        write=output.append,
+        sessions=sessions,
+        reflection=reflection,
+    )
+    combined = "\n".join(output)
+    assert "consolidation" in combined and "max_output_tokens" in combined
+    assert "3800" in combined and "private incomplete body" not in combined
+    assert len(provider.requests) == 3
+    assert reflection.status(sessions.current.id)["through_sequence"] == 0
+    assert reflection.review(sessions.current.id) is None
+    assert memory.read().blocks["human.md"] == "# Human\n"

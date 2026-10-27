@@ -639,6 +639,7 @@ async def test_sdk_compaction_has_no_tools_and_recent_wire_pairs_survive(state):
     assert agent.context.diagnostics()["provider_reported_tokens"] == {
         "input_tokens": 100,
         "output_tokens": 10,
+        "reasoning_tokens": 0,
     }
 
 

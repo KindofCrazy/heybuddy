@@ -1,4 +1,4 @@
-# HeyBuddy — V0.7 Reflection & Memory Consolidation
+# HeyBuddy — V0.7.1 Reflection & Memory Consolidation
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供显式提取、审阅批准后写入的长期记忆学习流程。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
@@ -158,7 +158,7 @@ review 会展示候选价值、来源 Conversation/Run/sequence/引文、目标�
 
 Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路径/隐私检查和索引维护。编辑器改动会产生冲突；多项写入保留已成功项，不做整体回滚。partial/applying 表示文件可能已落盘，不能盲目重试：先 review，必要时显式 `/memory check`、`/memory repair`，再 reconcile 核对。reconcile 不写文件，仅核对目标 hash 和索引；skip/reject 不撤销已有副作用。
 
-默认每次最多 8 个完整 Run、8 个候选、三次无工具 Provider 请求，输入/输出/超时独立配置为 16384/4096/60 秒；见 `.env.example` 的 AGENT_REFLECTION_* 和[配置说明](docs/modules/config.md)。较大目录/正文或单 Run 无法容纳时明确停止。默认只反思当前会话；可 /resume 其他会话分别处理，同一 Agent 最终共享 Markdown 理解。模型事实判断与语义去重仍有误差，审批不可省略。设计与完整调用路径见 [Reflection 模块](docs/modules/reflection.md)。
+默认每次最多 8 个完整 Run、8 个候选、三次无工具 Provider 请求，输入/输出/超时独立配置为 16384/16384/60 秒，另有独立的 32768 字节可见 JSON 上限；见 `.env.example` 的 AGENT_REFLECTION_* 和[配置说明](docs/modules/config.md)。较大目录/正文或单 Run 无法容纳时明确停止。默认只反思当前会话；可 /resume 其他会话分别处理，同一 Agent 最终共享 Markdown 理解。模型事实判断与语义去重仍有误差，审批不可省略。设计与完整调用路径见 [Reflection 模块](docs/modules/reflection.md)。
 
 ## 架构与实际运行路径
 
@@ -179,7 +179,7 @@ main → SQLiteStore.initialize(schema 4) / recover_incomplete_runs → SessionM
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前应用 0.7.0 对应 schema 4，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前应用 0.7.1 对应 schema 4，启动原子迁移并回填旧历史索引。CLI 每次启动显式初始化并按序迁移，迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -270,3 +270,9 @@ Recall 采用关键词子串与时间排序，尚无语义召回或分页；短�
 V0.6 新增离线 Compaction 验证：schema 2→3 回填与回滚、增量检查点、完整工具与 SDK 重放、分批失败续接、取消和真实进程退出、跨会话隔离、SQL 范围与解码数量、输出/超时限额及注入权限边界。原完整 Journal 与 Recall API 继续保留。
 
 V0.7 的离线 Reflection 验证覆盖来源校验、整合计划、选择性审批、拒绝/跳过、增量分页、schema 3→4 原子迁移、人工编辑冲突、索引部分成功和真实 CLI 子进程崩溃/重启。完整回归 390 passed、1 skipped（Windows Symlink 权限）；Ruff、打包与 CLI 检查见交付记录。
+
+V0.7.1 分离 Reflection API 总输出预算（含 reasoning，默认 16384 tokens）与可见 JSON 字节上限（默认 32768），避免把 tokens 当作 UTF-8 字节。非 completed 响应返回安全的阶段、停止原因和用量计数，不打印推理或未完成正文；不自动重试。若本地显式配置过旧 AGENT_REFLECTION_OUTPUT_TOKENS=4096，需要自行调整才会覆盖旧值。
+
+使用 deepseek-flash 时，可将 AGENT_CONTEXT_WINDOW 明确设为 1048576；这是目前[官方模型元数据](https://api-docs.deepseek.com/api/list-models/)给出的总输入/输出窗口。程序仍要求宿主显式指定，不按模型名静默猜测。
+
+诊断、预算修复与真实提案质量对照见 [V0.7.1 真实模型验证](docs/reflection-live-validation.md)。

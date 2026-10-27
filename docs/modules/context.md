@@ -57,3 +57,5 @@ budget=None 只兼容已有短嵌入模式，不猜模型窗口也不自动摘�
 ## V0.7 Reflection 边界
 
 ContextBuilder/prepare()/Compaction 算法不变。Reflection 通过独立 CLI/Service 读取原始 completed Run，不使用当前 Summary 作为事实，不推进 Compaction 边界。批准后的 Core 仍由下一次 for_request() 编译最新值，Deferred 仍按需读取；不注入候选或伪造用户审批消息。两条流程及测试见[Reflection](reflection.md)。
+
+V0.7.1 的 /context status 还会显示服务端提供的 reasoning_tokens；它包含于 output_tokens，不能重复相加。未提供该字段时省略，输入仍使用原保守估算/预算流程。

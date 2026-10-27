@@ -229,3 +229,15 @@ async def test_context_status_is_local_and_does_not_create_a_run(tmp_path):
         await cli.chat(agent, read=lambda _: next(inputs), write=output.append, sessions=sessions)
         assert not provider.requests and db.list_runs(sessions.current.id) == []
         assert any('"context_window": 64000' in line for line in output)
+
+
+def test_reflection_settings_separate_api_tokens_and_visible_bytes(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_MODEL", "deepseek-flash")
+    monkeypatch.setenv("AGENT_CONTEXT_WINDOW", "1048576")
+    monkeypatch.setenv("AGENT_REFLECTION_OUTPUT_TOKENS", "16384")
+    monkeypatch.setenv("AGENT_REFLECTION_RESPONSE_MAX_BYTES", "32768")
+    settings = load_settings(tmp_path / "absent.env")
+    assert settings.context_window == 1048576
+    assert settings.reflection_policy().output_tokens == 16384
+    assert settings.reflection_policy().response_max_bytes == 32768

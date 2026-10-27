@@ -41,3 +41,5 @@ AgentRecord.system_prompt 保留为兼容元数据，CLI 不从中加载 Base。
 V0.5.1 的 `memory/models.py::summary()` 仅在提取目录概要时统一 LF/CRLF/CR，避免将换行差异误诊为父入口陈旧；不重写原文件字节。索引条目保留原始字符区间，由 index.edit()/maintain_link() 维护；执行与边界见[MemoryFS](memory.md)，验证见 `tests/test_deferred_memory.py::test_metadata_edit_updates_only_intact_generated_entry`。
 
 V0.6 新增普通内部 TokenUsage(input_tokens, output_tokens)，ModelResponse.usage 可为空；用于区分服务端计量与本地估算，不把 SDK 对象放入 Runtime。RunResult 新增 context_error/compaction_error。`core/history.py` 的 ConversationSummary 保存 text/through_sequence/through_run_id/revision/updated_at/checksum；HistoryTurn 保存完整 Run 消息与来源 hash，HistoryPage 表示有界页及 has_more。Summary 与 StoredMessage 分离，执行路径见[Compaction](compaction.md)，测试见 `tests/test_compaction.py`。
+
+V0.7.1 的 TokenUsage 新增可选非负 reasoning_tokens；总 output_tokens 仍包括推理，不能把两者相加。ProviderDiagnostics 仅含固定状态/停止原因枚举与数值 usage，经 ProviderError/ReflectionError 跨层传递，不包含 SDK 对象、响应正文或推理文本。Context 诊断省略未提供的 reasoning_tokens，保留估算与服务端计量的区分。测试见 tests/test_provider.py、tests/test_compaction.py。

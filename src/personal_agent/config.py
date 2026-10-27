@@ -25,7 +25,8 @@ class Settings(ContextBudget):
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
 
     reflection_input_tokens: int = Field(default=16384, ge=2048, le=262144)
-    reflection_output_tokens: int = Field(default=4096, ge=256, le=16384)
+    reflection_output_tokens: int = Field(default=16384, ge=256, le=65536)
+    reflection_response_max_bytes: int = Field(default=32768, ge=1024, le=131072)
     reflection_timeout_seconds: float = Field(default=60, gt=0)
     reflection_page_runs: int = Field(default=8, ge=1, le=32)
 
@@ -33,6 +34,7 @@ class Settings(ContextBudget):
         return ReflectionPolicy(
             input_tokens=self.reflection_input_tokens,
             output_tokens=self.reflection_output_tokens,
+            response_max_bytes=self.reflection_response_max_bytes,
             timeout_seconds=self.reflection_timeout_seconds,
             page_runs=self.reflection_page_runs,
         )
@@ -75,6 +77,7 @@ class Settings(ContextBudget):
 ENV_FIELDS = {
     "AGENT_REFLECTION_INPUT_TOKENS": "reflection_input_tokens",
     "AGENT_REFLECTION_OUTPUT_TOKENS": "reflection_output_tokens",
+    "AGENT_REFLECTION_RESPONSE_MAX_BYTES": "reflection_response_max_bytes",
     "AGENT_REFLECTION_TIMEOUT_SECONDS": "reflection_timeout_seconds",
     "AGENT_REFLECTION_PAGE_RUNS": "reflection_page_runs",
     "OPENAI_API_KEY": "api_key",

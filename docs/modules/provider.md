@@ -9,7 +9,7 @@
 1. Agent 经 ContextBuilder.prepare/for_request 构造预算内的 Core、Summary 和完整 Run 窗口，连同本轮授权的工具定义传给 generate()。
 2. `_input()` 转换 system/user 文本和 tool 输出；assistant 若有 provider_data['openai']，重放其原始 JSON 项目；否则使用归一化文本和调用生成输入。避免重复加入调用。
 3. generate() 发起 store=False、truncation=disabled 请求，包含 reasoning.encrypted_content，并按可选 max_output_tokens 设置输出上限，然后等待 SDK。
-4. 返回完整响应时提取文本、拒绝回答和 function_call；原始 output 转成普通 JSON，保留在 ModelResponse.provider_data 中；可用 usage 的 input_tokens/output_tokens 转为内部 TokenUsage，不泄漏 SDK 对象。
+4. 返回完整响应时提取文本、拒绝回答和 function_call；原始 output 转成普通 JSON，保留在 ModelResponse.provider_data 中；可用 usage 的 input_tokens/output_tokens 及可用 reasoning_tokens 转为内部 TokenUsage，不泄漏 SDK 对象。
 5. ContextBuilder 经存储接口保存这些消息；重启后重新加载，Provider 继续走同一个 `_input()`，不需要专门的数据库响应转换逻辑。
 
 ## 异常与边界
@@ -21,3 +21,9 @@ SDK 超时映射 ProviderTimeout，网络和 HTTP 失败映射安全 ProviderErr
 工具调用历史按 reasoning → function_call → function_call_output → 最终文本重放。 `uv run pytest tests/test_provider.py tests/test_persistent_runtime.py` 使用 MockTransport，验证真实 SDK 收到的恢复后输入与重启前预期一致，不访问真实 API。
 
 V0.6 的 Provider Protocol 仅增加可选关键字 max_output_tokens；Compactor 复用同一接口并传空工具列表，返回调用时拒绝执行。摘要不会把旧 reasoning/密文作为模型输入，近期正常重放仍保留原 JSON。见 `tests/test_compaction.py::test_sdk_compaction_has_no_tools_and_recent_wire_pairs_survive`。输出上限含 reasoning，详见[OpenAI 官方说明](https://developers.openai.com/api/docs/guides/reasoning)；本地估算不能替代服务端 usage。
+
+## V0.7.1 未完成响应诊断
+
+generate() 先把 usage 归一化为内部 TokenUsage，再检查 response.status。非 completed 一律拒绝回放/执行，只在 ProviderError.diagnostics 中携带 ProviderDiagnostics：白名单状态、max_output_tokens/content_filter/unknown 原因以及数值用量；未知服务端原因归一为 unknown。不得传递 SDK error.message、未完成正文、reasoning 文本或其他原始响应数据。
+
+TokenUsage.reasoning_tokens 可为空，兼容端点缺失 output_tokens_details；负数或非法计数按 malformed_response 安全拒绝。正常响应仍保留原 Provider JSON 重放契约。ReflectionError 保留阶段与这组安全数据，CLI 显示它们帮助区分额度耗尽和其他停止原因；普通请求的调用接口不扩张。验证见 tests/test_provider.py 的 incomplete 诊断、缺失 details、非法 usage 测试及 tests/test_reflection.py 的 CLI 失败传递。

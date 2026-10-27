@@ -60,6 +60,13 @@ Message = Annotated[TextMessage | AssistantMessage | ToolMessage, Field(discrimi
 class TokenUsage(Model):
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+
+
+class ProviderDiagnostics(Model):
+    status: Literal["completed", "incomplete", "failed", "in_progress", "cancelled", "unknown"]
+    incomplete_reason: Literal["max_output_tokens", "content_filter", "unknown"] | None = None
+    usage: TokenUsage | None = None
 
 
 class ModelResponse(Model):

@@ -70,7 +70,7 @@ SQLite 与 Markdown 没有共同事务。文件成功后写入结果的数据库
 ## 预算、错误及限制
 
 - 默认每次手动处理至多 8 个完整 completed Run、最多 8 个候选；一次 `/reflect` 处理一批，不循环清空全部历史。非空候选最多三次模型请求，空候选一次；没有自动重试、后台扫描或续跑。
-- 每阶段默认独立输入 16384、输出 4096、超时 60 秒。输入进一步受模型窗口减输出与安全余量限制。沿用保守 UTF-8 JSON 估算，输出同时受本地 UTF-8 字节上限约束；不是精确 tokenizer。返回 Tool Calls、空/非法 JSON、越界字段、明显凭证、超预算 usage 或无效证据时明确拒绝，原进度不推进。
+- 每阶段默认独立输入 16384、API 总输出 16384 tokens、可见 JSON 32768 字节、超时 60 秒。输入进一步受模型窗口减输出与安全余量限制。沿用保守 UTF-8 JSON 输入估算；API 总输出含推理，可见 JSON 单独受 response_max_bytes 字节上限约束，两个单位不混用；不是精确 tokenizer。返回 Tool Calls、空/非法 JSON、越界字段、明显凭证、超预算 usage 或无效证据时明确拒绝，原进度不推进。
 - 历史单 Run 无法装入预算时明确停止，不拆配对，不截断用户正文。catalogue 受原全树 500 项上限约束，选定文件各受 MemoryFS 大小上限约束，整个阶段超预算就拒绝；较大记忆库尚无多轮检索规划，应调预算或整理主题。
 - 模型价值判断、近似去重、纠正与引文的语义关系不能靠 Schema 完全保证；离线测试验证结构、来源和审批契约，不代表真实模型必然正确学习。人类审阅是必要边界。
 - 原始对话和 Memory 都是不可信参考，提示词不能保证模型绝不受注入影响。程序隔离工具与批准入口；有限凭证模式不是通用秘密检测，用户也应检查私人内容和新记忆。日志/错误不输出正文，review 才显式展示私人候选及引文。
@@ -88,3 +88,13 @@ SQLite 与 Markdown 没有共同事务。文件成功后写入结果的数据库
 最终完整离线回归：390 passed、1 skipped（Windows 环境不能创建 Symlink，原 Junction 测试仍通过）。Ruff 检查、格式检查、uv build、personal-agent --help 与 python -m personal_agent.main --help 通过。没有真实模型请求、API Key 或费用；tests/conftest.py 网络禁用保护保持原样。
 
 构建的 0.7.0 wheel 在三个独立 CLI 进程中验证：第一进程以 Fake Provider 三次无工具请求生成待审阅计划，两个原始消息保留，Markdown 未改；第二进程恢复计划、review 并明确 apply，无模型请求，批准时间与独立进度 2 保存；第三进程普通请求读取已批准的新 Core，一次 Fake 正常回答后原始消息数由 2 增至 4。另有自动化真实 os._exit 测试覆盖文件发布与结果写库之间退出、重启禁止重复写入并只读 reconcile。
+
+## V0.7.1 预算与安全诊断修正
+
+旧实现使用 output_tokens=4096 同时限制 API 总生成 tokens 和 JSON 字节，真实推理模型既容易用尽总额度，也可能生成正常 JSON 后被错误的字节比较拒绝。现在 ReflectionPolicy.output_tokens 默认 16384，response_max_bytes 默认 32768；_ask() 在 API 调用与 usage 校验使用前者，在正文限长使用后者，再做结构/来源校验。
+
+TokenUsage 增加可选 reasoning_tokens；OpenAIProvider 在拒绝非 completed 响应时只传出 ProviderDiagnostics：固定枚举 status、incomplete_reason（max_output_tokens/content_filter/unknown）及非负用量。_ask() 通过 ReflectionError 附加 extraction/selection/consolidation 阶段，chat() 仅打印这些安全字段；失败仍不保存计划、不推进边界、不执行工具或重试，未完成正文及推理内容不进入错误信息。
+
+EXTRACT/CONSOLIDATE 明确区分有长期价值的纠正与一次性假设/虚构示例的免责声明；没有对应错误事实时，不把后者扩写成永久用户规则。提示词改善仍需真实提案审阅，不能用 Fake Provider 测试宣称语义质量保证。
+
+测试增加正常中文 JSON 超过旧 4096 字节但在独立上限内可接受、JSON 仍有硬上限、总 usage 超限继续拒绝、Provider 不完整原因与推理计数脱敏传递，以及 CLI 在 consolidation 失败后保留原记忆/进度。真实模型的诊断和复测结果见[真实验证记录](../reflection-live-validation.md)。

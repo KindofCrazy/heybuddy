@@ -208,7 +208,9 @@ class ContextBuilder:
             "loaded_runs": len(self._page.turns),
             "loaded_messages": len(self._page.messages),
             "has_more_history": self._page.has_more,
-            "provider_reported_tokens": self._usage.model_dump() if self._usage else None,
+            "provider_reported_tokens": self._usage.model_dump(exclude_none=True)
+            if self._usage
+            else None,
         }
 
     def record(self, message: Message) -> None:

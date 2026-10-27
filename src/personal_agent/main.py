@@ -37,7 +37,7 @@ async def chat(
     reflection: ReflectionService | None = None,
 ) -> None:
     write(
-        "HeyBuddy V0.7 — /new /sessions /resume <id> /status /context status /reflect；"
+        "HeyBuddy V0.7.1 — /new /sessions /resume <id> /status /context status /reflect；"
         "exit 或 quit 退出。"
     )
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
@@ -90,6 +90,18 @@ async def chat(
                 await reflection_command(reflection, sessions.current.id, user_input, write)
             except (ReflectionError, CoreMemoryError) as exc:
                 write(f"Reflection 错误 [{exc.code}] > 计划未自动批准；请 review/status 核对进度。")
+                if isinstance(exc, ReflectionError) and exc.stage:
+                    write(
+                        json.dumps(
+                            {
+                                "stage": exc.stage,
+                                "provider": exc.diagnostics.model_dump(exclude_none=True)
+                                if exc.diagnostics
+                                else None,
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
             except (HistoryError, ContextError):
                 write(
                     "Reflection 存储/历史错误 > 检查 status/review；"
@@ -181,7 +193,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.7 CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy V0.7.1 CLI")
     parser.parse_args()
     try:
         settings = load_settings()

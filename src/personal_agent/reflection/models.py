@@ -4,18 +4,28 @@ from typing import Literal
 
 from pydantic import Field
 
-from personal_agent.core.models import Model
+from personal_agent.core.models import Model, ProviderDiagnostics
 
 
 class ReflectionError(Exception):
-    def __init__(self, code: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        *,
+        stage: Literal["extraction", "selection", "consolidation"] | None = None,
+        diagnostics: ProviderDiagnostics | None = None,
+    ) -> None:
         super().__init__(f"Reflection stopped ({code}); inspect the saved plan before continuing.")
         self.code = code
+        self.stage = stage
+        self.diagnostics = diagnostics
 
 
 class ReflectionPolicy(Model):
     input_tokens: int = Field(default=16384, ge=2048, le=262144)
-    output_tokens: int = Field(default=4096, ge=256, le=16384)
+    # API total includes hidden reasoning; the visible JSON is a separate byte budget.
+    output_tokens: int = Field(default=16384, ge=256, le=65536)
+    response_max_bytes: int = Field(default=32768, ge=1024, le=131072)
     timeout_seconds: float = Field(default=60, gt=0, allow_inf_nan=False)
     page_runs: int = Field(default=8, ge=1, le=32)
 

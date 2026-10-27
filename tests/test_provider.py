@@ -209,3 +209,66 @@ async def test_compatible_endpoint_replays_plain_reasoning_without_sdk_objects()
     assert result.status == "completed"
     assert requests[1]["model"] == "deepseek-flash"
     assert requests[1]["input"][2]["content"] == reasoning["content"]
+
+
+@pytest.mark.parametrize(
+    "reason,expected",
+    [
+        ("max_output_tokens", "max_output_tokens"),
+        ("content_filter", "content_filter"),
+        ("private provider body must not leak", "unknown"),
+    ],
+)
+async def test_incomplete_response_diagnostics_are_safe_and_not_retried(reason, expected):
+    calls = []
+
+    def handle(request):
+        calls.append(request)
+        body = response_body([text_item("private incomplete body")], status="incomplete")
+        body["incomplete_details"] = {"reason": reason}
+        body["usage"] = {
+            "input_tokens": 2176,
+            "output_tokens": 4096,
+            "total_tokens": 6272,
+            "input_tokens_details": {"cached_tokens": 0},
+            "output_tokens_details": {"reasoning_tokens": 3800},
+        }
+        return httpx.Response(200, json=body)
+
+    async with make_client(handle) as client:
+        with pytest.raises(ProviderError) as error:
+            await OpenAIProvider(client, "test-model").generate([], [], max_output_tokens=4096)
+    diagnostic = error.value.diagnostics
+    assert diagnostic.model_dump() == {
+        "status": "incomplete",
+        "incomplete_reason": expected,
+        "usage": {"input_tokens": 2176, "output_tokens": 4096, "reasoning_tokens": 3800},
+    }
+    assert "private" not in str(error.value) and "private" not in diagnostic.model_dump_json()
+    assert len(calls) == 1
+
+
+async def test_success_reports_reasoning_count_and_tolerates_missing_details():
+    for details in (None, {"reasoning_tokens": 3086}):
+        body = response_body([text_item("proposal")])
+        body["usage"] = {"input_tokens": 2176, "output_tokens": 3596, "total_tokens": 5772}
+        if details is not None:
+            body["usage"]["output_tokens_details"] = details
+        async with make_client(lambda _, payload=body: httpx.Response(200, json=payload)) as client:
+            response = await OpenAIProvider(client, "test-model").generate([], [])
+        assert response.usage.input_tokens == 2176 and response.usage.output_tokens == 3596
+        assert response.usage.reasoning_tokens == (3086 if details else None)
+
+
+async def test_malformed_reasoning_usage_is_sanitized():
+    body = response_body([text_item("private response")])
+    body["usage"] = {
+        "input_tokens": 10,
+        "output_tokens": 20,
+        "total_tokens": 30,
+        "output_tokens_details": {"reasoning_tokens": -1},
+    }
+    async with make_client(lambda _, payload=body: httpx.Response(200, json=payload)) as client:
+        with pytest.raises(ProviderError) as error:
+            await OpenAIProvider(client, "test-model").generate([], [])
+    assert error.value.code == "malformed_response" and "private" not in str(error.value)
