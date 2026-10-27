@@ -9,6 +9,7 @@ V0.7 的 Reflection 是用户手动触发的学习流程：从原始对话提取
 | `reflection/models.py` | ReflectionPolicy、Evidence、Candidate、Decision、PlanItem、ReflectionPlan 的有界模型及安全错误 |
 | `reflection/service.py::ReflectionService` | 完整 Run 分页、三阶段 Provider 调用、证据验证、计划生成、可信批准和逐项写入/核对 |
 | `reflection/memory.py` | 有界目录元数据、选定记忆读取、精确片段计划及索引核对 |
+| `reflection/writer.py` | 手动 Reflection 与 Host P2 共用的受限单文件发布及只读核对；不授予权限 |
 | `reflection/cli.py::command`、`render` | 可信命令分派与私人 Before/After Diff、理由和来源展示 |
 | `storage/reflection.py::ReflectionRepository` | 绑定 Agent 的 SQLite 查询、计划修订冲突检测、独立审阅进度 |
 | `main.py::_run_session`、`chat` | 复用同一 Provider/MemoryFS 装配服务，在普通 Run 之外执行命令 |

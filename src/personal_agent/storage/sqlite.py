@@ -26,6 +26,7 @@ from personal_agent.storage import (
     automation,
     context,
     episodes,
+    learning,
     maintenance,
     recall,
     reflection,
@@ -34,7 +35,7 @@ from personal_agent.storage import (
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -70,6 +71,7 @@ MIGRATIONS = {
     8: maintenance.CONSISTENCY_SCHEMA,
     9: maintenance.SCHEDULE_SCHEMA,
     10: maintenance.RETRY_SCHEMA,
+    11: learning.SCHEMA,
 }
 
 

@@ -38,7 +38,16 @@ class Evidence(Model):
 
 
 class Candidate(Model):
-    category: Literal["preference", "background", "project", "decision", "knowledge", "correction"]
+    category: Literal[
+        "preference",
+        "background",
+        "project",
+        "decision",
+        "knowledge",
+        "correction",
+        "ongoing_goal",
+        "current_state",
+    ]
     subject: str = Field(min_length=1, max_length=120)
     content: str = Field(min_length=1, max_length=1600)
     reason: str = Field(min_length=1, max_length=1000)

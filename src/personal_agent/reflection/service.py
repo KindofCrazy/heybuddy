@@ -11,16 +11,12 @@ from pydantic import ValidationError
 from personal_agent.core.budget import ContextBudget, estimate_request
 from personal_agent.core.compaction import SECRET, projection, redact
 from personal_agent.core.history import HistoryTurn
-from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import Model, TextMessage
 from personal_agent.llm.base import Provider, ProviderError
-from personal_agent.memory import index
-from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest
 from personal_agent.memory.store import MemoryFS
+from personal_agent.organization.models import OrganizationError
 from personal_agent.reflection.memory import (
     catalogue,
-    indexed,
-    maintenance_resolved,
     plan_item,
     read_comparison,
 )
@@ -33,6 +29,7 @@ from personal_agent.reflection.models import (
     ReflectionPolicy,
     Selection,
 )
+from personal_agent.reflection.writer import reconcile_item, write_item
 from personal_agent.storage.reflection import ReflectionRepository, sources
 
 BASE = (
@@ -115,23 +112,27 @@ class ReflectionService:
         ]
 
     async def _ask[Result: Model](self, kind: type[Result], prompt: str, data: dict) -> Result:
-        stage = {Extraction: "extraction", Selection: "selection", Consolidation: "consolidation"}[
-            kind
-        ]
+        stage = {Extraction: "extraction", Selection: "selection"}.get(kind, "consolidation")
         if self.input_limit < 2048:
             raise ReflectionError("reflection_budget", stage=stage)
         request = self._request(kind, prompt, data)
         if estimate_request(request, []) > self.input_limit:
             raise ReflectionError("reflection_input_budget", stage=stage)
         try:
-            async with asyncio.timeout(self.policy.timeout_seconds):
+            async with asyncio.timeout(self.policy.timeout_seconds) as deadline:
                 response = await self.provider.generate(
                     request, [], max_output_tokens=self.policy.output_tokens
                 )
+                if deadline.expired():
+                    raise TimeoutError
+                if asyncio.current_task().cancelling():
+                    raise asyncio.CancelledError
         except ProviderError as error:
             raise ReflectionError(
                 "reflection_provider_error", stage=stage, diagnostics=error.diagnostics
             ) from None
+        except OrganizationError:
+            raise
         except Exception:
             raise ReflectionError("reflection_provider_error", stage=stage) from None
         if (
@@ -355,35 +356,7 @@ class ReflectionService:
             item.state = "applying"
             plan = self.repository.save(plan, expected_revision=plan.revision)
             item = next(item for item in plan.items if item.id == target)
-            try:
-                if change.action == "create":
-                    result = index.create(self.memory, change.path, change.new_text)
-                elif change.path in BLOCKS:
-                    saved = self.memory.edit(
-                        change.path,
-                        change.old_text,
-                        change.new_text,
-                        expected_hash=item.before_hash,
-                    )
-                    result = {"hash": saved, "complete": True}
-                else:
-                    result = index.edit(
-                        self.memory,
-                        change.path,
-                        change.old_text,
-                        change.new_text,
-                        expected_hash=item.before_hash,
-                    )
-                item.saved_hash = result["hash"]
-                item.state = "applied" if result.get("complete", True) else "partial"
-                item.result_code = "saved" if item.state == "applied" else "index_incomplete"
-                if item.state == "partial":
-                    item.index_issue = result.get("index", {})
-            except CoreMemoryError as exc:
-                item.state = "partial" if exc.code == "memory_index_incomplete" else "conflict"
-                item.result_code = exc.code
-                if item.state == "partial":
-                    item.saved_hash = item.after_hash
+            write_item(self.memory, item)
             plan = self.repository.save(plan, expected_revision=plan.revision)
         return plan
 
@@ -393,26 +366,5 @@ class ReflectionService:
         item = next((item for item in plan.items if item.id == item_id), None)
         if item is None or item.state not in {"applying", "partial", "uncertain"}:
             raise ReflectionError("nothing_to_reconcile")
-        change = item.decision
-        try:
-            with self.memory.io():
-                raw = self.memory.raw(
-                    self.memory.path(change.path),
-                    self.memory.max_bytes if change.path in BLOCKS else FILE_BYTES,
-                )
-            if digest(raw) == item.after_hash:
-                item.saved_hash = item.after_hash
-                with self.memory.io():
-                    complete = change.path in BLOCKS or (
-                        indexed(self.memory, change.path)
-                        and maintenance_resolved(self.memory, item.index_issue)
-                    )
-                item.state = "applied" if complete else "partial"
-                item.result_code = "verified_saved" if complete else "index_incomplete"
-            else:
-                item.state = "uncertain"
-                item.result_code = "saved_content_not_verified"
-        except CoreMemoryError as exc:
-            item.state = "uncertain"
-            item.result_code = exc.code
+        reconcile_item(self.memory, item)
         return self.repository.save(plan, expected_revision=plan.revision)

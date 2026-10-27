@@ -14,6 +14,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 ## 当前范围与设计
 
+[P2 Memory Learning](docs/modules/learning.md) 复用 Reflection 的来源验证与受限 MemoryFS Writer，按目标聚合候选，不改变手动 Reflection 审批和 Main Agent 工具权限。
+
 持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；普通聊天默认在答案后自动判断长期价值并生成待审提案，批准后才写入；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。

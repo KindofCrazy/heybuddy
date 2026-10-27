@@ -1,5 +1,9 @@
 # Personal Agent 开发约束
 
+## P2 明确授权
+
+本轮用户明确要求完整 P2，允许 Host 控制的后台自动 Learning、Priority/Batch、低频 Curator 与 Adaptive Retrieval，复用现有 asyncio 调度和 MemoryFS。该请求优先于下文 V0.7/P1 的“无后台提取/不自动写入”阶段限制；手动 Reflection 审批、Main Agent 工具权限和 MemoryFS 安全边界继续保留。Learner/Curator 不自动修改 persona.md，不新增事实数据库或通用 Scheduler。真实付费模型测试仍需明确授权。
+
 ## 目标与当前范围
 
 本项目从零实现个人 Agent，当前 V0.7.2 提供自建 Runtime、SQLite 持久会话、普通 Markdown Core/Deferred Memory、分层索引、同一 Agent 跨会话的只读 Conversation Recall，以及有界 Context Budget/Compaction 和手动审批的 Reflection。用户需要掌握 Harness 的核心实现。修改前检查目录、Git 状态和已有实现，保留用户工作。
