@@ -12,6 +12,8 @@ from personal_agent.automation.service import MemoryAutomation
 from personal_agent.character.context import CharacterContextCompiler
 from personal_agent.character.loader import CharacterLoader
 from personal_agent.character.models import CharacterError
+from personal_agent.character.state import CharacterStateService
+from personal_agent.character.storage import CharacterStateRepository
 from personal_agent.config import Settings, load_settings, memory_root_for
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
@@ -104,6 +106,18 @@ async def _chat(
         if not user_input:
             continue
         permissions: frozenset[str] = frozenset()
+        if user_input.split(maxsplit=1)[0] == "/character":
+            if organization is None or organization.character_state is None:
+                write("Character > 当前未启用角色状态。")
+                continue
+            try:
+                report = await organization.character_command(
+                    user_input.removeprefix("/character").strip()
+                )
+                write(json.dumps(report, ensure_ascii=False))
+            except (HistoryError, OrganizationError):
+                write("Character > 状态维护失败；原始对话保留，不重试工具。")
+            continue
         if user_input.split(maxsplit=1)[0] in {"/episode", "/thread"}:
             if organization is None or sessions is None:
                 write("Episode > 当前入口未配置 Organizer。")
@@ -338,6 +352,20 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
         learning = MemoryLearningService(
             LearningRepository(repository), reflection, settings.learning_policy()
         )
+        character_state = None
+        if sessions.character is not None:
+            character_repository = CharacterStateRepository(
+                repository, settings.character_id, sessions.character.package.fingerprint
+            )
+            character_state = CharacterStateService(
+                character_repository,
+                sessions.character.package,
+                reflection,
+                settings.context_budget(),
+                settings.character_state_policy(),
+            )
+            sessions.character.on_run = character_repository.tag_run
+            sessions.character.state = character_state.active
         organization = OrganizationRuntime(
             EpisodeOrganizer(
                 repository,
@@ -347,6 +375,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
             ),
             automation=automation,
             learning=learning,
+            character_state=character_state,
             curator=MemoryCurator(learning, settings.curator_policy()),
             threads=ThreadOrganizer(
                 thread_repository,

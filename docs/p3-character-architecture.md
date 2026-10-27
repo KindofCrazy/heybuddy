@@ -18,6 +18,16 @@
 
 人格和情绪状态是行为模拟，不意味着模型有真实情绪、意识或线下经历。BBC Sherlock 是开发参考人物，不意味着影视特有视觉、对白等内容可未经授权商业化分发。
 
+## Character State 生命周期
+
+实际状态与存储链路见 [State 模块](modules/character-state.md)。schema 12 追加 character_runs、character_states、character_state_sources：Host 标签记录实际角色归属，状态只保存一个当前有界模拟值，来源回执避免重付费。角色与包 hash 隔离；旧未标记 Run 不被默认为 Sherlock 经历。CharacterContextCompiler 读取状态视图，而不是把状态写回 Character Core、persona.md 或 P2 Memory。
+
+即时反应由 Main Agent 在 Recent Runs 中自然延续；后台只针对新/修订 Episode 的本角色真实来源，在 Idle、速率与共享预算允许时作一次建议。默认 900 秒最小间隔，一小时 Mood 归于中性，三小时 Focus 失效；从所引事件时间计算，旧反例不能因晚处理被重新激活。no-op、失败、取消和处理完成分别保存，状态和 completed 回执原子提交，CAS 拒绝晚到结果。
+
+状态模型没有好感度、亲密度分数、情绪向量或心理需求系统；输出 reason 只是有界可观察事件说明，不保存内部独白。包内容变化会使旧状态失效。/character status|run|retry 提供开发者入口，没有角色切换 UI；关闭 State 不影响角色核心，也不发送主动消息。
+
+状态请求单独计量，默认最多一条维护请求/轮、24576 输入估算 tokens、2048 输出 tokens、4096 JSON 字节和20秒；连同 Episode/Thread/Learning/Curator 共用维护轮上限。P2 获得完整流水线预算轮时 P3 等待，角色状态不能使自动记忆长期饥饿。无新事件或来源已过期不付费判断。默认角色 none 下没有状态请求。
+
 ## Behavioral Signatures 与 Implicit Appraisal
 
 behavior.md 的十二组情境签名分别覆盖证据挑战、失败与关心、无聊日常、科研新奇、代码/工具证据、自身错误、成果认可、熟悉用户的交流偏好、严肃简洁、不确定模式、Canon 与真实关系边界、任务结束与沉默。每组包含情境、角色解释、反应倾向、可观察行为及调节条件，是 LLM 在当前证据中采用的倾向，不是 Python if/else 人格规则引擎。

@@ -8,7 +8,7 @@ from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, mod
 
 from personal_agent.automation.models import AutomationPolicy
 from personal_agent.character.loader import IDENTIFIER
-from personal_agent.character.models import CharacterPolicy
+from personal_agent.character.models import CharacterPolicy, StatePolicy
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.retrieval import RetrievalPolicy
 from personal_agent.learning.curator import CuratorPolicy
@@ -39,6 +39,14 @@ class Settings(ContextBudget):
     character_example_count: int = Field(default=2, ge=1, le=3)
     character_lore_sections: int = Field(default=2, ge=0, le=3)
     character_variant: Literal["E0", "E1", "E2"] = "E2"
+    character_state_enabled: bool = True
+    character_state_mood_seconds: float = Field(default=3600, gt=0, le=86400)
+    character_state_focus_seconds: float = Field(default=10800, gt=0, le=172800)
+    character_state_min_interval_seconds: float = Field(default=900, ge=0, le=86400)
+    character_state_input_tokens: int = Field(default=24576, ge=4096, le=65536)
+    character_state_output_tokens: int = Field(default=2048, ge=256, le=8192)
+    character_state_timeout_seconds: float = Field(default=20, gt=0, le=120)
+    character_state_source_bytes: int = Field(default=32768, ge=2048, le=131072)
     memory_learning_enabled: bool = True
     memory_learning_batch_episodes: int = Field(default=3, ge=1, le=3)
     memory_learning_max_wait_seconds: float = Field(default=21600, gt=0, le=604800)
@@ -132,6 +140,13 @@ class Settings(ContextBudget):
         return CharacterPolicy(
             **{name: getattr(self, "character_" + name) for name in CharacterPolicy.model_fields}
         )
+
+    def character_state_policy(self) -> StatePolicy:
+        values = {
+            name: getattr(self, "character_state_" + name) for name in StatePolicy.model_fields
+        }
+        values["enabled"] = self.character_state_enabled and self.character_variant == "E2"
+        return StatePolicy(**values)
 
     def learning_policy(self) -> LearningPolicy:
         return LearningPolicy(

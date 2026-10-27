@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
+from personal_agent.character import storage as character_storage
 from personal_agent.core.history import (
     ConversationSummary,
     HistoryError,
@@ -35,7 +36,7 @@ from personal_agent.storage import (
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -72,6 +73,7 @@ MIGRATIONS = {
     9: maintenance.SCHEDULE_SCHEMA,
     10: maintenance.RETRY_SCHEMA,
     11: learning.SCHEMA,
+    12: character_storage.SCHEMA,
 }
 
 

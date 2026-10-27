@@ -244,6 +244,10 @@ class ContextBuilder:
         self._run_id = self._store.begin(user)
         self._active = True
         self._pending = [user]
+        if self.character is not None:
+            record = getattr(self.character, "record_run", None)
+            if record is not None:
+                record(self._run_id)
         self._page = None
         self._retrieval = RetrievalResult()
         self._retrieval_loaded = False

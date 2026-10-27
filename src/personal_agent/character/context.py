@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Literal
 
 from personal_agent.character.models import CharacterError, CharacterPackage, CharacterPolicy
+from personal_agent.core.history import HistoryError
 from personal_agent.core.models import TextMessage
 from personal_agent.memory.retrieval import terms
 
@@ -38,11 +39,14 @@ class CharacterContextCompiler:
         *,
         variant: Literal["E0", "E1", "E2"] = "E2",
         state: Callable[[], dict | None] | None = None,
+        on_run: Callable[[str], None] | None = None,
     ) -> None:
         self.package = package
         self.policy = policy or CharacterPolicy()
         self.variant = variant
         self.state = state
+        self.on_run = on_run
+        self.source_tag_error = False
         self._last = {}
         longest = sorted(package.examples, key=lambda s: len(s.text.encode()), reverse=True)
         worst = self._static(longest[: self.policy.example_count])
@@ -137,4 +141,14 @@ class CharacterContextCompiler:
             "package_hash": self.package.fingerprint,
             "max_bytes": self.policy.max_context_bytes,
             **self._last,
+            "source_tag_error": self.source_tag_error,
         }
+
+    def record_run(self, run_id: str) -> None:
+        if self.on_run:
+            try:
+                self.on_run(run_id)
+                self.source_tag_error = False
+            except HistoryError:
+                # Untagged runs never become own-character state evidence.
+                self.source_tag_error = True

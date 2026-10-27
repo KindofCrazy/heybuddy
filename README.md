@@ -18,6 +18,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [P3 Character Runtime](docs/modules/character.md) 与 [架构说明](docs/p3-character-architecture.md) 提供本地、只读、可替换的角色包；默认普通模式保持兼容，首个包为原创 BBC Sherlock 适配。
 
+[P3 短期状态](docs/modules/character-state.md) 仅在角色 E2 启用后于 Idle 维护，按真实角色 Run 来源保存模拟 Mood/Focus，有独立有效期并共享 P1/P2 预算；不主动发消息。`/character status|run|retry` 查看或调试。
+
 [P2 Memory Learning](docs/modules/learning.md) 复用 Reflection 的来源验证与受限 MemoryFS Writer，按目标聚合候选，不改变手动 Reflection 审批和 Main Agent 工具权限。
 
 [P2 Memory Curator](docs/modules/curator.md) 低频整理小组 Markdown，去重、证据核对和有限拆分共用同一 Writer；不删除文件、不修改 persona，目标和索引成功前保留原文。`/memory curator status|run|retry` 用于调试。

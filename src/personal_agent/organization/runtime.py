@@ -12,6 +12,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 
 from personal_agent.automation.service import MemoryAutomation
+from personal_agent.character.state import CharacterStateService
 from personal_agent.core.history import HistoryError
 from personal_agent.learning.curator import MemoryCurator
 from personal_agent.learning.service import MemoryLearningService
@@ -77,6 +78,7 @@ class OrganizationRuntime:
         clock: Clock | None = None,
         learning: MemoryLearningService | None = None,
         curator: MemoryCurator | None = None,
+        character_state: CharacterStateService | None = None,
     ) -> None:
         self.episodes = episodes
         self.automation = automation
@@ -84,6 +86,7 @@ class OrganizationRuntime:
         self.clock = clock or SystemClock()
         self.learning = learning
         self.curator = curator
+        self.character_state = character_state
         self._learning_first = True
         self._dirty_yield_to_learning = False
         self.schedule_repository = ScheduleRepository(episodes.repository)
@@ -170,6 +173,8 @@ class OrganizationRuntime:
         models = [self.episodes.model, *([self.threads.model] if self.threads else [])]
         if self.learning and self.learning.policy.enabled:
             models.append(self.learning.model)
+        if self.character_state and self.character_state.policy.enabled:
+            models.append(self.character_state.model)
         originals = {id(model): (model, model.provider) for model in models}
         for model, provider in originals.values():
             model.provider = CycleProvider(provider, budget)
@@ -179,6 +184,7 @@ class OrganizationRuntime:
         time_limited = False
         learning_ran = False
         curator_ran = False
+        character_ran = False
         learning_first = self._learning_first or self._dirty_yield_to_learning
         learning_capacity = bool(
             self.learning
@@ -293,6 +299,25 @@ class OrganizationRuntime:
                         if not observe("curator", report):
                             break
                         continue
+                    if (
+                        idle
+                        and self.character_state
+                        and not character_ran
+                        and self.character_state.ready()
+                        and budget.requests < policy.maintenance_requests
+                        and (
+                            not learning_first
+                            or not (self.learning and self.learning.ready(idle=idle))
+                        )
+                    ):
+                        character_ran = True
+                        attempts += 1
+                        if not observe(
+                            "character_state",
+                            await self._execute("character_state", self.character_state.run()),
+                        ):
+                            break
+                        continue
                     if not policy.enabled:
                         break
                     if self.threads:
@@ -382,7 +407,8 @@ class OrganizationRuntime:
                     "memory", self.automation.run(stream_id)
                 )
             policy = self.episodes.policy
-            if not policy.enabled and not p2:
+            p3 = bool(self.character_state and self.character_state.policy.enabled)
+            if not policy.enabled and not p2 and not p3:
                 return
             while not self._foreground:
                 if p2:
@@ -465,6 +491,7 @@ class OrganizationRuntime:
             "current_stage": self.current_stage,
             "learning": self.learning.status() if self.learning else None,
             "learning_last_report": self.last_report.get("learning"),
+            "character_state": self.character_state.status() if self.character_state else None,
             "curator": self.curator.status()
             if self.curator and self.learning.policy.enabled
             else None,
@@ -551,5 +578,26 @@ class OrganizationRuntime:
                 "error_code": "maintenance_timeout",
                 "budget": budget.report(),
             }
+        finally:
+            model.provider = original
+
+    async def character_command(self, text: str) -> dict:
+        service = self.character_state
+        if service is None:
+            return {"enabled": False}
+        if text == "status":
+            return service.status()
+        if text not in {"run", "retry"}:
+            return {"usage": "/character status|run|retry"}
+        model = service.model
+        original = model.provider
+        budget = MaintenanceBudget(self.episodes.policy, self.clock)
+        model.provider = CycleProvider(original, budget)
+        try:
+            async with asyncio.timeout(self.episodes.policy.maintenance_seconds):
+                report = await service.run(force=True, retry=text == "retry")
+                return {**report, "budget": budget.report()}
+        except TimeoutError:
+            return {"outcome": "budget_exhausted", "error_code": "maintenance_timeout"}
         finally:
             model.provider = original
