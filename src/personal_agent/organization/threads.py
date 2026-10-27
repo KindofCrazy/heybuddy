@@ -1,6 +1,7 @@
 """Low-frequency topic organization of Episode evidence, independent of segmentation."""
 
 import asyncio
+from datetime import UTC, datetime
 
 from personal_agent.core.history import HistoryError
 from personal_agent.organization.models import OrganizationError, ThreadDecision, ThreadRepair
@@ -44,17 +45,24 @@ class ThreadOrganizer:
         self.repairs = ThreadRepairRepository(repository)
         self._lock = asyncio.Lock()
 
-    async def repair(self, *, retry: bool = True) -> dict:
+    async def repair(self, *, retry: bool = True, at: datetime | None = None) -> dict:
         """One bounded rebuild page. Only the final CAS publishes a clean state."""
         async with self._lock:
-            thread_id = self.repairs.pending(retry=retry)
+            thread_id = self.repairs.pending(
+                retry=retry, at=at, max_failures=self.policy.repair_max_failures
+            )
             if thread_id is None:
                 return {"outcome": "no_dirty_work", "requests": 0}
             page = None
             self.model.metrics = {}
             try:
                 page = self.repairs.window(
-                    thread_id, self.policy.page_runs, self.policy.source_bytes, retry=retry
+                    thread_id,
+                    self.policy.page_runs,
+                    self.policy.source_bytes,
+                    retry=retry,
+                    at=at,
+                    max_failures=self.policy.repair_max_failures,
                 )
                 if page is None:
                     return {"outcome": "blocked", "requests": 0}
@@ -91,7 +99,15 @@ class ThreadOrganizer:
                 raise
             except (OrganizationError, HistoryError) as error:
                 code = error.code if isinstance(error, OrganizationError) else "repair_conflict"
-                self.repairs.fail(thread_id, code)
+                if code == "maintenance_budget":
+                    self.repairs.attempt(page, "pending", metrics=self.model.metrics)
+                    return {"outcome": "budget_exhausted", "metrics": self.model.metrics}
+                self.repairs.fail(
+                    thread_id,
+                    code,
+                    at=at or datetime.now(UTC),
+                    retry_seconds=self.policy.repair_retry_seconds,
+                )
                 return {"outcome": "failed", "error_code": code, "metrics": self.model.metrics}
 
     async def organize(self, *, retry: bool = True) -> dict:
@@ -131,5 +147,8 @@ class ThreadOrganizer:
                     if isinstance(error, OrganizationError)
                     else "invalid_or_stale_assignment"
                 )
+                if code == "maintenance_budget":
+                    self.repository.attempt(revision, "pending", metrics=self.model.metrics)
+                    return {"outcome": "budget_exhausted", "metrics": self.model.metrics}
                 self.repository.attempt(revision, "failed", code, self.model.metrics)
                 return {"outcome": "failed", "error_code": code, "metrics": self.model.metrics}

@@ -104,14 +104,15 @@ async def test_one_episode_receives_thread_opportunity_at_four_hours_without_mor
     seed(db, stream, at=clock.now())
     await organizer(repo).organize(stream, at=clock.now())
     threads = thread_service(db)
+    thread_provider = threads.model.provider
     runtime = OrganizationRuntime(organizer(repo), threads=threads, clock=clock)
     try:
         runtime.schedule(stream)
         await pump()
-        assert not threads.model.provider.requests
+        assert not thread_provider.requests
         clock.advance(14401)
         await pump(lambda: bool(threads.repository.list()))
-        assert len(threads.model.provider.requests) == 1
+        assert len(thread_provider.requests) == 1
         assert runtime.diagnostics(stream)["last_thread_success_at"]
     finally:
         await runtime.close()

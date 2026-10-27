@@ -17,6 +17,8 @@
 
 取消只把当前尝试转 pending，保留此前完整页；重启 recover() 恢复 running job，不重复已提交页。模型/JSON/预算失败保留 dirty 和失败原因，显式 repair 可 retry；关联 epoch 改变会重新从当前成员开始，不能发布旧 snapshot。空 Thread 的 empty_archived 有明确审计记录，不凭空生成历史。所有来源关系按 Agent 重验，已移动 Episode 不属于旧 Thread 新版本来源。
 
+schema 10 增加有界自动恢复：同源失败默认 300 秒起指数退避，连续三次失败后停止自动付费尝试；failure_count/retry_after 跨重启保存。普通轮预算耗尽不算模型失败，不增加 failure_count；显式 `/thread repair` 重置尝试机会且复用已提交页。无故障且配置可容纳来源时，Idle 循环自动推进所有页并发布；持续故障保留可重试工作，不谎报收敛。
+
 重建摘要仍有损，宿主校验证明来源集合与版本一致，不能保证真实模型语义完美。单 Episode 超预算时明确失败；不截断为假成功。没有改写 Journal、MemoryFS、Reflection 或 Compaction 进度。
 
 ## 阅读与验证

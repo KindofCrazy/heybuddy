@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from personal_agent.core.history import HistoryError
 from personal_agent.organization.models import OrganizationError, RepairPage, ThreadRepair
@@ -15,14 +15,18 @@ class ThreadRepairRepository:
         self.store = threads.store
         self.agent_id = threads.agent_id
 
-    def pending(self, *, retry: bool = False) -> str | None:
+    def pending(
+        self, *, retry: bool = False, at: datetime | None = None, max_failures: int = 3
+    ) -> str | None:
         with self.store._transaction() as db:
             row = db.execute(
                 "SELECT t.id FROM topic_threads t LEFT JOIN thread_repairs r ON r.thread_id=t.id "
                 "WHERE t.agent_id=? AND t.dirty=1 AND (? OR r.thread_id IS NULL OR "
                 "r.source_revision!=t.source_revision OR r.thread_revision!=t.revision "
-                "OR r.state NOT IN ('failed','running')) ORDER BY t.last_active_at,t.id LIMIT 1",
-                (self.agent_id, retry),
+                "OR r.state NOT IN ('failed','running') OR (r.state='failed' "
+                "AND r.failure_count<? AND r.retry_after<=?)) "
+                "ORDER BY t.last_active_at,t.id LIMIT 1",
+                (self.agent_id, retry, max_failures, (at or datetime.now(UTC)).isoformat()),
             ).fetchone()
             return row[0] if row else None
 
@@ -62,7 +66,16 @@ class ThreadRepairRepository:
             has_more=len(rows) > len(episodes),
         )
 
-    def window(self, thread_id: str, limit: int, cap: int, *, retry: bool) -> RepairPage | None:
+    def window(
+        self,
+        thread_id: str,
+        limit: int,
+        cap: int,
+        *,
+        retry: bool,
+        at: datetime | None = None,
+        max_failures: int = 3,
+    ) -> RepairPage | None:
         if not 1 <= limit <= 16 or not 1024 <= cap <= 262144:
             raise ValueError("Invalid repair page budget")
         with self.store._transaction() as db:
@@ -86,7 +99,8 @@ class ThreadRepairRepository:
                     "updated_at) VALUES (?,?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET "
                     "source_revision=excluded.source_revision,thread_revision=excluded.thread_revision,"
                     "revision=excluded.revision,after_time='',after_id='',working_state='',"
-                    "source_count=0,state='pending',error_code='',metrics='{}',updated_at=excluded.updated_at",
+                    "source_count=0,state='pending',error_code='',metrics='{}',"
+                    "failure_count=0,retry_after=NULL,updated_at=excluded.updated_at",
                     (
                         thread_id,
                         thread.source_revision,
@@ -95,8 +109,20 @@ class ThreadRepairRepository:
                         datetime.now(UTC).isoformat(),
                     ),
                 )
-            elif job["state"] in {"failed", "running"} and not retry:
-                return None
+            elif job["state"] in {"failed", "running"}:
+                if not retry and (
+                    job["state"] == "running"
+                    or job["failure_count"] >= max_failures
+                    or not job["retry_after"]
+                    or datetime.fromisoformat(job["retry_after"]) > (at or datetime.now(UTC))
+                ):
+                    return None
+                if retry:
+                    db.execute(
+                        "UPDATE thread_repairs SET failure_count=0,retry_after=NULL "
+                        "WHERE thread_id=?",
+                        (thread_id,),
+                    )
             return self._page(db, thread_id, limit, cap)
 
     def attempt(
@@ -122,13 +148,27 @@ class ThreadRepairRepository:
             if changed != 1:
                 raise HistoryError("Thread repair checkpoint changed.")
 
-    def fail(self, thread_id: str, code: str) -> None:
+    def fail(
+        self, thread_id: str, code: str, *, at: datetime | None = None, retry_seconds: float = 300
+    ) -> None:
         with self.store._transaction() as db:
             thread = self.threads._thread(db, thread_id)
+            job = db.execute(
+                "SELECT failure_count FROM thread_repairs WHERE thread_id=?", (thread_id,)
+            ).fetchone()
+            delay = min(86400, retry_seconds * 2 ** min(job[0] if job else 0, 8))
             db.execute(
-                "UPDATE thread_repairs SET state='failed',error_code=? "
+                "UPDATE thread_repairs SET state='failed',error_code=?,"
+                "failure_count=failure_count+1,"
+                "retry_after=? "
                 "WHERE thread_id=? AND source_revision=? AND thread_revision=?",
-                (code, thread_id, thread.source_revision, thread.revision),
+                (
+                    code,
+                    ((at or datetime.now(UTC)) + timedelta(seconds=delay)).isoformat(),
+                    thread_id,
+                    thread.source_revision,
+                    thread.revision,
+                ),
             )
 
     def publish(

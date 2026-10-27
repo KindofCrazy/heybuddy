@@ -110,7 +110,7 @@ class ThreadRepository:
                 (self.agent_id,),
             ).fetchone()[0]
             failure = db.execute(
-                "SELECT r.error_code FROM thread_repairs r "
+                "SELECT r.error_code,r.failure_count,r.retry_after FROM thread_repairs r "
                 "JOIN topic_threads t ON t.id=r.thread_id "
                 "WHERE t.agent_id=? AND t.dirty=1 AND r.state='failed' "
                 "AND r.source_revision=t.source_revision AND r.thread_revision=t.revision "
@@ -122,6 +122,8 @@ class ThreadRepository:
                 "pending_episodes_capped": count,
                 "dirty_threads_capped": dirty,
                 "last_repair_error": failure[0] if failure else "",
+                "repair_failure_count": failure[1] if failure else 0,
+                "repair_retry_after": failure[2] if failure else None,
             }
 
     def recover(self) -> None:

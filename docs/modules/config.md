@@ -2,6 +2,8 @@
 
 Review Fix 增加 AGENT_ORGANIZATION_THREAD_INTERVAL_SECONDS（14400）、CHECK_SECONDS（60）、COOLDOWN_SECONDS（60），配合已有 1500 秒 Idle、8 Runs、3 Episodes 和 10800 秒 Finalize 窗口。触发与时间源语义见 [Organization Schedule](organization-schedule.md)。
 
+MAINTENANCE_BATCHES/REQUESTS/TOKENS/SECONDS 默认 4/4/131072/120，是一轮共享维护上限；REPAIR_RETRY_SECONDS/MAX_FAILURES 默认 300/3，控制同源 Repair 的退避和自动失败上限。MemoryAutomation 保持自己的额度，未混入维护轮计量。
+
 P1 的 Settings.organization_policy() 构造可信 OrganizationPolicy，所有 `organization_` 字段按 `AGENT_ORGANIZATION_` 环境变量映射。校验数量、超时、字节/输出预算和递增的 weak/strong/split 时间阈值；模型不能修改配置。完整参数、运行链路与离线测试见 [Organization](organization.md)。
 
 Settings.retrieval_policy() 对应 `AGENT_RETRIEVAL_EPISODE_LIMIT`（1–3，默认 3）、RAW_RUN_LIMIT（1–3，默认 2）、MAX_RUN_BYTES（默认 65536）、OPTIONAL_TOKENS（默认 12288）及 SCAN_EPISODES（默认 200）。ContextBuilder 使用同一可选 tokens 上限并进一步按总窗口和触发水位缩减；检索器只负责相关性，不能扩大预算。Organization 的 SOURCE_BYTES/RESPONSE_BYTES 分别限制原始来源和可见输出，默认 65536/32768，与 tokens 独立。配置测试见 tests/test_config_cli.py。

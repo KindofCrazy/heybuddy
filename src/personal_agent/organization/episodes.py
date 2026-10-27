@@ -198,5 +198,8 @@ class EpisodeOrganizer:
                 raise
             except (OrganizationError, HistoryError) as error:
                 code = error.code if isinstance(error, OrganizationError) else "storage_conflict"
+                if code == "maintenance_budget":
+                    self.repository.attempt(batch, "pending", metrics=self.model.metrics)
+                    return {"outcome": "budget_exhausted", "metrics": self.model.metrics}
                 self.repository.attempt(batch, "failed", code, self.model.metrics)
                 return {"outcome": "failed", "error_code": code, "metrics": self.model.metrics}

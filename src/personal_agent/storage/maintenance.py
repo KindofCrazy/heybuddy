@@ -54,3 +54,9 @@ SCHEDULE_SCHEMA = (
         last_error TEXT NOT NULL DEFAULT '',
         FOREIGN KEY(stream_id,agent_id) REFERENCES conversations(id,agent_id))""",
 )
+
+RETRY_SCHEMA = (
+    "ALTER TABLE thread_repairs ADD COLUMN failure_count INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE thread_repairs ADD COLUMN retry_after TEXT",
+    "ALTER TABLE organization_schedule ADD COLUMN cycle_metrics TEXT NOT NULL DEFAULT '{}'",
+)

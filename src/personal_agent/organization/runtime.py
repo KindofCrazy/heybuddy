@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 
 from personal_agent.automation.service import MemoryAutomation
 from personal_agent.core.history import HistoryError
+from personal_agent.organization.budget import CycleProvider, MaintenanceBudget
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationError
@@ -129,67 +130,127 @@ class OrganizationRuntime:
 
     async def _cycle(self, stream_id: str, state: dict, idle: bool) -> bool:
         policy = self.episodes.policy
-        now = self.clock.now()
-        batches = requests = 0
+        budget = MaintenanceBudget(policy, self.clock)
+        models = [self.episodes.model, *([self.threads.model] if self.threads else [])]
+        originals = {id(model): (model, model.provider) for model in models}
+        for model, provider in originals.values():
+            model.provider = CycleProvider(provider, budget)
+        batches = attempts = 0
         successes = set()
         error = ""
+        time_limited = False
 
-        def observe(stage: str, report: dict) -> None:
-            nonlocal batches, requests, error
+        def observe(stage: str, report: dict) -> bool:
+            nonlocal batches, error
             self.last_report[stage] = report
+            if report["outcome"] == "budget_exhausted":
+                return False
             if report["outcome"] in {"no_dirty_work", "no_history", "blocked", "no_episodes"}:
-                return
+                return False
             batches += 1
-            requests += report.get("metrics", {}).get("requests", 0)
             if report["outcome"] == "failed":
                 error = report.get("error_code", "organization_failed")
             else:
                 successes.add(stage)
+            return True
 
-        if idle and self.threads:
-            observe("repair", await self._execute("repair", self.threads.repair(retry=False)))
-        episode = self.episodes.repository.status(stream_id)
-        if (
-            episode["pending_runs_capped"]
-            and episode["state"] not in {"failed", "running"}
-            and (idle or episode["pending_runs_capped"] >= policy.run_threshold)
-        ):
-            observe(
-                "episode",
-                await self._execute(
-                    "episode", self.episodes.organize(stream_id, retry=False, at=now)
-                ),
-            )
-        elif idle and not episode["pending_runs_capped"]:
-            if self.episodes.repository.finalize(stream_id, policy, at=now):
-                batches += 1
-                successes.add("episode")
-        if self.threads:
-            status = self.threads.repository.status()
-            due = now >= datetime.fromisoformat(state["thread_due_at"])
-            if not status["pending_episodes_capped"] and due:
-                self.schedule_repository.thread_check(now, policy.thread_interval_seconds)
-            elif (
-                idle
-                and status["state"] not in {"failed", "running"}
-                and (due or status["pending_episodes_capped"] >= policy.thread_threshold)
-            ):
-                report = await self._execute("thread", self.threads.organize(retry=False))
-                observe("thread", report)
-                if report["outcome"] == "completed":
-                    self.schedule_repository.thread_check(
-                        self.clock.now(), policy.thread_interval_seconds, success=True
-                    )
-        if batches:
-            self.schedule_repository.cycle(
-                self.clock.now(),
-                batches,
-                requests,
-                error,
-                frozenset(successes),
-                policy.cooldown_seconds,
-            )
-        return bool(batches)
+        try:
+            async with asyncio.timeout(policy.maintenance_seconds):
+                for _ in range(policy.maintenance_batches):
+                    # Every unit yields; input cancellation runs before another batch.
+                    await asyncio.sleep(0)
+                    current = self.schedule_repository.state(stream_id)
+                    if self._foreground or current["run_active"]:
+                        break
+                    now = self.clock.now()
+                    if budget.clock.monotonic() - budget.started >= policy.maintenance_seconds:
+                        budget.exhausted = True
+                        break
+                    if (
+                        idle
+                        and self.threads
+                        and self.threads.repairs.pending(
+                            at=now, max_failures=self.threads.policy.repair_max_failures
+                        )
+                        is not None
+                    ):
+                        attempts += 1
+                        if not observe(
+                            "repair",
+                            await self._execute("repair", self.threads.repair(retry=False, at=now)),
+                        ):
+                            break
+                        continue
+                    if self.threads:
+                        status = self.threads.repository.status()
+                        due = now >= datetime.fromisoformat(current["thread_due_at"])
+                        if not status["pending_episodes_capped"] and due:
+                            self.schedule_repository.thread_check(
+                                now, policy.thread_interval_seconds
+                            )
+                        elif (
+                            idle
+                            and status["state"] not in {"failed", "running"}
+                            and (
+                                due or status["pending_episodes_capped"] >= policy.thread_threshold
+                            )
+                        ):
+                            attempts += 1
+                            report = await self._execute(
+                                "thread", self.threads.organize(retry=False)
+                            )
+                            if not observe("thread", report):
+                                break
+                            if report["outcome"] == "completed":
+                                self.schedule_repository.thread_check(
+                                    self.clock.now(), policy.thread_interval_seconds, success=True
+                                )
+                            continue
+                    episode = self.episodes.repository.status(stream_id)
+                    if (
+                        episode["pending_runs_capped"]
+                        and episode["state"] not in {"failed", "running"}
+                        and (idle or episode["pending_runs_capped"] >= policy.run_threshold)
+                    ):
+                        attempts += 1
+                        if not observe(
+                            "episode",
+                            await self._execute(
+                                "episode", self.episodes.organize(stream_id, retry=False, at=now)
+                            ),
+                        ):
+                            break
+                    elif idle and not episode["pending_runs_capped"]:
+                        if self.episodes.repository.finalize(stream_id, policy, at=now):
+                            batches += 1
+                            attempts += 1
+                            successes.add("episode")
+                        else:
+                            break
+                    else:
+                        break
+        except TimeoutError:
+            budget.exhausted = time_limited = True
+        finally:
+            for model, provider in originals.values():
+                model.provider = provider
+            self.last_report["cycle"] = {
+                **budget.report(),
+                "attempted_batches": attempts,
+                "committed_or_failed_batches": batches,
+                "time_limited": time_limited,
+            }
+            if attempts:
+                self.schedule_repository.cycle(
+                    self.clock.now(),
+                    batches,
+                    budget.requests,
+                    error,
+                    frozenset(successes),
+                    policy.cooldown_seconds,
+                    self.last_report["cycle"],
+                )
+        return bool(attempts)
 
     async def _background(self, stream_id: str, after_answer: bool) -> None:
         try:
@@ -261,12 +322,19 @@ class OrganizationRuntime:
         )
         state = self.schedule_repository.state(stream_id)
         remaining = self._idle_remaining(state)
+        episodes = self.episodes.repository.status(stream_id)
+        threads = self.threads.repository.status() if self.threads else {}
         return {
             **state,
             "is_idle": not self._foreground and not state["run_active"] and remaining <= 0,
             "next_idle_at": (self.clock.now() + timedelta(seconds=remaining)).isoformat(),
             "background_running": bool(self.task and not self.task.done() and not self._foreground),
             "foreground_active": self._foreground,
+            "has_backlog": bool(
+                episodes["pending_runs_capped"]
+                or threads.get("pending_episodes_capped")
+                or threads.get("dirty_threads_capped")
+            ),
             "maintenance_running": self.current_stage is not None,
             "current_stage": self.current_stage,
             "next_finalize_at": (

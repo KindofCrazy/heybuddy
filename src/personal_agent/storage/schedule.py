@@ -1,5 +1,6 @@
 """One Agent-owned schedule row; short metadata-only transactions, no model requests."""
 
+import json
 from datetime import datetime, timedelta
 
 from personal_agent.storage.episodes import EpisodeRepository
@@ -106,11 +107,12 @@ class ScheduleRepository:
         outcome: str,
         successes: frozenset[str],
         cooldown: float,
+        metrics: dict | None = None,
     ) -> None:
         with self.store._transaction() as db:
             db.execute(
                 "UPDATE organization_schedule SET last_cycle_at=?,last_batches=?,last_requests=?,"
-                "last_error=?,cooldown_until=?,"
+                "last_error=?,cooldown_until=?,cycle_metrics=?,"
                 "last_episode_success_at=CASE WHEN ? THEN ? ELSE last_episode_success_at END,"
                 "last_repair_success_at=CASE WHEN ? THEN ? ELSE last_repair_success_at END "
                 "WHERE agent_id=?",
@@ -120,6 +122,7 @@ class ScheduleRepository:
                     requests,
                     outcome,
                     (now + timedelta(seconds=cooldown)).isoformat(),
+                    json.dumps(metrics or {}),
                     "episode" in successes,
                     now.isoformat(),
                     "repair" in successes,

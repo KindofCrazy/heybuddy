@@ -51,6 +51,11 @@ class OrganizerModel:
                 )
         except asyncio.CancelledError:
             raise
+        except OrganizationError as error:
+            if error.code in {"maintenance_budget", "maintenance_request_budget"}:
+                self.metrics["requests"] = 0
+                raise
+            raise OrganizationError("provider_failed") from None
         except Exception:
             raise OrganizationError("provider_failed") from None
         if response.usage:

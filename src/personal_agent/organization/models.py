@@ -33,6 +33,12 @@ class OrganizationPolicy(Model):
     thread_interval_seconds: float = Field(default=14400, gt=0, le=604800, allow_inf_nan=False)
     check_seconds: float = Field(default=60, gt=0, le=3600, allow_inf_nan=False)
     cooldown_seconds: float = Field(default=60, gt=0, le=86400, allow_inf_nan=False)
+    maintenance_batches: int = Field(default=4, ge=1, le=32)
+    maintenance_requests: int = Field(default=4, ge=1, le=32)
+    maintenance_tokens: int = Field(default=131072, ge=4096, le=1048576)
+    maintenance_seconds: float = Field(default=120, gt=0, le=600, allow_inf_nan=False)
+    repair_retry_seconds: float = Field(default=300, gt=0, le=86400, allow_inf_nan=False)
+    repair_max_failures: int = Field(default=3, ge=1, le=10)
 
     @model_validator(mode="after")
     def ordered(self):
