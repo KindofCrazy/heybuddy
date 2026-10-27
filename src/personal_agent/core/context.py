@@ -3,6 +3,7 @@ import json
 from collections.abc import Callable
 
 from personal_agent.core.budget import ContextBudget, ContextError, estimate_request, estimate_value
+from personal_agent.core.character import CharacterContext, without_legacy_persona
 from personal_agent.core.compaction import compact_step
 from personal_agent.core.history import ConversationHistory, HistoryError, InMemoryHistory
 from personal_agent.core.memory import CoreMemory
@@ -53,6 +54,7 @@ class ContextBuilder:
         temporal: Callable[[], dict] | None = None,
         retriever: ContextRetrieval | None = None,
         optional_history_tokens: int = 12288,
+        character: CharacterContext | None = None,
     ) -> None:
         self.system_prompt = system_prompt
         self._store = history_store if history_store is not None else InMemoryHistory()
@@ -60,6 +62,7 @@ class ContextBuilder:
         self.budget = budget
         self.temporal = temporal
         self.retriever = retriever
+        self.character = character
         if not 512 <= optional_history_tokens <= 32768:
             raise ValueError("Invalid optional history budget")
         self.optional_history_tokens = optional_history_tokens
@@ -104,8 +107,27 @@ class ContextBuilder:
     def for_request(self, messages: list[Message]) -> list[Message]:
         """Inject fresh Core and checkpoint data, never journal synthetic messages."""
         injected = []
+        character_messages = []
+        if self.character is not None:
+            query = (
+                self._pending[0].text
+                if self._pending
+                else next(
+                    (
+                        m.text
+                        for m in reversed(messages)
+                        if isinstance(m, TextMessage) and m.role == "user"
+                    ),
+                    "",
+                )
+            )
+            character_messages = self.character.compile(query)
+            self._diagnostics["character"] = self.character.diagnostics()
         if self.memory is not None:
-            injected.append(TextMessage(role="user", text=self.memory.compile()))
+            compiled = self.memory.compile()
+            if self.character is not None:
+                compiled = without_legacy_persona(compiled)
+            injected.append(TextMessage(role="user", text=compiled))
         if self._summary is not None:
             injected.append(
                 TextMessage(
@@ -124,7 +146,14 @@ class ContextBuilder:
             )
         if self.temporal is not None:
             injected.append(TextMessage(role="user", text=json.dumps(self.temporal())))
-        return [messages[0], *injected, *self._selected_history, *messages[1:]]
+        return [
+            messages[0],
+            *[m for m in character_messages if m.role == "system"],
+            *injected,
+            *[m for m in character_messages if m.role == "user"],
+            *self._selected_history,
+            *messages[1:],
+        ]
 
     async def _retrieve(self) -> None:
         if self._retrieval_loaded or self.retriever is None:

@@ -2,13 +2,14 @@
 
 from pydantic import Field
 
+from personal_agent.core.budget import ContextError
 from personal_agent.core.models import Model
 
 
-class CharacterError(Exception):
+class CharacterError(ContextError):
     def __init__(self, code: str) -> None:
         self.code = code
-        super().__init__(f"Character configuration failed ({code}).")
+        super().__init__(code, f"Character configuration failed ({code}).")
 
 
 class CharacterPolicy(Model):

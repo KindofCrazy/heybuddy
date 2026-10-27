@@ -17,6 +17,16 @@ character.md 包含剧版现代身份、关注异常/证据的价值取向、自
 
 角色是行为模拟，不意味着模型有人的情绪、意识或真实线下经历。剧版人物是开发参考，不能据此声称影视特有视觉、对白等内容可无授权商业化分发。背景核对及理论参考见 [P3 架构](../p3-character-architecture.md)。
 
+## Context 接入
+
+`character/context.py::CharacterContextCompiler` 生成独立、有界的角色层。构造时以最长的示例组合验证关键静态内容，超限直接 CharacterError，不截断核心人格。每次 compile() 提供完整 Character Core/Behavior、最多默认两条相关示例，以及仅命中命名章节的至多两段 Lore；不把四个文件全文注入每轮。可选引用有独立字节上限，超限整段省略。
+
+Core 只依赖 `core/character.py::CharacterContext` Protocol。SessionManager 将同一个编译器传入每个 ContextBuilder，切换 Conversation 不丢失角色设置。for_request() 顺序是原 Host System、角色 System、过滤后的 Core、Summary/时间、可选角色引用、历史检索、原近期/当前消息。角色层固定宿主文字明确优先级、执行真实性、虚构背景与用户历史边界；角色包不能注册工具或赋权。
+
+启用时只对 memory.compile() 的 JSON 注入视图移除 persona.md，原文件、公共 MemoryFS 编译与写入语义不变；human.md 和 MEMORY.md 保留。关闭角色不经过过滤，立即恢复旧视图。角色材料不写入 pending 或 Journal，完整模型请求继续经过原 ContextBudget 估算、压缩和失败路径。类型/预算不适配返回安全的 context_error，不暗中删除当前用户输入。
+
+AGENT_CHARACTER_ID 默认 none；sherlock_bbc 显式启用。main._run_session() 在装配 Agent 前读取包；配置或读取失败给出明确 CLI 错误。`/context status` 的 character 显示 ID、变体、包 hash、编译大小和额外 Appraisal 请求数（零），不显示私人上下文。tests/test_character_context.py 验证模式回退、磁盘保留、System 顺序、多轮工具身份、总预算、Lore 上限和会话隔离。
+
 ## 异常与验证
 
 `CharacterError.code` 区分 ID、缺失、链接、编码/读取和预算/章节错误。路径验证不是针对本机恶意并发文件替换的 OS 沙箱；允许标准安装器用 hardlink 安装只读包资源，不把它们误判为 Memory 私有文件。`tests/test_character_loader.py` 覆盖正常读取、修改检测、缺失/无效/超限和 Symlink/Junction 逃逸。最小示例：`CharacterLoader().load("sherlock_bbc")`；本模块不调用 Provider。

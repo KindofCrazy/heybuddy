@@ -1,6 +1,7 @@
 """Local session selection. Conversation history is not cross-conversation memory."""
 
 from personal_agent.core.budget import ContextBudget
+from personal_agent.core.character import CharacterContext
 from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemory
@@ -19,11 +20,13 @@ class SessionManager:
         memory: CoreMemory | None = None,
         budget: ContextBudget | None = None,
         optional_history_tokens: int = 12288,
+        character: CharacterContext | None = None,
     ) -> None:
         self.budget = budget
         self.optional_history_tokens = optional_history_tokens
         self.store = store
         self.memory = memory
+        self.character = character
         self.retriever: ContextRetrieval | None = None
         self.agent = store.get_agent("heybuddy") or store.create_agent(
             "HeyBuddy", DEFAULT_SYSTEM_PROMPT, agent_id="heybuddy"
@@ -40,6 +43,7 @@ class SessionManager:
             temporal=lambda: temporal_context(self.store.last_interaction(self.current.id)),
             retriever=self.retriever,
             optional_history_tokens=self.optional_history_tokens,
+            character=self.character,
         )
 
     def new(self) -> ConversationRecord:

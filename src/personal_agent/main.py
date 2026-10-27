@@ -9,6 +9,9 @@ from openai import AsyncOpenAI
 from pydantic import ValidationError
 
 from personal_agent.automation.service import MemoryAutomation
+from personal_agent.character.context import CharacterContextCompiler
+from personal_agent.character.loader import CharacterLoader
+from personal_agent.character.models import CharacterError
 from personal_agent.config import Settings, load_settings, memory_root_for
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
@@ -277,6 +280,14 @@ async def run_cli(settings: Settings) -> None:
 
 
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
+    if settings.character_id != "none":
+        policy = settings.character_policy()
+        package = CharacterLoader(settings.character_root, policy).load(settings.character_id)
+        sessions.character = CharacterContextCompiler(
+            package, policy, variant=settings.character_variant
+        )
+    else:
+        sessions.character = None
     thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
     sessions.retriever = ContextRetriever(
         thread_repository,
@@ -390,6 +401,9 @@ def main() -> int:
             "存储错误：无法初始化或访问会话数据库，请检查权限或其他运行中的实例。", file=sys.stderr
         )
         return 1
+    except CharacterError as exc:
+        print(f"角色配置错误 [{exc.code}]：请检查本地角色包与大小限制。", file=sys.stderr)
+        return 2
     except CoreMemoryError as exc:
         if exc.code in {"memory_not_private", "memory_privacy_error"}:
             print(

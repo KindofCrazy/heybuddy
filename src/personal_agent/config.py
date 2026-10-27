@@ -7,6 +7,8 @@ from dotenv import dotenv_values
 from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, model_validator
 
 from personal_agent.automation.models import AutomationPolicy
+from personal_agent.character.loader import IDENTIFIER
+from personal_agent.character.models import CharacterPolicy
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.retrieval import RetrievalPolicy
 from personal_agent.learning.curator import CuratorPolicy
@@ -29,6 +31,14 @@ class Settings(ContextBudget):
     database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
     memory_root: Path | None = None
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
+    character_id: str = "none"
+    character_root: Path | None = None
+    character_max_file_bytes: int = Field(default=16384, ge=1024, le=65536)
+    character_max_context_bytes: int = Field(default=24576, ge=1024, le=65536)
+    character_contextual_bytes: int = Field(default=6144, ge=256, le=16384)
+    character_example_count: int = Field(default=2, ge=1, le=3)
+    character_lore_sections: int = Field(default=2, ge=0, le=3)
+    character_variant: Literal["E0", "E1", "E2"] = "E2"
     memory_learning_enabled: bool = True
     memory_learning_batch_episodes: int = Field(default=3, ge=1, le=3)
     memory_learning_max_wait_seconds: float = Field(default=21600, gt=0, le=604800)
@@ -108,6 +118,19 @@ class Settings(ContextBudget):
                 for name in OrganizationPolicy.model_fields
                 if hasattr(self, "organization_" + name)
             }
+        )
+
+    @field_validator("character_id")
+    @classmethod
+    def valid_character_id(cls, value: str) -> str:
+        value = value.strip()
+        if value != "none" and not IDENTIFIER.fullmatch(value):
+            raise ValueError("Use a local lowercase character identifier or none")
+        return value
+
+    def character_policy(self) -> CharacterPolicy:
+        return CharacterPolicy(
+            **{name: getattr(self, "character_" + name) for name in CharacterPolicy.model_fields}
         )
 
     def learning_policy(self) -> LearningPolicy:
@@ -199,6 +222,11 @@ class Settings(ContextBudget):
 
 
 ENV_FIELDS = {
+    **{
+        "AGENT_" + name.upper(): name
+        for name in Settings.model_fields
+        if name.startswith("character_")
+    },
     **{
         "AGENT_" + name.upper(): name
         for name in Settings.model_fields
