@@ -9,6 +9,7 @@ from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, mod
 from personal_agent.automation.models import AutomationPolicy
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.retrieval import RetrievalPolicy
+from personal_agent.learning.models import LearningPolicy
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.reflection.models import ReflectionPolicy
 
@@ -26,6 +27,15 @@ class Settings(ContextBudget):
     database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
     memory_root: Path | None = None
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
+    memory_learning_enabled: bool = True
+    memory_learning_batch_episodes: int = Field(default=3, ge=1, le=3)
+    memory_learning_max_wait_seconds: float = Field(default=21600, gt=0, le=604800)
+    memory_priority_enabled: bool = True
+    memory_learning_input_tokens: int = Field(default=16384, ge=2048, le=131072)
+    memory_learning_output_tokens: int = Field(default=16384, ge=256, le=32768)
+    memory_learning_timeout_seconds: float = Field(default=60, gt=0, le=120)
+    memory_learning_source_bytes: int = Field(default=131072, ge=4096, le=524288)
+    memory_learning_max_files: int = Field(default=2, ge=1, le=3)
     organization_enabled: bool = True
     organization_idle_seconds: float = Field(default=1500, gt=0, le=86400)
     organization_run_threshold: int = Field(default=8, ge=1, le=64)
@@ -89,6 +99,19 @@ class Settings(ContextBudget):
             }
         )
 
+    def learning_policy(self) -> LearningPolicy:
+        return LearningPolicy(
+            enabled=self.memory_learning_enabled,
+            batch_episodes=self.memory_learning_batch_episodes,
+            max_wait_seconds=self.memory_learning_max_wait_seconds,
+            priority_enabled=self.memory_priority_enabled,
+            input_tokens=self.memory_learning_input_tokens,
+            output_tokens=self.memory_learning_output_tokens,
+            timeout_seconds=self.memory_learning_timeout_seconds,
+            source_bytes=self.memory_learning_source_bytes,
+            max_files=self.memory_learning_max_files,
+        )
+
     def retrieval_policy(self) -> RetrievalPolicy:
         return RetrievalPolicy(
             **{name: getattr(self, "retrieval_" + name) for name in RetrievalPolicy.model_fields}
@@ -148,6 +171,11 @@ class Settings(ContextBudget):
 
 
 ENV_FIELDS = {
+    **{
+        "AGENT_" + name.upper(): name
+        for name in Settings.model_fields
+        if name.startswith(("memory_learning_", "memory_priority_"))
+    },
     **{
         "AGENT_" + name.upper(): name
         for name in Settings.model_fields

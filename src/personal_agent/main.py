@@ -14,6 +14,7 @@ from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
+from personal_agent.learning.service import MemoryLearningService
 from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory import index
 from personal_agent.memory.store import MemoryFS
@@ -31,6 +32,7 @@ from personal_agent.reflection.service import ReflectionService
 from personal_agent.retrieval import ContextRetriever
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
+from personal_agent.storage.learning import LearningRepository
 from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.storage.threads import ThreadRepository
@@ -109,7 +111,22 @@ async def _chat(
             continue
         elif user_input.split(maxsplit=1)[0] == "/memory":
             parts = user_input.split(maxsplit=2)
+            if len(parts) == 3 and parts[1] == "learning":
+                if organization is None or organization.learning is None:
+                    write("Memory > 当前入口未配置 P2 Learning。")
+                    continue
+                try:
+                    report = await organization.learning_command(parts[2])
+                    write(json.dumps(report, ensure_ascii=False))
+                except (HistoryError, CoreMemoryError, ReflectionError, OrganizationError):
+                    write("Memory > 学习失败；检查状态，文件可能已保存，不会盲目重写。")
+                continue
             if len(parts) == 3 and parts[1] == "automation":
+                if organization and organization.learning and organization.learning.policy.enabled:
+                    write(
+                        "Memory > P2 已接管自动学习；旧 Automation 已暂停，旧计划可 /reflect 查看。"
+                    )
+                    continue
                 if automation is None or sessions is None:
                     write("Memory > 当前入口未配置 Automation。")
                     continue
@@ -288,6 +305,9 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
         repository = EpisodeRepository(sessions.store, sessions.agent.id)
         repository.recover()
         thread_repository.recover()
+        learning = MemoryLearningService(
+            LearningRepository(repository), reflection, settings.learning_policy()
+        )
         organization = OrganizationRuntime(
             EpisodeOrganizer(
                 repository,
@@ -296,6 +316,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
                 ),
             ),
             automation=automation,
+            learning=learning,
             threads=ThreadOrganizer(
                 thread_repository,
                 OrganizerModel(

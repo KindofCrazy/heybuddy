@@ -1,6 +1,7 @@
 """Extraction-first learning reuses Reflection model/evidence validation and exact-span writer."""
 
 import asyncio
+from datetime import datetime
 from types import SimpleNamespace
 
 from personal_agent.core.compaction import redact
@@ -71,6 +72,83 @@ class MemoryLearningService:
             self.policy,
         )
         self._lock = asyncio.Lock()
+        if self.policy.enabled:
+            self.repository.activate(self.clock.now())
+            self.repository.recover(self.clock.now())
+
+    def poll(self):
+        if self.policy.enabled:
+            self.repository.harvest_priority(self.clock.now(), self.policy)
+
+    def batch_due(self, *, force=False) -> bool:
+        if self.repository.pending_job("batch"):
+            return True
+        rows = self.repository.pending_episodes(self.policy.batch_episodes)
+        return bool(rows) and (
+            force
+            or len(rows) >= self.policy.batch_episodes
+            or (self.clock.now() - datetime.fromisoformat(rows[0]["ended_at"])).total_seconds()
+            >= self.policy.max_wait_seconds
+        )
+
+    def ready(self, *, idle: bool) -> bool:
+        return (
+            self.policy.enabled
+            and not self.repository.unresolved()
+            and (bool(self.repository.pending_job("priority")) or (idle and self.batch_due()))
+        )
+
+    async def _resume(self, job: dict, *, retry=False):
+        async with self._lock:
+            refs = job["sources"]
+            fresh, records, hints = self.repository.snapshot(
+                [r["id"] for r in refs["runs"]],
+                [e["id"] for e in refs["episodes"]],
+                self.policy,
+                floor=refs.get("run_floor", 0),
+            )
+            if fresh != refs:
+                self.repository.save(job["id"], "failed", self.clock.now(), error="source_changed")
+                return {"outcome": "failed", "error_code": "source_changed"}
+            return await self._execute(job["id"], refs, records, hints, retry=retry)
+
+    async def learn_priority(self, *, retry=False) -> dict:
+        if not self.policy.enabled or not self.policy.priority_enabled:
+            return {"outcome": "disabled"}
+        self.poll()
+        job = self.repository.pending_job("priority", retry=retry)
+        return await self._resume(job, retry=retry) if job else {"outcome": "no_learning_work"}
+
+    async def learn_batch(self, *, force=False, retry=False) -> dict:
+        if not self.policy.enabled:
+            return {"outcome": "disabled"}
+        job = self.repository.pending_job("batch", retry=retry)
+        if job:
+            return await self._resume(job, retry=retry)
+        if not self.batch_due(force=force):
+            return {"outcome": "no_learning_work"}
+        rows = self.repository.pending_episodes(self.policy.batch_episodes)
+        async with self._lock:
+            refs, records, hints = self.repository.snapshot(
+                [],
+                [r["id"] for r in rows],
+                self.policy,
+                floor=self.repository.activation()["run_floor"],
+            )
+            jid = self.repository.create("batch", refs, self.clock.now())
+            return await self._execute(jid, refs, records, hints, retry=retry)
+
+    def status(self) -> dict:
+        if not self.policy.enabled:
+            return {"enabled": False}
+        return {
+            "enabled": True,
+            **self.repository.status(),
+            "batch_due": self.batch_due(),
+            "batch_episodes": self.policy.batch_episodes,
+            "max_wait_seconds": self.policy.max_wait_seconds,
+            "running": self._lock.locked(),
+        }
 
     def _verify(self, extraction: Extraction, records: list) -> None:
         supplied = {(cid, s.run_id): s.turn for cid, s in records}
@@ -205,7 +283,7 @@ class MemoryLearningService:
         self.repository.save(jid, "processing", self.clock.now())
         receipts = []
         try:
-            items = await self.propose(records, hints)
+            items = await self.propose(records, hints) if records else []
             # A publication receipt is durable BEFORE the first file write. No bodies in SQLite.
             self._fresh(refs)
             writes = [
@@ -262,7 +340,10 @@ class MemoryLearningService:
 
     def _fresh(self, refs):
         fresh, _, _ = self.repository.snapshot(
-            [r["id"] for r in refs["runs"]], [e["id"] for e in refs["episodes"]], self.policy
+            [r["id"] for r in refs["runs"]],
+            [e["id"] for e in refs["episodes"]],
+            self.policy,
+            floor=refs.get("run_floor", 0),
         )
         if fresh != refs:
             raise HistoryError("Learning sources changed before publication.")

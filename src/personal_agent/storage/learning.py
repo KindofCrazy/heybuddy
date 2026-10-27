@@ -1,6 +1,7 @@
 """Learning task metadata only: references, hashes and publication receipts, no fact bodies."""
 
 import json
+import re
 from datetime import datetime
 from uuid import uuid4
 
@@ -34,7 +35,9 @@ class LearningRepository:
         self.store = episodes.store
         self.agent_id = episodes.agent_id
 
-    def snapshot(self, run_ids: list[str], episode_ids: list[str], policy: LearningPolicy):
+    def snapshot(
+        self, run_ids: list[str], episode_ids: list[str], policy: LearningPolicy, *, floor=0
+    ):
         """Resolve references afresh, Agent-bound, bounded before deserialization."""
         if len(set(run_ids)) != len(run_ids) or len(episode_ids) > policy.batch_episodes:
             raise HistoryError("Invalid learning sources.")
@@ -61,6 +64,8 @@ class LearningRepository:
                 ).fetchone()
                 if row is None:
                     raise HistoryError("Learning source inaccessible.")
+                if row["position"] <= floor:
+                    continue
                 source = self.episodes._source(db, row, policy.source_bytes - used)
                 if source.turn is None:
                     raise HistoryError("Learning source incomplete or oversized.")
@@ -68,6 +73,7 @@ class LearningRepository:
                 records.append((row["conversation_id"], source))
             records.sort(key=lambda pair: (pair[1].started_at, pair[1].position))
             refs = {
+                "run_floor": floor,
                 "runs": [
                     {"id": s.run_id, "hash": s.turn.source_hash, "conversation_id": cid}
                     for cid, s in records
@@ -75,6 +81,128 @@ class LearningRepository:
                 "episodes": episode_refs,
             }
             return refs, records, hints
+
+    def activate(self, now: datetime):
+        """First enable is a watermark, never silently relearn pre-P2 history."""
+        with self.store._transaction() as db:
+            run_floor = db.execute(
+                "SELECT COALESCE(MAX(r.rowid),0) FROM runs r JOIN conversations c "
+                "ON c.id=r.conversation_id WHERE c.agent_id=?",
+                (self.agent_id,),
+            ).fetchone()[0]
+            episode_floor = db.execute(
+                "SELECT COALESCE(MAX(e.rowid),0) FROM episodes e JOIN conversations c "
+                "ON c.id=e.stream_id WHERE c.agent_id=?",
+                (self.agent_id,),
+            ).fetchone()[0]
+            db.execute(
+                "INSERT OR IGNORE INTO memory_learning_state "
+                "(agent_id,activated_at,run_floor,episode_floor,priority_cursor) "
+                "VALUES (?,?,?,?,?)",
+                (self.agent_id, now.isoformat(), run_floor, episode_floor, run_floor),
+            )
+
+    def activation(self) -> dict:
+        with self.store._transaction() as db:
+            row = db.execute(
+                "SELECT * FROM memory_learning_state WHERE agent_id=?", (self.agent_id,)
+            ).fetchone()
+            if row is None:
+                raise HistoryError("Learning is not activated.")
+            return dict(row)
+
+    def harvest_priority(self, now: datetime, policy: LearningPolicy):
+        state = self.activation()
+        with self.store._transaction() as db:
+            rows = db.execute(
+                "SELECT r.rowid AS position,r.id,r.status,"
+                "(SELECT substr(json_extract(m.payload,'$.text'),1,2048) FROM messages m "
+                "WHERE m.run_id=r.id AND json_extract(m.payload,'$.role')='user' "
+                "ORDER BY m.sequence LIMIT 1) AS text "
+                "FROM runs r JOIN conversations c ON c.id=r.conversation_id WHERE c.agent_id=? "
+                "AND r.rowid>? ORDER BY r.rowid LIMIT 16",
+                (self.agent_id, state["priority_cursor"]),
+            ).fetchall()
+        cursor = state["priority_cursor"]
+        for row in rows:
+            if row["status"] == "running":
+                break
+            if (
+                row["status"] == "completed"
+                and policy.priority_enabled
+                and re.search(
+                    r"记住|偏好|正式决定|明确更正|记错了|以后.{0,20}回答|\bremember\b|\bprefer\b|"
+                    r"\bwe (?:have )?decided\b|\bcorrection\b",
+                    row["text"] or "",
+                    re.I,
+                )
+            ):
+                refs, _, _ = self.snapshot([row["id"]], [], policy)
+                self.create("priority", refs, now)
+            cursor = row["position"]
+        with self.store._transaction() as db:
+            db.execute(
+                "UPDATE memory_learning_state SET priority_cursor=? WHERE agent_id=?",
+                (cursor, self.agent_id),
+            )
+
+    def pending_job(self, kind: str, *, retry=False):
+        with self.store._transaction() as db:
+            row = db.execute(
+                "SELECT id FROM memory_learning_jobs WHERE agent_id=? AND kind=? "
+                "AND state IN (" + ("'pending','failed'" if retry else "'pending'") + ") "
+                "ORDER BY created_at,id LIMIT 1",
+                (self.agent_id, kind),
+            ).fetchone()
+        return self.get(row[0]) if row else None
+
+    def pending_episodes(self, limit: int):
+        state = self.activation()
+        with self.store._transaction() as db:
+            return [
+                dict(row)
+                for row in db.execute(
+                    "SELECT e.id,e.ended_at,e.revision FROM episodes e JOIN conversations c "
+                    "ON c.id=e.stream_id WHERE c.agent_id=? AND e.rowid>? AND e.status='finalized' "
+                    "AND NOT EXISTS (SELECT 1 FROM memory_learning_sources s WHERE s.agent_id=? "
+                    "AND s.kind='episode' AND s.source_id=e.id AND s.revision=e.revision) "
+                    "ORDER BY e.ended_at,e.id LIMIT ?",
+                    (self.agent_id, state["episode_floor"], self.agent_id, limit),
+                ).fetchall()
+            ]
+
+    def status(self):
+        with self.store._transaction() as db:
+            counts = [
+                dict(r)
+                for r in db.execute(
+                    "SELECT kind,state,COUNT(*) AS count FROM memory_learning_jobs "
+                    "WHERE agent_id=? "
+                    "GROUP BY kind,state",
+                    (self.agent_id,),
+                ).fetchall()
+            ]
+            latest = db.execute(
+                "SELECT kind,state,updated_at,error,metrics FROM memory_learning_jobs "
+                "WHERE agent_id=? ORDER BY updated_at DESC,id DESC LIMIT 1",
+                (self.agent_id,),
+            ).fetchone()
+        return {
+            "counts": counts,
+            "last": dict(latest) if latest else None,
+            "pending_episodes_capped": len(self.pending_episodes(65)),
+            "activation": self.activation(),
+        }
+
+    def unresolved(self) -> bool:
+        with self.store._transaction() as db:
+            return bool(
+                db.execute(
+                    "SELECT 1 FROM memory_learning_jobs WHERE agent_id=? "
+                    "AND state='requires_reconciliation' LIMIT 1",
+                    (self.agent_id,),
+                ).fetchone()
+            )
 
     def create(self, kind: str, refs: dict, now: datetime) -> str:
         jid = uuid4().hex

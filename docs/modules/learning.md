@@ -19,6 +19,18 @@
 
 Host 校验结构、真实引文与写入边界，不能数学证明模型的语义判断。假设、外部指令、未接受建议、敏感推测和冲突应由 Extraction/Consolidation 拒绝或标为不确定；请求及响应做凭据过滤。FakeProvider 测试不代表真实语义质量。
 
+## 双速自动化的实际路径
+
+`main._run_session()` 装配一个 Learner 并传给 `OrganizationRuntime`。首次 enabled 时 `activate()` 保存 Run/Episode rowid 水位；旧数据不静默重复学习，水位跨重启保留。`poll()/harvest_priority()` 每次最多扫描 16 个新 Run 的首条用户文本，用保守的记住/偏好/正式决定/明确更正等信号入队，不发分类 LLM。processing/failed/空结果与 completed 分开记录。
+
+`learn_priority()` 尽快在回复之后的后台执行；`learn_batch()` 只在 Idle 处理 finalized Episodes，默认 3 个或最早来源等待 21600 秒。它们最终复用同一 `_execute()`，不复用 Reflection 进度。Priority 完成不会跳过包含其他 Run 的整个 Episode；Batch 再次读取现有 Markdown，由 Consolidation 判定重复 no-op。一次任务失败需要显式 retry，取消在没有文件回执时恢复 pending。
+
+Runtime 统一包装 Episode/Thread/Learning 的 Provider，维护轮共享 4 批、4 请求、131072 保守预留 tokens、120 秒；批间让出、60 秒冷却。Dirty Repair 优先，学习与其他维护交替获得优先机会，每轮最多一个学习流水线。开始付费提取前保守检查整个流水线能否放入剩余请求/token 预算，避免预算不足反复支付 Extraction。自定义预算无法容纳时 status 的 learning_last_report 显示 learning_budget_config，保留待处理工作而不调用模型。
+
+P2 enabled 时旧 MemoryAutomation 不再自动消费新 Run，旧计划、审批与数据全部保留；`/reflect` 仍可手动调试。关闭 AGENT_MEMORY_LEARNING_ENABLED 后才恢复原 Automation 模式；不同时自动执行两者。`/memory learning status|run|retry|reconcile <job_id>` 是可信调试入口，run/retry 使用共享预算和整轮超时；不向 Main Agent 注册自动写工具。原 /memory repair 可先补齐部分失败索引，再进行只读 reconcile。
+
+存在 requires_reconciliation 时，自动学习暂停，防止新的文件更新破坏已保存回执的核对依据。所有配置在 `.env.example`；自动任务不主动打印正文。`tests/test_learning_runtime.py` 覆盖首启水位、Priority→Batch 不漏其他 Run、单 Episode 六小时机会、抢占、旧 Automation 不执行、空提取推进、失败显式重试及共享预算。FakeClock 不等待真实数小时。
+
 ## 阅读与验证
 
 最小入口：`await learner.learn(run_ids=[completed_run_id])`；`tests/test_learning.py` 使用隔离 MemoryFS/SQLite，覆盖偏好更新、同文件合并、跨 Conversation、空提取/no-op、禁止路径/Persona、来源伪造、取消与失败显式重试，以及文件成功/SQLite 失败后只读核对。原 `tests/test_reflection.py`、`tests/test_automation.py` 验证审批和旧记录保持兼容。

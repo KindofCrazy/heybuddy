@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 
 from personal_agent.automation.service import MemoryAutomation
 from personal_agent.core.history import HistoryError
+from personal_agent.learning.service import MemoryLearningService
 from personal_agent.organization.budget import CycleProvider, MaintenanceBudget
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.episodes import EpisodeOrganizer
@@ -73,11 +74,14 @@ class OrganizationRuntime:
         automation: MemoryAutomation | None = None,
         threads: ThreadOrganizer | None = None,
         clock: Clock | None = None,
+        learning: MemoryLearningService | None = None,
     ) -> None:
         self.episodes = episodes
         self.automation = automation
         self.threads = threads
         self.clock = clock or SystemClock()
+        self.learning = learning
+        self._learning_first = True
         self.schedule_repository = ScheduleRepository(episodes.repository)
         self._stream_id: str | None = None
         self._foreground = False
@@ -160,6 +164,8 @@ class OrganizationRuntime:
         policy = self.episodes.policy
         budget = MaintenanceBudget(policy, self.clock)
         models = [self.episodes.model, *([self.threads.model] if self.threads else [])]
+        if self.learning and self.learning.policy.enabled:
+            models.append(self.learning.model)
         originals = {id(model): (model, model.provider) for model in models}
         for model, provider in originals.values():
             model.provider = CycleProvider(provider, budget)
@@ -167,6 +173,8 @@ class OrganizationRuntime:
         successes = set()
         error = ""
         time_limited = False
+        learning_ran = False
+        learning_first = self._learning_first
 
         def observe(stage: str, report: dict) -> bool:
             nonlocal batches, error
@@ -209,6 +217,45 @@ class OrganizationRuntime:
                         ):
                             break
                         continue
+                    if (
+                        self.learning
+                        and not learning_ran
+                        and self.learning.ready(idle=idle)
+                        and (learning_first or attempts > 0)
+                    ):
+                        # Reserve room for the complete in-memory pipeline before paying
+                        # for Extraction; no repeated partial pipelines across budget stops.
+                        needed = 2 + self.learning.policy.max_files
+                        tokens = needed * (
+                            self.learning.model.input_limit + self.learning.policy.output_tokens
+                        )
+                        if (
+                            needed > policy.maintenance_requests
+                            or tokens > policy.maintenance_tokens
+                        ):
+                            self.last_report["learning"] = {
+                                "outcome": "blocked",
+                                "error_code": "learning_budget_config",
+                                "required_requests": needed,
+                                "reserved_tokens_required": tokens,
+                            }
+                        if (
+                            budget.requests + needed <= policy.maintenance_requests
+                            and budget.reserved_tokens + tokens <= policy.maintenance_tokens
+                        ):
+                            learning_ran = True
+                            attempts += 1
+                            report = await self._execute(
+                                "learning",
+                                self.learning.learn_priority()
+                                if self.learning.repository.pending_job("priority")
+                                else self.learning.learn_batch(),
+                            )
+                            if not observe("learning", report):
+                                break
+                            continue
+                    if not policy.enabled:
+                        break
                     if self.threads:
                         status = self.threads.repository.status()
                         due = self._thread_remaining(current) <= 0
@@ -269,6 +316,7 @@ class OrganizationRuntime:
                 "time_limited": time_limited,
             }
             if attempts:
+                self._learning_first = not learning_first
                 finished_at = self.clock.now()
                 self.schedule_repository.cycle(
                     finished_at,
@@ -283,18 +331,23 @@ class OrganizationRuntime:
                     finished_at + timedelta(seconds=policy.cooldown_seconds)
                 ).isoformat()
                 self._cooldown_deadline = self.clock.monotonic() + policy.cooldown_seconds
+            else:
+                self._learning_first = True
         return bool(attempts)
 
     async def _background(self, stream_id: str, after_answer: bool) -> None:
         try:
-            if after_answer and self.automation and self.automation.policy.mode != "off":
+            p2 = bool(self.learning and self.learning.policy.enabled)
+            if after_answer and not p2 and self.automation and self.automation.policy.mode != "off":
                 self.last_report["memory"] = await self._execute(
                     "memory", self.automation.run(stream_id)
                 )
             policy = self.episodes.policy
-            if not policy.enabled:
+            if not policy.enabled and not p2:
                 return
             while not self._foreground:
+                if p2:
+                    self.learning.poll()
                 state = self.schedule_repository.state(stream_id)
                 remaining = self._idle_remaining(state)
                 cooldown = self._cooldown_remaining(state)
@@ -362,6 +415,8 @@ class OrganizationRuntime:
             ),
             "maintenance_running": self.current_stage is not None,
             "current_stage": self.current_stage,
+            "learning": self.learning.status() if self.learning else None,
+            "learning_last_report": self.last_report.get("learning"),
             "next_finalize_at": (
                 datetime.fromisoformat(state["provisional_ended_at"])
                 + timedelta(seconds=self.episodes.policy.revision_seconds)
@@ -411,3 +466,27 @@ class OrganizationRuntime:
             write("用法：/episode status|organize|list|show <id>")
             return
         write(json.dumps(result, ensure_ascii=False))
+
+    async def learning_command(self, text: str) -> dict:
+        if self.learning is None:
+            return {"outcome": "disabled"}
+        if text == "status":
+            return self.learning.status()
+        parts = text.split()
+        if len(parts) == 2 and parts[0] == "reconcile":
+            return self.learning.reconcile(parts[1])
+        if text not in {"run", "retry"}:
+            return {"usage": "/memory learning status|run|retry|reconcile <job_id>"}
+        model = self.learning.model
+        original = model.provider
+        budget = MaintenanceBudget(self.episodes.policy, self.clock)
+        model.provider = CycleProvider(original, budget)
+        try:
+            async with asyncio.timeout(self.episodes.policy.maintenance_seconds):
+                self.learning.poll()
+                report = await self.learning.learn_priority(retry=text == "retry")
+                if report["outcome"] == "no_learning_work":
+                    report = await self.learning.learn_batch(force=True, retry=text == "retry")
+                return {**report, "budget": budget.report()}
+        finally:
+            model.provider = original
