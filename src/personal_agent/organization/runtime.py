@@ -8,14 +8,16 @@ import asyncio
 import json
 import queue
 import threading
-from collections.abc import Callable
-from datetime import UTC, datetime
+from collections.abc import Awaitable, Callable
+from datetime import datetime, timedelta
 
 from personal_agent.automation.service import MemoryAutomation
 from personal_agent.core.history import HistoryError
+from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationError
 from personal_agent.organization.threads import ThreadOrganizer
+from personal_agent.storage.schedule import ScheduleRepository
 
 
 class AsyncInput:
@@ -69,48 +71,173 @@ class OrganizationRuntime:
         episodes: EpisodeOrganizer,
         automation: MemoryAutomation | None = None,
         threads: ThreadOrganizer | None = None,
+        clock: Clock | None = None,
     ) -> None:
         self.episodes = episodes
         self.automation = automation
         self.threads = threads
+        self.clock = clock or SystemClock()
+        self.schedule_repository = ScheduleRepository(episodes.repository)
+        self._stream_id: str | None = None
+        self._foreground = False
+        self._activity_key: str | None = None
+        self._idle_base = self.clock.monotonic()
+        self._initial_idle = 0.0
+        self.current_stage: str | None = None
         self.input = AsyncInput()
         self.task: asyncio.Task | None = None
         self.last_report: dict = {}
 
     def schedule(self, stream_id: str, *, after_answer: bool = False) -> None:
+        if self.task is not None and not self.task.done():
+            return
+        self.schedule_repository.ensure(
+            stream_id,
+            self.clock.now(),
+            self.episodes.policy.thread_interval_seconds,
+            activity=self._foreground,
+        )
+        self._stream_id = stream_id
+        self._foreground = False
         self.task = asyncio.create_task(self._background(stream_id, after_answer))
+
+    def _idle_remaining(self, state: dict) -> float:
+        stamps = [state["last_activity_at"]]
+        if state["last_completed_at"]:
+            stamps.append(state["last_completed_at"])
+        activity = max(datetime.fromisoformat(stamp) for stamp in stamps)
+        key = activity.isoformat()
+        if key != self._activity_key:
+            self._activity_key = key
+            self._idle_base = self.clock.monotonic()
+            self._initial_idle = min(
+                self.episodes.policy.idle_seconds,
+                max(
+                    0,
+                    (self.clock.now() - activity).total_seconds(),
+                ),
+            )
+        elapsed = self._initial_idle + self.clock.monotonic() - self._idle_base
+        return max(0, self.episodes.policy.idle_seconds - elapsed)
+
+    async def _execute(self, stage: str, operation: Awaitable[dict]) -> dict:
+        self.current_stage = stage
+        try:
+            return await operation
+        finally:
+            self.current_stage = None
+
+    async def _cycle(self, stream_id: str, state: dict, idle: bool) -> bool:
+        policy = self.episodes.policy
+        now = self.clock.now()
+        batches = requests = 0
+        successes = set()
+        error = ""
+
+        def observe(stage: str, report: dict) -> None:
+            nonlocal batches, requests, error
+            self.last_report[stage] = report
+            if report["outcome"] in {"no_dirty_work", "no_history", "blocked", "no_episodes"}:
+                return
+            batches += 1
+            requests += report.get("metrics", {}).get("requests", 0)
+            if report["outcome"] == "failed":
+                error = report.get("error_code", "organization_failed")
+            else:
+                successes.add(stage)
+
+        if idle and self.threads:
+            observe("repair", await self._execute("repair", self.threads.repair(retry=False)))
+        episode = self.episodes.repository.status(stream_id)
+        if (
+            episode["pending_runs_capped"]
+            and episode["state"] not in {"failed", "running"}
+            and (idle or episode["pending_runs_capped"] >= policy.run_threshold)
+        ):
+            observe(
+                "episode",
+                await self._execute(
+                    "episode", self.episodes.organize(stream_id, retry=False, at=now)
+                ),
+            )
+        elif idle and not episode["pending_runs_capped"]:
+            if self.episodes.repository.finalize(stream_id, policy, at=now):
+                batches += 1
+                successes.add("episode")
+        if self.threads:
+            status = self.threads.repository.status()
+            due = now >= datetime.fromisoformat(state["thread_due_at"])
+            if not status["pending_episodes_capped"] and due:
+                self.schedule_repository.thread_check(now, policy.thread_interval_seconds)
+            elif (
+                idle
+                and status["state"] not in {"failed", "running"}
+                and (due or status["pending_episodes_capped"] >= policy.thread_threshold)
+            ):
+                report = await self._execute("thread", self.threads.organize(retry=False))
+                observe("thread", report)
+                if report["outcome"] == "completed":
+                    self.schedule_repository.thread_check(
+                        self.clock.now(), policy.thread_interval_seconds, success=True
+                    )
+        if batches:
+            self.schedule_repository.cycle(
+                self.clock.now(),
+                batches,
+                requests,
+                error,
+                frozenset(successes),
+                policy.cooldown_seconds,
+            )
+        return bool(batches)
 
     async def _background(self, stream_id: str, after_answer: bool) -> None:
         try:
             if after_answer and self.automation and self.automation.policy.mode != "off":
-                self.last_report = {"memory": await self.automation.run(stream_id)}
+                self.last_report["memory"] = await self._execute(
+                    "memory", self.automation.run(stream_id)
+                )
             policy = self.episodes.policy
             if not policy.enabled:
                 return
-            status = self.episodes.repository.status(stream_id)
-            if status["state"] == "failed" or not status["last_started_at"]:
-                return
-            elapsed = (
-                datetime.now(UTC) - datetime.fromisoformat(status["last_started_at"])
-            ).total_seconds()
-            if status["pending_runs_capped"] < policy.run_threshold:
-                await asyncio.sleep(max(0, policy.idle_seconds - elapsed))
-            self.last_report = await self.episodes.organize(stream_id, retry=False)
-            if self.threads and (
-                self.threads.repository.status()["pending_episodes_capped"]
-                >= policy.thread_threshold
-            ):
-                self.last_report["thread"] = await self.threads.organize(retry=False)
-            await asyncio.sleep(policy.revision_seconds)
-            self.episodes.repository.finalize(stream_id, policy)
+            while not self._foreground:
+                state = self.schedule_repository.state(stream_id)
+                remaining = self._idle_remaining(state)
+                cooldown = (
+                    max(
+                        0,
+                        (
+                            datetime.fromisoformat(state["cooldown_until"]) - self.clock.now()
+                        ).total_seconds(),
+                    )
+                    if state["cooldown_until"]
+                    else 0
+                )
+                if not state["run_active"] and not cooldown:
+                    if await self._cycle(stream_id, state, remaining <= 0):
+                        await self.clock.sleep(policy.cooldown_seconds)
+                        continue
+                delays = [policy.check_seconds]
+                if remaining > 0:
+                    delays.append(remaining)
+                if cooldown:
+                    delays.append(cooldown)
+                if state["thread_due_at"]:
+                    until_thread = (
+                        datetime.fromisoformat(state["thread_due_at"]) - self.clock.now()
+                    ).total_seconds()
+                    if until_thread > 0:
+                        delays.append(until_thread)
+                await self.clock.sleep(min(delays))
         except asyncio.CancelledError:
             raise
         except (HistoryError, OrganizationError):
-            self.last_report = {"outcome": "storage_or_organization_error"}
+            self.last_report["scheduler"] = {"outcome": "storage_or_organization_error"}
         except Exception:
-            self.last_report = {"outcome": "runtime_error"}
+            self.last_report["scheduler"] = {"outcome": "runtime_error"}
 
-    async def foreground(self) -> None:
+    async def foreground(self, *, activity: bool = True) -> None:
+        self._foreground = True
         task, self.task = self.task, None
         if task:
             task.cancel()
@@ -118,10 +245,37 @@ class OrganizationRuntime:
                 await task
             except asyncio.CancelledError:
                 pass
+        if activity and self._stream_id:
+            self.schedule_repository.activity(self._stream_id, self.clock.now())
 
     async def close(self) -> None:
-        await self.foreground()
+        await self.foreground(activity=False)
         self.input.close()
+
+    def diagnostics(self, stream_id: str) -> dict:
+        self.schedule_repository.ensure(
+            stream_id,
+            self.clock.now(),
+            self.episodes.policy.thread_interval_seconds,
+            activity=False,
+        )
+        state = self.schedule_repository.state(stream_id)
+        remaining = self._idle_remaining(state)
+        return {
+            **state,
+            "is_idle": not self._foreground and not state["run_active"] and remaining <= 0,
+            "next_idle_at": (self.clock.now() + timedelta(seconds=remaining)).isoformat(),
+            "background_running": bool(self.task and not self.task.done() and not self._foreground),
+            "foreground_active": self._foreground,
+            "maintenance_running": self.current_stage is not None,
+            "current_stage": self.current_stage,
+            "next_finalize_at": (
+                datetime.fromisoformat(state["provisional_ended_at"])
+                + timedelta(seconds=self.episodes.policy.revision_seconds)
+            ).isoformat()
+            if state["provisional_ended_at"]
+            else None,
+        }
 
     async def command(self, stream_id: str, text: str, write: Callable[[str], None]) -> None:
         parts = text.split()
@@ -130,7 +284,10 @@ class OrganizationRuntime:
                 write("Thread > 当前入口未配置 Thread Organizer。")
                 return
             if parts == ["/thread", "status"]:
-                result = self.threads.repository.status()
+                result = {
+                    **self.threads.repository.status(),
+                    "schedule": self.diagnostics(stream_id),
+                }
             elif parts == ["/thread", "organize"]:
                 result = await self.threads.organize()
             elif parts == ["/thread", "repair"]:
@@ -143,7 +300,11 @@ class OrganizationRuntime:
                 write("用法：/thread status|organize|repair|list|show <id>")
                 return
         elif parts == ["/episode", "status"]:
-            result = {**self.episodes.repository.status(stream_id), "last_report": self.last_report}
+            result = {
+                **self.episodes.repository.status(stream_id),
+                "last_report": self.last_report,
+                "schedule": self.diagnostics(stream_id),
+            }
         elif parts == ["/episode", "organize"]:
             result = await self.episodes.organize(stream_id)
         elif parts == ["/episode", "list"]:

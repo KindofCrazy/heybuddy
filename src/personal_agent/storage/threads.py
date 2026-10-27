@@ -109,10 +109,19 @@ class ThreadRepository:
                 "WHERE agent_id=? AND dirty=1 LIMIT 65)",
                 (self.agent_id,),
             ).fetchone()[0]
+            failure = db.execute(
+                "SELECT r.error_code FROM thread_repairs r "
+                "JOIN topic_threads t ON t.id=r.thread_id "
+                "WHERE t.agent_id=? AND t.dirty=1 AND r.state='failed' "
+                "AND r.source_revision=t.source_revision AND r.thread_revision=t.revision "
+                "ORDER BY r.updated_at DESC LIMIT 1",
+                (self.agent_id,),
+            ).fetchone()
             return {
                 **self._state(db),
                 "pending_episodes_capped": count,
                 "dirty_threads_capped": dirty,
+                "last_repair_error": failure[0] if failure else "",
             }
 
     def recover(self) -> None:

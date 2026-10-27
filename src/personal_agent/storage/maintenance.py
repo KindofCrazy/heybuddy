@@ -43,3 +43,14 @@ CONSISTENCY_SCHEMA = (
         END""",
     "CREATE INDEX thread_dirty_order ON topic_threads(agent_id,dirty,last_active_at,id)",
 )
+
+SCHEDULE_SCHEMA = (
+    """CREATE TABLE organization_schedule (
+        agent_id TEXT PRIMARY KEY REFERENCES agents(id), stream_id TEXT NOT NULL,
+        last_activity_at TEXT NOT NULL, thread_due_at TEXT NOT NULL,
+        last_thread_check_at TEXT, cooldown_until TEXT, last_cycle_at TEXT,
+        last_episode_success_at TEXT, last_thread_success_at TEXT, last_repair_success_at TEXT,
+        last_batches INTEGER NOT NULL DEFAULT 0, last_requests INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT NOT NULL DEFAULT '',
+        FOREIGN KEY(stream_id,agent_id) REFERENCES conversations(id,agent_id))""",
+)

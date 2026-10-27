@@ -30,6 +30,9 @@ class OrganizationPolicy(Model):
     split_gap_seconds: int = Field(default=10800, ge=1)
     revision_seconds: int = Field(default=10800, ge=1, le=86400)
     thread_threshold: int = Field(default=3, ge=2, le=16)
+    thread_interval_seconds: float = Field(default=14400, gt=0, le=604800, allow_inf_nan=False)
+    check_seconds: float = Field(default=60, gt=0, le=3600, allow_inf_nan=False)
+    cooldown_seconds: float = Field(default=60, gt=0, le=86400, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def ordered(self):

@@ -93,10 +93,10 @@ async def _chat(
             break
         if user_input.lower() in {"exit", "quit"}:
             break
-        if not user_input:
-            continue
         if organization is not None:
             await organization.foreground()
+        if not user_input:
+            continue
         permissions: frozenset[str] = frozenset()
         if user_input.split(maxsplit=1)[0] in {"/episode", "/thread"}:
             if organization is None or sessions is None:

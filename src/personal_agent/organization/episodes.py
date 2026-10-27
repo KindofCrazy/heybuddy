@@ -94,14 +94,16 @@ class EpisodeOrganizer:
         self.policy = model.policy
         self._lock = asyncio.Lock()
 
-    async def organize(self, stream_id: str, *, retry: bool = True) -> dict:
+    async def organize(
+        self, stream_id: str, *, retry: bool = True, at: datetime | None = None
+    ) -> dict:
         async with self._lock:
             status = self.repository.status(stream_id)
             if not retry and status["state"] in {"failed", "running"}:
                 return {"outcome": "blocked", "error_code": status["error_code"]}
             batch = self.repository.batch(stream_id, self.policy)
             if not batch.records:
-                finalized = self.repository.finalize(stream_id, self.policy)
+                finalized = self.repository.finalize(stream_id, self.policy, at=at)
                 return {"outcome": "finalized" if finalized else "no_history", "requests": 0}
             self.repository.attempt(batch, "running")
             self.model.metrics = {}
@@ -165,7 +167,7 @@ class EpisodeOrganizer:
                             index < len(suggestion.episodes) - 1
                             or batch.records[-1].skip_reason
                             or len(segment.run_ids) >= self.policy.page_runs
-                            or (datetime.now(UTC) - last.ended_at).total_seconds()
+                            or ((at or datetime.now(UTC)) - last.ended_at).total_seconds()
                             >= self.policy.revision_seconds
                         )
                         episodes.append(

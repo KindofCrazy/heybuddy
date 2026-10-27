@@ -366,7 +366,9 @@ class EpisodeRepository:
                 (batch.stream_id, position, batch.revision + 1, json.dumps(metrics)),
             )
 
-    def finalize(self, stream_id: str, policy: OrganizationPolicy) -> bool:
+    def finalize(
+        self, stream_id: str, policy: OrganizationPolicy, *, at: datetime | None = None
+    ) -> bool:
         with self.store._transaction() as db:
             self.scope(db, stream_id)
             row = db.execute(
@@ -376,7 +378,9 @@ class EpisodeRepository:
             if not row:
                 return False
             episode = self._episode(db, row[0])
-            if (datetime.now(UTC) - episode.ended_at).total_seconds() < policy.revision_seconds:
+            if (
+                (at or datetime.now(UTC)) - episode.ended_at
+            ).total_seconds() < policy.revision_seconds:
                 return False
             episode.status = "finalized"
             episode.revision += 1
