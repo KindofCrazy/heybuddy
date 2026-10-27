@@ -27,3 +27,9 @@ V0.6 的 Provider Protocol 仅增加可选关键字 max_output_tokens；Compacto
 generate() 先把 usage 归一化为内部 TokenUsage，再检查 response.status。非 completed 一律拒绝回放/执行，只在 ProviderError.diagnostics 中携带 ProviderDiagnostics：白名单状态、max_output_tokens/content_filter/unknown 原因以及数值用量；未知服务端原因归一为 unknown。不得传递 SDK error.message、未完成正文、reasoning 文本或其他原始响应数据。
 
 TokenUsage.reasoning_tokens 可为空，兼容端点缺失 output_tokens_details；负数或非法计数按 malformed_response 安全拒绝。正常响应仍保留原 Provider JSON 重放契约。ReflectionError 保留阶段与这组安全数据，CLI 显示它们帮助区分额度耗尽和其他停止原因；普通请求的调用接口不扩张。验证见 tests/test_provider.py 的 incomplete 诊断、缺失 details、非法 usage 测试及 tests/test_reflection.py 的 CLI 失败传递。
+
+## V0.7.2：分阶段计量与真实评测
+
+正常 Agent 和 Compaction 继续使用原 Provider。回答后自动检查由 automation/meter.py::MeteredProvider 记录额外 calls/usage/耗时，复用同一接口，不把 SDK 对象引入 Core。独立 evaluation/runner.py::TraceProvider 用阶段 Prompt 标识 main/compaction/worthiness/extract/select/consolidate，调用前保守预留额度，返回后记录真实 usage；reasoning 是 output 子集。没有新增模型适配器或 SDK 自动重试。
+
+真实评测必须显式 --live，只有固定合成数据，保存正常响应 trace 不导出原始推理；pytest 仍 Fake/MockTransport 无 API。匿名汇总的价格由显式 input/output 参数估算，不是账单。入口、失败与预算见 [Evaluation](evaluation.md)。

@@ -64,3 +64,7 @@ V0.7.1 的 /context status 还会显示服务端提供的 reasoning_tokens；它
 ## V0.7.2 Phase 1 集成
 
 V0.7.2 的自动记忆检查发生在普通 Run 已完成后，不在 ContextBuilder 或 Tool Loop 每个 round 中执行。Worthiness/Reflection 计量独立于正常 Provider usage，Compaction checkpoint 不复用。Core 新写入通过后续原编译路径可见。
+
+## V0.7.2 Phase 2：检索提示
+
+DEFAULT_SYSTEM_PROMPT 明确一般问答/假设无需 Memory，项目按根索引逐级读取，历史讨论使用 Recall，最新明确更正优先。Summary 是有损工作上下文，不能授予权限。修改只有文本，不改变 build/prepare/for_request 或数据角色。Main/工具描述同组开发检索评分 11/14 → 14/14，最终组合 Holdout 持平；不声称 Compaction 更准确。SUMMARY_PROMPT 经过候选比较后保留原版。见 [A/B 报告](../prompt-ab-results.md)。

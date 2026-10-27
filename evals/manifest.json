@@ -1,0 +1,16 @@
+{
+  "phase1_commit": "7ac3b6e1203cf58a1871ed8e16714e96bce912c8",
+  "baseline_prompt_hash": "2c8624edbcd9608ce07bdb80ea0ceec4225062c99e4fbb6c69f817e251ec2b3a",
+  "corpus_hash": "b32e193d9902dc24b2584155592a3e36e13f31e0c1e599767269c176a24b1554",
+  "repetitions": 2,
+  "max_campaign_requests": 320,
+  "max_campaign_reserved_tokens": 6000000,
+  "max_campaign_estimated_usd": 5.0,
+  "input_usd_per_million": 0.3,
+  "output_usd_per_million": 1.2,
+  "price_source": "https://api-docs.deepseek.com/quick_start/pricing/",
+  "design": "dev isolated prompt groups; final combined vs baseline on untouched holdout; no scoring edits after baseline",
+  "harness_hash": "689b1393704af9db4a5eb240c51f5625c471f868c6e5c114c9fb5e458d2da494",
+  "post_collection_change": "Reporting-only: automation_requests now excludes compaction; raw trace stage and frozen scores unchanged. Added offline reporting module after final holdout.",
+  "post_collection_harness_hash": "49b2c94a2cf5df2ae5ed191c710e1a0e8ab258ef0109224c7e6b6ab915f77994"
+}

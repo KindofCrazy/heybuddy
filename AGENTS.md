@@ -118,3 +118,7 @@ V0.7 增加手动 Reflection、证据验证、整合计划和批准后的 Memory
 ## V0.7.2 Automation 边界
 
 默认 suggest：先展示普通 completed 答案，再顺序执行最多四次额外模型请求。off 保留手动反思；auto 只接受可信配置对小型 knowledge/ create 的精确内容摘要授权，Core/更新/纠正/不确定和未授权内容不自动写。模型不能修改模式、grants 或权限。schema 5 的成功阴性判断可原子推进已审阅范围，但不表示有计划/批准/写入；不同状态保留，失败需显式 retry，已存计划/已写文件不盲目重做。禁止在本轮开发后台 Runtime、Scheduler、ToolCallReviewer。
+
+## V0.7.2 Phase 2 评测边界
+
+真实模型行为评测只通过独立 evaluation --live 显式入口运行，使用隔离合成 SQLite/Memory，不做 Apply。默认 pytest 仍禁止外部网络，固定 ground truth 与 scorer 不随候选得分修改；保存 Phase 1 基线、候选快照、开发/Holdout 配对与预算。普通/自动记忆/Compaction usage 分开，reasoning 不重复计费；原始正文/数据库在忽略目录，只提交无正文汇总。未证实的 Prompt 收益应保留原版，不因词面分数或小样本声称语义改进。后台任务、Scheduler、ToolCallReviewer 继续排除。

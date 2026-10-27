@@ -52,3 +52,9 @@ status 返回 batches/decisions/triggers、原审阅边界、pending plan、未�
 CLI：`/memory automation off|suggest|auto|status|run|retry`；mode 切换仅当前进程生效，重启从可信配置恢复。run 显式检查积压历史；retry 显式恢复失败阶段。已有人工 /reflect 全套命令不变。
 
 最小离线示例见 tests/test_automation.py：seed completed Run → Fake Worthiness → 原 Reflection 三阶段 → suggest 未改文件 → /reflect apply → 新会话读取最新 Core。测试还覆盖负判断/临时问题、待审积压、拒绝、调用上限、数据库回滚、取消、Scope、精确 auto 授权和真实子进程在 worthy 后退出/恢复。原测试网络保护不变。
+
+## V0.7.2 Phase 2：Worthiness 选择与实际限制
+
+WORTHINESS_PROMPT 增加“新增信息”的判定：重复已提供的 Core/已读取记忆不触发；如果尚无法确认既有正文，交 Reflection 比较。重复场景的两次运行自动请求 5 → 2，不能据此声称通用精准率提高。最终 Holdout 总分持平，自动阶段耗时反而增加，详见 [评测报告](../prompt-ab-results.md)。
+
+原始来源预算包含 Provider JSON；单 Run 超 16KiB 时可在进入 Worthiness 前失败，保留普通答案与未处理历史，不截断成假成功。本次基线一次长假设回答触及此边界；这是已知可用性限制，没有为改善分数放松输入/输出预算。

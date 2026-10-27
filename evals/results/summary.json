@@ -1,0 +1,1219 @@
+{
+  "settings": {
+    "model": "deepseek-flash",
+    "endpoint": "api.deepseek.com",
+    "context_window": 1048576,
+    "parameters": {
+      "normal_output": 4096,
+      "max_rounds": 5,
+      "reflection": {
+        "input_tokens": 16384,
+        "output_tokens": 16384,
+        "response_max_bytes": 32768,
+        "timeout_seconds": 60.0,
+        "page_runs": 8
+      }
+    }
+  },
+  "corpus_hash": "b32e193d9902dc24b2584155592a3e36e13f31e0c1e599767269c176a24b1554",
+  "runs": {
+    "baseline-dev": {
+      "prompt_hash": "2c8624edbcd9608ce07bdb80ea0ceec4225062c99e4fbb6c69f817e251ec2b3a",
+      "usage": {
+        "requests": 113,
+        "reserved_tokens": 1644059,
+        "reserved_cost_usd": 1.1420240999999993,
+        "exhausted": false,
+        "input_tokens": 236444,
+        "output_tokens": 29876,
+        "reasoning_tokens": 15950,
+        "usage_complete": true,
+        "estimated_cost_usd": 0.10678439999999999
+      },
+      "runs": 24,
+      "passed": 19,
+      "case_seconds_sum": 274.318,
+      "indicators": {
+        "unnecessary_tool_run_rate_on_zero_tool_cases": {
+          "numerator": 2,
+          "denominator": 4,
+          "rate": 0.5
+        },
+        "false_write_proposal_rate_on_negative_cases": {
+          "numerator": 0,
+          "denominator": 12,
+          "rate": 0.0
+        },
+        "negative_decision_failures": 1,
+        "target_retrieval_accuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "update_contract_success": {
+          "numerator": 4,
+          "denominator": 6,
+          "rate": 0.6666666666666666
+        },
+        "proposal_action_target_precision_proxy": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "semantic_reflection_precision": null
+      },
+      "stages": {
+        "main": {
+          "requests": 71,
+          "input_tokens": 176940,
+          "output_tokens": 14631,
+          "reasoning_tokens": 5654,
+          "usage_complete": true,
+          "seconds": 144.161,
+          "estimated_usd": 0.0706392
+        },
+        "automation": {
+          "requests": 40,
+          "input_tokens": 57338,
+          "output_tokens": 13111,
+          "reasoning_tokens": 8884,
+          "usage_complete": true,
+          "seconds": 109.691,
+          "estimated_usd": 0.0329346
+        },
+        "compaction": {
+          "requests": 2,
+          "input_tokens": 2166,
+          "output_tokens": 2134,
+          "reasoning_tokens": 1412,
+          "usage_complete": true,
+          "seconds": 12.722,
+          "estimated_usd": 0.0032105999999999997
+        }
+      },
+      "failed_checks": {
+        "answer_marker": 1,
+        "answer_markers": 0,
+        "bounded_tools": 2,
+        "deduplicated": 0,
+        "evidence_verified": 0,
+        "history_isolation": 0,
+        "journal_preserved": 0,
+        "memory_not_written": 0,
+        "new_fact": 2,
+        "no_unsafe_retry": 0,
+        "no_write_attempts": 0,
+        "old_fact_replaced": 0,
+        "required_tool": 0,
+        "retrieval": 0,
+        "run_completed": 0,
+        "summary_failure": 0,
+        "summary_latest": 0,
+        "summary_task": 0,
+        "update_existing": 0,
+        "worthiness_negative": 1
+      }
+    },
+    "baseline-holdout": {
+      "prompt_hash": "2c8624edbcd9608ce07bdb80ea0ceec4225062c99e4fbb6c69f817e251ec2b3a",
+      "usage": {
+        "requests": 34,
+        "reserved_tokens": 500100,
+        "reserved_cost_usd": 0.40807799999999994,
+        "exhausted": false,
+        "input_tokens": 54835,
+        "output_tokens": 13706,
+        "reasoning_tokens": 8309,
+        "usage_complete": true,
+        "estimated_cost_usd": 0.032897699999999995
+      },
+      "runs": 8,
+      "passed": 7,
+      "case_seconds_sum": 113.894,
+      "indicators": {
+        "unnecessary_tool_run_rate_on_zero_tool_cases": {
+          "numerator": 1,
+          "denominator": 4,
+          "rate": 0.25
+        },
+        "false_write_proposal_rate_on_negative_cases": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "negative_decision_failures": 0,
+        "target_retrieval_accuracy": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "update_contract_success": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "proposal_action_target_precision_proxy": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "semantic_reflection_precision": null
+      },
+      "stages": {
+        "main": {
+          "requests": 14,
+          "input_tokens": 30669,
+          "output_tokens": 6924,
+          "reasoning_tokens": 3492,
+          "usage_complete": true,
+          "seconds": 57.782,
+          "estimated_usd": 0.0175095
+        },
+        "automation": {
+          "requests": 20,
+          "input_tokens": 24166,
+          "output_tokens": 6782,
+          "reasoning_tokens": 4817,
+          "usage_complete": true,
+          "seconds": 53.958,
+          "estimated_usd": 0.015388200000000001
+        },
+        "compaction": {
+          "requests": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_tokens": 0,
+          "usage_complete": true,
+          "seconds": 0,
+          "estimated_usd": 0.0
+        }
+      },
+      "failed_checks": {
+        "answer_marker": 0,
+        "bounded_tools": 1,
+        "evidence_verified": 0,
+        "journal_preserved": 0,
+        "memory_not_written": 0,
+        "new_fact": 0,
+        "no_write_attempts": 0,
+        "old_fact_replaced": 0,
+        "run_completed": 0,
+        "update_existing": 0,
+        "worthiness_negative": 0
+      }
+    },
+    "candidate-retrieval": {
+      "prompt_hash": "d76b74fa7bfbd00e99f60fb01ae5b2b9ac15bb2d14d0df90a5a75564e6bed78c",
+      "usage": {
+        "requests": 44,
+        "reserved_tokens": 493725,
+        "reserved_cost_usd": 0.3103191,
+        "exhausted": false,
+        "input_tokens": 82419,
+        "output_tokens": 6640,
+        "reasoning_tokens": 2467,
+        "usage_complete": true,
+        "estimated_cost_usd": 0.0326937
+      },
+      "runs": 14,
+      "passed": 14,
+      "case_seconds_sum": 77.639,
+      "indicators": {
+        "unnecessary_tool_run_rate_on_zero_tool_cases": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_write_proposal_rate_on_negative_cases": {
+          "numerator": 0,
+          "denominator": 12,
+          "rate": 0.0
+        },
+        "negative_decision_failures": 0,
+        "target_retrieval_accuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "update_contract_success": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "proposal_action_target_precision_proxy": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "semantic_reflection_precision": null
+      },
+      "stages": {
+        "main": {
+          "requests": 32,
+          "input_tokens": 68656,
+          "output_tokens": 4737,
+          "reasoning_tokens": 1440,
+          "usage_complete": true,
+          "seconds": 53.773,
+          "estimated_usd": 0.026281199999999998
+        },
+        "automation": {
+          "requests": 12,
+          "input_tokens": 13763,
+          "output_tokens": 1903,
+          "reasoning_tokens": 1027,
+          "usage_complete": true,
+          "seconds": 20.315,
+          "estimated_usd": 0.0064125
+        },
+        "compaction": {
+          "requests": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_tokens": 0,
+          "usage_complete": true,
+          "seconds": 0,
+          "estimated_usd": 0.0
+        }
+      },
+      "failed_checks": {
+        "answer_marker": 0,
+        "answer_markers": 0,
+        "bounded_tools": 0,
+        "history_isolation": 0,
+        "journal_preserved": 0,
+        "memory_not_written": 0,
+        "no_unsafe_retry": 0,
+        "no_write_attempts": 0,
+        "required_tool": 0,
+        "retrieval": 0,
+        "run_completed": 0,
+        "worthiness_negative": 0
+      }
+    },
+    "candidate-synthesis": {
+      "prompt_hash": "fdb9659c4ff09fe05cfb2aab95b2db8b95f4e458531eeb4060d686ff58b87127",
+      "usage": {
+        "requests": 50,
+        "reserved_tokens": 830174,
+        "reserved_cost_usd": 0.6324377999999999,
+        "exhausted": false,
+        "input_tokens": 104534,
+        "output_tokens": 15743,
+        "reasoning_tokens": 9279,
+        "usage_complete": true,
+        "estimated_cost_usd": 0.05025179999999999
+      },
+      "runs": 8,
+      "passed": 8,
+      "case_seconds_sum": 124.639,
+      "indicators": {
+        "unnecessary_tool_run_rate_on_zero_tool_cases": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "false_write_proposal_rate_on_negative_cases": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "negative_decision_failures": 0,
+        "target_retrieval_accuracy": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "update_contract_success": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "proposal_action_target_precision_proxy": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "semantic_reflection_precision": null
+      },
+      "stages": {
+        "main": {
+          "requests": 24,
+          "input_tokens": 70485,
+          "output_tokens": 5622,
+          "reasoning_tokens": 2464,
+          "usage_complete": true,
+          "seconds": 49.084,
+          "estimated_usd": 0.0278919
+        },
+        "automation": {
+          "requests": 24,
+          "input_tokens": 31792,
+          "output_tokens": 8610,
+          "reasoning_tokens": 6045,
+          "usage_complete": true,
+          "seconds": 62.96,
+          "estimated_usd": 0.019869599999999998
+        },
+        "compaction": {
+          "requests": 2,
+          "input_tokens": 2257,
+          "output_tokens": 1511,
+          "reasoning_tokens": 770,
+          "usage_complete": true,
+          "seconds": 9.395,
+          "estimated_usd": 0.0024903
+        }
+      },
+      "failed_checks": {
+        "evidence_verified": 0,
+        "journal_preserved": 0,
+        "memory_not_written": 0,
+        "new_fact": 0,
+        "no_write_attempts": 0,
+        "old_fact_replaced": 0,
+        "run_completed": 0,
+        "summary_failure": 0,
+        "summary_latest": 0,
+        "summary_task": 0,
+        "update_existing": 0
+      }
+    },
+    "candidate-worthiness": {
+      "prompt_hash": "0e9f7bd0529f8bedb57ca66acf307a0f860b800159f0ee243cd23e3a4c62ef96",
+      "usage": {
+        "requests": 9,
+        "reserved_tokens": 124057,
+        "reserved_cost_usd": 0.07039469999999999,
+        "exhausted": false,
+        "input_tokens": 22882,
+        "output_tokens": 1681,
+        "reasoning_tokens": 787,
+        "usage_complete": true,
+        "estimated_cost_usd": 0.008881799999999999
+      },
+      "runs": 2,
+      "passed": 2,
+      "case_seconds_sum": 17.096,
+      "indicators": {
+        "unnecessary_tool_run_rate_on_zero_tool_cases": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "false_write_proposal_rate_on_negative_cases": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "negative_decision_failures": 0,
+        "target_retrieval_accuracy": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "update_contract_success": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "proposal_action_target_precision_proxy": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "semantic_reflection_precision": null
+      },
+      "stages": {
+        "main": {
+          "requests": 7,
+          "input_tokens": 18712,
+          "output_tokens": 1455,
+          "reasoning_tokens": 723,
+          "usage_complete": true,
+          "seconds": 13.296,
+          "estimated_usd": 0.007359599999999999
+        },
+        "automation": {
+          "requests": 2,
+          "input_tokens": 4170,
+          "output_tokens": 226,
+          "reasoning_tokens": 64,
+          "usage_complete": true,
+          "seconds": 3.055,
+          "estimated_usd": 0.0015222
+        },
+        "compaction": {
+          "requests": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_tokens": 0,
+          "usage_complete": true,
+          "seconds": 0,
+          "estimated_usd": 0.0
+        }
+      },
+      "failed_checks": {
+        "deduplicated": 0,
+        "journal_preserved": 0,
+        "memory_not_written": 0,
+        "no_write_attempts": 0,
+        "run_completed": 0
+      }
+    },
+    "retained-holdout": {
+      "prompt_hash": "e36a2c5fcd40e304173ed48fa467dd22840c64018500a9b92bdb421fd269a9ef",
+      "usage": {
+        "requests": 33,
+        "reserved_tokens": 476410,
+        "reserved_cost_usd": 0.3972846,
+        "exhausted": false,
+        "input_tokens": 49454,
+        "output_tokens": 12725,
+        "reasoning_tokens": 8112,
+        "usage_complete": true,
+        "estimated_cost_usd": 0.030106199999999996
+      },
+      "runs": 8,
+      "passed": 7,
+      "case_seconds_sum": 103.823,
+      "indicators": {
+        "unnecessary_tool_run_rate_on_zero_tool_cases": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "false_write_proposal_rate_on_negative_cases": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "negative_decision_failures": 0,
+        "target_retrieval_accuracy": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "update_contract_success": {
+          "numerator": 3,
+          "denominator": 4,
+          "rate": 0.75
+        },
+        "proposal_action_target_precision_proxy": {
+          "numerator": 3,
+          "denominator": 3,
+          "rate": 1.0
+        },
+        "semantic_reflection_precision": null
+      },
+      "stages": {
+        "main": {
+          "requests": 13,
+          "input_tokens": 26765,
+          "output_tokens": 4028,
+          "reasoning_tokens": 1438,
+          "usage_complete": true,
+          "seconds": 38.32,
+          "estimated_usd": 0.012863099999999999
+        },
+        "automation": {
+          "requests": 20,
+          "input_tokens": 22689,
+          "output_tokens": 8697,
+          "reasoning_tokens": 6674,
+          "usage_complete": true,
+          "seconds": 63.405,
+          "estimated_usd": 0.017243099999999997
+        },
+        "compaction": {
+          "requests": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "reasoning_tokens": 0,
+          "usage_complete": true,
+          "seconds": 0,
+          "estimated_usd": 0.0
+        }
+      },
+      "failed_checks": {
+        "answer_marker": 0,
+        "bounded_tools": 0,
+        "evidence_verified": 1,
+        "journal_preserved": 0,
+        "memory_not_written": 0,
+        "new_fact": 1,
+        "no_write_attempts": 0,
+        "old_fact_replaced": 0,
+        "run_completed": 0,
+        "update_existing": 1,
+        "worthiness_negative": 0
+      }
+    }
+  },
+  "paired": {
+    "candidate-retrieval": {
+      "baseline": {
+        "runs": 14,
+        "passed": 11,
+        "case_seconds_sum": 116.527,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 2,
+            "denominator": 4,
+            "rate": 0.5
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 12,
+            "rate": 0.0
+          },
+          "negative_decision_failures": 1,
+          "target_retrieval_accuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "rate": 1.0
+          },
+          "update_contract_success": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 43,
+            "input_tokens": 101280,
+            "output_tokens": 8569,
+            "reasoning_tokens": 2904,
+            "usage_complete": true,
+            "seconds": 88.537,
+            "estimated_usd": 0.0406668
+          },
+          "automation": {
+            "requests": 11,
+            "input_tokens": 16606,
+            "output_tokens": 2348,
+            "reasoning_tokens": 1579,
+            "usage_complete": true,
+            "seconds": 24.13,
+            "estimated_usd": 0.0077994
+          },
+          "compaction": {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": true,
+            "seconds": 0,
+            "estimated_usd": 0.0
+          }
+        },
+        "failed_checks": {
+          "answer_marker": 1,
+          "answer_markers": 0,
+          "bounded_tools": 2,
+          "history_isolation": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "no_unsafe_retry": 0,
+          "no_write_attempts": 0,
+          "required_tool": 0,
+          "retrieval": 0,
+          "run_completed": 0,
+          "worthiness_negative": 1
+        }
+      },
+      "candidate": {
+        "runs": 14,
+        "passed": 14,
+        "case_seconds_sum": 77.639,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 0,
+            "denominator": 4,
+            "rate": 0.0
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 12,
+            "rate": 0.0
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "rate": 1.0
+          },
+          "update_contract_success": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 32,
+            "input_tokens": 68656,
+            "output_tokens": 4737,
+            "reasoning_tokens": 1440,
+            "usage_complete": true,
+            "seconds": 53.773,
+            "estimated_usd": 0.026281199999999998
+          },
+          "automation": {
+            "requests": 12,
+            "input_tokens": 13763,
+            "output_tokens": 1903,
+            "reasoning_tokens": 1027,
+            "usage_complete": true,
+            "seconds": 20.315,
+            "estimated_usd": 0.0064125
+          },
+          "compaction": {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": true,
+            "seconds": 0,
+            "estimated_usd": 0.0
+          }
+        },
+        "failed_checks": {
+          "answer_marker": 0,
+          "answer_markers": 0,
+          "bounded_tools": 0,
+          "history_isolation": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "no_unsafe_retry": 0,
+          "no_write_attempts": 0,
+          "required_tool": 0,
+          "retrieval": 0,
+          "run_completed": 0,
+          "worthiness_negative": 0
+        }
+      },
+      "changes": [
+        {
+          "case": "hypothesis",
+          "repeat": 1,
+          "baseline_pass": false,
+          "candidate_pass": true
+        },
+        {
+          "case": "hypothesis",
+          "repeat": 2,
+          "baseline_pass": false,
+          "candidate_pass": true
+        },
+        {
+          "case": "memory_missing",
+          "repeat": 2,
+          "baseline_pass": false,
+          "candidate_pass": true
+        }
+      ]
+    },
+    "candidate-synthesis": {
+      "baseline": {
+        "runs": 8,
+        "passed": 6,
+        "case_seconds_sum": 125.835,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "update_contract_success": {
+            "numerator": 4,
+            "denominator": 6,
+            "rate": 0.6666666666666666
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 6,
+            "denominator": 6,
+            "rate": 1.0
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 22,
+            "input_tokens": 60627,
+            "output_tokens": 4849,
+            "reasoning_tokens": 2262,
+            "usage_complete": true,
+            "seconds": 44.369,
+            "estimated_usd": 0.024006899999999998
+          },
+          "automation": {
+            "requests": 24,
+            "input_tokens": 31786,
+            "output_tokens": 8087,
+            "reasoning_tokens": 5483,
+            "usage_complete": true,
+            "seconds": 65.614,
+            "estimated_usd": 0.019240199999999996
+          },
+          "compaction": {
+            "requests": 2,
+            "input_tokens": 2166,
+            "output_tokens": 2134,
+            "reasoning_tokens": 1412,
+            "usage_complete": true,
+            "seconds": 12.722,
+            "estimated_usd": 0.0032105999999999997
+          }
+        },
+        "failed_checks": {
+          "evidence_verified": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "new_fact": 2,
+          "no_write_attempts": 0,
+          "old_fact_replaced": 0,
+          "run_completed": 0,
+          "summary_failure": 0,
+          "summary_latest": 0,
+          "summary_task": 0,
+          "update_existing": 0
+        }
+      },
+      "candidate": {
+        "runs": 8,
+        "passed": 8,
+        "case_seconds_sum": 124.639,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "update_contract_success": {
+            "numerator": 6,
+            "denominator": 6,
+            "rate": 1.0
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 6,
+            "denominator": 6,
+            "rate": 1.0
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 24,
+            "input_tokens": 70485,
+            "output_tokens": 5622,
+            "reasoning_tokens": 2464,
+            "usage_complete": true,
+            "seconds": 49.084,
+            "estimated_usd": 0.0278919
+          },
+          "automation": {
+            "requests": 24,
+            "input_tokens": 31792,
+            "output_tokens": 8610,
+            "reasoning_tokens": 6045,
+            "usage_complete": true,
+            "seconds": 62.96,
+            "estimated_usd": 0.019869599999999998
+          },
+          "compaction": {
+            "requests": 2,
+            "input_tokens": 2257,
+            "output_tokens": 1511,
+            "reasoning_tokens": 770,
+            "usage_complete": true,
+            "seconds": 9.395,
+            "estimated_usd": 0.0024903
+          }
+        },
+        "failed_checks": {
+          "evidence_verified": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "new_fact": 0,
+          "no_write_attempts": 0,
+          "old_fact_replaced": 0,
+          "run_completed": 0,
+          "summary_failure": 0,
+          "summary_latest": 0,
+          "summary_task": 0,
+          "update_existing": 0
+        }
+      },
+      "changes": [
+        {
+          "case": "stable_preference",
+          "repeat": 1,
+          "baseline_pass": false,
+          "candidate_pass": true
+        },
+        {
+          "case": "stable_preference",
+          "repeat": 2,
+          "baseline_pass": false,
+          "candidate_pass": true
+        }
+      ]
+    },
+    "candidate-worthiness": {
+      "baseline": {
+        "runs": 2,
+        "passed": 2,
+        "case_seconds_sum": 31.956,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "update_contract_success": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 6,
+            "input_tokens": 15033,
+            "output_tokens": 1213,
+            "reasoning_tokens": 488,
+            "usage_complete": true,
+            "seconds": 11.255,
+            "estimated_usd": 0.0059655
+          },
+          "automation": {
+            "requests": 5,
+            "input_tokens": 8946,
+            "output_tokens": 2676,
+            "reasoning_tokens": 1822,
+            "usage_complete": true,
+            "seconds": 19.947,
+            "estimated_usd": 0.005895
+          },
+          "compaction": {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": true,
+            "seconds": 0,
+            "estimated_usd": 0.0
+          }
+        },
+        "failed_checks": {
+          "deduplicated": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "no_write_attempts": 0,
+          "run_completed": 0
+        }
+      },
+      "candidate": {
+        "runs": 2,
+        "passed": 2,
+        "case_seconds_sum": 17.096,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "update_contract_success": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 7,
+            "input_tokens": 18712,
+            "output_tokens": 1455,
+            "reasoning_tokens": 723,
+            "usage_complete": true,
+            "seconds": 13.296,
+            "estimated_usd": 0.007359599999999999
+          },
+          "automation": {
+            "requests": 2,
+            "input_tokens": 4170,
+            "output_tokens": 226,
+            "reasoning_tokens": 64,
+            "usage_complete": true,
+            "seconds": 3.055,
+            "estimated_usd": 0.0015222
+          },
+          "compaction": {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": true,
+            "seconds": 0,
+            "estimated_usd": 0.0
+          }
+        },
+        "failed_checks": {
+          "deduplicated": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "no_write_attempts": 0,
+          "run_completed": 0
+        }
+      },
+      "changes": []
+    },
+    "retained-holdout": {
+      "baseline": {
+        "runs": 8,
+        "passed": 7,
+        "case_seconds_sum": 113.894,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 1,
+            "denominator": 4,
+            "rate": 0.25
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 4,
+            "rate": 0.0
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "update_contract_success": {
+            "numerator": 4,
+            "denominator": 4,
+            "rate": 1.0
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 4,
+            "denominator": 4,
+            "rate": 1.0
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 14,
+            "input_tokens": 30669,
+            "output_tokens": 6924,
+            "reasoning_tokens": 3492,
+            "usage_complete": true,
+            "seconds": 57.782,
+            "estimated_usd": 0.0175095
+          },
+          "automation": {
+            "requests": 20,
+            "input_tokens": 24166,
+            "output_tokens": 6782,
+            "reasoning_tokens": 4817,
+            "usage_complete": true,
+            "seconds": 53.958,
+            "estimated_usd": 0.015388200000000001
+          },
+          "compaction": {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": true,
+            "seconds": 0,
+            "estimated_usd": 0.0
+          }
+        },
+        "failed_checks": {
+          "answer_marker": 0,
+          "bounded_tools": 1,
+          "evidence_verified": 0,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "new_fact": 0,
+          "no_write_attempts": 0,
+          "old_fact_replaced": 0,
+          "run_completed": 0,
+          "update_existing": 0,
+          "worthiness_negative": 0
+        }
+      },
+      "candidate": {
+        "runs": 8,
+        "passed": 7,
+        "case_seconds_sum": 103.823,
+        "indicators": {
+          "unnecessary_tool_run_rate_on_zero_tool_cases": {
+            "numerator": 0,
+            "denominator": 4,
+            "rate": 0.0
+          },
+          "false_write_proposal_rate_on_negative_cases": {
+            "numerator": 0,
+            "denominator": 4,
+            "rate": 0.0
+          },
+          "negative_decision_failures": 0,
+          "target_retrieval_accuracy": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null
+          },
+          "update_contract_success": {
+            "numerator": 3,
+            "denominator": 4,
+            "rate": 0.75
+          },
+          "proposal_action_target_precision_proxy": {
+            "numerator": 3,
+            "denominator": 3,
+            "rate": 1.0
+          },
+          "semantic_reflection_precision": null
+        },
+        "stages": {
+          "main": {
+            "requests": 13,
+            "input_tokens": 26765,
+            "output_tokens": 4028,
+            "reasoning_tokens": 1438,
+            "usage_complete": true,
+            "seconds": 38.32,
+            "estimated_usd": 0.012863099999999999
+          },
+          "automation": {
+            "requests": 20,
+            "input_tokens": 22689,
+            "output_tokens": 8697,
+            "reasoning_tokens": 6674,
+            "usage_complete": true,
+            "seconds": 63.405,
+            "estimated_usd": 0.017243099999999997
+          },
+          "compaction": {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": true,
+            "seconds": 0,
+            "estimated_usd": 0.0
+          }
+        },
+        "failed_checks": {
+          "answer_marker": 0,
+          "bounded_tools": 0,
+          "evidence_verified": 1,
+          "journal_preserved": 0,
+          "memory_not_written": 0,
+          "new_fact": 1,
+          "no_write_attempts": 0,
+          "old_fact_replaced": 0,
+          "run_completed": 0,
+          "update_existing": 1,
+          "worthiness_negative": 0
+        }
+      },
+      "changes": [
+        {
+          "case": "fictional_location",
+          "repeat": 2,
+          "baseline_pass": false,
+          "candidate_pass": true
+        },
+        {
+          "case": "preference_repro",
+          "repeat": 2,
+          "baseline_pass": true,
+          "candidate_pass": false
+        }
+      ]
+    }
+  },
+  "campaign": {
+    "requests": 283,
+    "reserved_tokens": 4068525,
+    "reserved_cost_usd": 2.960538299999999,
+    "input_tokens": 550568,
+    "output_tokens": 80371,
+    "reasoning_tokens": 44904,
+    "estimated_cost_usd": 0.26161559999999995
+  }
+}

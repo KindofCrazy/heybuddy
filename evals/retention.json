@@ -1,0 +1,19 @@
+{
+  "selected_before_candidate_holdout": true,
+  "holdout_not_used_for_tuning": true,
+  "retain": [
+    "main",
+    "tools",
+    "worthiness"
+  ],
+  "revert": [
+    "reflection",
+    "summary"
+  ],
+  "reflection_reason": "Lexical score increase did not remove unconfirmed preference expansion; reflection stage cost rose 0.0147156 to 0.015783 USD, output tokens 6655 to 7641. No demonstrated semantic improvement.",
+  "summary_reason": "Both 2/2 quality checks pass; small noisy latency/token changes do not prove better summary quality. Preserve original.",
+  "cautions": [
+    "Worthiness measured one duplicate scenario twice, not a broad precision proof.",
+    "Holdout is final combined validation, no edits will follow its scores."
+  ]
+}

@@ -169,3 +169,7 @@ SQLite 只记录候选、批准、片段和状态，Markdown 仍是后续读取�
 ## V0.7.2 Phase 1 集成
 
 V0.7.2 的 MemoryAutomation 默认只自动提案；受限 auto 必须匹配可信宿主对 knowledge/ 新文件的精确路径及内容 SHA256，不能改 Core/旧文件/纠正。写入仍调用 ReflectionService.apply 和原 MemoryFS/index。见[Automation](automation.md)。
+
+## V0.7.2 Phase 2：提示与评测边界
+
+自动提案只增加 Worthiness 指导：新增且确认的长期信息触发，重复已知内容可阴性，不把假设或助手建议当用户事实。MemoryFS/index、路径、hash、权限与发布语义没有改变。工具描述强调按需索引发现与局部修改。评测中有价值事实会形成待审计划，但不调用 apply，所有合成 Markdown 前后不变；这项检查不证明候选语义都正确。真实试用和人工审阅步骤见 [CLI 指南](../cli-dogfooding.md)。

@@ -103,3 +103,9 @@ EXTRACT/CONSOLIDATE 明确区分有长期价值的纠正与一次性假设/虚�
 ## V0.7.2 Phase 1 集成
 
 V0.7.2 自动提案复用同一 ReflectionService；reflect(through=...) 限定已判断范围，人工调用不传时行为不变。apply 的可信 approval_source 记录 human 或 host_exact_grant，不向模型暴露。Worthiness 成功阴性筛查可以无提案地推进已审阅范围；完整来源与状态区分见[Automation](automation.md)。
+
+## V0.7.2 Phase 2：未部署的候选与语义限制
+
+BASE/EXTRACT/SELECT/CONSOLIDATE 经过固定开发集对照后保留原版。候选偏好分数提升主要来自词面命中，未消除未经确认的偏好扩写，阶段费用反增；不是已证实的语义改善。最终 Holdout 另有一次 Consolidation 对已存在 human.md 返回 create，被 invalid_create 拒绝，普通答案/历史保留，无 Markdown 写入。Worthiness 正确也不代表整条提案必定正确，人工 review 和 Host 校验继续承担不同边界。
+
+所有候选/原版快照、失败说明及自动/普通费用分列见 [A/B 报告](../prompt-ab-results.md)。本轮没有为了消除 Holdout 失败而再调 Prompt 或修改评分标准。

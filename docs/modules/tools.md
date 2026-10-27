@@ -51,3 +51,9 @@
 `recall/tools.py::register_recall_tools(registry, Recall(store, agent_id))` 注册 recall_search / recall_get，不设置 required_permission，因此普通对话可用。agent_id 是宿主绑定属性，两个参数模型都禁止额外字段；模型不能选择其他 Agent。函数只读旧历史，返回 Pydantic 证据模型，经 Registry 规范化为关联 call_id 的 JSON 结果。
 
 RecallError 映射为安全的 ToolExecutionError，SQL 异常和查询正文不进入日志。搜索结果 trust 为 historical_data_only，既不注册工具也不改变 Memory 权限。SQLite 读取采用同步有界查询，async def 不保证硬超时；不创建后台线程、自动重建或重试。完整路径与限制见[Recall](recall.md)，测试见 tests/test_recall_runtime.py。
+
+## V0.7.2 Phase 2：工具描述实验
+
+builtin.py、memory/tools.py、recall/tools.py 的 description 明确使用时机、根目录空串、分页、原文/hash 与部分完成处理。参数模型、required_permission、函数及 Registry 定义过滤/执行复查保持原逻辑。描述帮助选工具，不能代替 Host 安全检查。
+
+evaluation/prompts.py::tool_variant() 只在评测注册表用 dataclasses.replace 替换描述，不向模型提供注册接口。离线测试仍验证真实权限，评测另查工具尝试、文件不变和 Journal 保留。最终快照与生产描述一致；候选仍发生过一次无效根路径调用，不保证描述能消除全部无效调用。见 [A/B 结果](../prompt-ab-results.md)。

@@ -414,3 +414,9 @@ SQLite 与文件没有共同事务。逐项 applying 先落库，文件发布后
 ## V0.7.2 Phase 1 集成
 
 V0.7.2 Phase 1 在 CLI 已展示 completed 答案后顺序执行 MemoryAutomation → Worthiness → 原 Reflection → Host Policy；Agent Loop 不承担自动审批。schema 5 保存独立 batch 决策/计量，阴性筛查原子推进审阅边界，阳性提案沿用原计划。完整实际路径见[Memory Automation](modules/automation.md)。
+
+## V0.7.2 Phase 2：Prompt 与离线汇总
+
+运行时仅调整 ContextBuilder 的 DEFAULT_SYSTEM_PROMPT、Automation 的 WORTHINESS_PROMPT、Builtin/Memory/Recall 工具描述。没有改变 Agent Loop、Schema、权限、工具执行或 Reflection/Compaction Prompt。Core/Recall/Summary/Tool Result 仍是参考数据，只有 Host 控制授权。最终源码与 retained-candidate 快照一致，测试校验一致性。
+
+evaluation 是独立显式入口：固定合成 Case → 隔离 SQLite/MemoryFS → 原 Runtime/Automation → TraceProvider 预算/计量 → 固定 Rubric → 同 Case 配对。默认 pytest 不访问模型；真实采集需 --live。公开结果只保存脱敏数值，正文/数据库不入 Git。开发分组改善并未转化为 Holdout 总通过率提高，详见 [A/B 报告](prompt-ab-results.md) 和 [实际执行路径](modules/evaluation.md)。

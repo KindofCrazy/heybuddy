@@ -1,10 +1,10 @@
-# HeyBuddy — V0.7.2 Reflection & Memory Consolidation
+# HeyBuddy — V0.7.2 Memory Automation & Behavior Evaluation
 
-一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供显式提取、审阅批准后写入的长期记忆学习流程。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
+一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供 Reflection，V0.7.2 在答案后自动筛查并生成可审阅提案，并增加独立的真实模型行为评测。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计
 
-持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；普通聊天不自动提取写入；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
+持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；普通聊天默认在答案后自动判断长期价值并生成待审提案，批准后才写入；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 
@@ -192,6 +192,7 @@ main → SQLiteStore.initialize(schema 5) / recover_incomplete_runs → SessionM
 - [Context Budget、Compaction 与持久摘要](docs/modules/compaction.md)
 - [Reflection、证据、审批与长期记忆整合](docs/modules/reflection.md)
 - [回答后的 Memory Automation 与可信策略](docs/modules/automation.md)
+- [隔离合成数据的自动化行为评测](docs/modules/evaluation.md)
 - [内部及持久化数据模型](docs/modules/models.md)
 - [Provider 与 Responses 重放](docs/modules/provider.md)
 - [工具注册与超时契约](docs/modules/tools.md)
@@ -293,3 +294,22 @@ V0.7.1 分离 Reflection API 总输出预算（含 reasoning，默认 16384 toke
 ```
 
 AGENT_MEMORY_AUTOMATION 可配置 off/suggest/auto。auto 只接受事前审核的 knowledge/ 新文件精确路径与 Markdown SHA256 授权，限小文件，不自动修改 Core 或旧知识；未匹配则保留审阅，不能由模型输出开启。这个保守模式不是通用自主写入，详情与全部配置见[Memory Automation](docs/modules/automation.md)。
+
+
+## V0.7.2 Phase 2：评测与 Prompt 选择
+
+基线冻结在 Phase 1 完成后的 `7ac3b6e`。16 个固定合成 Case 覆盖 12 类行为，12 开发、4 Holdout，各重复两次；分组测试后保留 Main/Tool Descriptions/Worthiness，Reflection/Compaction 候选没有证明语义质量收益而撤回。检索开发组 11/14 → 14/14，最终组合 Holdout 7/8 → 7/8，仍有 human.md 被误选 create 后由 Host 拒绝的失败，不能宣称整体质量提升。
+
+真实评测与 pytest 分开，必须显式 `--live` 才产生费用，不使用私人会话，不执行 Apply。此次 64 次场景运行、283 次 API 请求，按峰值 cache-miss 单价估算 $0.262，并非实际账单。普通请求、自动记忆与 Compaction 分开计量。原始合成数据留在忽略目录，只提交无正文汇总、固定语料和 Prompt 快照。
+
+- [Prompt Audit 与修改假设](docs/prompt-audit.md)
+- [A/B 结果、退化、用量与限制](docs/prompt-ab-results.md)
+- [执行路径与复现命令](docs/modules/evaluation.md)
+- [CLI Dogfooding 与审阅检查](docs/cli-dogfooding.md)
+
+```powershell
+uv run python -m personal_agent.evaluation --list-cases
+uv run python -m personal_agent.evaluation --help
+# 不调用模型，保存当前实际 Prompt；已有快照拒绝覆盖
+uv run python -m personal_agent.evaluation --snapshot .heybuddy/current-prompts.json
+```
