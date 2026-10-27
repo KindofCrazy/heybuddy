@@ -177,10 +177,12 @@ def test_run_cli_constructs_sdk_and_runtime_and_closes_client(monkeypatch):
     memory_root = Path("user-data/heybuddy").absolute()
     monkeypatch.setattr("personal_agent.config.default_memory_root", lambda: Path("user-data"))
 
-    async def chat(agent, *, sessions, reflection, automation):
+    async def chat(agent, *, sessions, reflection, automation, organization):
         assert automation.policy.mode == "suggest"
         assert reflection.memory is sessions.memory
         assert reflection.provider is agent.provider
+        assert organization.episodes.repository.agent_id == sessions.agent.id
+        await organization.close()
         observed["agent"] = agent
         assert sessions.current.id
         assert agent.provider.client.max_retries == 0

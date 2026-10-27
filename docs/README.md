@@ -1,5 +1,7 @@
 # HeyBuddy 开发文档
 
+[P1 Episode 与有界事后整理](modules/organization.md)：schema 6、来源校验、修订、空闲触发与前台抢占。
+
 当前文档描述 V0.7 的实际实现。建议先看整体 Pipeline，再沿调用路径进入具体模块。
 
 ## 阅读顺序

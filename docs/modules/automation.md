@@ -1,5 +1,7 @@
 # Memory Automation：回答完成后的有界学习
 
+P1 接线更新：生产 CLI 先展示答案，再由 OrganizationRuntime 的可抢占钩子 await 原 MemoryAutomation.run()；AsyncInput 同时接收新输入，foreground() 取消检查并等待原取消记账结束。没有改变计划、精确授权、最多四次请求或失败显式 retry 语义；新的 Episode 进度独立。嵌入 chat() 未装配 OrganizationRuntime 时仍沿用原顺序路径。以下 V0.7.2 章节描述该服务内部的原有顺序阶段。
+
 ## 职责与架构组成
 
 `automation/service.py::MemoryAutomation` 是轻量应用服务，在普通 Run 完成并向用户展示答案后顺序执行。它不创建新 Agent Loop，不在每个工具 round 后运行，不启动后台任务。`automation/models.py` 定义可信 AutomationPolicy、严格 Worthiness 模型；`automation/meter.py::MeteredProvider` 只计量自动记忆额外请求；`storage/automation.py::AutomationRepository` 绑定 Agent 保存状态。ReflectionService、MemoryFS、ToolRegistry 和原 Journal 继续承担原职责。

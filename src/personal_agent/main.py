@@ -18,12 +18,17 @@ from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory import index
 from personal_agent.memory.store import MemoryFS
 from personal_agent.memory.tools import register_memory_tools
+from personal_agent.organization.episodes import EpisodeOrganizer
+from personal_agent.organization.models import OrganizationError
+from personal_agent.organization.provider import OrganizerModel
+from personal_agent.organization.runtime import OrganizationRuntime
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
 from personal_agent.reflection.cli import command as reflection_command
 from personal_agent.reflection.models import ReflectionError
 from personal_agent.reflection.service import ReflectionService
 from personal_agent.sessions import SessionManager
+from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.tools.builtin import create_builtin_registry
@@ -37,6 +42,34 @@ async def chat(
     sessions: SessionManager | None = None,
     reflection: ReflectionService | None = None,
     automation: MemoryAutomation | None = None,
+    organization: OrganizationRuntime | None = None,
+) -> None:
+    try:
+        if organization is not None and sessions is not None:
+            organization.schedule(sessions.current.id)
+        await _chat(
+            agent,
+            read,
+            write,
+            sessions=sessions,
+            reflection=reflection,
+            automation=automation,
+            organization=organization,
+        )
+    finally:
+        if organization is not None:
+            await organization.close()
+
+
+async def _chat(
+    agent: Agent,
+    read: Callable[[str], str],
+    write: Callable[[str], None],
+    *,
+    sessions: SessionManager | None,
+    reflection: ReflectionService | None,
+    automation: MemoryAutomation | None,
+    organization: OrganizationRuntime | None,
 ) -> None:
     write(
         "HeyBuddy P1 持续对话 — 自动恢复上次对话流；/status /context status /reflect；"
@@ -46,17 +79,32 @@ async def chat(
     if sessions is not None:
         write(sessions.status())
     while True:
+        if organization is not None and sessions is not None and organization.task is None:
+            organization.schedule(sessions.current.id)
         # Commands and selection changes occur only between runs.
         try:
-            user_input = read("你 > ").strip()
+            user_input = (
+                await organization.input.read(read, "你 > ") if organization else read("你 > ")
+            ).strip()
         except EOFError:
             break
         if user_input.lower() in {"exit", "quit"}:
             break
         if not user_input:
             continue
+        if organization is not None:
+            await organization.foreground()
         permissions: frozenset[str] = frozenset()
-        if user_input.split(maxsplit=1)[0] == "/memory":
+        if user_input.split(maxsplit=1)[0] == "/episode":
+            if organization is None or sessions is None:
+                write("Episode > 当前入口未配置 Organizer。")
+                continue
+            try:
+                await organization.command(sessions.current.id, user_input, write)
+            except (HistoryError, OrganizationError):
+                write("Episode > 整理/存储失败，原始 Run 已保留；请检查 status。")
+            continue
+        elif user_input.split(maxsplit=1)[0] == "/memory":
             parts = user_input.split(maxsplit=2)
             if len(parts) == 3 and parts[1] == "automation":
                 if automation is None or sessions is None:
@@ -167,6 +215,7 @@ async def chat(
             write(f"错误 [{result.status}] > {result.error}")
         if (
             automation is not None
+            and organization is None
             and sessions is not None
             and automation.policy.mode != "off"
             and result.status == "completed"
@@ -181,6 +230,8 @@ async def chat(
                 write("Memory > " + json.dumps(report, ensure_ascii=False))
             except (HistoryError, CoreMemoryError):
                 write("Memory > 检查存储失败；普通回答已保存，不会自动重试。")
+        if organization is not None and sessions is not None:
+            organization.schedule(sessions.current.id, after_answer=result.status == "completed")
     write("再见。")
 
 
@@ -225,7 +276,24 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
         )
         automation = MemoryAutomation(reflection, settings.automation_policy())
         automation.repository.recover()
-        await chat(agent, sessions=sessions, reflection=reflection, automation=automation)
+        repository = EpisodeRepository(sessions.store, sessions.agent.id)
+        repository.recover()
+        organization = OrganizationRuntime(
+            EpisodeOrganizer(
+                repository,
+                OrganizerModel(
+                    agent.provider, settings.context_budget(), settings.organization_policy()
+                ),
+            ),
+            automation=automation,
+        )
+        await chat(
+            agent,
+            sessions=sessions,
+            reflection=reflection,
+            automation=automation,
+            organization=organization,
+        )
 
 
 def main() -> int:

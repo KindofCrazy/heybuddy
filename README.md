@@ -2,6 +2,8 @@
 
 P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即可持续聊天；`/new`、`/sessions`、`/resume` 仅保留为开发者历史管理命令。每次请求加入本地带时区时间与上次互动间隔，跨午夜不清空上下文。旧流不合并或删除，仍可通过 Recall 查到。
 
+新增 [Episode 事后整理](docs/modules/organization.md)：`/episode status|organize|list|show <id>`。默认空闲 25 分钟或累计 8 条后有界整理，新输入抢占。Episode 保存版本、时间、摘要、引文与原始 Run 引用，不写长期 Memory。
+
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供 Reflection，V0.7.2 在答案后自动筛查并生成可审阅提案，并增加独立的真实模型行为评测。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
 ## 当前范围与设计

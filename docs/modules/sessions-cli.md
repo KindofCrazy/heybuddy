@@ -2,6 +2,8 @@
 
 ## P1 持续流
 
+生产 CLI 装配 OrganizationRuntime，用 AsyncInput 读取终端；新输入先取消事后整理，所有数据库操作仍在事件循环线程。`/episode status|organize|list|show <id>` 是开发者入口；完整事务、空闲/数量触发与取消语义见 [Organization](organization.md)。
+
 普通启动自动沿用 `client_state` 上次选择的 Conversation；没有选择时创建第一条流。旧 Conversation、Run、Summary 和 Reflection 不迁移归属，不合并、不删除，Recall 仍按 Agent 查询。`/new`、`/sessions`、`/resume` 保留为开发者历史管理入口，普通聊天无需调用。
 
 `SessionManager.context()` 向 `ContextBuilder` 传递宿主时间回调。`for_request()` 每次请求用 `core/temporal.py::temporal_context()` 注入带本地 UTC offset 的当前时间、时区及距上个已终结 Run 开始时间的秒数；SQLite `last_interaction()` 只查一条元数据。时间信息以 user JSON 注入，参与预算，不写 Journal，也不授予权限。跨午夜不清空上下文。测试见 `tests/test_continuous.py`。

@@ -8,6 +8,7 @@ from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, mod
 
 from personal_agent.automation.models import AutomationPolicy
 from personal_agent.core.budget import ContextBudget
+from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.reflection.models import ReflectionPolicy
 
 
@@ -24,6 +25,18 @@ class Settings(ContextBudget):
     database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
     memory_root: Path | None = None
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
+    organization_enabled: bool = True
+    organization_idle_seconds: float = Field(default=1500, gt=0, le=86400)
+    organization_run_threshold: int = Field(default=8, ge=1, le=64)
+    organization_page_runs: int = Field(default=8, ge=1, le=16)
+    organization_input_tokens: int = Field(default=24576, ge=4096, le=131072)
+    organization_output_tokens: int = Field(default=8192, ge=256, le=32768)
+    organization_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    organization_weak_gap_seconds: int = Field(default=900, ge=1)
+    organization_strong_gap_seconds: int = Field(default=5400, ge=1)
+    organization_split_gap_seconds: int = Field(default=10800, ge=1)
+    organization_revision_seconds: int = Field(default=10800, ge=1, le=86400)
+    organization_thread_threshold: int = Field(default=3, ge=2, le=16)
 
     reflection_input_tokens: int = Field(default=16384, ge=2048, le=262144)
     reflection_output_tokens: int = Field(default=16384, ge=256, le=65536)
@@ -47,7 +60,17 @@ class Settings(ContextBudget):
     @model_validator(mode="after")
     def valid_automation(self):
         self.automation_policy()
+        self.organization_policy()
         return self
+
+    def organization_policy(self) -> OrganizationPolicy:
+        return OrganizationPolicy(
+            **{
+                name: getattr(self, "organization_" + name)
+                for name in OrganizationPolicy.model_fields
+                if hasattr(self, "organization_" + name)
+            }
+        )
 
     def automation_policy(self) -> AutomationPolicy:
         return AutomationPolicy(
@@ -103,6 +126,11 @@ class Settings(ContextBudget):
 
 
 ENV_FIELDS = {
+    **{
+        "AGENT_ORGANIZATION_" + name.removeprefix("organization_").upper(): name
+        for name in Settings.model_fields
+        if name.startswith("organization_")
+    },
     "AGENT_MEMORY_AUTOMATION": "memory_automation",
     "AGENT_MEMORY_AUTO_CREATE_GRANTS": "memory_auto_create_grants",
     "AGENT_MEMORY_AUTOMATION_MAX_REQUESTS": "memory_automation_max_requests",

@@ -113,12 +113,12 @@ docs: 完善项目开发与提交规范
 
 ## 未来边界
 
-V0.7 增加手动 Reflection、证据验证、整合计划和批准后的 MemoryFS 写入，不实现 Git-backed Memory、日常版本恢复、远程同步、后台自动记忆提取、向量/Embedding、Telegram/QQ、Gmail、后台 Worker、Scheduler 或主动对话；不继续开发 V0.8 Background Task Runtime。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
+V0.7 增加手动 Reflection、证据验证、整合计划和批准后的 MemoryFS 写入，不实现 Git-backed Memory、日常版本恢复、远程同步、向量/Embedding、Telegram/QQ、Gmail 或主动对话。P1 明确允许基于 SQLite 持久进度的有界 asyncio Episode/Thread 事后整理、空闲/累计数量触发与前台输入抢占，以及现有 MemoryAutomation 的可取消异步接线；不改变 Memory 权限、审批或失败显式重试语义，不扩展通用任务调度平台。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
 
 ## V0.7.2 Automation 边界
 
-默认 suggest：先展示普通 completed 答案，再顺序执行最多四次额外模型请求。off 保留手动反思；auto 只接受可信配置对小型 knowledge/ create 的精确内容摘要授权，Core/更新/纠正/不确定和未授权内容不自动写。模型不能修改模式、grants 或权限。schema 5 的成功阴性判断可原子推进已审阅范围，但不表示有计划/批准/写入；不同状态保留，失败需显式 retry，已存计划/已写文件不盲目重做。禁止在本轮开发后台 Runtime、Scheduler、ToolCallReviewer。
+默认 suggest：先展示普通 completed 答案，再顺序执行最多四次额外模型请求；P1 允许这段检查在可抢占的异步任务内运行。off 保留手动反思；auto 只接受可信配置对小型 knowledge/ create 的精确内容摘要授权，Core/更新/纠正/不确定和未授权内容不自动写。模型不能修改模式、grants 或权限。schema 5 的成功阴性判断可原子推进已审阅范围，但不表示有计划/批准/写入；不同状态保留，失败需显式 retry，已存计划/已写文件不盲目重做。ToolCallReviewer 不在 P1 范围。
 
 ## V0.7.2 Phase 2 评测边界
 
-真实模型行为评测只通过独立 evaluation --live 显式入口运行，使用隔离合成 SQLite/Memory，不做 Apply。默认 pytest 仍禁止外部网络，固定 ground truth 与 scorer 不随候选得分修改；保存 Phase 1 基线、候选快照、开发/Holdout 配对与预算。普通/自动记忆/Compaction usage 分开，reasoning 不重复计费；原始正文/数据库在忽略目录，只提交无正文汇总。未证实的 Prompt 收益应保留原版，不因词面分数或小样本声称语义改进。后台任务、Scheduler、ToolCallReviewer 继续排除。
+真实模型行为评测只通过独立 evaluation --live 显式入口运行，使用隔离合成 SQLite/Memory，不做 Apply。默认 pytest 仍禁止外部网络，固定 ground truth 与 scorer 不随候选得分修改；保存 Phase 1 基线、候选快照、开发/Holdout 配对与预算。普通/自动记忆/Compaction/Organizer usage 分开，reasoning 不重复计费；原始正文/数据库在忽略目录，只提交无正文汇总。未证实的 Prompt 收益应保留原版，不因词面分数或小样本声称语义改进。P1 有界事后整理以本轮明确授权为准；通用后台任务平台与 ToolCallReviewer 继续排除。

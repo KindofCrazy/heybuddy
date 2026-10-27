@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+schema 6 仅追加 Episode、版本、归一化 Run 关联、独立进度/skip，以及预留真实外键所需的 topic_threads。`storage/episodes.py::EpisodeRepository` 负责有界来源和 CAS 短事务；原 1–5 迁移不改，所有旧 Conversation/Message/Run/Summary/Reflection 原位保留。见 [Organization](organization.md)。
+
 P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running Run 的开始时间，`LIMIT 1`，不加载消息正文。供宿主时间上下文计算互动间隔；不会因午夜或长间隔修改 Run/Conversation 归属。
 
 先看[整体架构与 Pipeline](../architecture.md)的请求时序和事务表，再对照本模块的方法。
