@@ -1,5 +1,7 @@
 # 内部数据模型
 
+P2 复用 Candidate/Evidence/Decision，增加 ongoing_goal/current_state 类别，仍以精确 Run 引文验证用户事实。learning/models.py 的 Target/Targets/FileDecision 约束按目标聚合；CuratorChange/Curation 限制三个操作。PlanItem.candidate 可为 None，仅用于 Host Curator 的结构性文件计划，不伪造 Run 引文；手动 Reflection 和 Learner 的事实候选仍有 Candidate/Evidence。SQLite 不持久化这些 P2 候选或知识正文，只有来源与文件回执。MemoryRetrievalPolicy/RetrievalChoice、扩展 RetrievalResult 提供有界候选和安全数值计量。
+
 ## 架构组成
 
 `core/models.py` 定义 Runtime 消息、ToolCall、ToolResult、ModelResponse 与 RunResult。 Message 是以 role 区分的 Pydantic 联合类型；Provider 数据只能保存普通 JSON。 `storage/models.py` 定义 AgentRecord、ConversationRecord、StoredMessage、RunRecord，将持久记录身份与运行时 `core/agent.py::Agent` 的执行职责分开。

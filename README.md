@@ -1,4 +1,4 @@
-# HeyBuddy — P1 Continuous Conversation
+# HeyBuddy — P2 Long-term Memory
 
 P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即可持续聊天；`/new`、`/sessions`、`/resume` 仅保留为开发者历史管理命令。每次请求加入本地带时区时间与上次互动间隔，跨午夜不清空上下文。旧流不合并或删除，仍可通过 Recall 查到。
 
@@ -12,6 +12,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 一个运行在本机、核心 Harness 自行实现的 Python Personal Agent。在自建 Agent Loop、Provider、ToolRegistry、CLI 和 SQLite 会话上，保留可编辑的 Markdown Core Memory，提供分层 Markdown Deferred Memory 与按需跨会话历史检索 Recall；V0.6 增加有界上下文和可跨重启恢复的会话压缩摘要，V0.7 提供 Reflection，V0.7.2 在答案后自动筛查并生成可审阅提案，并增加独立的真实模型行为评测。仓库：[KindofCrazy/heybuddy](https://github.com/KindofCrazy/heybuddy)。
 
+[P2 完整交付报告](docs/p2-delivery.md) 记录五个里程碑、实际架构、自动策略、恢复边界和完整离线验证。
+
 ## 当前范围与设计
 
 [P2 Memory Learning](docs/modules/learning.md) 复用 Reflection 的来源验证与受限 MemoryFS Writer，按目标聚合候选，不改变手动 Reflection 审批和 Main Agent 工具权限。
@@ -22,7 +24,7 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 P2 自动 Learning 默认启用，接管旧的回答后 Automation；首次启动只记录水位，不静默重学历史。普通路径在 Idle 按 Finalized Episode 数量/六小时等待触发；明确记住/决定/更正可后台优先处理。`/memory learning status|run|retry` 查看和调试，`AGENT_MEMORY_LEARNING_ENABLED=false` 关闭 P2 并恢复原 Automation 配置。含不确定发布的任务先用 `reconcile <job_id>` 核对，不盲目重写。
 
-持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；普通聊天默认在答案后自动判断长期价值并生成待审提案，批准后才写入；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
+持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；P2 默认通过 Host 策略自动学习到受限 Markdown，不修改 persona；关闭 P2 后可沿用原回答后提案与审批模式；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 
@@ -183,7 +185,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize(schema 10) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → SQLiteStore.initialize(schema 11) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -197,7 +199,7 @@ main → SQLiteStore.initialize(schema 10) / recover_incomplete_runs → Session
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前使用 schema 10，8–10 追加 Thread 来源/重建、调度时间及重试计量，1–7 不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 11，追加独立学习任务、来源记录及维护水位；1–10 定义不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -287,7 +289,7 @@ uv build
 
 ## 当前限制
 
-V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。正常路径只加载有限工作页和摘要；没有精确 tokenizer、语义检索、自动备份或数据加密。摘要有损、估算不精确，单个不可缩减的大 Run 需调整预算或新建会话。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
+V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。正常路径只加载有限工作页和摘要；没有精确 tokenizer、向量检索、自动备份或数据加密。摘要有损、估算不精确，单个不可缩减的大 Run 需调整预算或新建会话。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
 
 Recall 采用关键词子串与时间排序，尚无语义召回或分页；短查询和长消息正文会受范围/长度上限限制。SQLite 读取、回填与重建是同步操作，查询工作预算不是硬实时取消。索引错误可能使新消息事务失败，需要显式修复后继续；外部 VACUUM 等维护改变内部 rowid 后也应重建索引。
 
@@ -303,7 +305,9 @@ V0.7.1 分离 Reflection API 总输出预算（含 reasoning，默认 16384 toke
 
 诊断、预算修复与真实提案质量对照见 [V0.7.1 真实模型验证](docs/reflection-live-validation.md)。
 
-## V0.7.2 Memory Automation（Phase 1）
+## V0.7.2 Memory Automation（Phase 1，兼容模式）
+
+P2 Learning 默认接管自动入口；本节模式仅在 AGENT_MEMORY_LEARNING_ENABLED=false 时运行，旧计划和 /reflect 保留。
 
 普通 Run 成功后先展示回答，再顺序进行 LLM Worthiness 检查，有价值才复用 Reflection 生成原有可审阅计划。P1 在本地可抢占的异步钩子内执行，下一次输入取消并等待记账结束。默认 suggest，未批准不写 Markdown；调用/预算/等待有界，失败不改变已完成的回答，也不自动重试。已有计划时提示积压，新历史不会被覆盖或误标写入。
 

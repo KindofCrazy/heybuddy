@@ -78,7 +78,7 @@ async def _chat(
     organization: OrganizationRuntime | None,
 ) -> None:
     write(
-        "HeyBuddy P1 持续对话 — 自动恢复上次对话流；/status /context status /reflect；"
+        "HeyBuddy 持续对话 — 自动恢复上次对话流；/status /context status /reflect；"
         "exit 或 quit 退出。"
     )
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
@@ -354,7 +354,7 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy P1 Continuous CLI")
+    parser = argparse.ArgumentParser(description="Personal Agent / HeyBuddy P2 Continuous CLI")
     parser.parse_args()
     try:
         settings = load_settings()

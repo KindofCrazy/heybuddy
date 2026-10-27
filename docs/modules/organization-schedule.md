@@ -1,5 +1,7 @@
 # Organization 时间调度
 
+P2 在同一维护循环加入 MemoryLearningService/MemoryCurator，复用 Clock、MaintenanceBudget、前台门控和冷却，不另起 Scheduler。Priority 入队不发 Classifier，回复后尽快后台执行；Batch 在 Idle 等 finalized Episode 数量/最大等待；Curator 低频且有变化才调用。默认维护轮 4/4/131072/120 同时覆盖 Episode/Thread/Repair/Learning/Curator。学习按整条流水线保守预留，和其他维护交替；Dirty 先执行后允许让出整轮给等待中的学习，避免占满请求饿死 P2。P2 enabled 时不执行旧 MemoryAutomation；disabled 才沿用下文原模式。来源过大保存 failed，不停止其他维护。tests/test_learning_runtime.py、test_p2_integration.py、test_p2_boundaries.py 覆盖双速触发、持续积压公平性、取消与恢复。
+
 ## 职责与组成
 
 `OrganizationRuntime` 是唯一的本地维护循环，统一 Episode、Finalize、Thread 和 Dirty Repair；没有通用任务框架。`organization/clock.py::Clock/SystemClock` 提供 UTC wall time、monotonic 和可取消 sleep。`storage/schedule.py::ScheduleRepository` 保存一个 Agent 级调度行；schema 9 追加 organization_schedule，原迁移 1–8 不改，Journal 不改。Run/关联/修复进度仍在原独立表。

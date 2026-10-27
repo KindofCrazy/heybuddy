@@ -1,8 +1,10 @@
-# HeyBuddy P1：整体架构与 Pipeline
+# HeyBuddy P2：整体架构与 Pipeline
 
 本文串起从启动到退出的真实执行路径。当前是一个本地进程、SQLite 和普通 Markdown；P1 增加有界 asyncio 事后整理及可抢占输入，没有消息队列、通用任务平台或工具续跑。先看下面 P1 路径，再读后续保留的 Journal、Provider、Memory、Reflection 细节。迁移、测试、限制与 P2 接口见 [P1 交付](p1-delivery.md)。
 
-## P1 实际执行架构
+[P2 完整交付与验证](p2-delivery.md) 描述双速自动学习、Curator、Adaptive Retrieval 和跨存储恢复；P1 历史报告仅保留基线记录。
+
+## P1 + P2 实际执行架构
 
 ```mermaid
 flowchart TD
@@ -12,7 +14,7 @@ flowchart TD
     Context --> Base["Base + Core + 本地时间 + Working Summary + 近期完整 Runs"]
     Context --> Retrieval["ContextRetriever / 历史请求词法检索"]
     Retrieval --> Topics["Thread state / Episode summaries / 完整历史 Runs"]
-    Topics --> DB[("SQLite schema 10 / 原始 Journal 与独立派生表")]
+    Topics --> DB[("SQLite schema 11 / 原始 Journal 与独立派生表")]
     Context --> History["ConversationHistory Protocol / SQLiteConversationHistory"]
     History --> DB
     Run --> Provider["同一 Provider / 无 SDK 响应对象外泄"]
@@ -23,7 +25,7 @@ flowchart TD
     Run --> Answer["保存终态 / 先显示答案"]
     Answer --> Hook["OrganizationRuntime / 有界空闲与数量触发"]
     Input -. "取消并等待 / 前台优先" .-> Hook
-    Hook --> Automation["原 MemoryAutomation / 原审批与精确授权"]
+    Hook --> Automation["仅 P2 disabled：旧 Automation / 原审批与精确授权"]
     Automation --> Memory
     Hook --> Episode["EpisodeOrganizer / 时间边界 + 语义分段 + 来源校验"]
     Episode --> DB
@@ -34,21 +36,30 @@ flowchart TD
     Hook --> Repair["Dirty Repair / 当前成员分页重建"]
     Repair --> DB
     Repair --> Provider
+    Hook --> Learn["P2：Priority / Finalized Batch → 同一 Memory Learner"]
+    Hook --> Curate["P2：低频 Curator / 小组去重、证据、拆分"]
+    Learn --> Writer["共用 Reflection Writer / MemoryFS / 哈希回执"]
+    Curate --> Writer
+    Writer --> Memory
+    Writer --> DB
+    Retrieval --> Memory
+    Retrieval --> Preflight["条件性一次只读候选选择"]
+    Preflight --> Provider
 ```
 
 Run 是执行与审计单位；Episode 是连续 Run 的事后时间/语义组织；Thread 是跨 Episode 的持续话题；Working Context 是单次请求的有限视图。Episode/Thread 没有 MemoryFS 或 Registry 写入接口，不执行历史工具。
 
 真实顺序：
 
-1. main() → run_cli() 取得数据库占用锁，initialize() 顺序原子迁移 1–10，recover_incomplete_runs() 只标记中断。1–7 定义不改，8–10 只追加组织维护派生对象。
+1. main() → run_cli() 取得数据库占用锁，initialize() 顺序原子迁移 1–11，recover_incomplete_runs() 只标记中断。1–10 定义不改，11 追加独立 Learning/Curator 状态而不复制知识正文。
 2. SessionManager 沿用 client_state；没有选择时创建流，其他旧流不合并不删除。初始化 Core Memory，然后 _run_session() 装配 Provider、工具、ContextRetriever、原 Reflection/Automation、独立 Episode/Thread Repository 与 Organizer。
 3. chat() 启动持久进度检查；_chat() await AsyncInput.read()。只有读取终端在 daemon 线程，所有 SQLite 留在事件循环。
 4. 新输入先 await OrganizationRuntime.foreground()；取消后台模型等待并完成原状态记账，再 Agent.run() → ContextBuilder.begin() 原子创建 Run/用户消息。
 5. prepare() 读取有界历史；首轮 _retrieve() 走 fast 或历史检索，_select_history() 做来源/调用 ID 去重和剩余预算选择；for_request() 注入 Core、Summary、本地带 offset 时间与低信任历史。需要时按原完整 Run 前缀 Compaction；当前 Run 和受保护近期 Run 不拆开。
 6. Provider / ToolRegistry 继续原手写循环，每条调用先落库、每条结果在下一工具前落库。commit() 原子完成 Journal，先向 CLI 返回并显示答案。
-7. schedule() 用单个 asyncio task 执行原 MemoryAutomation 的内部顺序阶段，再进入时间驱动维护循环。Episode 默认完成/活动后 Idle 25 分钟或累计 8 条触发；单批最多 8 条源记录、一次模型请求。Idle/Thread 进程内用 monotonic，重启依据 UTC 持久 deadline 恢复。running Run 抑制维护，时间检查不请求 LLM。
+7. schedule() 用单个 asyncio task 进入时间驱动维护；P2 enabled 时接管旧 MemoryAutomation，保留其手动记录。Episode 默认完成/活动后 Idle 25 分钟或累计 8 条触发；单批最多 8 条源记录、一次模型请求。Idle/Thread 进程内用 monotonic，重启依据 UTC 持久 deadline 恢复。running Run 抑制维护，时间检查不请求 LLM。
 8. Idle 优先 Repair 当前实际成员；Thread 每 4 小时有 Pending 才调用，3 个可提前；Finalize 约 3 小时窗口到期，无模型执行，即使另一 Pending 批次失败也不永久卡住。每轮最多 4 批/4 请求/131072 预留 tokens/120 秒，批间让出、冷却 60 秒后自动续处理积压。源 hash、revision/source_revision 与 checkpoint CAS 后原子提交；取消当前批不推进，已提交批保留。正常聊天不依赖整理成功。
-9. exit/EOF/Ctrl+C → chat() finally 取消整理 → SDK 关闭 → Store 释放占用锁。重启依据 Journal、cursor、dirty 状态继续纯派生整理，不重跑工具或 Memory Apply。
+9. exit/EOF/Ctrl+C → chat() finally 取消整理 → SDK 关闭 → Store 释放占用锁。重启依据 Journal、cursor、dirty 状态继续纯派生整理，不重跑历史工具或盲目重复不确定的 Memory Apply；P2 根据文件回执先核对。
 
 时间存储使用 UTC aware 时间；Temporal Context 使用宿主操作系统当前本地 offset，显式展示 offset/时区和互动间隔，不用 UTC 日期代替本地日期。Summary/组织结果/历史命令不会授予权限。Core/Deferred 仍只有普通 Markdown 一个权威源。
 
@@ -128,7 +139,7 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移到 schema 10，顺序执行 Recall、Context、Reflection、Automation、Episode、Thread 及维护追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 11，顺序执行 Recall、Context、Reflection、Automation、Episode、Thread 及维护追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续校验摘要检查点并恢复上次选择的会话，不全量反序列化旧消息。
 8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。

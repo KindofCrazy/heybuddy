@@ -1,5 +1,7 @@
 # MemoryFS：Core、Deferred 与索引
 
+P2 沿用本模块 MemoryFS/Index/Markdown 布局，未增加知识正文副本或版本系统。Host 的 Learner/Curator 调用共用 reflection/writer.py，plan_item() 在自动或手动提案发布前通过 memory/safety.py 保守拒绝凭据模式，原路径/隐私/hash/原子替换/大小检查不变。自动服务不修改 persona.md，索引由现有 index.create/edit 维护；Main Agent 工具权限未放宽。跨存储部分失败的只读核对和显式安全重试见 [Learning](learning.md)、[Curator](curator.md)。凭据模式并非完备秘密识别器，不应将 Memory 当凭据存储。
+
 ## 职责与架构组成
 
 `src/personal_agent/memory/store.py::MemoryFS` 实现 `core/memory.py::CoreMemory.compile()`，并提供有界文件读取、目录元数据、摘要冲突检测和单文件原子替换。`memory/models.py` 定义三个固定 Core 块、`CoreMemoryData`、SHA256 摘要、简化 Frontmatter 解析和输出预算；摘要仅用于当前文件的乐观并发校验，不构成版本历史。`memory/index.py` 维护分层发现链、带校验标记的生成条目及修改后的索引同步；`memory/migration.py` 仅负责一次性 V0.4 导出；`memory/privacy.py` 保留写入前的 Git 隐私检查。`memory/tools.py::register_memory_tools()` 将这些能力接到现有 Registry。

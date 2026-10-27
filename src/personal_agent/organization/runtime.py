@@ -85,6 +85,7 @@ class OrganizationRuntime:
         self.learning = learning
         self.curator = curator
         self._learning_first = True
+        self._dirty_yield_to_learning = False
         self.schedule_repository = ScheduleRepository(episodes.repository)
         self._stream_id: str | None = None
         self._foreground = False
@@ -178,7 +179,14 @@ class OrganizationRuntime:
         time_limited = False
         learning_ran = False
         curator_ran = False
-        learning_first = self._learning_first
+        learning_first = self._learning_first or self._dirty_yield_to_learning
+        learning_capacity = bool(
+            self.learning
+            and 2 + self.learning.policy.max_files <= policy.maintenance_requests
+            and (2 + self.learning.policy.max_files)
+            * (self.learning.model.input_limit + self.learning.policy.output_tokens)
+            <= policy.maintenance_tokens
+        )
 
         def observe(stage: str, report: dict) -> bool:
             nonlocal batches, error
@@ -208,13 +216,21 @@ class OrganizationRuntime:
                         break
                     if (
                         idle
+                        and policy.enabled
                         and self.threads
+                        and not (
+                            self._dirty_yield_to_learning
+                            and learning_capacity
+                            and self.learning
+                            and self.learning.ready(idle=idle)
+                        )
                         and self.threads.repairs.pending(
                             at=now, max_failures=self.threads.policy.repair_max_failures
                         )
                         is not None
                     ):
                         attempts += 1
+                        self._dirty_yield_to_learning = True
                         if not observe(
                             "repair",
                             await self._execute("repair", self.threads.repair(retry=False, at=now)),
@@ -248,24 +264,27 @@ class OrganizationRuntime:
                             and budget.reserved_tokens + tokens <= policy.maintenance_tokens
                         ):
                             learning_ran = True
+                            self._dirty_yield_to_learning = False
                             attempts += 1
                             report = await self._execute(
                                 "learning",
                                 self.learning.learn_priority()
-                                if self.learning.repository.pending_job("priority")
+                                if self.learning.priority_pending()
                                 else self.learning.learn_batch(),
                             )
                             if not observe("learning", report):
                                 break
                             continue
-                    if not policy.enabled:
-                        break
                     if (
                         idle
                         and self.curator
                         and not curator_ran
                         and self.curator.due()
-                        and (learning_first or attempts > 0)
+                        and (
+                            not learning_first
+                            or attempts > 0
+                            or not (self.learning and self.learning.ready(idle=idle))
+                        )
                         and budget.requests < policy.maintenance_requests
                     ):
                         curator_ran = True
@@ -274,6 +293,8 @@ class OrganizationRuntime:
                         if not observe("curator", report):
                             break
                         continue
+                    if not policy.enabled:
+                        break
                     if self.threads:
                         status = self.threads.repository.status()
                         due = self._thread_remaining(current) <= 0
@@ -430,6 +451,15 @@ class OrganizationRuntime:
                 episodes["pending_runs_capped"]
                 or threads.get("pending_episodes_capped")
                 or threads.get("dirty_threads_capped")
+                or (
+                    self.learning
+                    and self.learning.policy.enabled
+                    and (
+                        self.learning.priority_pending()
+                        or self.learning.repository.pending_job("batch")
+                        or self.learning.repository.pending_episodes(1)
+                    )
+                )
             ),
             "maintenance_running": self.current_stage is not None,
             "current_stage": self.current_stage,
@@ -491,6 +521,8 @@ class OrganizationRuntime:
     async def learning_command(self, text: str, *, curator=False) -> dict:
         if self.learning is None:
             return {"outcome": "disabled"}
+        if curator and self.curator is None:
+            return {"outcome": "disabled"}
         if text == "status":
             return self.curator.status() if curator and self.curator else self.learning.status()
         parts = text.split()
@@ -513,5 +545,11 @@ class OrganizationRuntime:
                 if report["outcome"] == "no_learning_work":
                     report = await self.learning.learn_batch(force=True, retry=text == "retry")
                 return {**report, "budget": budget.report()}
+        except TimeoutError:
+            return {
+                "outcome": "budget_exhausted",
+                "error_code": "maintenance_timeout",
+                "budget": budget.report(),
+            }
         finally:
             model.provider = original

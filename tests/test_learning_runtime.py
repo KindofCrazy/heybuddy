@@ -188,3 +188,57 @@ async def test_incompatible_shared_budget_never_repeats_paid_extraction(state):
         assert learning.repository.pending_job("priority") is not None
     finally:
         await runtime.close()
+
+
+async def test_continuous_dirty_pages_yield_a_whole_cycle_to_waiting_learning(state):
+    from types import SimpleNamespace
+
+    from personal_agent.core.models import ModelResponse
+    from personal_agent.organization.models import OrganizationPolicy
+
+    db, sessions, memory, _ = state
+    clock = FakeClock()
+    provider = script([])
+    learning = use_clock(learner(state, provider), clock)
+    run = seed(db, sessions.current.id)
+    with db._transaction() as connection:
+        connection.execute(
+            "UPDATE runs SET started_at=?,ended_at=? WHERE id=?",
+            (
+                (clock.now() - timedelta(hours=1, seconds=1)).isoformat(),
+                (clock.now() - timedelta(hours=1)).isoformat(),
+                run,
+            ),
+        )
+    calls = []
+
+    class RepairProvider:
+        async def generate(self, *args, **kwargs):
+            return ModelResponse(text="{}")
+
+    model = SimpleNamespace(provider=RepairProvider())
+
+    async def repair(**kwargs):
+        calls.append(True)
+        await model.provider.generate([], [], max_output_tokens=1)
+        return {"outcome": "repair_page"}
+
+    threads = SimpleNamespace(
+        model=model,
+        policy=OrganizationPolicy(),
+        repair=repair,
+        repairs=SimpleNamespace(pending=lambda **kwargs: object()),
+        repository=SimpleNamespace(status=lambda: dict(pending_episodes_capped=0, state="pending")),
+    )
+    runtime = OrganizationRuntime(
+        organizer(learning.repository.episodes), learning=learning, threads=threads, clock=clock
+    )
+    try:
+        runtime.schedule(sessions.current.id)
+        await pump(lambda: bool(runtime.last_report.get("cycle")))
+        assert calls and not provider.requests
+        clock.advance(61)
+        await pump(lambda: bool(provider.requests))
+        assert len(provider.requests) == 1
+    finally:
+        await runtime.close()

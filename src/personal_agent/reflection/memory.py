@@ -5,6 +5,7 @@ from pathlib import PurePosixPath
 from personal_agent.core.compaction import redact
 from personal_agent.memory import index
 from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest, metadata, summary
+from personal_agent.memory.safety import contains_credentials
 from personal_agent.memory.store import MemoryFS
 from personal_agent.reflection.models import Candidate, Decision, PlanItem, ReflectionError
 
@@ -61,6 +62,8 @@ def plan_item(
         if change.path or change.old_text or change.new_text:
             raise ReflectionError("non_write_payload")
         return item
+    if contains_credentials(change.new_text):
+        raise ReflectionError("credentials_forbidden")
     fs.path(change.path)
     if change.action == "create":
         if "/" not in change.path or change.path.endswith("/MEMORY.md") or change.old_text:

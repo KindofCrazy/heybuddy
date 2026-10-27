@@ -6,7 +6,7 @@
 
 ## 实际执行路径
 
-1. Host 调用 `learn(run_ids=...)` 或 `learn(episode_ids=...)`。`snapshot()` 重新 JOIN Agent/Conversation/Run，拒绝非 completed Run；Episode 必须 finalized。先查询数量/字节预算，再通过原 `_source()` 加载完整 Run。跨 Conversation 的来源分别携带真实归属，按 started_at 排序；摘要只是定位提示。
+1. Host 调用 `learn(run_ids=...)` 或 `learn(episode_ids=...)`。`snapshot()` 重新 JOIN Agent/Conversation/Run，拒绝非 completed Run；Episode 必须 finalized。先查询数量/字节预算，再通过原 `_source()` 加载完整 Run。跨 Conversation 的来源分别携带真实归属、started_at/ended_at，并提供独立处理时间 as_of；按真实来源开始时间排序，相对时间不能按处理日期猜测。摘要只是定位提示。
 2. `create()` 以来源 ID/revision 去重，`_execute()` 先保存 processing。`propose()` 直接 Extraction，允许空列表，不强制 Worthiness。`_verify()` 对每个引用复用原精确引文校验，confirmed 必须有真实用户消息，不能仅引用 Assistant 或 Tool。
 3. Selection 返回每个目标及 candidate_ids，可另外选有界相关文件进行对照。Host 要求候选完整覆盖、路径唯一、有界；只读真实 catalogue 中的现有路径。拒绝 persona.md 和索引直接写入。
 4. 每个目标一次 Consolidation，按实际来源时间排序所有候选，更新当前认识、替换明确过时状态，重复/不确定结果可 no-op/review。`plan_item()` 校验唯一 old_text、expected_hash、大小、Frontmatter 和主题冲突。所有目标计划完成后才开始写入。
@@ -17,7 +17,7 @@
 
 取消模型等待恢复 pending，不推进来源；已准备/发布文件的任务保守进入 requires_reconciliation。重启 `recover()` 将无回执 processing 恢复 pending，有回执则等待核对。文件成功而记账失败不得宣称回滚。`reconcile(job_id)` 只读比较 after_hash 与索引可发现性，全部核实才 completed，不能核实则保持不确定，不盲目重发 create/update。索引部分成功使用原 /memory repair 补链后再核对。失败任务需显式 retry；persona 不受自动服务修改，Main Agent 没有获得新写权限。
 
-Host 校验结构、真实引文与写入边界，不能数学证明模型的语义判断。假设、外部指令、未接受建议、敏感推测和冲突应由 Extraction/Consolidation 拒绝或标为不确定；请求及响应做凭据过滤。FakeProvider 测试不代表真实语义质量。
+Host 校验结构、真实引文与写入边界，不能数学证明模型的语义判断。假设、外部指令、未接受建议、敏感推测和冲突应由 Extraction/Consolidation 拒绝或标为不确定；原始来源沿用既有脱敏，响应及待发布片段做保守凭据模式检查，不宣称完备秘密识别。FakeProvider 测试不代表真实语义质量。
 
 ## 双速自动化的实际路径
 

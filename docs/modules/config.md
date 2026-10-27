@@ -1,5 +1,7 @@
 # 配置与 API 地址校验
 
+P2 的 `Settings.learning_policy()/curator_policy()/memory_retrieval_policy()` 对应 `.env.example` 的 AGENT_MEMORY_LEARNING_*、PRIORITY_ENABLED、CURATOR_*、RETRIEVAL_*，全部有界。默认启用 Learning、Curator 和条件性 Preflight；普通 Batch 3 Episodes/21600 秒，Curator 86400 秒/累计 12 更新或文件长度条件。P2 与 Episode/Thread 共用维护轮额度，不与旧 MemoryAutomation 同时自动运行。默认两目标学习在开始提取前保守预留四次请求容量；自定义预算不足显示 learning_budget_config，不付费重复提取。输入/输出/来源字节/文件数及各阶段超时见 [Learning](learning.md)、[Curator](curator.md)、[Retrieval](retrieval.md)。关闭 P2 恢复旧 Automation 配置，关闭 Memory Retrieval 不清空既有 Markdown。配置来自可信 Host，模型不能修改开关或权限。
+
 Review Fix 增加 AGENT_ORGANIZATION_THREAD_INTERVAL_SECONDS（14400）、CHECK_SECONDS（60）、COOLDOWN_SECONDS（60），配合已有 1500 秒 Idle、8 Runs、3 Episodes 和 10800 秒 Finalize 窗口。触发与时间源语义见 [Organization Schedule](organization-schedule.md)。
 
 MAINTENANCE_BATCHES/REQUESTS/TOKENS/SECONDS 默认 4/4/131072/120，是一轮共享维护上限；REPAIR_RETRY_SECONDS/MAX_FAILURES 默认 300/3，控制同源 Repair 的退避和自动失败上限。MemoryAutomation 保持自己的额度，未混入维护轮计量。

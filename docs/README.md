@@ -4,9 +4,11 @@
 
 [Working Context Retrieval](modules/retrieval.md)：相关 Thread/Episode、完整原始 Run、去重、时间来源与 ContextBudget。
 
-当前文档描述 P1 与兼容的 V0.7.2 Memory/Reflection。先看 [P1 时间驱动与一致性报告](p1-review-fix.md)，再沿整体 Pipeline 阅读模块；[初版 P1 交付](p1-delivery.md)保留为历史记录。
+当前文档描述 P2 及兼容的 P1/V0.7.2。先看 [P2 交付与验证](p2-delivery.md)，再看 [P1 时间驱动与一致性报告](p1-review-fix.md)，再沿整体 Pipeline 阅读模块；[初版 P1 交付](p1-delivery.md)保留为历史记录。
 
 当前 Review Fix 入口：[时间驱动与一致性报告](p1-review-fix.md)、[统一调度](modules/organization-schedule.md)、[Dirty Repair](modules/thread-repair.md)。初版 P1 报告保留为历史验证记录。
+
+[P2 Learning](modules/learning.md)、[Memory Curator](modules/curator.md)、[Adaptive Retrieval](modules/retrieval.md) 描述自动学习、受限写入和未来对话使用记忆的真实路径。
 
 ## 阅读顺序
 

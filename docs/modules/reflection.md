@@ -1,5 +1,7 @@
 # Reflection 与长期记忆整合
 
+P2 复用本服务的请求、来源投影/校验、比较和计划验证，手动 reflect/apply 的审批语义不变。reflection/writer.py 抽取原单文件写入与只读核对供两者复用；P2 自动授权只在专门 Host 服务，不通过新增 approval_source 或模型工具绕过人工审批。_ask() 返回后重验 timeout/cancellation，并记录请求、输入/输出和 reasoning 子集；不存放响应正文或秘密。P2 独立进度不推进原 reflection_progress。真实执行链见 [Learning](learning.md)。
+
 ## 职责与架构组成
 
 V0.7 的 Reflection 是用户手动触发的学习流程：从原始对话提取可复用理解，与现有 Markdown 比较，生成计划，用户明确批准后才写入。它不维持当前模型窗口，不读取 Conversation Summary 作为事实，也不启动新的 Agent Loop。

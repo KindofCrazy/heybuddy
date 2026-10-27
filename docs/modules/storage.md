@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+当前 schema 11 追加 `storage/learning.py::LearningRepository` 的 memory_learning_jobs、memory_learning_sources、memory_learning_state；原迁移 1–10 定义不变。只保存任务状态、来源 ID/hash、文件发布回执、计量和首次启用水位，不保存长期知识正文或新事实数据库。Run/Message/Episode/Thread/Reflection 原位保留，initialize() 顺序原子升级。snapshot() 复核 Agent 与真实来源，save() 做状态/更新时间 CAS。跨文件/SQLite 无共同事务，processing 在重启分为 pending 或 requires_reconciliation，行为及原子迁移测试见 [Learning](learning.md)、[P2 交付](../p2-delivery.md)。
+
 schema 8 的 `storage/maintenance.py::CONSISTENCY_SCHEMA` 增加 Thread source_revision、关联/语义变更失效触发器、重建检查点和归一化来源表。1–7 定义原样保留，Journal 不改；事务路径及验证见 [Thread Repair](thread-repair.md)。
 
 schema 7 的 `storage/threads.py::ThreadRepository` 追加独立 Thread 状态、版本及批次审计，原子更新 Episode 关联和待更新标志。schema 6 的 Thread 外键插入/更新触发器复核同 Agent 归属。组织层只改派生表，不重写 Journal。
@@ -14,7 +16,7 @@ P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running R
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。数据库 schema 版本 4 与应用版本 0.7 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 11 与发行包版本 0.7.2 是不同概念。
 
 ## 表字段与一致性约束
 

@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from personal_agent.core.budget import ContextBudget, estimate_request
 from personal_agent.core.compaction import SECRET, projection, redact
 from personal_agent.core.history import HistoryTurn
-from personal_agent.core.models import Model, TextMessage
+from personal_agent.core.models import Model, TextMessage, TokenUsage
 from personal_agent.llm.base import Provider, ProviderError
 from personal_agent.memory.store import MemoryFS
 from personal_agent.organization.models import OrganizationError
@@ -98,6 +98,23 @@ class ReflectionService:
             - context_budget.safety_margin,
         )
         self._lock = asyncio.Lock()
+        self.reset_metrics()
+
+    def reset_metrics(self) -> None:
+        self.metrics = {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "usage_complete": True,
+        }
+
+    def _observe_usage(self, usage: TokenUsage | None) -> None:
+        if usage is None:
+            self.metrics["usage_complete"] = False
+        else:
+            for field in ("input_tokens", "output_tokens", "reasoning_tokens"):
+                self.metrics[field] += getattr(usage, field) or 0
 
     def _request(self, kind: type[Model], prompt: str, data: dict) -> list[TextMessage]:
         return [
@@ -119,6 +136,7 @@ class ReflectionService:
         if estimate_request(request, []) > self.input_limit:
             raise ReflectionError("reflection_input_budget", stage=stage)
         try:
+            self.metrics["requests"] += 1
             async with asyncio.timeout(self.policy.timeout_seconds) as deadline:
                 response = await self.provider.generate(
                     request, [], max_output_tokens=self.policy.output_tokens
@@ -127,14 +145,24 @@ class ReflectionService:
                     raise TimeoutError
                 if asyncio.current_task().cancelling():
                     raise asyncio.CancelledError
+        except asyncio.CancelledError:
+            self._observe_usage(None)
+            raise
         except ProviderError as error:
+            self._observe_usage(error.diagnostics.usage if error.diagnostics else None)
             raise ReflectionError(
                 "reflection_provider_error", stage=stage, diagnostics=error.diagnostics
             ) from None
-        except OrganizationError:
+        except OrganizationError as error:
+            if error.code in {"maintenance_budget", "maintenance_request_budget"}:
+                self.metrics["requests"] -= 1
+            else:
+                self._observe_usage(None)
             raise
         except Exception:
+            self._observe_usage(None)
             raise ReflectionError("reflection_provider_error", stage=stage) from None
+        self._observe_usage(response.usage)
         if (
             response.tool_calls
             or not response.text.strip()

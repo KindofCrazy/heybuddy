@@ -57,7 +57,7 @@ def terms(text: str) -> list[str]:
 
 
 class MemoryLookup:
-    def __init__(self, memory: MemoryFS, policy: MemoryRetrievalPolicy | None = None):
+    def __init__(self, memory: MemoryFS, policy: MemoryRetrievalPolicy | None = None) -> None:
         self.memory = memory
         self.policy = policy or MemoryRetrievalPolicy()
 

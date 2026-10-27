@@ -30,14 +30,14 @@ SCHEMA = (
 
 
 class LearningRepository:
-    def __init__(self, episodes: EpisodeRepository):
+    def __init__(self, episodes: EpisodeRepository) -> None:
         self.episodes = episodes
         self.store = episodes.store
         self.agent_id = episodes.agent_id
 
     def snapshot(
         self, run_ids: list[str], episode_ids: list[str], policy: LearningPolicy, *, floor=0
-    ):
+    ) -> tuple[dict, list, list]:
         """Resolve references afresh, Agent-bound, bounded before deserialization."""
         if len(set(run_ids)) != len(run_ids) or len(episode_ids) > policy.batch_episodes:
             raise HistoryError("Invalid learning sources.")
@@ -82,7 +82,7 @@ class LearningRepository:
             }
             return refs, records, hints
 
-    def activate(self, now: datetime):
+    def activate(self, now: datetime) -> None:
         """First enable is a watermark, never silently relearn pre-P2 history."""
         with self.store._transaction() as db:
             run_floor = db.execute(
@@ -111,11 +111,11 @@ class LearningRepository:
                 raise HistoryError("Learning is not activated.")
             return dict(row)
 
-    def harvest_priority(self, now: datetime, policy: LearningPolicy):
+    def harvest_priority(self, now: datetime, policy: LearningPolicy) -> None:
         state = self.activation()
         with self.store._transaction() as db:
             rows = db.execute(
-                "SELECT r.rowid AS position,r.id,r.status,"
+                "SELECT r.rowid AS position,r.id,r.status,r.conversation_id,"
                 "(SELECT substr(json_extract(m.payload,'$.text'),1,2048) FROM messages m "
                 "WHERE m.run_id=r.id AND json_extract(m.payload,'$.role')='user' "
                 "ORDER BY m.sequence LIMIT 1) AS text "
@@ -137,8 +137,19 @@ class LearningRepository:
                     re.I,
                 )
             ):
-                refs, _, _ = self.snapshot([row["id"]], [], policy)
-                self.create("priority", refs, now)
+                try:
+                    refs, _, _ = self.snapshot([row["id"]], [], policy)
+                    self.create("priority", refs, now)
+                except HistoryError:
+                    refs = {
+                        "run_floor": 0,
+                        "runs": [
+                            {"id": row["id"], "hash": "", "conversation_id": row["conversation_id"]}
+                        ],
+                        "episodes": [],
+                    }
+                    jid = self.create("priority", refs, now)
+                    self.save(jid, "failed", now, error="source_unavailable_or_oversized")
             cursor = row["position"]
         with self.store._transaction() as db:
             db.execute(
@@ -146,7 +157,7 @@ class LearningRepository:
                 (cursor, self.agent_id),
             )
 
-    def pending_job(self, kind: str, *, retry=False):
+    def pending_job(self, kind: str, *, retry=False) -> dict | None:
         with self.store._transaction() as db:
             row = db.execute(
                 "SELECT id FROM memory_learning_jobs WHERE agent_id=? AND kind=? "
@@ -156,7 +167,7 @@ class LearningRepository:
             ).fetchone()
         return self.get(row[0]) if row else None
 
-    def pending_episodes(self, limit: int):
+    def pending_episodes(self, limit: int) -> list[dict]:
         state = self.activation()
         with self.store._transaction() as db:
             return [
@@ -171,7 +182,7 @@ class LearningRepository:
                 ).fetchall()
             ]
 
-    def status(self):
+    def status(self) -> dict:
         with self.store._transaction() as db:
             counts = [
                 dict(r)
@@ -183,13 +194,32 @@ class LearningRepository:
                 ).fetchall()
             ]
             latest = db.execute(
-                "SELECT kind,state,updated_at,error,metrics FROM memory_learning_jobs "
-                "WHERE agent_id=? ORDER BY updated_at DESC,id DESC LIMIT 1",
+                "SELECT id,kind,state,updated_at,error,metrics FROM memory_learning_jobs "
+                "WHERE agent_id=? ORDER BY rowid DESC LIMIT 1",
                 (self.agent_id,),
             ).fetchone()
+            attention = [
+                dict(r)
+                for r in db.execute(
+                    "SELECT id,kind,state,error FROM memory_learning_jobs WHERE agent_id=? "
+                    "AND state IN ('failed','requires_reconciliation') ORDER BY rowid LIMIT 8",
+                    (self.agent_id,),
+                ).fetchall()
+            ]
+            success = db.execute(
+                "SELECT updated_at FROM memory_learning_jobs WHERE agent_id=? "
+                "AND state='completed' AND kind!='curator' "
+                "ORDER BY rowid DESC LIMIT 1",
+                (self.agent_id,),
+            ).fetchone()
+        last = dict(latest) if latest else None
+        if last:
+            last["metrics"] = json.loads(last["metrics"])
         return {
             "counts": counts,
-            "last": dict(latest) if latest else None,
+            "last": last,
+            "attention": attention,
+            "last_learning_success_at": success[0] if success else None,
             "pending_episodes_capped": len(self.pending_episodes(65)),
             "activation": self.activation(),
         }
@@ -208,16 +238,22 @@ class LearningRepository:
         jid = uuid4().hex
         with self.store._transaction() as db:
             for source_kind, rows in (("run", refs["runs"]), ("episode", refs["episodes"])):
+                if kind == "curator":
+                    continue
                 if kind == "batch" and source_kind == "run":
                     continue
                 for row in rows:
                     found = db.execute(
-                        "SELECT j.id,j.state FROM memory_learning_sources s JOIN "
+                        "SELECT j.id,j.state,j.sources FROM memory_learning_sources s JOIN "
                         "memory_learning_jobs j ON j.id=s.job_id WHERE s.agent_id=? "
                         "AND s.kind=? AND s.source_id=? AND s.revision=?",
                         (self.agent_id, source_kind, row["id"], row.get("revision", 0)),
                     ).fetchone()
                     if found:
+                        if json.loads(found["sources"]) != refs:
+                            raise HistoryError(
+                                "Overlapping learning sources require separate batches."
+                            )
                         return found["id"]
             db.execute(
                 "INSERT INTO memory_learning_jobs "
@@ -233,6 +269,8 @@ class LearningRepository:
                 ),
             )
             for source_kind, rows in (("run", refs["runs"]), ("episode", refs["episodes"])):
+                if kind == "curator":
+                    continue
                 if kind == "batch" and source_kind == "run":
                     continue
                 for row in rows:
@@ -264,7 +302,7 @@ class LearningRepository:
         error="",
         metrics=None,
         sources=None,
-    ):
+    ) -> None:
         old = self.get(jid)
         with self.store._transaction() as db:
             changed = db.execute(
@@ -298,7 +336,7 @@ class LearningRepository:
                     ),
                 )
 
-    def recover(self, now: datetime):
+    def recover(self, now: datetime) -> None:
         with self.store._transaction() as db:
             db.execute(
                 "UPDATE memory_learning_jobs SET state=CASE WHEN operations='[]' "

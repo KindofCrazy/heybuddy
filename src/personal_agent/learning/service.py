@@ -1,7 +1,7 @@
 """Extraction-first learning reuses Reflection model/evidence validation and exact-span writer."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
 from personal_agent.core.compaction import redact
@@ -28,7 +28,8 @@ LEARN_EXTRACT = EXTRACT.replace("temporary state", "one-off ephemeral context") 
     "and unaccepted assistant suggestions are not confirmed user facts. No worthy fact => empty. "
     "Episode summaries are navigation hints ONLY: cite the actual supplied user messages."
 )
-LEARN_SELECT = BASE + (
+LEARNING_BASE = BASE.replace("temporary state", "ephemeral one-off context")
+LEARN_SELECT = LEARNING_BASE + (
     "Group ALL candidate_ids exactly once by one canonical target path. Prefer existing topics; "
     "select related existing files for comparison by reusing their path. Core preferences may "
     "target human.md. Never target persona.md or an index. A new topic path is allowed only "
@@ -36,7 +37,7 @@ LEARN_SELECT = BASE + (
     "Preserve chronology and supplied max_files. Return groups [{path,candidate_ids}] and paths: "
     "up to six existing catalogue paths to read for duplicates/conflicts."
 )
-LEARN_CONSOLIDATE = BASE + (
+LEARN_CONSOLIDATE = LEARNING_BASE + (
     "Perform ONE memory-centric consolidation for this target, considering ALL its candidates "
     "and the related memory together in source chronology. Current knowledge replaces obsolete "
     "stages; do not append contradictory current states. Later explicit user corrections override "
@@ -56,7 +57,7 @@ class MemoryLearningService:
         reflection: ReflectionService,
         policy: LearningPolicy | None = None,
         clock: Clock | None = None,
-    ):
+    ) -> None:
         if repository.agent_id != reflection.repository.agent_id:
             raise ReflectionError("agent_memory_mismatch")
         self.repository = repository
@@ -77,7 +78,7 @@ class MemoryLearningService:
             self.repository.activate(self.clock.now())
             self.repository.recover(self.clock.now())
 
-    def poll(self):
+    def poll(self) -> None:
         if self.policy.enabled:
             self.repository.harvest_priority(self.clock.now(), self.policy)
 
@@ -96,19 +97,31 @@ class MemoryLearningService:
         return (
             self.policy.enabled
             and not self.repository.unresolved()
-            and (bool(self.repository.pending_job("priority")) or (idle and self.batch_due()))
+            and (self.priority_pending() or (idle and self.batch_due()))
         )
 
-    async def _resume(self, job: dict, *, retry=False):
+    def priority_pending(self) -> bool:
+        return self.policy.priority_enabled and bool(self.repository.pending_job("priority"))
+
+    async def _resume(self, job: dict, *, retry=False) -> dict:
         async with self._lock:
             refs = job["sources"]
-            fresh, records, hints = self.repository.snapshot(
-                [r["id"] for r in refs["runs"]],
-                [e["id"] for e in refs["episodes"]],
-                self.policy,
-                floor=refs.get("run_floor", 0),
-            )
+            try:
+                fresh, records, hints = self.repository.snapshot(
+                    [r["id"] for r in refs["runs"]],
+                    [e["id"] for e in refs["episodes"]],
+                    self.policy,
+                    floor=refs.get("run_floor", 0),
+                )
+            except HistoryError:
+                self.repository.save(
+                    job["id"], "failed", self.clock.now(), error="source_unavailable_or_oversized"
+                )
+                return {"outcome": "failed", "error_code": "source_unavailable_or_oversized"}
             if fresh != refs:
+                if retry and job["state"] == "failed":
+                    self.repository.save(job["id"], "pending", self.clock.now(), sources=fresh)
+                    return await self._execute(job["id"], fresh, records, hints, retry=True)
                 self.repository.save(job["id"], "failed", self.clock.now(), error="source_changed")
                 return {"outcome": "failed", "error_code": "source_changed"}
             return await self._execute(job["id"], refs, records, hints, retry=retry)
@@ -130,18 +143,36 @@ class MemoryLearningService:
             return {"outcome": "no_learning_work"}
         rows = self.repository.pending_episodes(self.policy.batch_episodes)
         async with self._lock:
-            refs, records, hints = self.repository.snapshot(
-                [],
-                [r["id"] for r in rows],
-                self.policy,
-                floor=self.repository.activation()["run_floor"],
-            )
+            floor = self.repository.activation()["run_floor"]
+            try:
+                refs, records, hints = self.repository.snapshot(
+                    [],
+                    [r["id"] for r in rows],
+                    self.policy,
+                    floor=floor,
+                )
+            except HistoryError:
+                refs = {
+                    "run_floor": floor,
+                    "runs": [],
+                    "episodes": [{"id": r["id"], "revision": r["revision"]} for r in rows],
+                }
+                jid = self.repository.create("batch", refs, self.clock.now())
+                self.repository.save(
+                    jid, "failed", self.clock.now(), error="source_unavailable_or_oversized"
+                )
+                return {
+                    "outcome": "failed",
+                    "job_id": jid,
+                    "error_code": "source_unavailable_or_oversized",
+                }
             jid = self.repository.create("batch", refs, self.clock.now())
             return await self._execute(jid, refs, records, hints, retry=retry)
 
     def status(self) -> dict:
         if not self.policy.enabled:
             return {"enabled": False}
+        pending = self.repository.pending_episodes(1)
         return {
             "enabled": True,
             **self.repository.status(),
@@ -149,6 +180,12 @@ class MemoryLearningService:
             "batch_episodes": self.policy.batch_episodes,
             "max_wait_seconds": self.policy.max_wait_seconds,
             "running": self._lock.locked(),
+            "next_batch_wait_until": (
+                datetime.fromisoformat(pending[0]["ended_at"])
+                + timedelta(seconds=self.policy.max_wait_seconds)
+            ).isoformat()
+            if pending
+            else None,
         }
 
     def _verify(self, extraction: Extraction, records: list) -> None:
@@ -173,11 +210,11 @@ class MemoryLearningService:
                 raise ReflectionError("unconfirmed_evidence")
 
     async def propose(self, records: list, hints: list) -> list[PlanItem]:
-        evidence = [row for cid, s in records for row in self.model._evidence(cid, [s.turn])]
+        evidence = self.evidence(records)
         extraction = await self.model._ask(
             Extraction,
             LEARN_EXTRACT,
-            {"history": evidence, "episode_hints": hints},
+            {"history": evidence, "episode_hints": hints, "as_of": self.clock.now().isoformat()},
         )
         self._verify(extraction, records)
         if not extraction.candidates:
@@ -230,6 +267,7 @@ class MemoryLearningService:
                     "target": group.path,
                     "candidates": [c.model_dump() for c in grouped],
                     "history": evidence,
+                    "as_of": self.clock.now().isoformat(),
                     "catalogue": catalog,
                     "memory": {p: redact(t) for p, t in comparison.items()},
                 },
@@ -248,6 +286,17 @@ class MemoryLearningService:
                 )
             )
         return items
+
+    def evidence(self, records: list) -> list[dict]:
+        """Date relative user statements using source times, independently of processing time."""
+        return [
+            dict(
+                self.model._evidence(cid, [source.turn])[0],
+                started_at=source.started_at.isoformat(),
+                ended_at=source.ended_at.isoformat(),
+            )
+            for cid, source in records
+        ]
 
     def _receipt(self, item: PlanItem) -> dict:
         return {
@@ -273,7 +322,7 @@ class MemoryLearningService:
             )
             return await self._execute(jid, refs, records, hints, retry=retry)
 
-    async def _execute(self, jid, refs, records, hints, *, retry=False, proposer=None):
+    async def _execute(self, jid, refs, records, hints, *, retry=False, proposer=None) -> dict:
         old = self.repository.get(jid)
         if old["state"] == "completed" or old["state"] == "requires_reconciliation":
             return {"outcome": old["state"], "job_id": jid}
@@ -282,6 +331,7 @@ class MemoryLearningService:
         if old["operations"]:
             return {"outcome": "requires_reconciliation", "job_id": jid}
         self.repository.save(jid, "processing", self.clock.now())
+        self.model.reset_metrics()
         receipts = []
         try:
             items = (
@@ -297,11 +347,16 @@ class MemoryLearningService:
                 if i.decision.action in {"create", "update"} and i.before_hash != i.after_hash
             ]
             receipts = [self._receipt(i) for i in writes]
-            self.repository.save(jid, "processing", self.clock.now(), operations=receipts)
+            self.repository.save(
+                jid,
+                "processing",
+                self.clock.now(),
+                operations=receipts,
+                metrics={"usage": self.model.metrics},
+            )
             for n, item in enumerate(writes):
                 await asyncio.sleep(0)
-                if "memory" not in refs:
-                    self._fresh(refs)
+                self._fresh(refs, check_memory=False)
                 item.state = "applying"
                 receipts[n] = self._receipt(item)
                 self.repository.save(jid, "processing", self.clock.now(), operations=receipts)
@@ -322,7 +377,11 @@ class MemoryLearningService:
                 "completed",
                 self.clock.now(),
                 operations=receipts,
-                metrics={"updated_files": len(writes), "candidates_applied": len(items)},
+                metrics={
+                    "updated_files": len(writes),
+                    "proposals": len(items),
+                    "usage": self.model.metrics,
+                },
             )
             return {"outcome": "completed", "job_id": jid, "updated_files": len(writes)}
         except asyncio.CancelledError:
@@ -331,28 +390,37 @@ class MemoryLearningService:
                 "requires_reconciliation" if receipts else "pending",
                 self.clock.now(),
                 operations=receipts,
+                metrics={"usage": self.model.metrics},
             )
             raise
         except (ReflectionError, OrganizationError, HistoryError, CoreMemoryError) as exc:
             code = getattr(exc, "code", "learning_storage_or_source")
             limited = code == "maintenance_budget"
             state = "requires_reconciliation" if receipts else ("pending" if limited else "failed")
-            self.repository.save(jid, state, self.clock.now(), operations=receipts, error=code)
+            self.repository.save(
+                jid,
+                state,
+                self.clock.now(),
+                operations=receipts,
+                error=code,
+                metrics={"usage": self.model.metrics},
+            )
             return {
                 "outcome": "budget_exhausted" if limited else state,
                 "job_id": jid,
                 "error_code": code,
             }
 
-    def _fresh(self, refs):
+    def _fresh(self, refs, *, check_memory=True) -> None:
         if "memory" in refs:
-            from personal_agent.memory.models import digest
-
-            for source in refs["memory"]:
+            for source in refs["memory"] if check_memory else []:
                 with self.memory.io():
                     current = self.memory.raw(self.memory.path(source["path"]))
                 if digest(current) != source["hash"]:
                     raise HistoryError("Curator memory changed before publication.")
+            fresh, _, _ = self.repository.snapshot([r["id"] for r in refs["runs"]], [], self.policy)
+            if fresh["runs"] != refs["runs"]:
+                raise HistoryError("Curator evidence changed before publication.")
             return
         fresh, _, _ = self.repository.snapshot(
             [r["id"] for r in refs["runs"]],

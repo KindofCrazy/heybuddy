@@ -9,8 +9,8 @@
 1. `main._run_session()` 装配 Curator，Runtime 在 Idle 且没有未核对写入时调用 `due()`。到期但变化不够只顺延检查，不调用模型；失败需显式 retry。SQLite schema 11 已有 curator_due_at/curator_updates，不改旧迁移。
 2. `_files()` 读取有界 catalogue，优先以最近修改路径选择至多两个相关 topic，Core human 可作对照；persona 与索引不作为写入对象。`_evidence()` 从最近两个 completed Learning 任务展开最多八个真实 Run，供需要修改事实的 reconcile 使用。
 3. `run()` 在共享学习锁内生成一个 Curation 请求。已处理文件哈希与回执相同则直接 no-op，不再次付费。`_validate()` 要求唯一目标、限定文件集合和操作数。结构编辑保守校验旧事实行在最终文件集合中仍存在；事实变更必须引用真实用户消息，复用 Learner 精确引文校验。不确定冲突允许空 changes。
-4. Split 只允许逐字复制一个真实 source_text 到新 topic；旧文件更新必须链接新路径，正文不得丢失。所有 creates 排在 updates 前，目标文件和完整索引成功后才执行旧文件替换。创建或索引失败立即停下，旧内容保留。
-5. Learner `_execute(..., proposer=...)` 在首写前重新检查所有源文件哈希，保存无正文回执，再用原 MemoryFS/index 发布。每个旧文件的 expected_hash 继续检查外部编辑。完成后推进 Curator 独立 deadline 和变更计数；不改 Reflection/Run/Episode 进度。
+4. Split 只允许逐字复制一个真实 source_text 到新 topic；旧文件更新必须链接新路径，正文不得丢失。过长主题单独选择并预留新目标名额。所有 creates 排在 updates 前，目标文件和完整索引成功后才执行旧文件替换；目标因同名主题冲突降为 review 时拒绝整个计划，不能只执行后续来源移除。创建或索引失败立即停下，旧内容保留。
+5. Learner `_execute(..., proposer=...)` 在首写前重新检查所有源文件哈希，保存无正文回执，再用原 MemoryFS/index 发布。实际使用的 Run ID/hash 保存为任务来源并在发布前复查，不占用 Priority/Batch 的来源处理记录。每个旧文件的 expected_hash 继续检查外部编辑。完成后推进 Curator 独立 deadline 和变更计数；不改 Reflection/Run/Episode 进度。
 
 ## 异常与恢复
 

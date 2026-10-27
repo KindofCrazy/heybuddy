@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from pydantic import Field
 
 from personal_agent.core.compaction import redact
+from personal_agent.core.history import HistoryError
+from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import Model
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.memory.models import digest
@@ -43,8 +45,9 @@ class Curation(Model):
 CURATE = BASE + (
     "Curate only the supplied small group of Markdown files. Deduplicate literal repeated facts, "
     "preserve stable preferences regardless of age, and organize headings WITHOUT losing claims. "
-    "Unresolved conflicts => no_op; never resolve by guessing or by age alone. Reconciliation of "
-    "Obsolete state requires supplied USER evidence. No persona/index edits or file deletion. "
+    "Unresolved conflicts => no_op; never resolve by guessing or by age alone. "
+    "Reconciling obsolete state requires supplied USER evidence. "
+    "No persona/index edits or deletion. "
     "An empty changes list is valid. No-op when already tidy. One exact unique update per file. "
     "deduplicate/organization must preserve non-heading lines verbatim somewhere in the retained "
     "files; use reconcile with evidence when changing factual state. Limited split: create a new "
@@ -66,7 +69,9 @@ def facts(text: str) -> set[str]:
 
 
 class MemoryCurator:
-    def __init__(self, learning: MemoryLearningService, policy: CuratorPolicy | None = None):
+    def __init__(
+        self, learning: MemoryLearningService, policy: CuratorPolicy | None = None
+    ) -> None:
         self.learning = learning
         self.repository = learning.repository
         self.memory = learning.memory
@@ -78,7 +83,7 @@ class MemoryCurator:
             if state["curator_due_at"] is None:
                 self._schedule()
 
-    def _schedule(self, *, completed=False):
+    def _schedule(self, *, completed=False) -> None:
         with self.repository.store._transaction() as db:
             db.execute(
                 "UPDATE memory_learning_state SET curator_due_at=?,"
@@ -93,23 +98,23 @@ class MemoryCurator:
                 ),
             )
 
-    def _latest(self):
+    def _latest(self) -> dict | None:
         with self.repository.store._transaction() as db:
             row = db.execute(
                 "SELECT id FROM memory_learning_jobs WHERE agent_id=? AND kind='curator' "
-                "ORDER BY created_at DESC,id DESC LIMIT 1",
+                "ORDER BY rowid DESC LIMIT 1",
                 (self.repository.agent_id,),
             ).fetchone()
         return self.repository.get(row[0]) if row else None
 
-    def _files(self):
+    def _files(self) -> tuple[list[dict], dict[str, str]]:
         catalog = catalogue(self.memory)
         topics = [r for r in catalog if not r["path"].endswith("/MEMORY.md")]
         # Recent write paths anchor a small related set; oversized topics are also candidates.
         with self.repository.store._transaction() as db:
             rows = db.execute(
                 "SELECT operations FROM memory_learning_jobs WHERE agent_id=? "
-                "AND kind!='curator' AND state='completed' ORDER BY updated_at DESC "
+                "AND kind!='curator' AND state='completed' ORDER BY rowid DESC "
                 "LIMIT 4",
                 (self.repository.agent_id,),
             ).fetchall()
@@ -125,6 +130,14 @@ class MemoryCurator:
             reverse=True,
         )
         chosen = topics[: max(1, self.policy.max_files - 1)]
+        # Leave destination capacity when a long topic needs splitting.
+        long_topics = [
+            row
+            for row in topics
+            if self.memory.path(row["path"]).stat().st_size >= self.policy.long_file_bytes
+        ]
+        if long_topics:
+            chosen = long_topics[:1]
         known = {r["path"] for r in catalog}
         comparison = read_comparison(self.memory, [r["path"] for r in chosen], known)
         comparison = {p: t for p, t in comparison.items() if p not in {"persona.md", "MEMORY.md"}}
@@ -134,7 +147,7 @@ class MemoryCurator:
             raise ReflectionError("curator_input_budget")
         return catalog, comparison
 
-    def due(self):
+    def due(self) -> bool:
         if (
             not self.policy.enabled
             or not self.learning.policy.enabled
@@ -149,18 +162,21 @@ class MemoryCurator:
             return False
         if state["updates"] - state["curator_updates"] >= self.policy.update_threshold:
             return True
-        _, comparison = self._files()
+        try:
+            _, comparison = self._files()
+        except (CoreMemoryError, ReflectionError, OSError):
+            return True  # run() persists a safe failure; don't stop unrelated P1 maintenance.
         if any(len(text.encode()) >= self.policy.long_file_bytes for text in comparison.values()):
             return True
         self._schedule()
         return False
 
-    def _evidence(self):
+    def _evidence(self) -> list:
         # Reconciliation can cite only actual recent learning sources, not Memory text itself.
         with self.repository.store._transaction() as db:
             rows = db.execute(
                 "SELECT sources FROM memory_learning_jobs WHERE agent_id=? "
-                "AND kind!='curator' AND state='completed' ORDER BY updated_at DESC "
+                "AND kind!='curator' AND state='completed' ORDER BY rowid DESC "
                 "LIMIT 2",
                 (self.repository.agent_id,),
             ).fetchall()
@@ -170,7 +186,17 @@ class MemoryCurator:
         _, records, _ = self.repository.snapshot(ids, [], self.learning.policy)
         return records
 
-    async def run(self, *, force=False, retry=False):
+    async def run(self, *, force=False, retry=False) -> dict:
+        try:
+            return await self._run(force=force, retry=retry)
+        except (CoreMemoryError, HistoryError, ReflectionError, OSError) as error:
+            refs = {"runs": [], "episodes": [], "memory": []}
+            jid = self.repository.create("curator", refs, self.clock.now())
+            code = getattr(error, "code", "curator_source_or_storage")
+            self.repository.save(jid, "failed", self.clock.now(), error=code)
+            return {"outcome": "failed", "job_id": jid, "error_code": code}
+
+    async def _run(self, *, force=False, retry=False) -> dict:
         if not self.policy.enabled or not self.learning.policy.enabled:
             return {"outcome": "disabled"}
         if self.repository.unresolved():
@@ -206,17 +232,21 @@ class MemoryCurator:
                 return {"outcome": "completed", "updated_files": 0, "unchanged": True}
             if latest and latest["state"] == "failed" and not retry:
                 return {"outcome": "failed", "error_code": latest["error"]}
+            records = self._evidence()
+            refs["runs"] = [
+                {"id": s.run_id, "hash": s.turn.source_hash, "conversation_id": cid}
+                for cid, s in records
+            ]
             jid = (
                 latest["id"]
                 if latest and latest["state"] in {"pending", "failed"} and latest["sources"] == refs
                 else self.repository.create("curator", refs, self.clock.now())
             )
-            records = self._evidence()
 
-            async def propose():
+            async def propose() -> list:
                 if not comparison:
                     return []
-                history = [row for cid, s in records for row in self.model._evidence(cid, [s.turn])]
+                history = self.learning.evidence(records)
                 result = await self.model._ask(
                     Curation,
                     CURATE,
@@ -224,6 +254,7 @@ class MemoryCurator:
                         "memory": {p: redact(t) for p, t in comparison.items()},
                         "catalogue": catalog,
                         "history": history,
+                        "as_of": self.clock.now().isoformat(),
                         "max_files": self.policy.max_files,
                     },
                 )
@@ -236,7 +267,7 @@ class MemoryCurator:
                 self._schedule(completed=True)
             return report
 
-    def _validate(self, result, comparison, catalog, records):
+    def _validate(self, result, comparison, catalog, records) -> list:
         changes = result.changes
         targets = [c.path for c in changes if c.action in {"create", "update"}]
         if (
@@ -300,12 +331,13 @@ class MemoryCurator:
                 if not facts(change.old_text) <= facts(retained):
                     raise ReflectionError("curator_content_loss")
             decision = Decision(**change.model_dump(include=set(Decision.model_fields)))
-            items.append(
-                plan_item(self.memory, len(items) + 1, None, decision, comparison, catalog)
-            )
+            item = plan_item(self.memory, len(items) + 1, None, decision, comparison, catalog)
+            if change.action == "create" and item.decision.action != "create":
+                raise ReflectionError("split_target_requires_review")
+            items.append(item)
         return items
 
-    def status(self):
+    def status(self) -> dict:
         if not self.learning.policy.enabled:
             return {"enabled": False, "due": False}
         latest = self._latest()

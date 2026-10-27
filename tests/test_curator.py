@@ -70,7 +70,9 @@ async def test_reconcile_current_state_requires_actual_recent_user_evidence(stat
         ],
     )
     service.model.provider = FakeProvider(ModelResponse(text=json.dumps({"changes": [edit]})))
-    assert (await service.run(force=True))["outcome"] == "completed"
+    result = await service.run(force=True)
+    assert result["outcome"] == "completed"
+    assert service.repository.get(result["job_id"])["sources"]["runs"][0]["id"] == newer
     text = memory.read_file("projects/heybuddy.md")["content"]
     assert "正在准备" not in text and "已经获得" in text
 
@@ -122,6 +124,23 @@ async def test_split_saves_and_indexes_destination_before_old_content_removal(st
     assert (await service.run(force=True))["updated_files"] == 2
     assert section in memory.read_file("topics/recall.md")["content"]
     assert section not in memory.read_file("projects/heybuddy.md")["content"]
+
+
+async def test_long_split_keeps_source_when_destination_requires_review(state):
+    db, sessions, memory, _ = state
+    section, changes = split_changes()
+    original = TOPIC + section + ("保留其他内容。\n" * 100)
+    index.create(memory, "projects/heybuddy.md", original)
+    index.create(
+        memory,
+        "topics/old-recall.md",
+        "---\nname: recall\ndescription: 已有同名主题\n---\n\n已有内容。\n",
+    )
+    service = curator(state, changes, long_file_bytes=1024)
+    result = await service.run(force=True)
+    assert result["outcome"] == "failed" and result["error_code"] == "split_target_requires_review"
+    assert memory.read_file("projects/heybuddy.md")["content"] == original
+    assert not memory.path("topics/recall.md").exists()
 
 
 async def test_split_partial_index_failure_keeps_old_knowledge_and_explicit_safe_retry(
