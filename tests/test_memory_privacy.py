@@ -114,7 +114,7 @@ def test_custom_cli_root_is_checked_before_sdk_is_created(repo, tmp_path, monkey
     def unexpected(*args, **kwargs):
         pytest.fail("SDK must not be constructed for an unsafe memory directory")
 
-    monkeypatch.setattr(cli, "AsyncOpenAI", unexpected)
+    monkeypatch.setattr("personal_agent.runtime.AsyncOpenAI", unexpected)
     with pytest.raises(CoreMemoryError) as caught:
         asyncio.run(cli.run_cli(settings))
     assert caught.value.code == "memory_not_private"

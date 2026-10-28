@@ -7,6 +7,7 @@ from dotenv import dotenv_values
 from pydantic import ConfigDict, Field, HttpUrl, SecretStr, field_validator, model_validator
 
 from personal_agent.automation.models import AutomationPolicy
+from personal_agent.channels.qq.config import QQSettings
 from personal_agent.character.loader import IDENTIFIER
 from personal_agent.character.models import CharacterPolicy, StatePolicy
 from personal_agent.core.budget import ContextBudget
@@ -18,7 +19,7 @@ from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.reflection.models import ReflectionPolicy
 
 
-class Settings(ContextBudget):
+class Settings(ContextBudget, QQSettings):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     api_key: SecretStr
@@ -243,6 +244,7 @@ class Settings(ContextBudget):
 
 
 ENV_FIELDS = {
+    **{"AGENT_" + name.upper(): name for name in QQSettings.model_fields},
     **{
         "AGENT_" + name.upper(): name
         for name in Settings.model_fields

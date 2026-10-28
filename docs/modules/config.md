@@ -98,3 +98,6 @@ V0.7.1 修正旧版将 output_tokens 同时当 JSON 字节上限的混用。输�
 ## V0.7.2 Phase 1 集成
 
 V0.7.2 新增 AGENT_MEMORY_AUTOMATION=suggest、AGENT_MEMORY_AUTOMATION_MAX_REQUESTS=4、AGENT_MEMORY_AUTOMATION_MAX_TOKENS=131072、AGENT_MEMORY_AUTOMATION_TIMEOUT_SECONDS=180。AGENT_MEMORY_AUTO_CREATE_GRANTS 为精确 knowledge/ 路径到 Markdown SHA256 的 JSON 对象，默认空；Settings.automation_policy() 校验模式、路径/摘要/预算，不从记忆和聊天获得授权。
+# QQ 可选配置
+
+`Settings` 同时包含 `channels.qq.config.QQSettings`，`ENV_FIELDS` 将 `qq_` 字段映射为 `AGENT_QQ_*`。只有 QQ 启动入口调用 `require_qq()` 检查 enabled、凭据与单一 OpenID，原 CLI 不要求 QQ 凭证。SecretStr 不显示明文；白名单拒绝通配符与多用户。队列、超时、回复窗口/段数、UTF-8 字节、重连次数和退避都设上限，详见 [qq.md](qq.md)。
