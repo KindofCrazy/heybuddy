@@ -52,6 +52,14 @@ async def run_qq(
                 )
                 adapter = QQAdapter(settings, service, inbox, QQAPI(settings, client))
                 gateway = QQGateway(settings, adapter.sender)
+                service.qq_status = lambda: {
+                    "gateway": gateway.state,
+                    "consumer": "stopped"
+                    if adapter.closing
+                    else "running"
+                    if adapter.worker and not adapter.worker.done()
+                    else "not_running",
+                }
                 adapter.start()
                 receiving = asyncio.create_task(gateway.run(adapter.accept), name="qq-gateway")
                 stopping = asyncio.create_task(stop.wait(), name="qq-stop")

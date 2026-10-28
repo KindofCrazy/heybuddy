@@ -23,5 +23,7 @@ Agent 的失败继续返回 `RunResult`；初始化失败沿原 CLI 安全错误
 运行 `uv run personal-agent`。`tests/test_config_cli.py` 验证 CLI、SDK 关闭与会话装配；`tests/test_p2_cli.py` 验证唯一 Learning 入口、共享检索器及只读管理状态。离线测试用 Fake Provider，不连接真实模型。
 # Observatory 接线
 
+`ChatService.run` 在 try/finally 设置 `foreground_active`，取消或失败也会清除。`qq_status` 是 QQ runner 绑定的无参数读取 callback，仅返回 Gateway/consumer 生命周期枚举。HTTP 不调用这两个执行入口；它只读取标记与持久元数据。
+
 `dashboard/app.py:create_app` 接受同一个 `ChatService`，只保留读取投影。QQ 的 `run_qq(..., dashboard=True)` 在 `open_application()` 内通过 `AsyncExitStack` 启动 HTTP，复用同一 SQLite 连接、Agent Scope 与 MemoryFS。独立 `web` 同样调用 `open_application()`，不安排后台维护；已有进程持有锁时拒绝启动。详情见 [dashboard.md](dashboard.md)，验证见 `tests/test_dashboard.py`。
 

@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
@@ -45,14 +45,20 @@ class ChatService:
     reflection: ReflectionService | None = None
     automation: MemoryAutomation | None = None
     organization: OrganizationRuntime | None = None
+    foreground_active: bool = False
+    qq_status: Callable[[], dict] | None = None
 
     async def foreground(self) -> None:
         if self.organization is not None:
             await self.organization.foreground()
 
     async def run(self, text: str, *, permissions: frozenset[str] = frozenset()) -> RunResult:
-        await self.foreground()
-        return await self.agent.run(text, permissions=permissions)
+        self.foreground_active = True
+        try:
+            await self.foreground()
+            return await self.agent.run(text, permissions=permissions)
+        finally:
+            self.foreground_active = False
 
     def after_reply(self, result: RunResult | None = None) -> None:
         if self.organization is not None and self.sessions is not None:

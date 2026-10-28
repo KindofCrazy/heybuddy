@@ -54,3 +54,9 @@ schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁�
 `uv run personal-agent qq --discover-openid` 单独通过 `config.load_qq_settings()` 加载 QQ 配置，不要求 OpenAI Key、模型或 Context Window；不打开数据库/MemoryFS/Character。只在官方 TLS Gateway 收到第一条有效 C2C 文本时输出 author.user_openid，绝不打印正文/原事件，不回复，随后退出。默认最多等待 120 秒（`AGENT_QQ_DISCOVERY_SECONDS`，最多 600），不自动允许该 OpenID，须用户核对测试账号后写入白名单。
 
 关闭 P2 自动学习可以设置 `AGENT_MEMORY_LEARNING_ENABLED=false`；同时设置 `AGENT_MEMORY_AUTOMATION=off`，避免启动兼容的建议式 Reflection。已有 Core/Deferred/Recall 检索继续可用。P1/P3 的空闲维护仍按宿主现有配置与预算执行；角色开关和来源与 CLI 相同，不修改 persona.md 或 Character Core。
+# 同进程 Observatory
+
+`QQGateway.state` 从真实连接过程更新为 not_started/connecting/ready/reconnecting/error/stopped。`run_qq` 将 Gateway 状态与 consumer 是否存活绑定到共享 `ChatService.qq_status`，不返回 Session ID、OpenID 或 token；Web 不增加消息消费或发送任务。
+
+`run_qq(settings, dashboard=True, dashboard_port=8765)` 在原应用作用域内启动 `dashboard_server`，不新增 Agent 或数据库 Owner。`AsyncExitStack` 在 adapter 关闭后回收 HTTP，再退出原 `open_application()`；HTTP 查询失败由 Dashboard 自行转换为安全错误，不影响 QQ 消费。入口为 `personal-agent qq --dashboard`。说明与验证见 [dashboard.md](dashboard.md)、`tests/test_dashboard.py`。
+

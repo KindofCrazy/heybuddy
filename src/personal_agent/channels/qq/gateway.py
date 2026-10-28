@@ -28,14 +28,28 @@ class QQGateway:
         self.api = api
         self.session_id: str | None = None
         self.sequence: int | None = None
+        self.state = "not_started"
 
     def reset(self) -> None:
         self.session_id = None
         self.sequence = None
 
     async def run(self, on_event: Callable[[dict], Awaitable[None]]) -> None:
+        try:
+            await self._run(on_event)
+        except asyncio.CancelledError:
+            self.state = "stopped"
+            raise
+        except Exception:
+            self.state = "error"
+            raise
+        else:
+            self.state = "stopped"
+
+    async def _run(self, on_event: Callable[[dict], Awaitable[None]]) -> None:
         # Finite reconnect budget, including sessions that authenticate then drop.
         for attempt in range(self.settings.qq_reconnect_attempts + 1):
+            self.state = "connecting"
             try:
                 url = await self.api.gateway()
                 async with connect(
@@ -67,6 +81,7 @@ class QQGateway:
             except (OSError, TimeoutError, InvalidHandshake):
                 code = "qq_connect_failed"
             logger.warning("qq_connection status=%s attempt=%d", code, attempt)
+            self.state = "reconnecting"
             if attempt == self.settings.qq_reconnect_attempts:
                 raise QQError("qq_reconnect_exhausted", fatal=True)
             delay = min(
@@ -154,9 +169,11 @@ class QQGateway:
                         raise QQError("qq_invalid_ready", fatal=True)
                     self.session_id = session_id
                     ready = True
+                    self.state = "ready"
                     logger.info("qq_gateway_ready")
                 elif event == "RESUMED":
                     ready = True
+                    self.state = "ready"
                     logger.info("qq_gateway_resumed")
                 elif ready:
                     # Cursor advances only after durable acceptance or explicit ignore.

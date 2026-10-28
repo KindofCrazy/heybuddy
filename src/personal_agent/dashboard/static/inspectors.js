@@ -1,8 +1,10 @@
 import {node,action,errorBox} from './components.js';
 import {objectDetail,cardsPage,section} from './details.js';
 import {memoryDirectory,memoryFile,character,state} from './memory-character.js';
+import {get} from './components.js';
+import {timeline} from './monitor.js';
 const dialog=document.getElementById('inspector'), body=document.getElementById('inspector-body');
-const kinds=new Set(['threads','episodes','runs','jobs','file','directory','character','state','collection']);
+const kinds=new Set(['threads','episodes','runs','jobs','file','directory','character','state','collection','runtime','activity']);
 let path=[],requestVersion=0;
 function hashFor(items) {return '#inspect/'+items.map(([kind,id])=>`${kind}/${encodeURIComponent(id)}`).join('/');}
 export function openObject(kind,id,root=false) {const next=root?[]:path.slice(); if(next.at(-1)?.[0]===kind&&next.at(-1)?.[1]===id) return; next.push([kind,id]); location.hash=hashFor(next.slice(-12));}
@@ -23,7 +25,9 @@ async function route() {
   const [kind,id]=path.at(-1); document.getElementById('inspector-kind').textContent=kind.toUpperCase(); document.getElementById('inspector-title').textContent='Loading…'; body.replaceChildren(node('p','empty loading','Reading local source…'));
   const result=node('div'); let title;
   try {
-    if(kind==='directory') {await memoryDirectory(result,id==='root'?'':id,openObject);title=id==='root'?'Memory files':id;}
+    if(kind==='runtime') {title='Runtime diagnostics';result.append(node('pre','record',JSON.stringify(await get('/api/status'),null,2)));}
+    else if(kind==='activity') {title='Earlier activity';await timeline(openObject,id,result);}
+    else if(kind==='directory') {await memoryDirectory(result,id==='root'?'':id,openObject);title=id==='root'?'Memory files':id;}
     else if(kind==='file') title=await memoryFile(result,id,openObject);
     else if(kind==='character') title=await character(result,openObject);
     else if(kind==='state') {await state(result,openObject);title='Character state';}

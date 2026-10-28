@@ -32,4 +32,12 @@ Memory 逐目录查询 `/api/memory`，由 `MemoryView.listing` 有界扫描当�
 
 ## 阅读与验证
 
+## 实时观测与刷新
+
+`OrganizationRuntime._execute()` 在现有 Stage await 前后记录有界 `events`（deque，最多 128 条，仅时间、Stage、结果和关联类型，不存正文）；取消/失败保持原传播语义。`diagnostics(..., read_only=True)` 走 `_observe`，只读已有 schedule/progress、封顶 pending 计数和最近失败，不调用 ensure/poll/LLM。`ChatService.run` 在 try/finally 维护真实 foreground_active；QQGateway 的 connecting/ready/reconnecting/error/stopped 来源于连接生命周期，`run_qq` 仅绑定只读状态 callback，不暴露 token/OpenID。
+
+`activity.py:activity` 每类仅取最近 64 条元数据，合并真实 Run 起止、Learning/Curator 最新回执、当前 Character State 和当前进程 Stage 事件；按 `(timestamp,event_id)` 稳定分页，cursor 编码该键。Episode/Thread 没有独立发布时间，明确作为 snapshot 并标注 source time。历史阶段事件不伪造恢复；重启后只恢复现有持久事实。接口标记 scope_limited，不是完整历史事件账本。
+
+`monitor.js` 每次只渲染状态/近期事件；`overview.js` 串行等待一轮后 setTimeout 3000 ms，隐藏页面暂停，无重叠轮询。Thread/Run/Job/Character 概览每五轮刷新，Memory 树只在首次或明确导航读取。签名相同或控件持有键盘焦点时不替换 DOM，任何轮询都不写 Inspector、fragment 或当前详情内容。`tests/test_dashboard.py` 覆盖分页、真实 Stage、取消清理和无写入保证。
+
 `uv run personal-agent qq --dashboard` 或（先退出其他本地实例）`uv run personal-agent web`，访问 `http://127.0.0.1:8765`。独立 web 仍使用既有 Owner 锁，已有实例运行时明确拒绝，不开第二个写实例。`tests/test_dashboard.py` 使用临时 SQLite、MemoryFS、FakeProvider 和 ASGITransport，验证分页、隔离、只读和安全请求边界。无需真实 Key 或 API 请求。

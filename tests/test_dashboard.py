@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime
 
 import httpx
@@ -221,3 +222,81 @@ async def test_character_state_uses_actual_p3_model_and_receipts(observatory):
     assert "relationship" not in data["active"]
     assert (await client.get("/api/character")).json()["character_id"] == actor.package.character_id
     assert store._connection.total_changes == before
+
+
+async def test_activity_pagination_and_readonly_runtime_diagnostics(observatory):
+    client, store, service, provider, _ = observatory
+    ids = [seed(store, service.sessions.current.id) for _ in range(4)]
+    before = store._connection.total_changes
+    first = (await client.get("/api/activity?limit=3")).json()
+    second = (
+        await client.get(
+            "/api/activity",
+            params={
+                "limit": 3,
+                "cursor": first["next_cursor"],
+            },
+        )
+    ).json()
+    assert not ({e["event_id"] for e in first["items"]} & {e["event_id"] for e in second["items"]})
+    assert all(e["related_object_id"] in ids for e in first["items"] + second["items"])
+    assert all(e["origin"] == "persistent_fact" for e in first["items"])
+    assert first["scope_limited"]
+    assert (await client.get("/api/activity?cursor=bad-cursor")).status_code == 422
+    status = (await client.get("/api/status")).json()
+    assert status["diagnostics"]["schedule"] is None
+    assert not status["maintenance_running"]
+    assert status["diagnostics"]["pending_runs_capped"] == 4
+    assert store._connection.total_changes == before
+    assert not provider.requests
+
+
+async def test_live_stage_is_observed_only_during_actual_execution(observatory):
+    client, store, service, _, _ = observatory
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def maintenance():
+        entered.set()
+        await release.wait()
+        return {"outcome": "failed", "error_code": "synthetic_failure"}
+
+    task = asyncio.create_task(service.organization._execute("curator", maintenance()))
+    try:
+        await entered.wait()
+        status = (await client.get("/api/status")).json()
+        assert status["current_stage"] == "curator" and status["maintenance_running"]
+        events = (await client.get("/api/activity")).json()["items"]
+        assert any(
+            e["event_type"] == "curator_started" and e["origin"] == "live_runtime" for e in events
+        )
+        release.set()
+        await task
+        assert not (await client.get("/api/status")).json()["maintenance_running"]
+        assert service.organization.events[-1]["event_type"] == "curator_failed"
+        for _ in range(200):
+            service.organization._event("curator", "completed")
+        assert len(service.organization.events) == 128
+    finally:
+        release.set()
+        await task
+
+
+async def test_qq_status_is_explicit_and_foreground_flag_resets_on_cancellation(observatory):
+    client, store, service, _, _ = observatory
+    entered = asyncio.Event()
+
+    async def waiting(*args, **kwargs):
+        entered.set()
+        await asyncio.Event().wait()
+
+    service.agent.run = waiting
+    service.qq_status = lambda: {"gateway": "ready", "consumer": "running"}
+    task = asyncio.create_task(service.run("synthetic foreground"))
+    await entered.wait()
+    try:
+        data = (await client.get("/api/status")).json()
+        assert data["foreground_active"] and data["qq"]["gateway"] == "ready"
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    assert not service.foreground_active

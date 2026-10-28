@@ -8,8 +8,10 @@ import asyncio
 import json
 import queue
 import threading
+from collections import deque
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 from personal_agent.automation.service import MemoryAutomation
 from personal_agent.character.state import CharacterStateService
@@ -103,6 +105,7 @@ class OrganizationRuntime:
         self.input = AsyncInput()
         self.task: asyncio.Task | None = None
         self.last_report: dict = {}
+        self.events: deque[dict] = deque(maxlen=128)
 
     def schedule(self, stream_id: str, *, after_answer: bool = False) -> None:
         if self.task is not None and not self.task.done():
@@ -138,10 +141,35 @@ class OrganizationRuntime:
 
     async def _execute(self, stage: str, operation: Awaitable[dict]) -> dict:
         self.current_stage = stage
+        self._event(stage, "started")
         try:
-            return await operation
+            report = await operation
+            self._event(stage, report.get("outcome", "completed"))
+            return report
+        except asyncio.CancelledError:
+            self._event(stage, "cancelled")
+            raise
+        except Exception:
+            self._event(stage, "failed")
+            raise
         finally:
             self.current_stage = None
+
+    def _event(self, stage: str, status: str) -> None:
+        self.events.append(
+            {
+                "event_id": "live:" + uuid4().hex,
+                "timestamp": self.clock.now().isoformat(),
+                "event_type": stage + "_" + status,
+                "status": status,
+                "related_kind": "collection",
+                "related_object_id": "jobs"
+                if stage.startswith("learning") or stage == "curator"
+                else "episodes",
+                "origin": "live_runtime",
+                "timestamp_basis": "observed_at",
+            }
+        )
 
     def _thread_remaining(self, state: dict) -> float:
         key = state["thread_due_at"]
@@ -469,7 +497,9 @@ class OrganizationRuntime:
         await self.foreground(activity=False)
         self.input.close()
 
-    def diagnostics(self, stream_id: str) -> dict:
+    def diagnostics(self, stream_id: str, *, read_only: bool = False) -> dict:
+        if read_only:
+            return self._observe(stream_id)
         self.schedule_repository.ensure(
             stream_id,
             self.clock.now(),
@@ -517,6 +547,56 @@ class OrganizationRuntime:
             ).isoformat()
             if state["provisional_ended_at"]
             else None,
+        }
+
+    def _observe(self, stream_id: str) -> dict:
+        """Observe existing metadata without ensure(), polling work or model requests."""
+        repository = self.episodes.repository
+        with repository.store.reading() as db:
+            repository.scope(db, stream_id)
+            schedule = db.execute(
+                "SELECT * FROM organization_schedule WHERE agent_id=?", (repository.agent_id,)
+            ).fetchone()
+            progress = repository._progress(db, stream_id)
+            pending_runs = db.execute(
+                "SELECT COUNT(*) FROM (SELECT 1 FROM runs WHERE conversation_id=? "
+                "AND rowid>? AND status!='running' LIMIT 65)",
+                (stream_id, progress["position"]),
+            ).fetchone()[0]
+            pending_jobs = db.execute(
+                "SELECT COUNT(*) FROM (SELECT 1 FROM memory_learning_jobs WHERE agent_id=? "
+                "AND state IN ('pending','processing') LIMIT 65)",
+                (repository.agent_id,),
+            ).fetchone()[0]
+            pending_threads = db.execute(
+                "SELECT COUNT(*) FROM (SELECT 1 FROM topic_threads WHERE agent_id=? "
+                "AND dirty=1 LIMIT 65)",
+                (repository.agent_id,),
+            ).fetchone()[0]
+            attention = db.execute(
+                "SELECT id,kind,state,error,updated_at FROM memory_learning_jobs "
+                "WHERE agent_id=? AND state IN ('failed','requires_reconciliation') "
+                "ORDER BY rowid DESC LIMIT 4",
+                (repository.agent_id,),
+            ).fetchall()
+            activation = db.execute(
+                "SELECT curator_due_at,updates,curator_updates FROM memory_learning_state "
+                "WHERE agent_id=?",
+                (repository.agent_id,),
+            ).fetchone()
+        return {
+            "current_stage": self.current_stage,
+            "maintenance_running": self.current_stage is not None,
+            "background_task_active": bool(self.task and not self.task.done()),
+            "schedule": dict(schedule) if schedule else None,
+            "episode_progress": progress,
+            "pending_runs_capped": pending_runs,
+            "pending_jobs_capped": pending_jobs,
+            "dirty_threads_capped": pending_threads,
+            "attention": [dict(row) for row in attention],
+            "learning_enabled": bool(self.learning and self.learning.policy.enabled),
+            "curator_enabled": bool(self.curator and self.curator.policy.enabled),
+            "curator": dict(activation) if activation else None,
         }
 
     async def command(self, stream_id: str, text: str, write: Callable[[str], None]) -> None:

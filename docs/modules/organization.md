@@ -45,3 +45,7 @@ episode_runs.run_id 主键防重复，Run/stream 和 Episode/stream 复合外键
 配置前缀 AGENT_ORGANIZATION_：ENABLED、IDLE_SECONDS、RUN_THRESHOLD、PAGE_RUNS、INPUT_TOKENS、OUTPUT_TOKENS、TIMEOUT_SECONDS、WEAK_GAP_SECONDS、STRONG_GAP_SECONDS、SPLIT_GAP_SECONDS、REVISION_SECONDS、THREAD_THRESHOLD。窗口由 AGENT_CONTEXT_WINDOW 显式指定，不够则 input_budget。
 
 最小路径见 `tests/test_episodes.py::test_provisional_append_split_revision_finalize_and_idempotence`；调度、CLI 输入、抢占、退出见 `tests/test_organization_runtime.py`。运行 `uv run pytest tests/test_episodes.py tests/test_organization_runtime.py`。FakeProvider 验证契约，不代表真实语义分段质量。
+# Observatory 有界观测
+
+`OrganizationRuntime._execute` 保留原调度，只在同一个 Stage await 前后记录最多 128 条无正文内存事件，取消继续传播。`diagnostics(stream_id, read_only=True)` 调用 `_observe`，用已有连接执行封顶 SELECT，不初始化 schedule、不推进学习、不调用模型。默认 CLI diagnostics 行为保持兼容。Dashboard 只消费这些投影；测试见 `tests/test_dashboard.py` 的只读诊断与实时 Stage 用例。
+

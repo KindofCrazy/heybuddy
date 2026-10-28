@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
+from personal_agent.dashboard.activity import activity
 from personal_agent.dashboard.layout import CARDS
 from personal_agent.dashboard.memory import MemoryView, markdown
 from personal_agent.dashboard.privacy import safe
@@ -96,6 +97,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         recent = repository.listing("runs", 1)["items"]
         org = service.organization
         stage = org.current_stage if org else None
+        diagnostics = org.diagnostics(sessions.current.id, read_only=True) if org else None
         return output(
             {
                 "state": "Maintaining"
@@ -106,11 +108,23 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
                 "current_stage": stage,
                 "latest_run": recent[0] if recent else None,
                 "maintenance_running": stage is not None,
+                "foreground_active": service.foreground_active
+                or bool(recent and recent[0]["status"] == "running"),
                 "schedule": repository.schedule(),
-                "qq": "unknown",
+                "diagnostics": diagnostics,
+                "qq": service.qq_status() if service.qq_status else {"gateway": "not_attached"},
                 "read_only": True,
             }
         )
+
+    @app.get("/api/activity")
+    async def recent_activity(
+        limit: int = Query(12, ge=1, le=30), cursor: str = Query("", max_length=512)
+    ):
+        try:
+            return output(activity(repository, service, limit, cursor))
+        except ValueError:
+            return JSONResponse({"error": "invalid_cursor"}, status_code=422)
 
     # Async handlers keep SQLite on its owning event-loop thread.
     @app.get("/api/runs")
