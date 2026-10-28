@@ -159,7 +159,7 @@ class CharacterStateRepository:
 
     def snapshot(self, episode_id: str, policy: StatePolicy) -> dict:
         with self.store._transaction() as db:
-            episode = self.episodes._episode(db, episode_id)
+            episode = self.episodes.read_episode(db, episode_id)
             rows = db.execute(
                 "SELECT r.rowid AS position,r.* FROM episode_runs er JOIN runs r "
                 "ON r.id=er.run_id AND r.conversation_id=er.stream_id JOIN character_runs cr "
@@ -172,7 +172,7 @@ class CharacterStateRepository:
             records = []
             used = 0
             for row in rows:
-                source = self.episodes._source(db, row, policy.source_bytes - used)
+                source = self.episodes.read_source(db, row, policy.source_bytes - used)
                 if source.turn is None:
                     raise HistoryError("Character source is incomplete or oversized.")
                 used += source.payload_bytes
@@ -210,7 +210,7 @@ class CharacterStateRepository:
         with self.store._transaction() as db:
             if (
                 status in {"processing", "completed"}
-                and self.episodes._episode(db, episode.id).revision != episode.revision
+                and self.episodes.read_episode(db, episode.id).revision != episode.revision
             ):
                 raise HistoryError("Character Episode source changed.")
             db.execute(

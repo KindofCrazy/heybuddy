@@ -2,7 +2,7 @@
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 from personal_agent.core.history import HistoryError
@@ -52,7 +52,7 @@ class LearningRepository:
             episode_refs = []
             hints = []
             for eid in episode_ids:
-                episode = self.episodes._episode(db, eid)
+                episode = self.episodes.read_episode(db, eid)
                 if episode.status != "finalized":
                     raise HistoryError("Learning requires stable Episodes.")
                 episode_refs.append({"id": eid, "revision": episode.revision})
@@ -78,7 +78,7 @@ class LearningRepository:
                     if byte_limit is None
                     else min(policy.source_bytes, byte_limit)
                 )
-                source = self.episodes._source(db, row, max(0, cap - used))
+                source = self.episodes.read_source(db, row, max(0, cap - used))
                 if source.turn is None:
                     raise HistoryError("Learning source incomplete or oversized.")
                 used += source.payload_bytes
@@ -193,6 +193,33 @@ class LearningRepository:
                     (self.agent_id, state["episode_floor"], self.agent_id, limit),
                 ).fetchall()
             ]
+
+    def schedule_curator(self, now: datetime, interval: float, *, completed: bool = False) -> None:
+        with self.store._transaction() as db:
+            db.execute(
+                "UPDATE memory_learning_state SET curator_due_at=?,"
+                "curator_updates=CASE WHEN ? THEN updates ELSE curator_updates END "
+                "WHERE agent_id=?",
+                ((now + timedelta(seconds=interval)).isoformat(), completed, self.agent_id),
+            )
+
+    def latest_job(self, kind: str) -> dict | None:
+        with self.store.reading() as db:
+            row = db.execute(
+                "SELECT id FROM memory_learning_jobs WHERE agent_id=? AND kind=? "
+                "ORDER BY rowid DESC LIMIT 1",
+                (self.agent_id, kind),
+            ).fetchone()
+        return self.get(row[0]) if row else None
+
+    def recent_write_paths(self) -> list[str]:
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT operations FROM memory_learning_jobs WHERE agent_id=? "
+                "AND kind!='curator' AND state='completed' ORDER BY rowid DESC LIMIT 4",
+                (self.agent_id,),
+            ).fetchall()
+        return [op["path"] for row in rows for op in json.loads(row[0])]
 
     def status(self) -> dict:
         with self.store._transaction() as db:

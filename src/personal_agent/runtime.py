@@ -108,6 +108,8 @@ def assemble_chat(
         tools,
         context=sessions.context(),
         max_rounds=settings.max_rounds,
+        max_tool_calls_per_response=settings.max_tool_calls_per_response,
+        max_tool_calls_per_run=settings.max_tool_calls_per_run,
         request_timeout_seconds=settings.request_timeout_seconds,
     )
     reflection = ReflectionService(
@@ -149,7 +151,7 @@ def assemble_chat(
         character_state = CharacterStateService(
             character_repository,
             sessions.character.package,
-            reflection,
+            agent.provider,
             settings.context_budget(),
             settings.character_state_policy(),
             initialize=not observer_only,

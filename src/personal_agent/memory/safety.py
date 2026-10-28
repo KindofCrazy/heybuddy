@@ -2,7 +2,7 @@
 
 import re
 
-from personal_agent.core.compaction import SECRET
+from personal_agent.core.evidence import SECRET
 
 PRIVATE = re.compile(
     r"(?:密码|口令|密钥|访问令牌)\s*(?:是|为|[:：=])\s*\S+|"

@@ -40,7 +40,7 @@ class ThreadRepository:
         self.agent_id = agent_id
         self.episodes = EpisodeRepository(store, agent_id)
 
-    def _thread(self, db: sqlite3.Connection, thread_id: str) -> Thread:
+    def read_thread(self, db: sqlite3.Connection, thread_id: str) -> Thread:
         row = db.execute(
             "SELECT * FROM topic_threads WHERE id=? AND agent_id=?", (thread_id, self.agent_id)
         ).fetchone()
@@ -58,14 +58,14 @@ class ThreadRepository:
 
     def get(self, thread_id: str) -> Thread:
         with self.store._transaction() as db:
-            return self._thread(db, thread_id)
+            return self.read_thread(db, thread_id)
 
     def _list(self, db: sqlite3.Connection, limit: int) -> list[Thread]:
         rows = db.execute(
             "SELECT id FROM topic_threads WHERE agent_id=? ORDER BY last_active_at DESC,id LIMIT ?",
             (self.agent_id, limit),
         ).fetchall()
-        return [self._thread(db, row[0]) for row in rows]
+        return [self.read_thread(db, row[0]) for row in rows]
 
     def list(self, limit: int = 24) -> list[Thread]:
         if not 1 <= limit <= 50:
@@ -79,7 +79,7 @@ class ThreadRepository:
             "WHERE c.agent_id=? AND e.thread_dirty=1 ORDER BY e.ended_at,e.id LIMIT ?",
             (self.agent_id, limit),
         ).fetchall()
-        return [self.episodes._episode(db, row[0]) for row in rows]
+        return [self.episodes.read_episode(db, row[0]) for row in rows]
 
     def _state(self, db: sqlite3.Connection) -> dict:
         row = db.execute(
@@ -149,7 +149,7 @@ class ThreadRepository:
             known = {t.id for t in candidates}
             for episode in episodes:
                 if episode.thread_id and episode.thread_id not in known:
-                    candidates.append(self._thread(db, episode.thread_id))
+                    candidates.append(self.read_thread(db, episode.thread_id))
                     known.add(episode.thread_id)
             return self._state(db)["revision"], episodes, candidates
 
@@ -184,8 +184,8 @@ class ThreadRepository:
         with self.store._transaction() as db:
             if (
                 self._state(db)["revision"] != revision
-                or [self.episodes._episode(db, e.id) for e in episodes] != episodes
-                or [self._thread(db, t.id) for t in candidates] != candidates
+                or [self.episodes.read_episode(db, e.id) for e in episodes] != episodes
+                or [self.read_thread(db, t.id) for t in candidates] != candidates
             ):
                 raise HistoryError("Thread/Episode snapshot changed.")
             by_id = {e.id: e for e in episodes}
@@ -273,7 +273,7 @@ class ThreadRepository:
                     db.execute("UPDATE topic_threads SET dirty=0 WHERE id=?", (target,))
                 # The version created in this transaction records the FINAL
                 # source epoch/dirty flag, after relationship triggers have run.
-                published = self._thread(db, target)
+                published = self.read_thread(db, target)
                 raw = published.model_dump_json()
                 db.execute("UPDATE topic_threads SET payload=? WHERE id=?", (raw, target))
                 db.execute(

@@ -14,7 +14,7 @@ ContextBuilder.prepare() 在每个 Run 首次加载时 await 可选 preflight，
 
 ## 职责与架构组成
 
-`retrieval.py::ContextRetriever` 负责相关性和有界来源选择；`core/retrieval.py` 定义独立 ContextRetrieval Protocol、RetrievalResult、RetrievalItem，不导入 SQLite。`ContextBuilder` 决定去重、最终预算及注入，不让检索器更改 System、权限或模型窗口。宿主 `_run_session()` 在 SessionManager.retriever 上绑定 ThreadRepository；切换内部历史流时继续复用同一 Agent 的检索器。
+`retrieval.py::ContextRetriever` 负责相关性和有界来源选择；`core/retrieval.py` 定义独立 ContextRetrieval Protocol、RetrievalResult、RetrievalItem，不导入 SQLite。`ContextBuilder` 决定去重、最终预算及注入，不让检索器更改 System、权限或模型窗口。宿主 `runtime.assemble_chat()` 在 SessionManager.retriever 上绑定 ThreadRepository；切换内部历史流时继续复用同一 Agent 的检索器。
 
 ## 真实执行路径
 
@@ -32,7 +32,7 @@ ContextBuilder.prepare() 在每个 Run 首次加载时 await 可选 preflight，
 
 以上 3 Episode、2 raw Run、65536 字节、12288 tokens、200 个最近 Episode 均为 RetrievalPolicy 默认值；宿主 Settings 的 AGENT_RETRIEVAL_* 可在有界范围内调小/调整，详见 [配置](config.md)。
 
-词法相关性不等于语义检索，关键词可能漏掉同义词或命中宽泛话题，且当前不做模型消歧。Thread 候选标题 SQL 有 VM 预算；补充候选默认只扫描最近 200 条，较旧内容由 Recall 主动搜索。dirty Thread 由 Idle 修复路径恢复，完成前省略旧 state；最新未关联 Episode 也可立即检索。摘要/提示词不能保证真实模型正确区分建议、假设和决定，需要独立 live 评测。
+词法相关性不等于语义检索，关键词可能漏掉同义词或命中宽泛话题，确定性分支不做模型消歧，P2 模糊候选可追加一次受限 Preflight。Thread 候选标题 SQL 有 VM 预算；补充候选默认只扫描最近 200 条，较旧内容由 Recall 主动搜索。dirty Thread 由 Idle 修复路径恢复，完成前省略旧 state；最新未关联 Episode 也可立即检索。摘要/提示词不能保证真实模型正确区分建议、假设和决定，需要独立 live 评测。
 
 没有新长期 Memory 副本。Working Summary 继续使用原 context_summaries/checksum/事务边界，只调整为保留影响当前对话的目标、约束、进展和待续信息，不承担几个月的生平总结；旧检查点不删除、不重建。
 
@@ -43,3 +43,7 @@ ContextBuilder.prepare() 在每个 Run 首次加载时 await 可选 preflight，
 启动后直接说“继续昨天的 HeyBuddy 架构讨论”；`/context status` 查看 retrieval_path、retrieved_items、预算与 Compaction 状态。最小离线例子在 `tests/test_working_context.py::test_cross_day_thread_episodes_raw_runs_times_and_current_input_once`。测试还覆盖 fast、无 Episode、无 Thread、Recall fallback、旧 state、去重、完整工具/Provider 重放、大 Run、可选检索预算、跨 Agent 和历史授权注入。运行 `uv run pytest tests/test_working_context.py tests/test_compaction.py`。
 
 Review Fix 的 `tests/test_review_timing_retrieval.py` 新增长耗时工具开始时间差、跨午夜/短时间换话题/跨天、provisional 追加屏障；并直接验证“继续之前 HeyBuddy 的 Memory 设计”和没有显式 Thread 名称的“自动整理记忆机制最后决定”问题，确认最新未关联 Episode 可检索、原归属不变、预算与 Raw Run 去重继续有效。
+
+## SQL 读取边界
+
+storage/retrieval.py::WorkingContextRepository 绑定 ThreadRepository/Agent 与 RetrievalPolicy，执行有界候选 SQL、元数据解码和完整 Run 来源核对；ContextRetriever 保留触发标记、关键词、Markdown 组合、Preflight 和去重策略。连接内共享读取使用 EpisodeRepository.read_episode/read_source 与 ThreadRepository.read_thread，避免重开事务或复制校验。Recall 的文本 FTS/展开接口不变，MemoryLookup 继续只读 Markdown。验证沿用 tests/test_working_context.py、test_preflight_baseline.py 和 test_memory_retrieval.py。

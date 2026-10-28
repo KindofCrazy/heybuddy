@@ -6,12 +6,14 @@ import json
 from personal_agent.automation.meter import MeteredProvider
 from personal_agent.automation.models import AutomationError, AutomationPolicy, Mode, Worthiness
 from personal_agent.core.budget import estimate_request
-from personal_agent.core.compaction import SECRET, redact
+from personal_agent.core.evidence import SECRET, redact
 from personal_agent.core.history import HistoryError, HistoryTurn
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import TextMessage
 from personal_agent.llm.base import ProviderError
+from personal_agent.reflection.evidence import memory_evidence
 from personal_agent.reflection.models import Extraction, ReflectionError
+from personal_agent.reflection.provider import structured_request
 from personal_agent.reflection.service import EXTRACT, ReflectionService
 from personal_agent.storage.automation import AutomationRepository
 
@@ -48,11 +50,11 @@ class MemoryAutomation:
         return {"mode": self.policy.mode, **self.repository.status(conversation_id)}
 
     def _request(self, conversation_id: str, turns: list[HistoryTurn]) -> list[TextMessage]:
-        return self.reflection._request(
+        return structured_request(
             Worthiness,
             WORTHINESS_PROMPT,
             {
-                "history": self.reflection._evidence(conversation_id, turns),
+                "history": memory_evidence(conversation_id, turns),
                 "core": {
                     key: redact(value)
                     for key, value in self.reflection.memory.read().blocks.items()
@@ -127,10 +129,10 @@ class MemoryAutomation:
                     if (
                         estimate_request(self._request(conversation_id, trial), []) > gate_limit
                         or estimate_request(
-                            self.reflection._request(
+                            structured_request(
                                 Extraction,
                                 EXTRACT,
-                                {"history": self.reflection._evidence(conversation_id, trial)},
+                                {"history": memory_evidence(conversation_id, trial)},
                             ),
                             [],
                         )

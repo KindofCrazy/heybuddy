@@ -1,5 +1,9 @@
 # Personal Agent 开发约束
 
+## 当前实现范围与历史阶段说明
+
+当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复和 loopback 只读 Observatory。SQLite 当前 schema 13，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限、无主动消息和真实付费调用另行授权的边界继续有效。
+
 ## P2 Review Fix 明确授权
 
 本轮允许启动与既有 Idle Runtime 中有界自动核对 Learning 回执：已发布的确认，确定未发布的从当前 MemoryFS 重新规划，禁止盲目执行旧 CREATE/UPDATE。真正冲突与索引不完整继续写保护；不改变手动 Reflection 审批、MemoryFS 校验或 P3 人格边界。不实现新的调度平台、事实库或默认历史补学。
@@ -123,13 +127,13 @@ docs: 完善项目开发与提交规范
 - 规定提交信息正文简要列举具体改动
 ```
 
-## 未来边界
+## 历史阶段与继续保留的未来边界
 
 V0.7 增加手动 Reflection、证据验证、整合计划和批准后的 MemoryFS 写入，不实现 Git-backed Memory、日常版本恢复、远程同步、向量/Embedding、Telegram/QQ、Gmail 或主动对话。P1 明确允许基于 SQLite 持久进度的有界 asyncio Episode/Thread 事后整理、空闲/累计数量触发与前台输入抢占，以及现有 MemoryAutomation 的可取消异步接线；不改变 Memory 权限、审批或失败显式重试语义，不扩展通用任务调度平台。记录运行中断不等于任务恢复系统；不自动重跑、续跑或重试工具。未来能力仅在后续明确请求时实现。保持 Provider、ContextBuilder、Agent 和 CLI 职责分离；无微服务、Redis、消息队列、向量库、多 Agent。
 
 ## V0.7.2 Automation 边界
 
-默认 suggest：先展示普通 completed 答案，再顺序执行最多四次额外模型请求；P1 允许这段检查在可抢占的异步任务内运行。off 保留手动反思；auto 只接受可信配置对小型 knowledge/ create 的精确内容摘要授权，Core/更新/纠正/不确定和未授权内容不自动写。模型不能修改模式、grants 或权限。schema 5 的成功阴性判断可原子推进已审阅范围，但不表示有计划/批准/写入；不同状态保留，失败需显式 retry，已存计划/已写文件不盲目重做。ToolCallReviewer 不在 P1 范围。
+以下仅在 P2 Learning 关闭后适用。兼容 Automation 默认 suggest：先展示普通 completed 答案，再顺序执行最多四次额外模型请求；P1 允许这段检查在可抢占的异步任务内运行。off 保留手动反思；auto 只接受可信配置对小型 knowledge/ create 的精确内容摘要授权，Core/更新/纠正/不确定和未授权内容不自动写。模型不能修改模式、grants 或权限。schema 5 的成功阴性判断可原子推进已审阅范围，但不表示有计划/批准/写入；不同状态保留，失败需显式 retry，已存计划/已写文件不盲目重做。ToolCallReviewer 不在 P1 范围。
 
 ## V0.7.2 Phase 2 评测边界
 

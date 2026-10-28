@@ -14,11 +14,11 @@ Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移
 
 ## 职责与架构组成
 
-`organization/models.py` 定义严格 Pydantic 模型、来源快照和可信 OrganizationPolicy。`organization/provider.py::OrganizerModel.ask()` 每批仅调用一次原 Provider，空工具、独立输入/总输出 tokens、可见字节、超时和 usage 检查。`organization/episodes.py::EpisodeOrganizer` 生成时间候选边界、语义分段、验证证据。`storage/episodes.py::EpisodeRepository` 绑定 Agent，负责有界读取、归属、修订和原子进度。`organization/runtime.py::OrganizationRuntime` 仅在 CLI 存活时触发整理，`AsyncInput` 只在 daemon 线程读取终端；SQLite 始终在主事件循环线程运行。
+`organization/models.py` 定义严格 Pydantic 模型、来源快照和可信 OrganizationPolicy。`organization/provider.py::OrganizerModel.ask()` 每批仅调用一次原 Provider，空工具、独立输入/总输出 tokens、可见字节、超时和 usage 检查。`organization/episodes.py::EpisodeOrganizer` 生成时间候选边界、语义分段、验证证据。`storage/episodes.py::EpisodeRepository` 绑定 Agent，负责有界读取、归属、修订和原子进度。`organization/runtime.py::OrganizationRuntime` 在共享 CLI/QQ 应用存活时触发维护；独立 Web 不调度，`console.AsyncInput` 由 CLI 持有，只在 daemon 线程读取终端；SQLite 始终在主事件循环线程运行。
 
 ## 真实执行路径
 
-1. `main._run_session()` 复用同一 Provider/ContextBudget，构造 Repository、OrganizerModel、EpisodeOrganizer 和 OrganizationRuntime；recover() 把未提交的 running 整理恢复 pending，已提交 Episode 不重做。
+1. `runtime.assemble_chat()` 复用同一 Provider/ContextBudget，构造 Repository、OrganizerModel、EpisodeOrganizer 和 OrganizationRuntime；recover() 把未提交的 running 整理恢复 pending，已提交 Episode 不重做。
 2. chat() 启动时按持久 cursor 检查积压；_chat() await AsyncInput.read()，新输入先 await foreground() 取消并等待整理停止，再 Agent.run()。
 3. 普通结果先展示，再 schedule()。原 MemoryAutomation 在可取消后台钩子内按原最多四次规则顺序执行，失败/取消仍采用原 schema 5 和显式 retry。Episode 在默认 1500 秒 Idle 或累计 8 条时获得处理机会；Idle 从完成/用户活动计量，不以 Run 开始时间代替。维护轮共享默认 4 批/4 请求/131072 tokens/120 秒，批间让出，冷却后继续积压，详见 [Schedule](organization-schedule.md)。
 4. organize() → batch() 读取至多 page_runs 条元数据，以 SQLite rowid 插入顺序维护 cursor。running 停住；failed/cancelled/interrupted 不读取正文，作为屏障跳过并记 episode_skips。completed 先核对消息字节/数量，超 source_bytes 显式记录 oversized，不伪造经历。
@@ -49,3 +49,7 @@ episode_runs.run_id 主键防重复，Run/stream 和 Episode/stream 复合外键
 
 `OrganizationRuntime._execute` 保留原调度，只在同一个 Stage await 前后记录最多 128 条无正文内存事件，取消继续传播。`diagnostics(stream_id, read_only=True)` 调用 `_observe`，用已有连接执行封顶 SELECT，不初始化 schedule、不推进学习、不调用模型。默认 CLI diagnostics 行为保持兼容。Dashboard 只消费这些投影；测试见 `tests/test_dashboard.py` 的只读诊断与实时 Stage 用例。
 
+
+## 宿主边界
+
+OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维护计量和内存事件；不创建终端线程、不解析 CLI、不执行观察 SQL。console.AsyncInput 与 cli_commands.MaintenanceCommands 由 main.chat 使用；ScheduleRepository.observe 管理观察查询。命令仍先 foreground()，不向模型或 HTTP 注册。tests/test_organization_runtime.py 验证构造无输入线程、诊断零写和前台抢占。

@@ -1,12 +1,11 @@
 """QQ lifecycle shares the application's original database, memory and character."""
 
 import asyncio
-import signal
-from collections.abc import Iterator
-from contextlib import AsyncExitStack, contextmanager
+from contextlib import AsyncExitStack
 
 import httpx
 
+from personal_agent.channels.lifecycle import stop_on_termination
 from personal_agent.channels.qq.adapter import QQAdapter
 from personal_agent.channels.qq.api import QQAPI
 from personal_agent.channels.qq.config import QQError, QQSettings
@@ -15,17 +14,6 @@ from personal_agent.channels.qq.gateway import QQGateway
 from personal_agent.config import Settings
 from personal_agent.runtime import open_application
 from personal_agent.storage.qq import QQInbox
-
-
-@contextmanager
-def stop_on_termination(stop: asyncio.Event) -> Iterator[None]:
-    # asyncio.run already handles Ctrl+C; SIGTERM also needs graceful cleanup.
-    previous = signal.getsignal(signal.SIGTERM)
-    signal.signal(signal.SIGTERM, lambda *_: stop.set())
-    try:
-        yield
-    finally:
-        signal.signal(signal.SIGTERM, previous)
 
 
 async def run_qq(

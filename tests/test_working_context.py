@@ -45,6 +45,28 @@ def references(request):
     return result
 
 
+async def test_prepare_compiles_injected_memory_once_per_tool_round(state):
+    db, _, _ = state
+    provider = FakeProvider(
+        ModelResponse(tool_calls=[add_call("counted")]), ModelResponse(text="done")
+    )
+    agent, _ = runtime(db, provider)
+
+    class Memory:
+        calls = 0
+
+        def compile(self):
+            self.calls += 1
+            return f"synthetic compiled memory {self.calls}"
+
+    memory = Memory()
+    agent.context.memory = memory
+    assert (await agent.run("hello")).status == "completed"
+    assert memory.calls == 2
+    for number, request in enumerate(provider.requests, 1):
+        assert request[1].text == f"synthetic compiled memory {number}"
+
+
 async def test_adjacent_dialogue_fast_path_has_no_optional_lookup_or_extra_request(
     state, monkeypatch
 ):
@@ -52,7 +74,7 @@ async def test_adjacent_dialogue_fast_path_has_no_optional_lookup_or_extra_reque
     provider = FakeProvider(ModelResponse(text="为什么？"), ModelResponse(text="明白了。"))
     agent, _ = runtime(db, provider)
     repository = agent.context.retriever.repository
-    monkeypatch.setattr(repository, "_thread", lambda *a: pytest.fail("unnecessary lookup"))
+    monkeypatch.setattr(repository, "read_thread", lambda *a: pytest.fail("unnecessary lookup"))
     await agent.run("我觉得第二种更好")
     await agent.run("因为实现更简单")
     assert len(provider.requests) == 2 and not references(provider.requests[-1])

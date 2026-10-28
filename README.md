@@ -40,7 +40,7 @@ P2 自动 Learning 默认启用，接管旧的回答后 Automation；首次启�
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 
-P1 只增加本地进程内有界事后整理与输入抢占，不实现通用后台任务平台、向量/Embeddings、Telegram/QQ/Gmail 或工具续跑。[P1 交付与迁移说明](docs/p1-delivery.md)包含实际架构、执行链路、验证、限制与 P2 接口；旧 Markdown 迁移另见[记忆迁移说明](docs/memory-migration.md)。
+P1 只增加本地进程内有界事后整理与输入抢占，不实现通用后台任务平台、向量/Embeddings、Telegram/Gmail 或工具续跑；当前 QQ 已通过独立官方被动渠道接入共享 Runtime。[P1 交付与迁移说明](docs/p1-delivery.md)包含实际架构、执行链路、验证、限制与 P2 接口；旧 Markdown 迁移另见[记忆迁移说明](docs/memory-migration.md)。
 
 ## 安装与配置
 
@@ -70,6 +70,8 @@ AGENT_CONTEXT_SAFETY_MARGIN=1024
 AGENT_COMPACTION_TRIGGER_RATIO=0.8
 AGENT_RECENT_RUNS=2
 AGENT_MAX_ROUNDS=10
+AGENT_MAX_TOOL_CALLS_PER_RESPONSE=64
+AGENT_MAX_TOOL_CALLS_PER_RUN=256
 AGENT_REQUEST_TIMEOUT_SECONDS=60
 AGENT_TOOL_TIMEOUT_SECONDS=10
 AGENT_LOG_LEVEL=INFO
@@ -197,7 +199,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → SQLiteStore.initialize(schema 11) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → runtime.open_application → SQLiteStore.initialize(schema 13) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -211,7 +213,7 @@ main → SQLiteStore.initialize(schema 11) / recover_incomplete_runs → Session
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前使用 schema 11，追加独立学习任务、来源记录及维护水位；1–10 定义不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 13；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执；旧迁移定义不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -220,6 +222,7 @@ main → SQLiteStore.initialize(schema 11) / recover_incomplete_runs → Session
 - [整体架构与端到端 Pipeline](docs/architecture.md)
 - [V0.5 设计调研](docs/memory-design.md) 与 [迁移说明](docs/memory-migration.md)
 - [Agent Loop](docs/modules/agent.md)
+- [共用证据投影与校验](docs/modules/evidence.md)
 - [ContextBuilder 与历史边界](docs/modules/context.md)
 - [Episode、Thread 与有界事后整理](docs/modules/organization.md)
 - [Dirty Thread 的当前来源重建与一致性](docs/modules/thread-repair.md)
@@ -327,7 +330,7 @@ V0.7.1 分离 Reflection API 总输出预算（含 reasoning，默认 16384 toke
 
 P2 Learning 默认接管自动入口；本节模式仅在 AGENT_MEMORY_LEARNING_ENABLED=false 时运行，旧计划和 /reflect 保留。
 
-普通 Run 成功后先展示回答，再顺序进行 LLM Worthiness 检查，有价值才复用 Reflection 生成原有可审阅计划。P1 在本地可抢占的异步钩子内执行，下一次输入取消并等待记账结束。默认 suggest，未批准不写 Markdown；调用/预算/等待有界，失败不改变已完成的回答，也不自动重试。已有计划时提示积压，新历史不会被覆盖或误标写入。
+关闭 P2 Learning 后，普通 Run 成功先展示回答，再按兼容 Automation 模式进行 LLM Worthiness 检查，有价值才复用 Reflection 生成原有可审阅计划。P1 在本地可抢占的异步钩子内执行，下一次输入取消并等待记账结束。该兼容模式默认 suggest，未批准不写 Markdown；调用/预算/等待有界，失败不改变已完成的回答，也不自动重试。已有计划时提示积压，新历史不会被覆盖或误标写入。
 
 ```text
 /memory automation status

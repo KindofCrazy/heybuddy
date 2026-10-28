@@ -1,8 +1,8 @@
 # 会话管理与 CLI
 
-P3 main._run_session() 在装配前加载角色包并设置 SessionManager.character，Agent 使用原 sessions.context()。同一编译器跨 Conversation 复用，角色启用时绑定 Host Run 标签、来源归属和 State 有效视图；默认 none 无角色/状态请求。foreground() 先抢占维护任务，再处理 `/character status|run|retry`，只返回安全调试状态，不注册模型入口或主动消息。细节见 [Character](character.md)、[State](character-state.md)；测试见 tests/test_character_context.py、tests/test_character_state.py。
+P3 runtime.assemble_chat() 在装配前加载角色包并设置 SessionManager.character，Agent 使用原 sessions.context()。同一编译器跨 Conversation 复用，角色启用时绑定 Host Run 标签、来源归属和 State 有效视图；默认 none 无角色/状态请求。foreground() 先抢占维护任务，再处理 `/character status|run|retry`，只返回安全调试状态，不注册模型入口或主动消息。细节见 [Character](character.md)、[State](character-state.md)；测试见 tests/test_character_context.py、tests/test_character_state.py。
 
-P2 `_run_session()` 在原 Provider/工具/Context 上装配 MemoryLearningService 与 MemoryCurator，传给唯一 OrganizationRuntime；ContextRetriever 同时绑定 MemoryFS 与受限只读 Preflight。输入依然先 foreground() 取消等待后台，再处理普通 Agent 或可信调试命令。`/memory learning status|run|retry|reconcile <job_id>|retry <job_id>`、`/memory curator status|run|retry` 不注册为模型写工具，不增加逐条审批流程；`/context status` 显示实际注入 Memory 数、预算和额外调用。debug 调用有共享额度及整轮超时，失败不打印候选/正文。P2 enabled 暂停旧 Automation 自动入口，旧计划仍能 /reflect 查看。tests/test_p2_cli.py 验证真实装配与只读命令，tests/test_p2_recovery.py 验证真正进程退出。
+P2 `runtime.assemble_chat()` 在原 Provider/工具/Context 上装配 MemoryLearningService 与 MemoryCurator，传给唯一 OrganizationRuntime；ContextRetriever 同时绑定 MemoryFS 与受限只读 Preflight。输入依然先 foreground() 取消等待后台，再处理普通 Agent 或可信调试命令。`/memory learning status|run|retry|reconcile <job_id>|retry <job_id>`、`/memory curator status|run|retry` 不注册为模型写工具，不增加逐条审批流程；`/context status` 显示实际注入 Memory 数、预算和额外调用。debug 调用有共享额度及整轮超时，失败不打印候选/正文。P2 enabled 暂停旧 Automation 自动入口，旧计划仍能 /reflect 查看。tests/test_p2_cli.py 验证真实装配与只读命令，tests/test_p2_recovery.py 验证真正进程退出。
 
 ## P1 持续流
 
@@ -20,7 +20,7 @@ P2 `_run_session()` 在原 Provider/工具/Context 上装配 MemoryLearningServi
 
 1. `main()` 加载 Settings、配置安全日志，`asyncio.run(run_cli())` 打开数据库并显式迁移。
 2. `run_cli()` 标记遗留 Run，`SessionManager(store, budget=settings.context_budget())` 加载或创建默认 Agent，读取该 Agent 的 last_conversation；首次创建空会话，其余恢复上次选择。
-3. `run_cli()` 按 Agent ID 初始化或迁移 MemoryFS，绑定 sessions.memory，再由 `_run_session()` 装配官方 SDK、Provider、内置工具、Agent，以及 `sessions.context()`。 CLI 和存储均不进入 Provider 接口。
+3. `run_cli()` 按 Agent ID 初始化或迁移 MemoryFS，绑定 sessions.memory，再由 open_chat() 持有官方 SDK 并调用 `runtime.assemble_chat()` 装配 Provider、内置工具、Agent，以及 `sessions.context()`。 CLI 和存储均不进入 Provider 接口。
 4. `chat()` 展示当前 Agent/Conversation/Run 状态，读取输入。普通文本调用 Agent.run()；始终提供绑定当前 Agent 的 recall_search / recall_get，不需要记忆写入授权。 `/new` 创建空会话并保存选择；`/sessions` 列出当前 Agent 的会话并标记当前项； `/resume <id>` 校验归属和摘要检查点后保存选择，实际历史页在模型请求前有界验证；`/status` 展示状态。
 5. 切换成功后只替换 Runtime 的 ContextBuilder，不重写 Loop，不混入上个会话的历史。失败时保留旧选择；会话管理命令不送给模型、不保存为聊天消息。
 6. exit / quit / EOF 正常退出；Ctrl+C 取消当前 Run，SDK 和数据库由上下文管理器关闭。再启动使用同一数据库路径，即可恢复之前选择的会话。
@@ -44,7 +44,7 @@ main() 仅在运行期安装日志 handler，退出时恢复之前的日志配�
 
 ## V0.4 无额外命令的 Recall
 
-`_run_session()` 在创建 Runtime 前把 Recall 绑定到 sessions.agent.id 并注册两项只读工具。/new 只替换 ContextBuilder，Recall 继续查询同一持久 Agent 下的历史；不把其他会话复制到当前上下文。用户直接问“我们之前为什么决定先实现 Memory？”即可由模型选择搜索→展开→回答；没有增加 /recall 管理命令。schema 2 初始化回填在接收输入前完成，坏索引不自动修复，显式修复 API 见[Recall 模块](recall.md)。
+`runtime.assemble_chat()` 在创建 Runtime 前把 Recall 绑定到 sessions.agent.id 并注册两项只读工具。/new 只替换 ContextBuilder，Recall 继续查询同一持久 Agent 下的历史；不把其他会话复制到当前上下文。用户直接问“我们之前为什么决定先实现 Memory？”即可由模型选择搜索→展开→回答；没有增加 /recall 管理命令。schema 2 初始化回填在接收输入前完成，坏索引不自动修复，显式修复 API 见[Recall 模块](recall.md)。
 
 ## V0.6 上下文与诊断
 
@@ -56,7 +56,7 @@ run_cli() 用 Settings.context_budget() 构造 SessionManager；context() 将同
 
 ## V0.7 手动 Reflection 命令
 
-`_run_session()` 使用 ReflectionRepository(store, sessions.agent.id)、同一 MemoryFS/Provider、ContextBudget 和 Settings.reflection_policy() 装配 ReflectionService，传给 chat()。`/reflect` 命令在普通 Agent.run() 之外分派，不保存为聊天消息或创建新 Run；/resume 后始终使用当前 Conversation，长期 Markdown 仍按 Agent 共享。
+`runtime.assemble_chat()` 使用 ReflectionRepository(store, sessions.agent.id)、同一 MemoryFS/Provider、ContextBudget 和 Settings.reflection_policy() 装配 ReflectionService，传给 chat()。`/reflect` 命令在普通 Agent.run() 之外分派，不保存为聊天消息或创建新 Run；/resume 后始终使用当前 Conversation，长期 Markdown 仍按 Agent 共享。
 
 - `/reflect`：处理当前会话一批尚未审阅的 completed Run，或返回已有待审阅计划。
 - `/reflect status`：只显示独立边界、活动计划 ID 与逐项状态，无模型调用/消息正文。
@@ -75,10 +75,14 @@ V0.7.1 的 Reflection 模型失败会附加阶段及安全 ProviderDiagnostics�
 V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()；模式 off 不触发。/memory automation off|suggest|auto|status|run|retry 由可信 CLI 解析，不注册为工具，运行中模式只在当前进程有效。用户处理完计划后，下次 completed Run 或显式 run 继续积压；失败/cancel 不改变普通 Run 终态。
 # Shared Runtime 接线
 
-`main.run_cli()` 通过 `runtime.open_application()` 持有数据库、恢复会话并初始化 MemoryFS；`runtime.open_chat()` / `assemble_chat()` 统一装配 Provider 与 P1/P2/P3。`main._run_session()` 保留为已有会话的兼容入口。CLI 本地命令解析仍在 `main._chat()`，普通输入交给 `ChatService.run()`，展示后 `after_reply()` 恢复既有维护。完整调用路径见 [runtime.md](runtime.md)。
+`main.run_cli()` 通过 `runtime.open_application()` 持有数据库、恢复会话并初始化 MemoryFS；`runtime.open_chat()` / `assemble_chat()` 统一装配 Provider 与 P1/P2/P3。`main._run_session()` 保留为已有会话的兼容包装入口。CLI 本地命令解析仍在 `main._chat()`，普通输入交给 `ChatService.run()`，展示后 `after_reply()` 恢复既有维护。完整调用路径见 [runtime.md](runtime.md)。
 
 `main.main()` 接受可选的 `chat` / `qq` 位置参数，默认 CLI 兼容。`qq` 调用 `channels.qq.runner.run_qq()`，`qq --discover-openid` 为不初始化 Agent 的限时诊断。两种正常聊天模式共用数据库单进程锁，不能以两个进程同时连接同一数据库；QQ 中的 `/new` 等文本不进入 CLI 命令分支。参见 [qq.md](qq.md)。
 # Observatory 入口
 
 `main.py:main` 新增 `web` 和 QQ 专用 `--dashboard`，`--dashboard-port` 限定 1024–65535，默认 8765。`web` 不读取聊天输入，不调用 `Agent.run()`，通过原 Owner 锁保护独立实例；`qq --dashboard` 共享 `run_qq` 内的同一 `open_application()`。Ctrl+C/SIGTERM 沿原 Runtime 生命周期退出。详见 [dashboard.md](dashboard.md)。
 
+
+## CLI 资源与命令
+
+生产 run_cli() 和兼容 _run_session() 都将 open_chat 装配的同一个 ChatService 交给 chat(service)。CLI 拥有 console.AsyncInput，只在存在异步维护时创建 daemon 输入桥，并在退出 finally 关闭；open_chat 最终关闭维护资源。chat 仍接受分开的 Agent/服务参数供离线嵌入，此时它负责关闭自己组装的轻量 Service。cli_commands.MaintenanceCommands 处理 Episode/Thread/Learning/Curator/Character 命令与共享预算；Core Agent 不理解命令。测试见 test_p2_cli.py 的同实例/关闭归属和 test_organization_runtime.py 的 EOF/抢占。

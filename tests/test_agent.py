@@ -291,3 +291,30 @@ def test_runtime_limits_validated():
         Agent(FakeProvider(), create_builtin_registry(), max_rounds=0)
     with pytest.raises(ValueError):
         Agent(FakeProvider(), create_builtin_registry(), request_timeout_seconds=float("inf"))
+    with pytest.raises(ValueError):
+        Agent(FakeProvider(), create_builtin_registry(), max_tool_calls_per_response=0)
+
+
+@pytest.mark.parametrize("earlier", [False, True])
+async def test_host_tool_limit_rejects_whole_batch_and_preserves_prior_results(earlier):
+    provider = FakeProvider(
+        *([ModelResponse(tool_calls=[add_call("accepted")])] if earlier else []),
+        ModelResponse(tool_calls=[add_call("rejected-1"), add_call("rejected-2")]),
+        ModelResponse(text="next run"),
+    )
+    agent = Agent(
+        provider,
+        create_builtin_registry(),
+        max_tool_calls_per_response=2 if earlier else 1,
+        max_tool_calls_per_run=2,
+    )
+    result = await agent.run("synthetic batch")
+    assert result.status == "invalid_response" and "limit exceeded" in result.error
+    results = [m.result for m in agent.context.history if isinstance(m, ToolMessage)]
+    assert [r.call_id for r in results] == (["accepted"] if earlier else [])
+    assert all(
+        c.id not in {"rejected-1", "rejected-2"}
+        for m in agent.context.history
+        for c in getattr(m, "tool_calls", [])
+    )
+    assert (await agent.run("new request")).text == "next run"

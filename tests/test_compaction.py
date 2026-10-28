@@ -8,7 +8,7 @@ import pytest
 
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextBudget, ContextError, estimate_request
-from personal_agent.core.compaction import SUMMARY_PROMPT
+from personal_agent.core.compaction import SUMMARY_PROMPT, compact_step
 from personal_agent.core.context import ContextBuilder
 from personal_agent.core.history import HistoryError
 from personal_agent.core.models import (
@@ -116,6 +116,78 @@ def runtime(provider, source, *, budget=None, tools=None, memory=None):
 
 def is_summary(request):
     return request[0].text == SUMMARY_PROMPT
+
+
+@pytest.mark.parametrize("stop", ["cancel", "timeout"])
+@pytest.mark.parametrize("existing", [False, True])
+async def test_swallowed_cancellation_never_publishes_checkpoint(state, stop, existing):
+    db, sessions, source = state
+    seed(db, sessions.current.id, 1, size=10)
+    previous = None
+    if existing:
+        previous = source.save_summary("Earlier checkpoint", None, source.page(0).turns)
+        seed(db, sessions.current.id, 1, size=10)
+    entered = asyncio.Event()
+
+    class SwallowingProvider:
+        async def generate(self, *args, **kwargs):
+            entered.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                return ModelResponse(text="Late synthetic summary")
+
+    budget = policy(compaction_timeout=0.01 if stop == "timeout" else 5)
+    task = asyncio.create_task(
+        compact_step(source, previous, 4 if existing else 2, budget, SwallowingProvider())
+    )
+    await asyncio.wait_for(entered.wait(), 1)
+    if stop == "cancel":
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    else:
+        with pytest.raises(ContextError, match="boundary was not advanced"):
+            await task
+    assert source.summary() == previous
+    assert db.list_runs(sessions.current.id)[0].status == "completed"
+
+
+@pytest.mark.parametrize("stop", ["cancel", "timeout"])
+async def test_late_summary_cannot_continue_normal_agent_request(state, stop):
+    db, sessions, source = state
+    seed(db, sessions.current.id, 12, size=600)
+    entered = asyncio.Event()
+    normal_requests = []
+
+    class SwallowingProvider:
+        async def generate(self, messages, *args, **kwargs):
+            if not is_summary(messages):
+                normal_requests.append(messages)
+                return ModelResponse(text="Must never reach ordinary generation")
+            entered.set()
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                return ModelResponse(text="Late synthetic summary")
+
+    agent = runtime(
+        SwallowingProvider(),
+        source,
+        budget=policy(compaction_timeout=0.01 if stop == "timeout" else 5),
+    )
+    task = asyncio.create_task(agent.run("current input"))
+    await asyncio.wait_for(entered.wait(), 1)
+    if stop == "cancel":
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    else:
+        assert (await task).status == "compaction_error"
+    assert not normal_requests and source.summary() is None
+    assert db.list_runs(sessions.current.id)[-1].status == (
+        "cancelled" if stop == "cancel" else "failed"
+    )
 
 
 async def test_short_history_uses_no_extra_request_and_reports_usage_separately(state):

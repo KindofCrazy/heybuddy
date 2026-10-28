@@ -2,7 +2,7 @@
 
 from pathlib import PurePosixPath
 
-from personal_agent.core.compaction import redact
+from personal_agent.core.evidence import redact
 from personal_agent.memory import index
 from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest, metadata, summary
 from personal_agent.memory.safety import contains_credentials

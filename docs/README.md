@@ -43,3 +43,5 @@
 [V0.7.1 Reflection 真实验证](reflection-live-validation.md)：真实模型额度诊断、提案质量对照及实测边界。
 
 [Memory Automation](modules/automation.md)：成功回答后的 Worthiness、原 Reflection、可信写入范围、持久状态与额外成本。
+
+[共用证据机制](modules/evidence.md) 说明纯投影、精确引文与各领域确认策略；当前架构审查及落实记录见 [Architecture Audit](reviews/architecture-audit.md)。

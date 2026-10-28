@@ -31,7 +31,7 @@ class ThreadRepairRepository:
             return row[0] if row else None
 
     def _page(self, db: sqlite3.Connection, thread_id: str, limit: int, cap: int) -> RepairPage:
-        thread = self.threads._thread(db, thread_id)
+        thread = self.threads.read_thread(db, thread_id)
         job = db.execute("SELECT * FROM thread_repairs WHERE thread_id=?", (thread_id,)).fetchone()
         rows = db.execute(
             "SELECT e.id,e.ended_at,length(CAST(e.payload AS BLOB)) AS size FROM episodes e "
@@ -53,7 +53,7 @@ class ThreadRepairRepository:
                 if not episodes:
                     raise OrganizationError("repair_source_budget")
                 break
-            episodes.append(self.threads.episodes._episode(db, row["id"]))
+            episodes.append(self.threads.episodes.read_episode(db, row["id"]))
             used += row["size"]
         return RepairPage(
             thread=thread,
@@ -79,7 +79,7 @@ class ThreadRepairRepository:
         if not 1 <= limit <= 16 or not 1024 <= cap <= 262144:
             raise ValueError("Invalid repair page budget")
         with self.store._transaction() as db:
-            thread = self.threads._thread(db, thread_id)
+            thread = self.threads.read_thread(db, thread_id)
             if not thread.dirty:
                 return None
             job = db.execute(
@@ -129,7 +129,7 @@ class ThreadRepairRepository:
         self, page: RepairPage, state: str, code: str = "", metrics: dict | None = None
     ) -> None:
         with self.store._transaction() as db:
-            current = self.threads._thread(db, page.thread.id)
+            current = self.threads.read_thread(db, page.thread.id)
             if current != page.thread:
                 raise HistoryError("Thread repair source changed.")
             changed = db.execute(
@@ -152,7 +152,7 @@ class ThreadRepairRepository:
         self, thread_id: str, code: str, *, at: datetime | None = None, retry_seconds: float = 300
     ) -> None:
         with self.store._transaction() as db:
-            thread = self.threads._thread(db, thread_id)
+            thread = self.threads.read_thread(db, thread_id)
             job = db.execute(
                 "SELECT failure_count FROM thread_repairs WHERE thread_id=?", (thread_id,)
             ).fetchone()

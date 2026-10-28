@@ -10,6 +10,7 @@ from personal_agent.core.models import ModelResponse
 from personal_agent.learning.models import LearningPolicy
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.memory import index
+from personal_agent.reflection.models import ReflectionError
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.learning import LearningRepository
 from tests.fakes import FakeProvider
@@ -43,6 +44,17 @@ def human_write(new="回答先给结论，保持简洁。"):
         new_text="# Human\n" + new + "\n",
         reason="明确用户偏好",
     )
+
+
+async def test_publication_callback_cannot_outlive_serial_scope(state):
+    learning = learner(state, FakeProvider())
+    db = state[0]
+    before = db._connection.total_changes
+    async with learning.publication() as publish:
+        pass
+    with pytest.raises(ReflectionError, match="publication_scope_closed"):
+        await publish("unused", {}, [], [])
+    assert db._connection.total_changes == before
 
 
 async def test_preference_auto_apply_source_idempotency_and_no_reflection_progress(state):

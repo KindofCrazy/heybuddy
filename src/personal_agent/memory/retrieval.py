@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from pydantic import Field
 
-from personal_agent.core.compaction import redact
+from personal_agent.core.evidence import redact
 from personal_agent.core.models import Model
 from personal_agent.core.retrieval import RetrievalItem
 from personal_agent.memory import index

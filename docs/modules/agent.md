@@ -39,3 +39,7 @@
 每轮正常 Provider 调用前均 prepare()，包括长工具返回后的下一轮；当前 Run 的调用/结果始终保留，不能在中间截断。ContextError 转 context_error 或 compaction_error，追加停止说明并正常保存 failed Run。准备阶段的 HistoryError 必须继续抛给 run() 的存储错误处理，不能被普通 Provider 的宽泛异常分支吞掉；摘要存储失败因而返回 storage_error 并中断 Run。取消仍由外层传播，检查点只保留已提交批次。
 
 工作消息链会在 prepare() 中从有界历史和 pending 重建；ID 检查针对当前可见消息与新响应，历史调用不作为执行队列。Provider 原始数据在仍需重放的完整 Run 中保留。实际压缩路径、错误代码与配置见[Compaction](compaction.md)，验证见 `tests/test_compaction.py`，尤其是 current_run_growth、summary_write_failure 和 actual_process_exit 场景。
+
+## 工具批量数量边界
+
+Agent 接收宿主 max_tool_calls_per_response（默认 64）和 max_tool_calls_per_run（默认 256）。每次 Provider 响应先核对当前批量与累计请求数，超限整批返回 invalid_response，既不保存未接受调用，也不执行其中任何工具；更早批次的完整调用/结果保留。新 Run 重置计数。它限定当前 Run 重放与校验增长，不削弱 SQLite 写前完整验证。tests/test_agent.py 验证单批拒绝、跨轮累计及下一 Run 正常使用。

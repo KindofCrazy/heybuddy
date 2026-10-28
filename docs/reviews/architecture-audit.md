@@ -2,6 +2,8 @@
 
 审查日期：2026-10-28。审查类型：只读产品架构审查，仅新增本文档。未修改产品代码、测试、配置或其他文档，未暂存、提交、推送，也未执行破坏性 Git 操作。本文中的重构方案均未实施。
 
+本文第 1–9 节保留原始审查时点；后续修复与验证记录见第 10 节。
+
 ## 1. 基线、范围与结论
 
 - 分支：`main`；HEAD：`8ab75073cb5d0852b3cac33efacf4af25b4a52d6`，`feat: 完成 Observatory 集成验收与只读启动保护`。
@@ -355,3 +357,28 @@ Context `_select_history():199` 先 `for_request()` 算 base，`prepare():305` �
 5. 单独同步 README/总架构的 schema、装配入口、默认学习模式与渠道范围，降低后续维护误判。
 
 这些改进均可以局部完成；没有证据支持整体重写、增加 Agent Framework、ORM、Redis、DI Framework 或微服务。
+
+
+## 10. 2026-10-28 修复落实
+
+本轮按用户后续授权实施，保留本报告前文作为审查历史。期间外部 Observatory 工作先后提交到 149335b、dd5dbc6；修复只提交独立的架构改动，不包含并行 UI 工作。没有改动旧 migration、事实所有权、手动审批、MemoryFS 校验、角色主动性或 Provider Prompt。
+
+| 发现 | 已落实行为 / 验收证据 |
+| --- | --- |
+| A01 | due/status 纯读，维护 poll 才顺延；ScheduleRepository.state 在缺行或切换会话时仅推导视图，observe 不初始化。新增过期状态和跨选择零写测试 |
+| A02 | README/AGENTS/整体架构和现行模块文档统一 schema 13、共享装配、P2 开启/兼容 Automation、QQ/Web 范围；历史交付报告不回写 |
+| A03 | Compaction 返回后复查 timeout/cancelling；测试覆盖新旧 checkpoint、吞取消/超时、当前 Run 终态与不继续普通请求 |
+| A04/A10 | core.evidence 提供纯投影/精确引文，reflection.evidence 保留用户确认策略；ReflectionModel 独立预算/请求，不携带审批。CharacterStateService 直接依赖 Provider |
+| A05 | Curator 通过 Learner.publication 的受控回调进入既有发布状态机，不取私有锁/执行方法；作用域退出后回调失效。reconcile 使用真实 PlanItem，持久回执格式不变 |
+| A06/A07 | CLI 拥有 console.AsyncInput 和 MaintenanceCommands；Runtime 保留既有协调循环；channels.lifecycle 共享终止处理；生产 chat 接收同一个 ChatService，open_chat 最终关闭维护；cycle_providers 统一串行预算作用域和 finally 恢复 |
+| A08 | WorkingContextRepository 持有历史选择 SQL；Curator 元数据和维护观察移入现有 Repository；共享读取显式命名 read_episode/read_source/read_thread；QQInbox 负责最新 Run 查询 |
+| A09 | 显式 PreflightRetrieval/RunCharacter 可选 Protocol；一次 prepare 迭代只编译一份注入前缀，预算与请求复用，下一工具轮重新读取 |
+| A11 | 先测量再加宿主数量上限：默认每响应 64、每 Run 256，Settings 可有界配置。超限整批在记录/执行前拒绝，保留之前已提交结果；不优化掉原完整 Journal 验证 |
+
+合成 SQLite 测量（非性能承诺）：单批 32/128 个工具调用分别触发 630/8646 条消息解码，耗时约 0.1715/0.6583 秒。保留现有验证，数量上限用于限制最坏增长，不新增派生校验索引或缓存。
+
+验证过程：修复前离线基线 771 passed、2 skipped；阶段定向回归分别有 61、133、57 项通过。一次完整回归曾遇到并行新 Dashboard 测试的 Windows 换行断言，随后该外部测试改为按实际字节/双换行验证；另一次完整回归为 783 passed、2 skipped、1 个 Memory 索引发布失败，该用例隔离运行通过，未改 MemoryFS/index 以绕过失败。最后在源码仓库外的独立允许临时目录执行完整离线回归：**790 passed、2 skipped**；未为临时失败修改 MemoryFS/index 或网络保护。收尾 Ruff check 通过、format check 为 **227 files already formatted**。这些最终结果与中间诊断分开记录。
+
+两个 CLI 帮助入口通过。uv build --offline 因缺 hatchling 构建缓存失败，之后标准 uv build 成功产出 sdist/wheel；未修改依赖声明或 uv.lock，未进行真实付费调用。
+
+构建包检查确认新增 evidence/requester/query/CLI/lifecycle 模块均进入 wheel，未包含 `.db`、`.sqlite3` 或真实 `.env`。默认冻结 Prompt 与依赖锁文件保持原样；未引入新框架、ORM 或调度平台。

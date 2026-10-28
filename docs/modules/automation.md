@@ -10,7 +10,7 @@ LLM 决定历史有无长期价值、如何提取/去重/纠正与组织知识�
 
 ## 代码实际运行路径
 
-1. `_run_session()` 用同一 Provider/MemoryFS 构造 ReflectionService，再用 Settings.automation_policy() 构造 MemoryAutomation。取得数据库占用锁后的启动阶段调用 repository.recover()，仅把未结束自动检查标记 interrupted，不执行模型/工具。
+1. `runtime.assemble_chat()` 用同一 Provider/MemoryFS 构造 ReflectionService，再用 Settings.automation_policy() 构造 MemoryAutomation。取得数据库占用锁后的启动阶段调用 repository.recover()，仅把未结束自动检查标记 interrupted，不执行模型/工具。
 2. `chat()` await Agent.run()；只有 completed 结果先打印 Agent 答案，再展示 Memory 后续检查提示，await automation.run(current_conversation_id)。off 不检查；普通管理命令不创建 Run，也不触发该钩子。
 3. `_run()` 先查活动 Reflection Plan。有未审阅计划时返回 pending_review 和 unprocessed_runs，不覆盖计划、不重复调用 Worthiness，后来的原始聊天照常保存。
 4. 没有计划时，活动 failed/interrupted batch 默认阻止重做；用户显式 `/memory automation retry` 才允许重试未完成阶段。若进程曾在保存计划后、关联 batch 前退出，plan_for_batch() 按范围找到并验证原计划，补记关联而不重新提取或写文件。

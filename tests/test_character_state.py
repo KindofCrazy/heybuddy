@@ -13,10 +13,8 @@ from personal_agent.core.budget import ContextBudget
 from personal_agent.core.models import AssistantMessage, ModelResponse, RunResult, TextMessage
 from personal_agent.memory.store import MemoryFS
 from personal_agent.organization.runtime import OrganizationRuntime
-from personal_agent.reflection.service import ReflectionService
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
-from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from tests.fakes import FakeProvider
 from tests.test_episodes import organizer
@@ -65,13 +63,10 @@ def service(db, memory, provider, clock, *, character_id="sherlock_bbc", **polic
     repository = CharacterStateRepository(
         EpisodeRepository(db, "heybuddy"), character_id, package.fingerprint
     )
-    verifier = ReflectionService(
-        ReflectionRepository(db, "heybuddy"), memory, provider, ContextBudget(context_window=131072)
-    )
     return CharacterStateService(
         repository,
         package,
-        verifier,
+        provider,
         ContextBudget(context_window=131072),
         StatePolicy(min_interval_seconds=0, **policy),
         clock,
@@ -313,7 +308,12 @@ async def test_new_package_invalidates_old_state_and_does_not_reinterpret_old_ru
         actor.repository.episodes, changed.character_id, changed.fingerprint
     )
     fresh = CharacterStateService(
-        repo, changed, actor.verifier, ContextBudget(context_window=131072), actor.policy, clock
+        repo,
+        changed,
+        actor.model.provider,
+        ContextBudget(context_window=131072),
+        actor.policy,
+        clock,
     )
     assert fresh.active() is None and fresh.repository.candidate() is None
     assert fresh.repository.row()["revision"] == 2

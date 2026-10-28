@@ -1,17 +1,19 @@
 """Extraction-first learning reuses Reflection model/evidence validation and exact-span writer."""
 
 import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from time import monotonic
-from types import SimpleNamespace
 
-from personal_agent.core.compaction import redact
+from personal_agent.core.evidence import redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.learning.models import FileDecision, LearningPolicy, Targets
 from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError
+from personal_agent.reflection.evidence import memory_evidence, verify_candidates
 from personal_agent.reflection.memory import catalogue, plan_item, read_comparison
 from personal_agent.reflection.models import (
     Decision,
@@ -19,6 +21,7 @@ from personal_agent.reflection.models import (
     PlanItem,
     ReflectionError,
 )
+from personal_agent.reflection.provider import ReflectionModel
 from personal_agent.reflection.service import BASE, EXTRACT, ReflectionService
 from personal_agent.reflection.writer import reconcile_item, write_item
 from personal_agent.storage.learning import LearningRepository
@@ -73,9 +76,7 @@ class MemoryLearningService:
         self.policy = policy or LearningPolicy()
         self.clock = clock or SystemClock()
         # Same request implementation; independent policy, no Reflection progress/plan mutation.
-        self.model = ReflectionService(
-            reflection.repository,
-            self.memory,
+        self.model = ReflectionModel(
             reflection.provider,
             reflection.context_budget,
             self.policy,
@@ -196,42 +197,21 @@ class MemoryLearningService:
             else None,
         }
 
-    def _verify(self, extraction: Extraction, records: list) -> None:
-        supplied = {(cid, s.run_id): s.turn for cid, s in records}
-        for candidate in extraction.candidates:
-            # Reuse the original exact-quote verifier on each real conversation,
-            # then require explicit user evidence over the whole candidate.
-            user = False
-            for evidence in candidate.evidence:
-                turn = supplied.get((evidence.conversation_id, evidence.run_id))
-                if turn is None:
-                    raise ReflectionError("invalid_evidence")
-                single = candidate.model_copy(deep=True)
-                single.confidence = "uncertain"
-                single.evidence = [evidence]
-                self.reflection._verify(
-                    Extraction(candidates=[single]), evidence.conversation_id, [turn]
-                )
-                message = turn.messages[evidence.sequence - turn.first_sequence]
-                user |= getattr(message, "role", None) == "user"
-            if candidate.confidence == "confirmed" and not user:
-                raise ReflectionError("unconfirmed_evidence")
-
     async def propose(self, records: list, hints: list) -> list[PlanItem]:
         evidence = self.evidence(records)
-        extraction = await self.model._ask(
+        extraction = await self.model.ask(
             Extraction,
             LEARN_EXTRACT,
             {"history": evidence, "episode_hints": hints, "as_of": self.clock.now().isoformat()},
         )
-        self._verify(extraction, records)
+        verify_candidates(extraction, {(cid, s.run_id): s.turn for cid, s in records})
         if not extraction.candidates:
             return []
         catalog = catalogue(self.memory)
         candidates = [
             dict(candidate_id=n, **c.model_dump()) for n, c in enumerate(extraction.candidates, 1)
         ]
-        selection = await self.model._ask(
+        selection = await self.model.ask(
             Targets,
             LEARN_SELECT,
             {
@@ -268,7 +248,7 @@ class MemoryLearningService:
                 key=lambda c: max(chronology[(e.conversation_id, e.run_id)] for e in c.evidence)
             )
             # One request and at most one write per target; all evidence remains available.
-            result = await self.model._ask(
+            result = await self.model.ask(
                 FileDecision,
                 LEARN_CONSOLIDATE,
                 {
@@ -299,7 +279,7 @@ class MemoryLearningService:
         """Date relative user statements using source times, independently of processing time."""
         return [
             dict(
-                self.model._evidence(cid, [source.turn])[0],
+                memory_evidence(cid, [source.turn])[0],
                 started_at=source.started_at.isoformat(),
                 ended_at=source.ended_at.isoformat(),
             )
@@ -329,6 +309,26 @@ class MemoryLearningService:
                 "batch" if episode_ids else "priority", refs, self.clock.now()
             )
             return await self._execute(jid, refs, records, hints, retry=retry)
+
+    @asynccontextmanager
+    async def publication(self) -> AsyncIterator[Callable[..., Awaitable[dict]]]:
+        """Serialize source preparation and publication under the learner's write policy.
+
+        The yielded operation is valid only inside this scope. Curators supply fresh
+        proposals; they never own the lock or replay saved file operations.
+        """
+        async with self._lock:
+            active = True
+
+            async def publish(*args, **kwargs) -> dict:
+                if not active:
+                    raise ReflectionError("publication_scope_closed")
+                return await self._execute(*args, **kwargs)
+
+            try:
+                yield publish
+            finally:
+                active = False
 
     async def _execute(self, jid, refs, records, hints, *, retry=False, proposer=None) -> dict:
         old = self.repository.get(jid)
@@ -521,7 +521,9 @@ class MemoryLearningService:
             except CoreMemoryError as error:
                 op["code"] = error.code
                 continue
-            item = SimpleNamespace(
+            item = PlanItem(
+                id=op["id"],
+                candidate=None,
                 decision=Decision(
                     candidate_id=1, action=op["action"], path=op["path"], reason="hash verification"
                 ),

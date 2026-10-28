@@ -11,13 +11,13 @@ from personal_agent.character.models import (
 )
 from personal_agent.character.storage import CharacterStateRepository
 from personal_agent.core.budget import ContextBudget
+from personal_agent.core.evidence import EvidenceError, history_evidence, verify_quotes
 from personal_agent.core.history import HistoryError
+from personal_agent.llm.base import Provider
 from personal_agent.memory.safety import contains_credentials
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError, OrganizationPolicy
 from personal_agent.organization.provider import OrganizerModel
-from personal_agent.reflection.models import Candidate, Extraction, ReflectionError
-from personal_agent.reflection.service import ReflectionService
 
 STATE_PROMPT = (
     "Propose transient SIMULATED state using only supplied own-character Run evidence. "
@@ -40,7 +40,7 @@ class CharacterStateService:
         self,
         repository: CharacterStateRepository,
         package: CharacterPackage,
-        verifier: ReflectionService,
+        provider: Provider,
         budget: ContextBudget,
         policy: StatePolicy | None = None,
         clock: Clock | None = None,
@@ -50,14 +50,12 @@ class CharacterStateService:
         if (
             package.character_id != repository.character_id
             or package.fingerprint != repository.package_hash
-            or verifier.repository.agent_id != repository.agent_id
         ):
             from personal_agent.character.models import CharacterError
 
             raise CharacterError("state_character_scope")
         self.repository = repository
         self.package = package
-        self.verifier = verifier
         self.policy = policy or StatePolicy()
         self.clock = clock or SystemClock()
         self._lock = asyncio.Lock()
@@ -68,7 +66,7 @@ class CharacterStateService:
         if initialize:
             repository.initialize()
         self.model = OrganizerModel(
-            verifier.provider,
+            provider,
             budget,
             OrganizationPolicy(
                 input_tokens=self.policy.input_tokens,
@@ -163,7 +161,7 @@ class CharacterStateService:
             try:
                 evidence = [
                     dict(
-                        self.verifier._evidence(snapshot["episode"].stream_id, [s.turn])[0],
+                        history_evidence(snapshot["episode"].stream_id, [s.turn])[0],
                         started_at=s.started_at.isoformat(),
                         ended_at=s.ended_at.isoformat(),
                     )
@@ -194,18 +192,9 @@ class CharacterStateService:
                     return {"outcome": "completed", "updated": False, "metrics": self.model.metrics}
                 if not proposal.evidence:
                     raise OrganizationError("invalid_state_evidence")
-                check = Candidate(
-                    category="knowledge",
-                    subject="transient simulated state",
-                    content=proposal.mood,
-                    reason="observable source verification",
-                    confidence="uncertain",
-                    evidence=proposal.evidence,
-                )
-                self.verifier._verify(
-                    Extraction(candidates=[check]),
-                    snapshot["episode"].stream_id,
-                    [s.turn for s in records],
+                verify_quotes(
+                    proposal.evidence,
+                    {(snapshot["episode"].stream_id, s.run_id): s.turn for s in records},
                 )
                 cited = {e.run_id for e in proposal.evidence}
                 source = max((s for s in records if s.run_id in cited), key=lambda s: s.position)
@@ -247,7 +236,7 @@ class CharacterStateService:
                     snapshot, "pending", self.clock.now(), metrics=self.model.metrics
                 )
                 raise
-            except (OrganizationError, ReflectionError, HistoryError) as error:
+            except (OrganizationError, EvidenceError, HistoryError) as error:
                 code = getattr(error, "code", "state_source_or_cas")
                 limited = code == "maintenance_budget"
                 self.repository.attempt(

@@ -25,7 +25,7 @@ Core 只依赖 `core/character.py::CharacterContext` Protocol。SessionManager �
 
 启用时只对 memory.compile() 的 JSON 注入视图移除 persona.md，原文件、公共 MemoryFS 编译与写入语义不变；human.md 和 MEMORY.md 保留。关闭角色不经过过滤，立即恢复旧视图。角色材料不写入 pending 或 Journal，完整模型请求继续经过原 ContextBudget 估算、压缩和失败路径。类型/预算不适配返回安全的 context_error，不暗中删除当前用户输入。
 
-AGENT_CHARACTER_ID 默认 none；sherlock_bbc 显式启用。main._run_session() 在装配 Agent 前读取包；配置或读取失败给出明确 CLI 错误。`/context status` 的 character 显示 ID、变体、包 hash、编译大小和额外 Appraisal 请求数（零），不显示私人上下文。tests/test_character_context.py 验证模式回退、磁盘保留、System 顺序、多轮工具身份、总预算、Lore 上限和会话隔离。
+AGENT_CHARACTER_ID 默认 none；sherlock_bbc 显式启用。runtime.assemble_chat() 在装配 Agent 前读取包；配置或读取失败给出明确 CLI 错误。`/context status` 的 character 显示 ID、变体、包 hash、编译大小和额外 Appraisal 请求数（零），不显示私人上下文。tests/test_character_context.py 验证模式回退、磁盘保留、System 顺序、多轮工具身份、总预算、Lore 上限和会话隔离。
 
 ## 关系引用与 P2
 

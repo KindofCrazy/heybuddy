@@ -23,10 +23,8 @@ from personal_agent.memory.store import MemoryFS
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.organization.provider import OrganizerModel
-from personal_agent.reflection.service import ReflectionService
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
-from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
 
 
@@ -71,14 +69,8 @@ async def run():
             repository = CharacterStateRepository(
                 episodes, package.character_id, package.fingerprint
             )
-            verifier = ReflectionService(
-                ReflectionRepository(db, sessions.agent.id),
-                memory,
-                traced,
-                settings.context_budget(),
-            )
             actor = CharacterStateService(
-                repository, package, verifier, settings.context_budget(), StatePolicy(), clock
+                repository, package, traced, settings.context_budget(), StatePolicy(), clock
             )
             organizer = EpisodeOrganizer(
                 episodes,

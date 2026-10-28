@@ -769,14 +769,14 @@ async def test_visible_json_byte_budget_is_independent_of_reasoning_output_budge
     )
     provider = FakeProvider(response)
     reflection = service(db, memory, provider, output_tokens=4096)
-    extracted = await reflection._ask(Extraction, EXTRACT, {"history": []})
+    extracted = await reflection.model.ask(Extraction, EXTRACT, {"history": []})
     assert extracted.candidates[0].content == fact["content"]
     assert provider.output_limits == [4096]
     bounded = service(
         db, memory, FakeProvider(response), output_tokens=16384, response_max_bytes=1024
     )
     with pytest.raises(ReflectionError, match="invalid_reflection_output"):
-        await bounded._ask(Extraction, EXTRACT, {"history": []})
+        await bounded.model.ask(Extraction, EXTRACT, {"history": []})
 
 
 async def test_consolidation_error_reaches_cli_with_safe_stage_reason_and_usage(state):

@@ -5,8 +5,8 @@ from typing import Literal
 from pydantic import AwareDatetime, Field
 
 from personal_agent.core.budget import ContextError
+from personal_agent.core.evidence import Evidence
 from personal_agent.core.models import Model
-from personal_agent.reflection.models import Evidence
 
 
 class CharacterError(ContextError):

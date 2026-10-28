@@ -82,3 +82,7 @@ schema 3 追加两个表，不修改旧 messages：
 构建出的 0.6.0 wheel 在独立临时目录连续启动两次，确认 schema 3、相同会话恢复，纯 /context status 不创建 Run 或模型调用。另以 60 个合成历史 Run 运行真实 CLI 交互，Provider 替换为离线 Fake：首次 7 批摘要、1 次正常回答，消息数 120→122；第二次启动复用原摘要边界 84，无新摘要调用，1 次正常回答后消息数 124。两次正常请求估算分别 45896、46075，均低于所配置输入上限 58880；没有真实 API 调用或费用。
 
 V0.7 的 [Reflection](reflection.md) 是独立手动流程：从原始 completed Run 提出长期知识，用户批准后才写 Memory；其审阅边界与本模块 through_sequence 无关。Compaction 的工具序列、预算和恢复规则保持原实现。
+
+## 取消后的提交屏障
+
+compact_step() 在 Provider 返回后重新检查 deadline.expired() 和当前 task.cancelling()。即使自定义 Provider 吞掉 CancelledError，超时或前台取消也不发布晚到摘要；旧 checkpoint 与原 Journal 保留。tests/test_compaction.py::test_swallowed_cancellation_never_publishes_checkpoint 对两种情况分别验证。

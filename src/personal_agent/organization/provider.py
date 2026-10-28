@@ -6,7 +6,7 @@ import json
 from pydantic import ValidationError
 
 from personal_agent.core.budget import ContextBudget, estimate_request
-from personal_agent.core.compaction import SECRET
+from personal_agent.core.evidence import SECRET
 from personal_agent.core.models import Model, TextMessage
 from personal_agent.llm.base import Provider
 from personal_agent.organization.models import OrganizationError, OrganizationPolicy

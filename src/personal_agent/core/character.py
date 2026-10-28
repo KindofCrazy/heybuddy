@@ -1,7 +1,7 @@
 """Character compilation boundary; Core knows no package files or state database."""
 
 import json
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from personal_agent.core.budget import ContextError
 from personal_agent.core.models import TextMessage
@@ -12,6 +12,11 @@ class CharacterContext(Protocol):
         self, user_input: str, *, source_run_ids: tuple[str, ...] = ()
     ) -> list[TextMessage]: ...
     def diagnostics(self) -> dict: ...
+
+
+@runtime_checkable
+class RunCharacter(Protocol):
+    def record_run(self, run_id: str) -> None: ...
 
 
 def without_legacy_persona(compiled: str) -> str:

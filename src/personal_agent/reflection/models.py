@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from personal_agent.core.evidence import Evidence as Evidence
 from personal_agent.core.models import Model, ProviderDiagnostics
 
 
@@ -28,13 +29,6 @@ class ReflectionPolicy(Model):
     response_max_bytes: int = Field(default=32768, ge=1024, le=131072)
     timeout_seconds: float = Field(default=60, gt=0, allow_inf_nan=False)
     page_runs: int = Field(default=8, ge=1, le=32)
-
-
-class Evidence(Model):
-    conversation_id: str = Field(min_length=1, max_length=128)
-    run_id: str = Field(min_length=1, max_length=128)
-    sequence: int = Field(ge=1)
-    quote: str = Field(min_length=4, max_length=512)
 
 
 class Candidate(Model):

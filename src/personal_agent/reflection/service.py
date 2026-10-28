@@ -1,20 +1,15 @@
 """Manual extraction, evidence validation, consolidation and approved single-file writes."""
 
 import asyncio
-import json
 from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import ValidationError
-
 from personal_agent.core.budget import ContextBudget, estimate_request
-from personal_agent.core.compaction import SECRET, projection, redact
-from personal_agent.core.history import HistoryTurn
-from personal_agent.core.models import Model, TextMessage, TokenUsage
-from personal_agent.llm.base import Provider, ProviderError
+from personal_agent.core.evidence import redact
+from personal_agent.llm.base import Provider
 from personal_agent.memory.store import MemoryFS
-from personal_agent.organization.models import OrganizationError
+from personal_agent.reflection.evidence import memory_evidence, verify_candidates
 from personal_agent.reflection.memory import (
     catalogue,
     plan_item,
@@ -29,6 +24,7 @@ from personal_agent.reflection.models import (
     ReflectionPolicy,
     Selection,
 )
+from personal_agent.reflection.provider import ReflectionModel, structured_request
 from personal_agent.reflection.writer import reconcile_item, write_item
 from personal_agent.storage.reflection import ReflectionRepository, sources
 
@@ -89,138 +85,17 @@ class ReflectionService:
         self.context_budget = context_budget
         self.repository = repository
         self.memory = memory
-        self.provider = provider
         self.policy = policy or ReflectionPolicy()
-        self.input_limit = min(
-            self.policy.input_tokens,
-            context_budget.context_window
-            - self.policy.output_tokens
-            - context_budget.safety_margin,
-        )
+        self.model = ReflectionModel(provider, context_budget, self.policy)
         self._lock = asyncio.Lock()
-        self.reset_metrics()
 
-    def reset_metrics(self) -> None:
-        self.metrics = {
-            "requests": 0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "reasoning_tokens": 0,
-            "usage_complete": True,
-        }
+    @property
+    def provider(self) -> Provider:
+        return self.model.provider
 
-    def _observe_usage(self, usage: TokenUsage | None) -> None:
-        if usage is None:
-            self.metrics["usage_complete"] = False
-        else:
-            for field in ("input_tokens", "output_tokens", "reasoning_tokens"):
-                self.metrics[field] += getattr(usage, field) or 0
-
-    def _request(self, kind: type[Model], prompt: str, data: dict) -> list[TextMessage]:
-        return [
-            TextMessage(role="system", text=prompt),
-            TextMessage(
-                role="user",
-                text=json.dumps(
-                    {"trust": "data_only", "response_schema": kind.model_json_schema(), **data},
-                    ensure_ascii=False,
-                ),
-            ),
-        ]
-
-    async def _ask[Result: Model](self, kind: type[Result], prompt: str, data: dict) -> Result:
-        stage = {Extraction: "extraction", Selection: "selection"}.get(kind, "consolidation")
-        if self.input_limit < 2048:
-            raise ReflectionError("reflection_budget", stage=stage)
-        request = self._request(kind, prompt, data)
-        if estimate_request(request, []) > self.input_limit:
-            raise ReflectionError("reflection_input_budget", stage=stage)
-        try:
-            self.metrics["requests"] += 1
-            async with asyncio.timeout(self.policy.timeout_seconds) as deadline:
-                response = await self.provider.generate(
-                    request, [], max_output_tokens=self.policy.output_tokens
-                )
-                if deadline.expired():
-                    raise TimeoutError
-                if asyncio.current_task().cancelling():
-                    raise asyncio.CancelledError
-        except asyncio.CancelledError:
-            self._observe_usage(None)
-            raise
-        except ProviderError as error:
-            self._observe_usage(error.diagnostics.usage if error.diagnostics else None)
-            raise ReflectionError(
-                "reflection_provider_error", stage=stage, diagnostics=error.diagnostics
-            ) from None
-        except OrganizationError as error:
-            if error.code in {"maintenance_budget", "maintenance_request_budget"}:
-                self.metrics["requests"] -= 1
-            else:
-                self._observe_usage(None)
-            raise
-        except Exception:
-            self._observe_usage(None)
-            raise ReflectionError("reflection_provider_error", stage=stage) from None
-        self._observe_usage(response.usage)
-        if (
-            response.tool_calls
-            or not response.text.strip()
-            or len(response.text.encode()) > self.policy.response_max_bytes
-            or SECRET.search(response.text)
-            or (
-                response.usage
-                and (
-                    response.usage.input_tokens > self.input_limit
-                    or response.usage.output_tokens > self.policy.output_tokens
-                )
-            )
-        ):
-            raise ReflectionError("invalid_reflection_output", stage=stage)
-        try:
-            return kind.model_validate_json(response.text)
-        except (ValidationError, ValueError):
-            raise ReflectionError("invalid_reflection_output", stage=stage) from None
-
-    def _evidence(self, conversation_id: str, turns: list[HistoryTurn]) -> list[dict]:
-        data = []
-        for turn in turns:
-            if turn.last_sequence - turn.first_sequence + 1 != len(turn.messages):
-                raise ReflectionError("noncontiguous_source")
-            item = projection(turn)
-            item["conversation_id"] = conversation_id
-            for sequence, message in enumerate(item["messages"], turn.first_sequence):
-                message["sequence"] = sequence
-            data.append(item)
-        return data
-
-    def _verify(
-        self, extraction: Extraction, conversation_id: str, turns: list[HistoryTurn]
-    ) -> None:
-        supplied = {
-            (turn.run_id, sequence): message
-            for turn in turns
-            for sequence, message in enumerate(turn.messages, turn.first_sequence)
-        }
-        disclosed = {
-            (turn["run_id"], message["sequence"]): message.get("text", message.get("evidence", ""))
-            for turn in self._evidence(conversation_id, turns)
-            for message in turn["messages"]
-        }
-        for candidate in extraction.candidates:
-            user = False
-            for evidence in candidate.evidence:
-                message = supplied.get((evidence.run_id, evidence.sequence))
-                if (
-                    evidence.conversation_id != conversation_id
-                    or message is None
-                    or evidence.quote not in disclosed.get((evidence.run_id, evidence.sequence), "")
-                    or "[REDACTED]" in evidence.quote
-                ):
-                    raise ReflectionError("invalid_evidence")
-                user |= isinstance(message, TextMessage) and message.role == "user"
-            if candidate.confidence == "confirmed" and not user:
-                raise ReflectionError("unconfirmed_evidence")
+    @property
+    def input_limit(self) -> int:
+        return self.model.input_limit
 
     async def reflect(
         self, conversation_id: str, *, through: int | None = None
@@ -241,9 +116,9 @@ class ReflectionService:
             )
             selected = []
             for turn in page.turns:
-                data = {"history": self._evidence(conversation_id, [*selected, turn])}
+                data = {"history": memory_evidence(conversation_id, [*selected, turn])}
                 if (
-                    estimate_request(self._request(Extraction, EXTRACT, data), [])
+                    estimate_request(structured_request(Extraction, EXTRACT, data), [])
                     > self.input_limit
                 ):
                     break
@@ -252,10 +127,10 @@ class ReflectionService:
                 if page.turns:
                     raise ReflectionError("reflection_source_too_large")
                 return None
-            extraction = await self._ask(
-                Extraction, EXTRACT, {"history": self._evidence(conversation_id, selected)}
+            extraction = await self.model.ask(
+                Extraction, EXTRACT, {"history": memory_evidence(conversation_id, selected)}
             )
-            self._verify(extraction, conversation_id, selected)
+            verify_candidates(extraction, {(conversation_id, t.run_id): t for t in selected})
             items = []
             if extraction.candidates:
                 catalog = catalogue(self.memory)
@@ -264,7 +139,7 @@ class ReflectionService:
                     for n, candidate in enumerate(extraction.candidates, 1)
                 ]
                 core = {k: redact(v) for k, v in self.memory.read().blocks.items()}
-                selection = await self._ask(
+                selection = await self.model.ask(
                     Selection,
                     SELECT,
                     {"candidates": candidates, "core": core, "catalogue": catalog},
@@ -272,7 +147,7 @@ class ReflectionService:
                 comparison = read_comparison(
                     self.memory, selection.paths, {row["path"] for row in catalog}
                 )
-                decisions = await self._ask(
+                decisions = await self.model.ask(
                     Consolidation,
                     CONSOLIDATE,
                     {

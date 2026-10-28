@@ -253,6 +253,7 @@ async def test_thread_ownership_is_enforced_in_repository_and_sql(state):
 
 
 async def test_low_frequency_runtime_hook_and_thread_commands(state):
+    from personal_agent.cli_commands import MaintenanceCommands
     from personal_agent.organization.runtime import OrganizationRuntime
 
     db, stream, repo = state
@@ -269,7 +270,7 @@ async def test_low_frequency_runtime_hook_and_thread_commands(state):
         await runtime.foreground()
         output = []
         for command in ["/thread status", "/thread list", "/thread organize"]:
-            await runtime.command(stream, command, output.append)
+            await MaintenanceCommands(runtime).command(stream, command, output.append)
         assert json.loads(output[-1])["outcome"] == "no_episodes"
     finally:
         await runtime.close()

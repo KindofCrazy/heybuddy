@@ -213,7 +213,7 @@ async def test_curator_rejects_dangerous_or_unproved_edits(state, mode):
 async def test_low_frequency_trigger_requires_updates_or_long_file_not_daily_llm(state):
     service = curator(state, [], update_threshold=2)
     service.clock.advance(86401)
-    assert not service.due()
+    assert not service.poll()
     assert not service.model.provider.requests
     with service.repository.store._transaction() as db:
         db.execute("UPDATE memory_learning_state SET updates=2 WHERE agent_id='heybuddy'")
@@ -222,3 +222,21 @@ async def test_low_frequency_trigger_requires_updates_or_long_file_not_daily_llm
     assert service.due()
     assert (await service.run())["outcome"] == "completed"
     assert not service.due()
+
+
+@pytest.mark.parametrize("updates", [0, 2])
+def test_expired_status_is_readonly_and_poll_owns_empty_reschedule(state, updates):
+    service = curator(state, [], update_threshold=2)
+    service.clock.advance(86401)
+    with service.repository.store._transaction() as db:
+        db.execute("UPDATE memory_learning_state SET updates=?", (updates,))
+    store = service.repository.store
+    deadline = service.repository.activation()["curator_due_at"]
+    changes = store._connection.total_changes
+    for _ in range(2):
+        assert service.status()["due"] == bool(updates)
+    assert store._connection.total_changes == changes
+    assert service.repository.activation()["curator_due_at"] == deadline
+    assert not service.model.provider.requests
+    assert service.poll() == bool(updates)
+    assert (service.repository.activation()["curator_due_at"] != deadline) == (not updates)

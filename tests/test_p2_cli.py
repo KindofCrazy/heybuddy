@@ -3,8 +3,10 @@ import json
 from personal_agent import main, runtime
 from personal_agent.config import Settings
 from personal_agent.core.agent import Agent
+from personal_agent.core.models import ModelResponse
 from personal_agent.learning.curator import MemoryCurator
 from personal_agent.organization.runtime import OrganizationRuntime
+from personal_agent.runtime import ChatService
 from personal_agent.tools.builtin import create_builtin_registry
 from tests.fakes import FakeProvider
 from tests.test_episodes import organizer
@@ -31,7 +33,13 @@ async def test_production_assembly_has_one_learning_entry_and_shared_retriever(s
     monkeypatch.setattr(runtime, "OpenAIProvider", lambda *_: provider)
     called = []
 
-    async def chat(agent, *, organization, reflection, automation, sessions):
+    async def chat(service):
+        agent, sessions = service.agent, service.sessions
+        reflection, automation, organization = (
+            service.reflection,
+            service.automation,
+            service.organization,
+        )
         called.append(True)
         assert organization.learning.policy.enabled
         assert organization.curator.learning is organization.learning
@@ -73,3 +81,27 @@ async def test_actual_cli_debug_statuses_are_readonly_and_safe(state):
     assert any("next_check_at" in row for row in payload)
     assert memory.read() == before
     assert not learning.model.provider.requests
+
+
+async def test_cli_uses_exact_shared_service_and_leaves_closing_to_owner(state, monkeypatch):
+    _, sessions, _, _ = state
+    provider = FakeProvider(ModelResponse(text="answer"))
+    learning = learner(state, provider)
+    organization = OrganizationRuntime(organizer(learning.repository.episodes))
+    agent = Agent(provider, create_builtin_registry(), context=sessions.context())
+    service = ChatService(agent, sessions=sessions, organization=organization)
+    original = service.run
+    calls = []
+
+    async def run(*args, **kwargs):
+        calls.append(service)
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(service, "run", run)
+    commands = iter(["synthetic", "exit"])
+    try:
+        await main.chat(service, read=lambda _: next(commands), write=lambda _: None)
+        assert calls == [service]
+        assert organization.task is not None  # open_chat owns final cancellation.
+    finally:
+        await service.close()

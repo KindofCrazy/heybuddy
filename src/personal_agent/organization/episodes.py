@@ -4,7 +4,7 @@ import asyncio
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from personal_agent.core.compaction import projection, redact
+from personal_agent.core.evidence import projection, redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.models import TextMessage, ToolMessage
 from personal_agent.organization.models import (

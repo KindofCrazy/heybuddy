@@ -84,7 +84,7 @@ class ObservatoryRepository:
                     (object_id, self.agent_id),
                 ).fetchone()
                 if row:
-                    return self.threads._thread(db, object_id).model_dump(mode="json")
+                    return self.threads.read_thread(db, object_id).model_dump(mode="json")
             elif kind == "episodes":
                 row = db.execute(
                     "SELECT e.id FROM episodes e JOIN conversations c ON c.id=e.stream_id "
@@ -92,7 +92,7 @@ class ObservatoryRepository:
                     (object_id, self.agent_id),
                 ).fetchone()
                 if row:
-                    return self.episodes._episode(db, object_id).model_dump(mode="json")
+                    return self.episodes.read_episode(db, object_id).model_dump(mode="json")
             elif kind == "jobs":
                 row = db.execute(
                     "SELECT id,kind,state,created_at,updated_at,error,sources,operations,"

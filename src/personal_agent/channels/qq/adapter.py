@@ -123,13 +123,7 @@ class QQAdapter:
         return result
 
     def _latest_run(self) -> str | None:
-        with self.inbox.store._transaction() as db:
-            row = db.execute(
-                "SELECT run_id FROM messages WHERE conversation_id=? "
-                "ORDER BY sequence DESC LIMIT 1",
-                (self.conversation_id,),
-            ).fetchone()
-            return row[0] if row else None
+        return self.inbox.latest_run_id(self.conversation_id)
 
     async def _reply(self, row: dict, text: str) -> None:
         sent = 0

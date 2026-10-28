@@ -11,7 +11,9 @@ from personal_agent.automation.service import MemoryAutomation
 from personal_agent.channels.qq.config import QQError
 from personal_agent.channels.qq.runner import discover_openid, run_qq
 from personal_agent.character.models import CharacterError
+from personal_agent.cli_commands import MaintenanceCommands
 from personal_agent.config import Settings, load_qq_settings, load_settings
+from personal_agent.console import AsyncInput
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
 from personal_agent.core.history import HistoryError
@@ -28,7 +30,7 @@ from personal_agent.sessions import SessionManager
 
 
 async def chat(
-    agent: Agent,
+    agent: Agent | ChatService,
     read: Callable[[str], str] = input,
     write: Callable[[str], None] = print,
     *,
@@ -37,33 +39,39 @@ async def chat(
     automation: MemoryAutomation | None = None,
     organization: OrganizationRuntime | None = None,
 ) -> None:
+    # Embedding callers may pass separate parts; production passes the exact owned service.
+    owns_service = not isinstance(agent, ChatService)
+    service = (
+        ChatService(agent, sessions, reflection, automation, organization)
+        if owns_service
+        else agent
+    )
+    organization, sessions = service.organization, service.sessions
+    console = AsyncInput() if organization else None
     try:
         if organization is not None and sessions is not None:
             organization.schedule(sessions.current.id)
-        await _chat(
-            agent,
-            read,
-            write,
-            sessions=sessions,
-            reflection=reflection,
-            automation=automation,
-            organization=organization,
-        )
+        await _chat(service, read, write, console)
     finally:
-        if organization is not None:
-            await organization.close()
+        if console is not None:
+            console.close()
+        if owns_service:
+            await service.close()
 
 
 async def _chat(
-    agent: Agent,
+    service: ChatService,
     read: Callable[[str], str],
     write: Callable[[str], None],
-    *,
-    sessions: SessionManager | None,
-    reflection: ReflectionService | None,
-    automation: MemoryAutomation | None,
-    organization: OrganizationRuntime | None,
+    console: AsyncInput | None,
 ) -> None:
+    agent, sessions = service.agent, service.sessions
+    reflection, automation, organization = (
+        service.reflection,
+        service.automation,
+        service.organization,
+    )
+    commands = MaintenanceCommands(organization) if organization else None
     write(
         "HeyBuddy 持续对话 — 自动恢复上次对话流；/status /context status /reflect；"
         "exit 或 quit 退出。"
@@ -71,15 +79,12 @@ async def _chat(
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
     if sessions is not None:
         write(sessions.status())
-    service = ChatService(agent, sessions, reflection, automation, organization)
     while True:
         if organization is not None and sessions is not None and organization.task is None:
             organization.schedule(sessions.current.id)
         # Commands and selection changes occur only between runs.
         try:
-            user_input = (
-                await organization.input.read(read, "你 > ") if organization else read("你 > ")
-            ).strip()
+            user_input = (await console.read(read, "你 > ") if console else read("你 > ")).strip()
         except EOFError:
             break
         if user_input.lower() in {"exit", "quit"}:
@@ -94,7 +99,7 @@ async def _chat(
                 write("Character > 当前未启用角色状态。")
                 continue
             try:
-                report = await organization.character_command(
+                report = await commands.character_command(
                     user_input.removeprefix("/character").strip()
                 )
                 write(json.dumps(report, ensure_ascii=False))
@@ -106,7 +111,7 @@ async def _chat(
                 write("Episode > 当前入口未配置 Organizer。")
                 continue
             try:
-                await organization.command(sessions.current.id, user_input, write)
+                await commands.command(sessions.current.id, user_input, write)
             except (HistoryError, OrganizationError):
                 write("Episode > 整理/存储失败，原始 Run 已保留；请检查 status。")
             continue
@@ -117,7 +122,7 @@ async def _chat(
                     write("Memory > 当前入口未配置 P2 Learning。")
                     continue
                 try:
-                    report = await organization.learning_command(
+                    report = await commands.learning_command(
                         parts[2], curator=parts[1] == "curator"
                     )
                     write(json.dumps(report, ensure_ascii=False))
@@ -259,24 +264,12 @@ async def _chat(
 
 async def run_cli(settings: Settings) -> None:
     async with open_application(settings) as service:
-        await chat(
-            service.agent,
-            sessions=service.sessions,
-            reflection=service.reflection,
-            automation=service.automation,
-            organization=service.organization,
-        )
+        await chat(service)
 
 
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
     async with open_chat(settings, sessions, memory) as service:
-        await chat(
-            service.agent,
-            sessions=service.sessions,
-            reflection=service.reflection,
-            automation=service.automation,
-            organization=service.organization,
-        )
+        await chat(service)
 
 
 def main() -> int:

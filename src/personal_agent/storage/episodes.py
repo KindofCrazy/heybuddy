@@ -146,7 +146,7 @@ class EpisodeRepository:
                 ),
             )
 
-    def _episode(self, db: sqlite3.Connection, episode_id: str) -> Episode:
+    def read_episode(self, db: sqlite3.Connection, episode_id: str) -> Episode:
         row = db.execute(
             "SELECT e.* FROM episodes e JOIN conversations c ON c.id=e.stream_id "
             "WHERE e.id=? AND c.agent_id=?",
@@ -177,7 +177,7 @@ class EpisodeRepository:
 
     def get(self, episode_id: str) -> Episode:
         with self.store._transaction() as db:
-            return self._episode(db, episode_id)
+            return self.read_episode(db, episode_id)
 
     def list(self, stream_id: str, limit: int = 20) -> list[Episode]:
         if not 1 <= limit <= 50:
@@ -188,9 +188,9 @@ class EpisodeRepository:
                 "SELECT id FROM episodes WHERE stream_id=? ORDER BY started_at DESC,id LIMIT ?",
                 (stream_id, limit),
             ).fetchall()
-            return [self._episode(db, row[0]) for row in rows]
+            return [self.read_episode(db, row[0]) for row in rows]
 
-    def _source(self, db: sqlite3.Connection, row: sqlite3.Row, cap: int) -> Source:
+    def read_source(self, db: sqlite3.Connection, row: sqlite3.Row, cap: int) -> Source:
         stats = db.execute(
             "SELECT COUNT(*),COALESCE(SUM(length(CAST(payload AS BLOB))),0),MAX(sequence) "
             "FROM messages WHERE run_id=?",
@@ -236,7 +236,7 @@ class EpisodeRepository:
             "SELECT id FROM episodes WHERE stream_id=? AND status='provisional' LIMIT 1",
             (stream_id,),
         ).fetchone()
-        previous = self._episode(db, latest[0]) if latest else None
+        previous = self.read_episode(db, latest[0]) if latest else None
         rows = db.execute(
             "SELECT rowid AS position,* FROM runs WHERE conversation_id=? AND rowid>? "
             "ORDER BY rowid LIMIT ?",
@@ -247,7 +247,7 @@ class EpisodeRepository:
         for row in rows:
             if row["status"] == "running":
                 break
-            source = self._source(db, row, policy.source_bytes)
+            source = self.read_source(db, row, policy.source_bytes)
             if source.turn and used + source.payload_bytes > policy.source_bytes:
                 break
             used += source.payload_bytes if source.turn else 0
@@ -278,7 +278,7 @@ class EpisodeRepository:
                 ).fetchone()
                 if row is None:
                     raise HistoryError("Episode source is inaccessible.")
-                source = self._source(db, row, policy.source_bytes)
+                source = self.read_source(db, row, policy.source_bytes)
                 used += source.payload_bytes
                 if not source.turn or used > policy.source_bytes:
                     raise HistoryError("Episode source is unavailable or oversized.")
@@ -339,7 +339,7 @@ class EpisodeRepository:
                     "SELECT rowid AS position,* FROM runs WHERE id=?",
                     (source.run_id,),
                 ).fetchone()
-                if not row or self._source(db, row, policy.source_bytes) != source:
+                if not row or self.read_source(db, row, policy.source_bytes) != source:
                     raise HistoryError("Provisional Episode source changed.")
             previous = batch.previous
             if previous and not any(e.id == previous.id for e in episodes):
@@ -377,7 +377,7 @@ class EpisodeRepository:
             ).fetchone()
             if not row:
                 return False
-            episode = self._episode(db, row[0])
+            episode = self.read_episode(db, row[0])
             if (
                 (at or datetime.now(UTC)) - episode.ended_at
             ).total_seconds() < policy.revision_seconds:

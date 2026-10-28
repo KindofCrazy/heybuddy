@@ -1,7 +1,7 @@
 """Database-independent optional historical context selected by a host retriever."""
 
 import json
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from pydantic import Field, JsonValue
 
@@ -52,3 +52,10 @@ class RetrievalResult(Model):
 
 class ContextRetrieval(Protocol):
     def retrieve(self, user_input: str, exclude_run_ids: frozenset[str]) -> RetrievalResult: ...
+
+
+@runtime_checkable
+class PreflightRetrieval(Protocol):
+    async def preflight(
+        self, user_input: str, exclude_run_ids: frozenset[str], result: RetrievalResult
+    ) -> RetrievalResult: ...

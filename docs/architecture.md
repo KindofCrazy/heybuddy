@@ -1,58 +1,65 @@
 # HeyBuddy P2：整体架构与 Pipeline
 
-本文串起从启动到退出的真实执行路径。当前是一个本地进程、SQLite 和普通 Markdown；P1 增加有界 asyncio 事后整理及可抢占输入，没有消息队列、通用任务平台或工具续跑。先看下面 P1 路径，再读后续保留的 Journal、Provider、Memory、Reflection 细节。迁移、测试、限制与 P2 接口见 [P1 交付](p1-delivery.md)。
+本文串起从启动到退出的真实执行路径。当前是一个本地进程、SQLite schema 13 和普通 Markdown；CLI、QQ 与只读 Web 复用 runtime.py 的应用装配。P1 增加有界 asyncio 事后整理及可抢占输入，没有消息队列、通用任务平台或工具续跑。先看下面共享 Runtime 路径，再读后续保留的 Journal、Provider、Memory、Reflection 细节。迁移、测试、限制与 P2 接口见 [P1 交付](p1-delivery.md)。
 
 [P2 完整交付与验证](p2-delivery.md) 描述双速自动学习、Curator、Adaptive Retrieval 和跨存储恢复；P1 历史报告仅保留基线记录。
 
-## P1 + P2 实际执行架构
+## 共享 Runtime 与 P1/P2/P3 实际执行架构
 
 ```mermaid
 flowchart TD
-    Input["CLI / AsyncInput"] --> Stream["SessionManager / Continuous Stream"]
-    Stream --> Run["Agent.run / Run"]
-    Run --> Context["ContextBuilder / Working Context"]
-    Context --> Base["Base + Core + 本地时间 + Working Summary + 近期完整 Runs"]
-    Context --> Retrieval["ContextRetriever / 历史请求词法检索"]
-    Retrieval --> Topics["Thread state / Episode summaries / 完整历史 Runs"]
-    Topics --> DB[("SQLite schema 11 / 原始 Journal 与独立派生表")]
-    Context --> History["ConversationHistory Protocol / SQLiteConversationHistory"]
-    History --> DB
-    Run --> Provider["同一 Provider / 无 SDK 响应对象外泄"]
-    Run --> Tools["ToolRegistry / 当前 Run 权限"]
-    Tools --> Recall["Recall / 原始历史证据"]
-    Recall --> DB
-    Tools --> Memory["MemoryFS / Core 与 Deferred Markdown"]
-    Run --> Answer["保存终态 / 先显示答案"]
-    Answer --> Hook["OrganizationRuntime / 有界空闲与数量触发"]
-    Input -. "取消并等待 / 前台优先" .-> Hook
-    Hook --> Automation["仅 P2 disabled：旧 Automation / 原审批与精确授权"]
-    Automation --> Memory
-    Hook --> Episode["EpisodeOrganizer / 时间边界 + 语义分段 + 来源校验"]
-    Episode --> DB
-    Hook --> Thread["ThreadOrganizer / 低频话题组织与状态"]
-    Thread --> DB
-    Episode --> Provider
-    Thread --> Provider
-    Hook --> Repair["Dirty Repair / 当前成员分页重建"]
-    Repair --> DB
-    Repair --> Provider
-    Hook --> Learn["P2：Priority / Finalized Batch → 同一 Memory Learner"]
-    Hook --> Curate["P2：低频 Curator / 小组去重、证据、拆分"]
-    Learn --> Writer["共用 Reflection Writer / MemoryFS / 哈希回执"]
-    Curate --> Writer
-    Writer --> Memory
-    Writer --> DB
-    Retrieval --> Memory
-    Retrieval --> Preflight["条件性一次只读候选选择"]
-    Preflight --> Provider
+    CLI["main: CLI 与 console.AsyncInput"] --> APP["runtime.open_application / open_chat / assemble_chat"]
+    QQ["QQ: 被动消息与单消费者"] --> APP
+    WEB["Web: observer_only"] --> APP
+    APP --> OWNER["SQLiteStore: 单 Owner / 迁移 1..13"]
+    APP --> S["SessionManager / 当前 Conversation"]
+    APP --> CHAT["同一个 ChatService"]
+    CHAT --> A["Agent: 有界工具循环"]
+    A --> C["ContextBuilder: Protocol / 当前 Run / 请求视图"]
+    C --> READ["History / Core / Character Protocol"]
+    C --> RET["ContextRetriever: 可选历史、Markdown、Preflight"]
+    RET --> QUERY["WorkingContextRepository: Agent 绑定 SQL"]
+    QUERY --> OWNER
+    C --> CP["Compaction: 取消屏障与 checkpoint"]
+    A --> TOOLS["ToolRegistry: 单 Run 授权 / 顺序执行"]
+    TOOLS --> RECALL["Recall: canonical 聊天文本"]
+    RECALL --> OWNER
+    TOOLS --> MEM["MemoryFS / Markdown 权威"]
+    A --> P["Provider Protocol / OpenAI adapter"]
+    CP --> P
+    CHAT --> IDLE["OrganizationRuntime: 一个有界维护 task"]
+    CHAT -. "前台取消并等待" .-> IDLE
+    IDLE --> BUDGET["MaintenanceBudget / cycle_providers"]
+    BUDGET --> P
+    IDLE --> ORG["Episode / Thread / Repair / Finalize"]
+    ORG --> OWNER
+    IDLE --> LEARN["P2 Learning / Curator publication 作用域"]
+    LEARN --> WR["共用 Writer / 回执核对"]
+    WR --> MEM
+    WR --> OWNER
+    IDLE --> ROLE["P3 被动短期 State"]
+    ROLE --> OWNER
+    IDLE --> AUTO["仅 P2 关闭时: 旧 Automation"]
+    AUTO --> REF["Reflection: 手动计划与审批"]
+    CLI --> REF
+    REF --> WR
+    REF --> MODEL["ReflectionModel: 无工具结构化请求"]
+    LEARN --> MODEL
+    MODEL --> P
+    REF --> EV["core.evidence: 纯投影与精确引文"]
+    ROLE --> EV
+    LEARN --> EV
+    APP --> DASH["Observatory: 原 Service 的只读投影"]
+    DASH --> OWNER
+    DASH --> MEM
 ```
 
 Run 是执行与审计单位；Episode 是连续 Run 的事后时间/语义组织；Thread 是跨 Episode 的持续话题；Working Context 是单次请求的有限视图。Episode/Thread 没有 MemoryFS 或 Registry 写入接口，不执行历史工具。
 
 真实顺序：
 
-1. main() → run_cli() 取得数据库占用锁，initialize() 顺序原子迁移 1–11，recover_incomplete_runs() 只标记中断。1–10 定义不改，11 追加独立 Learning/Curator 状态而不复制知识正文。
-2. SessionManager 沿用 client_state；没有选择时创建流，其他旧流不合并不删除。初始化 Core Memory，然后 _run_session() 装配 Provider、工具、ContextRetriever、原 Reflection/Automation、独立 Episode/Thread Repository 与 Organizer。
+1. main() → run_cli() → runtime.open_application() 取得数据库占用锁，initialize() 顺序原子迁移 1–13，recover_incomplete_runs() 只标记中断。旧迁移定义不改，11 追加 Learning/Curator 元数据，12 追加 Character State/来源，13 追加 QQ 收件回执，均不复制长期知识正文。
+2. SessionManager 沿用 client_state；没有选择时创建流，其他旧流不合并不删除。初始化 Core Memory，然后 runtime.open_chat()/assemble_chat() 装配 Provider、工具、ContextRetriever、原 Reflection/Automation、独立 Episode/Thread Repository 与 Organizer。
 3. chat() 启动持久进度检查；_chat() await AsyncInput.read()。只有读取终端在 daemon 线程，所有 SQLite 留在事件循环。
 4. 新输入先 await OrganizationRuntime.foreground()；取消后台模型等待并完成原状态记账，再 Agent.run() → ContextBuilder.begin() 原子创建 Run/用户消息。
 5. prepare() 读取有界历史；首轮 _retrieve() 走 fast 或历史检索，_select_history() 做来源/调用 ID 去重和剩余预算选择；for_request() 注入 Core、Summary、本地带 offset 时间与低信任历史。需要时按原完整 Run 前缀 Compaction；当前 Run 和受保护近期 Run 不拆开。
@@ -74,7 +81,7 @@ Run 是执行与审计单位；Episode 是连续 Run 的事后时间/语义组�
 | Runtime 执行器 | `core/agent.py::Agent`               | 进程内 Python 对象，执行手写循环；不是数据库中的 Agent 实体                       |
 | round          | `_run()` 的一次循环                  | 一次模型请求；一个 Run 可以消耗多个 round                                         |
 
-因此，“一个 Agent 有多个会话”说的是数据库实体关系；“Agent Loop”说的是 Runtime 的执行职责。 CLI 可以复用同一个 Runtime，切换它绑定的 ContextBuilder，持久 Agent 的身份不会因此改变。 `/new`、`/sessions`、`/resume`、`/status` 是管理命令，不创建聊天 Run。
+因此，“一个 Agent 有多个会话”说的是数据库实体关系；“Agent Loop”说的是 Runtime 的执行职责。 CLI 可以复用同一个 Runtime，切换它绑定的 ContextBuilder，持久 Agent 的身份不会因此改变。 `/new`、`/sessions`、`/resume`、`/status` 是本地管理命令，不创建聊天 Run。
 
 数据关系如下；client_state 是恢复上次选择的元数据，不承担记忆存储职责：
 
@@ -119,9 +126,9 @@ flowchart TD
     Store --> DB[("本地 SQLite")]
 ```
 
-CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runtime 只调用小接口，不导入 sqlite3 或 SDK 响应类型。ContextBuilder 负责历史何时加载、消息何时记录、Run 何时结束；具体 SQL 则集中在 SQLiteStore。
+runtime.py 是共享装配入口，知道使用哪个具体 Provider、存储和工具；main.py 负责本地命令与交互。Runtime 只调用小接口，不导入 sqlite3 或 SDK 响应类型。ContextBuilder 负责历史何时加载、消息何时记录、Run 何时结束；具体 SQL 则集中在 SQLiteStore。
 
-这让“换一个入口”和“换存储实现”不必改写模型/工具循环。当前只实现 CLI、一个官方 SDK Provider 和 SQLite 适配器，没有为未来系统预建更多服务。
+这让“换一个入口”和“换存储实现”不必改写模型/工具循环。当前 CLI、官方 QQ 被动渠道与只读 Web 复用共享装配，模型继续通过官方 SDK Provider 和 SQLite 适配器工作，没有为未来系统预建更多服务。
 
 | 边界                | 输入                              | 输出               | 谁理解具体协议                              |
 | ------------------- | --------------------------------- | ------------------ | ------------------------------------------- |
@@ -139,11 +146,11 @@ CLI 是装配入口，知道使用哪个具体 Provider、存储和工具。Runt
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移到 schema 11，顺序执行 Recall、Context、Reflection、Automation、Episode、Thread 及维护追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 13，顺序执行 Recall、Context、Reflection、Automation、Episode、Thread 及维护追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续校验摘要检查点并恢复上次选择的会话，不全量反序列化旧消息。
 8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。
-9. `_run_session()` 注册受限 Memory Tools 与绑定 Agent 的只读 Recall Tools，再创建 AsyncOpenAI 客户端、OpenAIProvider、内置 ToolRegistry、带显式 ContextBudget、与当前会话绑定的 ContextBuilder，以及 Runtime Agent，然后调用 `chat()`。
+9. `open_chat()` 先创建 AsyncOpenAI/OpenAIProvider；`assemble_chat()` 注册受限 Memory/Recall 工具，创建 Agent、Context 与 P1/P2/P3 服务。`run_cli()` 将同一个 ChatService 传给 `chat()`，终端输入桥由 CLI 创建/关闭，维护资源由 open_chat 最终关闭。
 
 这里没有“启动就请求模型”的步骤。用户输入普通文本进入普通请求 Pipeline；显式 /reflect 可单独调用 Provider 生成提案。启动存储失败返回退出码 1，不悄悄退回内存模式；显式使用不带 history_store 的 ContextBuilder 仍可获得进程内模式，原有 Runtime 单元测试使用该方式。
 
@@ -402,7 +409,7 @@ flowchart LR
 
 启动时 `SQLiteStore.initialize()` 在原子 schema 1→2 迁移中创建派生 view、FTS5 表、消息触发器和 Agent 归属索引，再回填旧 user / assistant 非空 text。回填不修改原始消息、Run、ID 或顺序。新消息的触发器与原写入共用事务；Run 在 finish_run 事务提交后才对查询可见。迁移失败保持原 schema 和历史，不将半成品索引作为可用数据源。
 
-`main._run_session()` 以 `Recall(sessions.store, sessions.agent.id)` 装配只读工具，`agent_id` 不进入模型参数。普通输入不用额外授权，模型根据 Base 中的规则先搜索关键词、按需展开。原 Agent Loop 先持久化调用，再执行 Registry、保存关联 call_id 的结果并继续模型请求；终轮仍禁止新工具调用。ContextBuilder 没有自动全库检索，结果只按当前会话正常工具消息保存，不默认带进另一个新会话。
+`runtime.assemble_chat()` 以 `Recall(sessions.store, sessions.agent.id)` 装配只读工具，`agent_id` 不进入模型参数。普通输入不用额外授权，模型根据 Base 中的规则先搜索关键词、按需展开。原 Agent Loop 先持久化调用，再执行 Registry、保存关联 call_id 的结果并继续模型请求；终轮仍禁止新工具调用。ContextBuilder 没有自动全库检索，结果只按当前会话正常工具消息保存，不默认带进另一个新会话。
 
 搜索只返回 completed / failed Run 的文本证据，运行中、取消或中断内容都不可检索，读取单条 ID 时再次做同样过滤。不会暴露 Provider 原始项目、reasoning、工具参数或 Tool Result，更不会因展开历史而执行旧调用。低信任的历史文本不能改变 Base、工具注册或 memory.update / deferred.update 授权；未找到记录不等于过去一定没有发生，模型应说明未找到证据和范围限制。
 

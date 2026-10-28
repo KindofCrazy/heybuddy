@@ -3,12 +3,12 @@ import json
 from collections.abc import Callable
 
 from personal_agent.core.budget import ContextBudget, ContextError, estimate_request, estimate_value
-from personal_agent.core.character import CharacterContext, without_legacy_persona
+from personal_agent.core.character import CharacterContext, RunCharacter, without_legacy_persona
 from personal_agent.core.compaction import compact_step
 from personal_agent.core.history import ConversationHistory, HistoryError, InMemoryHistory
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
-from personal_agent.core.retrieval import ContextRetrieval, RetrievalResult
+from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
 from personal_agent.llm.base import Provider
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -105,7 +105,10 @@ class ContextBuilder:
         ]
 
     def for_request(self, messages: list[Message]) -> list[Message]:
-        """Inject fresh Core and checkpoint data, never journal synthetic messages."""
+        """Compile fresh data for direct callers; prepare reuses it only within one iteration."""
+        return self._assemble(messages, self._injections(messages))
+
+    def _injections(self, messages: list[Message]) -> list[Message]:
         injected = []
         character_messages = []
         if self.character is not None:
@@ -164,9 +167,10 @@ class ContextBuilder:
             *[m for m in character_messages if m.role == "system"],
             *injected,
             *[m for m in character_messages if m.role == "user"],
-            *self._selected_history,
-            *messages[1:],
         ]
+
+    def _assemble(self, messages: list[Message], prefix: list[Message]) -> list[Message]:
+        return [*prefix, *self._selected_history, *messages[1:]]
 
     async def _retrieve(self) -> None:
         if self._retrieval_loaded or self.retriever is None:
@@ -182,10 +186,9 @@ class ContextBuilder:
             # paths are still fatal; failure here leaves Base + recent context.
             self._retrieval = RetrievalResult(path="unavailable")
         else:
-            preflight = getattr(self.retriever, "preflight", None)
-            if preflight is not None:
+            if isinstance(self.retriever, PreflightRetrieval):
                 try:
-                    self._retrieval = await preflight(
+                    self._retrieval = await self.retriever.preflight(
                         self._pending[0].text,
                         frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
                         self._retrieval.model_copy(deep=True),
@@ -196,9 +199,11 @@ class ContextBuilder:
         self._diagnostics["retrieval_path"] = self._retrieval.path
         self._diagnostics["retrieval"] = self._retrieval.metrics.copy()
 
-    def _select_history(self, messages: list[Message], tools: list[ToolDefinition]) -> None:
+    def _select_history(
+        self, messages: list[Message], tools: list[ToolDefinition], prefix: list[Message]
+    ) -> None:
         self._selected_history = []
-        base = self.for_request(messages)
+        base = self._assemble(messages, prefix)
         base_size = estimate_request(base, tools)
         limit = self.budget.input_limit if self.budget else 262144
         target = int(limit * self.budget.trigger_ratio) if self.budget else limit
@@ -276,10 +281,8 @@ class ContextBuilder:
         self._run_id = self._store.begin(user)
         self._active = True
         self._pending = [user]
-        if self.character is not None:
-            record = getattr(self.character, "record_run", None)
-            if record is not None:
-                record(self._run_id)
+        if isinstance(self.character, RunCharacter):
+            self.character.record_run(self._run_id)
         self._page = None
         self._retrieval = RetrievalResult()
         self._retrieval_loaded = False
@@ -299,8 +302,9 @@ class ContextBuilder:
                 *self._page.messages,
                 *self.pending_messages,
             ]
-            self._select_history(messages, tools)
-            request = self.for_request(messages)
+            prefix = self._injections(messages)
+            self._select_history(messages, tools, prefix)
+            request = self._assemble(messages, prefix)
             estimated = estimate_request(request, tools)
             self._diagnostics["estimated_tokens"] = estimated
             if self.budget is None:

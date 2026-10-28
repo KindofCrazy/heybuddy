@@ -1,6 +1,6 @@
 # Reflection 与长期记忆整合
 
-P2 复用本服务的请求、来源投影/校验、比较和计划验证，手动 reflect/apply 的审批语义不变。reflection/writer.py 抽取原单文件写入与只读核对供两者复用；P2 自动授权只在专门 Host 服务，不通过新增 approval_source 或模型工具绕过人工审批。_ask() 返回后重验 timeout/cancellation，并记录请求、输入/输出和 reasoning 子集；不存放响应正文或秘密。P2 独立进度不推进原 reflection_progress。真实执行链见 [Learning](learning.md)。
+P2 复用本服务的请求、来源投影/校验、比较和计划验证，手动 reflect/apply 的审批语义不变。reflection/writer.py 抽取原单文件写入与只读核对供两者复用；P2 自动授权只在专门 Host 服务，不通过新增 approval_source 或模型工具绕过人工审批。ReflectionModel.ask() 返回后重验 timeout/cancellation，并记录请求、输入/输出和 reasoning 子集；不存放响应正文或秘密。P2 独立进度不推进原 reflection_progress。真实执行链见 [Learning](learning.md)。
 
 ## 职责与架构组成
 
@@ -8,13 +8,13 @@ V0.7 的 Reflection 是用户手动触发的学习流程：从原始对话提取
 
 | 文件 / 符号 | 实际职责 |
 | --- | --- |
-| `reflection/models.py` | ReflectionPolicy、Evidence、Candidate、Decision、PlanItem、ReflectionPlan 的有界模型及安全错误 |
+| `reflection/models.py` | ReflectionPolicy、Evidence（从 core.evidence 重导出）、Candidate、Decision、PlanItem、ReflectionPlan 的有界模型及安全错误 |
 | `reflection/service.py::ReflectionService` | 完整 Run 分页、三阶段 Provider 调用、证据验证、计划生成、可信批准和逐项写入/核对 |
 | `reflection/memory.py` | 有界目录元数据、选定记忆读取、精确片段计划及索引核对 |
 | `reflection/writer.py` | 手动 Reflection 与 Host P2 共用的受限单文件发布及只读核对；不授予权限 |
 | `reflection/cli.py::command`、`render` | 可信命令分派与私人 Before/After Diff、理由和来源展示 |
 | `storage/reflection.py::ReflectionRepository` | 绑定 Agent 的 SQLite 查询、计划修订冲突检测、独立审阅进度 |
-| `main.py::_run_session`、`chat` | 复用同一 Provider/MemoryFS 装配服务，在普通 Run 之外执行命令 |
+| `runtime.py::assemble_chat`、`main.py::chat` | 复用同一 Provider/MemoryFS 装配服务，在普通 Run 之外执行命令 |
 
 SQLite proposals 是审阅记录，不是第二套长期 Memory 权威源。成功应用后仍由普通 Markdown 决定后续 Core/Deferred 内容；Reflection 不改变 ToolRegistry、不注册可被模型调用的审批工具。
 
@@ -26,15 +26,15 @@ SQLite proposals 是审阅记录，不是第二套长期 Memory 权威源。成�
 
 ## 代码实际运行路径：提取到计划
 
-1. `main.run_cli()` 原子迁移到 schema 4，恢复正常 Run，初始化 MemoryFS；`_run_session()` 把与 Agent 相同的 Provider、MemoryFS、ContextBudget 及 ReflectionPolicy 传给 ReflectionService，Repository 绑定 agent_id。
+1. `main.run_cli()` 经 open_application() 原子迁移到当前 schema 13（Reflection 表来自迁移 4），恢复正常 Run，初始化 MemoryFS；`runtime.assemble_chat()` 把与 Agent 相同的 Provider、MemoryFS、ContextBudget 及 ReflectionPolicy 传给 ReflectionService，Repository 绑定 agent_id。
 2. `chat()` 识别 `/reflect`，调用 `reflection.cli.command()` → await `ReflectionService.reflect(current_conversation_id)`。这些命令不创建普通聊天 Run，不给下一次输入附加 Memory 工具权限。
 3. 若当前 Conversation 已有未关闭计划，直接返回它，不再次请求模型。否则读取 reflection_progress 的独立 through_sequence；不复用 context_summaries 的压缩边界。
 4. `ReflectionRepository.window()` 先确认 Conversation 属于当前 Agent，再复用 `storage/context.py::page(completed_only=True)`，以 context_runs 索引获取最多 page_runs 个完整 Run；先检查 payload 字节、消息数，再读取并验证配对。failed/interrupted/cancelled/running 均不作为 Reflection 源，V0.6 的 completed/failed 重放规则不变。
 5. 按完整 Run 前缀选择能放进提取输入预算的历史。给模型的证据包含 Conversation、Run、实际 sequence；文本原文有有限凭证脱敏，工具参数/结果投影沿用 V0.6 的有截断标记限制，Provider 原始 reasoning/密文不提供给 Reflection。整个 Journal 不改动。
-6. `_ask(Extraction, EXTRACT, history)` 使用空工具列表、独立输出限额与超时，要求 JSON Schema 对应的结构化候选。每条 Candidate 包含类别、主题、内容、长期价值理由、确认程度、Evidence 列表。允许空候选。
-7. `_verify()` 验证 Conversation/Run/sequence 属于本次提供的范围，引文是实际展示证据中的精确子串。confirmed 至少包含用户文本证据；只有助手陈述不能作为用户确认。程序验证来源的存在与归属，不证明引文在语义上足以支持结论，仍需人工审阅。
-8. 有候选时，`catalogue()` 复用受限 Memory 路径/全树数量上限，读取 Core 和 Deferred 文件的 name/description、目录概要。第二个 `_ask(Selection, SELECT, ...)` 只选至多 6 个已存在路径；不存在或重复的选择被拒绝。没有把所有 Deferred 正文都送入 Prompt。
-9. `read_comparison()` 完整读取三个 Core 及选定文件，第三个 `_ask(Consolidation, CONSOLIDATE, ...)` 比较已有知识，逐候选提出 create/update/no_op/reject/review。每阶段输入都含实际 Schema 和封装开销并重新检查预算；目录或选定正文太大时明确失败，不静默省略比较材料。
+6. `ReflectionModel.ask(Extraction, EXTRACT, history)` 使用空工具列表、独立输出限额与超时，要求 JSON Schema 对应的结构化候选。每条 Candidate 包含类别、主题、内容、长期价值理由、确认程度、Evidence 列表。允许空候选。
+7. `reflection.evidence.verify_candidates()` 验证 Conversation/Run/sequence 属于本次提供的范围，引文是实际展示证据中的精确子串。confirmed 至少包含用户文本证据；只有助手陈述不能作为用户确认。程序验证来源的存在与归属，不证明引文在语义上足以支持结论，仍需人工审阅。
+8. 有候选时，`catalogue()` 复用受限 Memory 路径/全树数量上限，读取 Core 和 Deferred 文件的 name/description、目录概要。第二个 `ReflectionModel.ask(Selection, SELECT, ...)` 只选至多 6 个已存在路径；不存在或重复的选择被拒绝。没有把所有 Deferred 正文都送入 Prompt。
+9. `read_comparison()` 完整读取三个 Core 及选定文件，第三个 `ReflectionModel.ask(Consolidation, CONSOLIDATE, ...)` 比较已有知识，逐候选提出 create/update/no_op/reject/review。每阶段输入都含实际 Schema 和封装开销并重新检查预算；目录或选定正文太大时明确失败，不静默省略比较材料。
 10. `plan_item()` 用宿主读取的原文计算 before_hash/after_hash。update 只能修改已读取目标，old_text 非空且精确唯一；create 只能创建受限主题文件，含合法 Frontmatter、不覆盖现有文件。校验 Core 编译总容量及单文件大小。同一计划不接受同一文件的多次写入；模型应在提取时合并相关候选，或用 relations 说明依赖并标为 no_op/review。
 11. 不确定候选强制 review，不能通过 apply 升级为确定事实。创建主题与已有 name/文件 stem 完全碰撞时转为 review；近似重复、时间纠正及事实价值仍是模型判断，用户审核最终 Diff。no_op/reject/review 不携带隐藏写入片段。
 12. `ReflectionRepository.save(expected_revision=None)` 在短事务内重新读取本批有界源，验证当前审阅进度及 Run/hash 前缀未变，然后保存待审阅计划。生成计划不修改 MemoryFS。空候选计划直接关闭，并原子推进已处理范围，避免反复提取无价值历史。
@@ -94,9 +94,9 @@ SQLite 与 Markdown 没有共同事务。文件成功后写入结果的数据库
 
 ## V0.7.1 预算与安全诊断修正
 
-旧实现使用 output_tokens=4096 同时限制 API 总生成 tokens 和 JSON 字节，真实推理模型既容易用尽总额度，也可能生成正常 JSON 后被错误的字节比较拒绝。现在 ReflectionPolicy.output_tokens 默认 16384，response_max_bytes 默认 32768；_ask() 在 API 调用与 usage 校验使用前者，在正文限长使用后者，再做结构/来源校验。
+旧实现使用 output_tokens=4096 同时限制 API 总生成 tokens 和 JSON 字节，真实推理模型既容易用尽总额度，也可能生成正常 JSON 后被错误的字节比较拒绝。现在 ReflectionPolicy.output_tokens 默认 16384，response_max_bytes 默认 32768；ReflectionModel.ask() 在 API 调用与 usage 校验使用前者，在正文限长使用后者，再做结构/来源校验。
 
-TokenUsage 增加可选 reasoning_tokens；OpenAIProvider 在拒绝非 completed 响应时只传出 ProviderDiagnostics：固定枚举 status、incomplete_reason（max_output_tokens/content_filter/unknown）及非负用量。_ask() 通过 ReflectionError 附加 extraction/selection/consolidation 阶段，chat() 仅打印这些安全字段；失败仍不保存计划、不推进边界、不执行工具或重试，未完成正文及推理内容不进入错误信息。
+TokenUsage 增加可选 reasoning_tokens；OpenAIProvider 在拒绝非 completed 响应时只传出 ProviderDiagnostics：固定枚举 status、incomplete_reason（max_output_tokens/content_filter/unknown）及非负用量。ReflectionModel.ask() 通过 ReflectionError 附加 extraction/selection/consolidation 阶段，chat() 仅打印这些安全字段；失败仍不保存计划、不推进边界、不执行工具或重试，未完成正文及推理内容不进入错误信息。
 
 EXTRACT/CONSOLIDATE 明确区分有长期价值的纠正与一次性假设/虚构示例的免责声明；没有对应错误事实时，不把后者扩写成永久用户规则。提示词改善仍需真实提案审阅，不能用 Fake Provider 测试宣称语义质量保证。
 
@@ -112,3 +112,7 @@ V0.7.2 自动提案复用同一 ReflectionService；reflect(through=...) 限定�
 BASE/EXTRACT/SELECT/CONSOLIDATE 经过固定开发集对照后保留原版。候选偏好分数提升主要来自词面命中，未消除未经确认的偏好扩写，阶段费用反增；不是已证实的语义改善。最终 Holdout 另有一次 Consolidation 对已存在 human.md 返回 create，被 invalid_create 拒绝，普通答案/历史保留，无 Markdown 写入。Worthiness 正确也不代表整条提案必定正确，人工 review 和 Host 校验继续承担不同边界。
 
 所有候选/原版快照、失败说明及自动/普通费用分列见 [A/B 报告](../prompt-ab-results.md)。本轮没有为了消除 Holdout 失败而再调 Prompt 或修改评分标准。
+
+## 共用机制与审批职责
+
+reflection/provider.py 的 ReflectionModel 持有请求预算、Provider 与 usage，structured_request() 保持原 JSON 封装和各阶段错误码。ReflectionService 负责手动计划和审批，只组合 model.ask、memory_evidence 与 verify_candidates；不再把私有方法作为 P2/P3 复用入口。Character State 直接依赖 Provider 与 core.evidence，不构造长期记忆 Candidate。证据规则见 [evidence.md](evidence.md)，原手动审批与跨存储部分发布测试继续位于 tests/test_reflection.py。

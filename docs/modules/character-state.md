@@ -6,11 +6,11 @@
 
 ## 真实执行路径
 
-1. main._run_session() 只在启用角色时绑定状态服务和角色编译器。Core ContextBuilder.begin() 创建原 Run 后调用可选 record_run()，Host 记录 agent_id/character_id/package_hash；原 Run/Message 不改。标签失败时暴露安全诊断，未标记来源不能作为该角色的状态证据，不伪造归属。
+1. runtime.assemble_chat() 只在启用角色时绑定状态服务和角色编译器。Core ContextBuilder.begin() 创建原 Run 后调用可选 record_run()，Host 记录 agent_id/character_id/package_hash；原 Run/Message 不改。标签失败时暴露安全诊断，未标记来源不能作为该角色的状态证据，不伪造归属。
 2. Repository.candidate() 仅找有该 Agent/Character/包 hash 标记 Run 的新/修订 Episode。snapshot() 重读实际归属、完整 completed Run 和大小，最多 16 个来源、默认 32768 字节。混合角色 Episode 只提供当前角色自己的 Run，摘要只定位，不是事实证据。
 3. ready() 受默认 900 秒最小间隔约束。Runtime 每轮最多运行一次 State Stage，空闲、无 running Run、有预算且不争抢 P2 优先轮才执行。默认输入 24576 估算 tokens、输出 2048 tokens、20 秒和 4096 响应字节；共享原 MaintenanceBudget/CycleProvider 与整轮 4/4/131072/120 上限。
 4. 新来源的签名基于实际 Run 内容与时间；状态 Finalize 仅改变 Episode revision 而签名未变时保存零请求 no-op，不重复付费。旧、过期或未来时间不可信的事件也不刷新状态。模型读取角色身份/Behavior/旧有效状态/真实来源，允许 no_op；没有每轮强制 Appraisal 或固定情绪映射。
-5. update 必须引用实际提供的 conversation_id/run_id/sequence 和精确文本，复用 Reflection 引文校验。Observed Time 来自实际所引新 Run 的 ended_at，不是处理时间；只引用旧事件不能给 Mood 续期。发布前重读签名和 Episode revision，CAS 检查状态版本、来源顺序和时间；状态与来源 completed 在同一 SQLite 事务提交，旧结果不能覆盖更新状态。
+5. update 必须引用实际提供的 conversation_id/run_id/sequence 和精确文本，使用 core.evidence.verify_quotes 引文校验。Observed Time 来自实际所引新 Run 的 ended_at，不是处理时间；只引用旧事件不能给 Mood 续期。发布前重读签名和 Episode revision，CAS 检查状态版本、来源顺序和时间；状态与来源 completed 在同一 SQLite 事务提交，旧结果不能覆盖更新状态。
 6. 取消恢复 pending；失败保留 failed 并需显式 retry；重启将遗留 processing 纯建议恢复 pending，不重放历史工具。包 hash 改变会清空旧状态并推进 revision，旧包标记的 Run 不被新包自动重解释。不同 Agent/Character 分别读取自己的行。
 
 ## 有效期与注入
@@ -34,3 +34,7 @@ tests/test_character_state.py 验证引用、no-op、Finalize 去重、Mood/Focu
 ## 独立观测模式
 
 `CharacterStateService(..., initialize=False)` 跳过状态行创建、包指纹变更清理和 pending 恢复，仅独立 web 装配使用。`CharacterStateRepository.exists()` 只读检查当前 Agent/Character/Package Scope，未形成状态时显示空态。普通聊天默认初始化行为不变。验证见 `tests/test_dashboard_lifecycle.py`。
+
+## 独立依赖
+
+CharacterStateService(repository, package, provider, budget, ...) 直接接收 Provider。history_evidence/verify_quotes 只校验实际披露来源，状态策略仍负责角色包/Run 标签、时间、最小间隔与 TTL；不依赖 ReflectionService、Candidate 或长期记忆审批。构造时核对 package ID/fingerprint 与 Repository，来源读取继续校验 Agent。原 tests/test_character_state.py 与实际装配/评测入口均使用此接口。

@@ -1,5 +1,9 @@
 """A per-cycle reservation ledger shared by Episode, Thread and repair requests."""
 
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from typing import Protocol
+
 from personal_agent.core.budget import estimate_request
 from personal_agent.core.models import Message, ModelResponse, TokenUsage, ToolDefinition
 from personal_agent.llm.base import Provider, ProviderError
@@ -79,3 +83,20 @@ class CycleProvider:
             raise
         finally:
             self.budget.observe(usage)
+
+
+class ProviderOwner(Protocol):
+    provider: Provider
+
+
+@contextmanager
+def cycle_providers(models: Sequence[ProviderOwner], budget: MaintenanceBudget) -> Iterator[None]:
+    """One serial Host scope; deduplicate shared models and always restore providers."""
+    originals = {id(model): (model, model.provider) for model in models}
+    try:
+        for model, provider in originals.values():
+            model.provider = CycleProvider(provider, budget)
+        yield
+    finally:
+        for model, provider in originals.values():
+            model.provider = provider

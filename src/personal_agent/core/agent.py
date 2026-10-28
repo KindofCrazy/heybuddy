@@ -29,16 +29,22 @@ class Agent:
         context: ContextBuilder | None = None,  # build context
         *,
         max_rounds: int = 10,
+        max_tool_calls_per_response: int = 64,
+        max_tool_calls_per_run: int = 256,
         request_timeout_seconds: float = 60,
     ) -> None:
         if max_rounds < 1:
             raise ValueError("max_rounds must be at least 1")
+        if max_tool_calls_per_response < 1 or max_tool_calls_per_run < 1:
+            raise ValueError("Tool call limits must be positive")
         if not 0 < request_timeout_seconds < float("inf"):
             raise ValueError("Request timeout must be positive and finite")
         self.provider = provider
         self.tools = tools
         self.context = context if context is not None else ContextBuilder()
         self.max_rounds = max_rounds
+        self.max_tool_calls_per_response = max_tool_calls_per_response
+        self.max_tool_calls_per_run = max_tool_calls_per_run
         self.request_timeout_seconds = request_timeout_seconds
         self._lock = asyncio.Lock()
 
@@ -95,6 +101,7 @@ class Agent:
             logger.info("run_end status=%s rounds=%d", result.status, result.rounds)
             return result
 
+        accepted_tool_calls = 0
         for round_number in range(1, self.max_rounds + 1):
             self._round_number = round_number
             logger.info("model_request round=%d", round_number)
@@ -160,6 +167,20 @@ class Agent:
                     )
                 )
 
+            # Reject the whole over-limit batch before journaling or executing its calls.
+            if (
+                len(response.tool_calls) > self.max_tool_calls_per_response
+                or accepted_tool_calls + len(response.tool_calls) > self.max_tool_calls_per_run
+            ):
+                return finish(
+                    RunResult(
+                        status="invalid_response",
+                        rounds=round_number,
+                        error="Host tool call limit exceeded; "
+                        "no calls from this response executed.",
+                    )
+                )
+            accepted_tool_calls += len(response.tool_calls)
             # Reject ambiguous IDs before executing anything in this response.
             seen = {
                 call.id

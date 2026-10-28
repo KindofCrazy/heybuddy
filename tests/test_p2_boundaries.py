@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 
+from personal_agent.cli_commands import MaintenanceCommands
 from personal_agent.core.history import HistoryError
 from personal_agent.core.models import (
     AssistantMessage,
@@ -165,7 +166,7 @@ async def test_debug_timeout_is_bounded_and_retains_pending_sources(state):
         organizer(learning.repository.episodes, maintenance_seconds=0.02), learning=learning
     )
     try:
-        result = await runtime.learning_command("run")
+        result = await MaintenanceCommands(runtime).learning_command("run")
         assert result["outcome"] == "budget_exhausted"
         assert learning.repository.pending_job("priority")["state"] == "pending"
     finally:

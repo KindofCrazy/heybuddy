@@ -1,16 +1,17 @@
 """Low-frequency, bounded curation; reuse the learner's publication and reconciliation path."""
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from pydantic import Field
 
-from personal_agent.core.compaction import redact
+from personal_agent.core.evidence import redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import Model
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.memory.models import digest
+from personal_agent.reflection.evidence import verify_candidates
 from personal_agent.reflection.memory import catalogue, plan_item, read_comparison
 from personal_agent.reflection.models import (
     Candidate,
@@ -91,43 +92,18 @@ class MemoryCurator:
                 self._schedule()
 
     def _schedule(self, *, completed=False) -> None:
-        with self.repository.store._transaction() as db:
-            db.execute(
-                "UPDATE memory_learning_state SET curator_due_at=?,"
-                "curator_updates=CASE WHEN ? THEN updates ELSE curator_updates END "
-                "WHERE agent_id=?",
-                (
-                    (
-                        self.clock.now() + timedelta(seconds=self.policy.interval_seconds)
-                    ).isoformat(),
-                    completed,
-                    self.repository.agent_id,
-                ),
-            )
+        self.repository.schedule_curator(
+            self.clock.now(), self.policy.interval_seconds, completed=completed
+        )
 
     def _latest(self) -> dict | None:
-        with self.repository.store._transaction() as db:
-            row = db.execute(
-                "SELECT id FROM memory_learning_jobs WHERE agent_id=? AND kind='curator' "
-                "ORDER BY rowid DESC LIMIT 1",
-                (self.repository.agent_id,),
-            ).fetchone()
-        return self.repository.get(row[0]) if row else None
+        return self.repository.latest_job("curator")
 
     def _files(self) -> tuple[list[dict], dict[str, str]]:
         catalog = catalogue(self.memory)
         topics = [r for r in catalog if not r["path"].endswith("/MEMORY.md")]
         # Recent write paths anchor a small related set; oversized topics are also candidates.
-        with self.repository.store._transaction() as db:
-            rows = db.execute(
-                "SELECT operations FROM memory_learning_jobs WHERE agent_id=? "
-                "AND kind!='curator' AND state='completed' ORDER BY rowid DESC "
-                "LIMIT 4",
-                (self.repository.agent_id,),
-            ).fetchall()
-        import json
-
-        recent = [op["path"] for row in rows for op in json.loads(row[0])]
+        recent = self.repository.recent_write_paths()
         anchor = next((r for r in topics if r["path"] in recent), topics[0] if topics else None)
         terms = set(
             re.findall(r"[a-z0-9]+|[\u4e00-\u9fff]{2}", (str(anchor) if anchor else "").lower())
@@ -154,7 +130,7 @@ class MemoryCurator:
             raise ReflectionError("curator_input_budget")
         return catalog, comparison
 
-    def due(self) -> bool:
+    def _eligible(self) -> bool:
         if (
             not self.policy.enabled
             or not self.learning.policy.enabled
@@ -165,8 +141,15 @@ class MemoryCurator:
         if latest and latest["state"] in {"failed", "requires_reconciliation"}:
             return False
         state = self.repository.activation()
-        if self.clock.now() < datetime.fromisoformat(state["curator_due_at"]):
+        return bool(state["curator_due_at"]) and self.clock.now() >= datetime.fromisoformat(
+            state["curator_due_at"]
+        )
+
+    def due(self) -> bool:
+        """Inspect eligibility without consuming a maintenance opportunity."""
+        if not self._eligible():
             return False
+        state = self.repository.activation()
         if state["updates"] - state["curator_updates"] >= self.policy.update_threshold:
             return True
         try:
@@ -175,7 +158,14 @@ class MemoryCurator:
             return True  # run() persists a safe failure; don't stop unrelated P1 maintenance.
         if any(len(text.encode()) >= self.policy.long_file_bytes for text in comparison.values()):
             return True
-        self._schedule()
+        return False
+
+    def poll(self) -> bool:
+        """Host maintenance tick: postpone an eligible check that found no work."""
+        if self.due():
+            return True
+        if self._eligible():
+            self._schedule()
         return False
 
     def _evidence(self, paths: list[str]) -> tuple[list, dict, dict]:
@@ -238,9 +228,9 @@ class MemoryCurator:
             return {"outcome": "disabled"}
         if self.repository.unresolved():
             return {"outcome": "requires_reconciliation"}
-        if not force and not self.due():
+        if not force and not self.poll():
             return {"outcome": "no_curator_work"}
-        async with self.learning._lock:
+        async with self.learning.publication() as publish:
             latest = self._latest()
             if latest and latest["state"] == "pending" and latest["sources"].get("memory"):
                 catalog = catalogue(self.memory)
@@ -307,7 +297,7 @@ class MemoryCurator:
                 if not comparison:
                     return []
                 history = self.learning.evidence(records)
-                result = await self.model._ask(
+                result = await self.model.ask(
                     Curation,
                     CURATE,
                     {
@@ -324,9 +314,7 @@ class MemoryCurator:
                     result, comparison, catalog, records, evidence_by_path, evidence_status
                 )
 
-            report = await self.learning._execute(
-                jid, refs, records, [], retry=retry, proposer=propose
-            )
+            report = await publish(jid, refs, records, [], retry=retry, proposer=propose)
             if report["outcome"] == "completed":
                 self._schedule(completed=True)
             return report
@@ -372,9 +360,9 @@ class MemoryCurator:
                     evidence=change.evidence,
                 )
                 related = set(evidence_by_path.get(change.path, []))
-                self.learning._verify(
+                verify_candidates(
                     Extraction(candidates=[evidence]),
-                    [(cid, s) for cid, s in records if s.run_id in related],
+                    {(cid, s.run_id): s.turn for cid, s in records if s.run_id in related},
                 )
             elif change.action == "create":
                 if (

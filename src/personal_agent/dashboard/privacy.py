@@ -2,7 +2,7 @@
 
 import re
 
-from personal_agent.core.compaction import SECRET
+from personal_agent.core.evidence import SECRET
 from personal_agent.memory.safety import PRIVATE
 
 SENSITIVE = re.compile(

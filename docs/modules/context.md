@@ -80,3 +80,7 @@ V0.7.2 的自动记忆检查发生在普通 Run 已完成后，不在 ContextBui
 ## V0.7.2 Phase 2：检索提示
 
 DEFAULT_SYSTEM_PROMPT 明确一般问答/假设无需 Memory，项目按根索引逐级读取，历史讨论使用 Recall，最新明确更正优先。Summary 是有损工作上下文，不能授予权限。修改只有文本，不改变 build/prepare/for_request 或数据角色。Main/工具描述同组开发检索评分 11/14 → 14/14，最终组合 Holdout 持平；不声称 Compaction 更准确。SUMMARY_PROMPT 经过候选比较后保留原版。见 [A/B 报告](../prompt-ab-results.md)。
+
+## 一次准备的共同视图
+
+prepare() 的每次迭代先 _injections() 编译 Base/角色/Core/摘要/时间前缀，再由 _select_history() 与 _assemble() 复用相同视图进行预算选择和最终请求，避免一次准备重复磁盘/角色查询。工具后下一轮、Compaction checkpoint 后新迭代继续重新编译，不跨轮缓存 Memory。PreflightRetrieval 和 RunCharacter 是显式可选 Protocol；只有实现它们的适配器会收到异步 preflight 或 Run 标签通知。CoreMemory 字符串接口保留，角色模式由 without_legacy_persona 校验结构化 JSON，错误显式返回。验证见 tests/test_working_context.py 的编译次数测试及原 Memory 更新可见性测试。

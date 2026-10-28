@@ -2,6 +2,7 @@ import asyncio
 import json
 import threading
 
+from personal_agent.cli_commands import MaintenanceCommands
 from personal_agent.core.agent import Agent
 from personal_agent.core.models import ModelResponse
 from personal_agent.main import chat
@@ -53,11 +54,11 @@ async def test_count_trigger_restart_and_cli_debug_commands(state):
     assert len(repo.list(stream)) == 1 and len(provider.requests) == 1
     await runtime.foreground()
     output = []
-    await runtime.command(stream, "/episode status", output.append)
-    await runtime.command(stream, "/episode list", output.append)
+    await MaintenanceCommands(runtime).command(stream, "/episode status", output.append)
+    await MaintenanceCommands(runtime).command(stream, "/episode list", output.append)
     episode_id = repo.list(stream)[0].id
-    await runtime.command(stream, f"/episode show {episode_id}", output.append)
-    await runtime.command(stream, "/episode organize", output.append)
+    await MaintenanceCommands(runtime).command(stream, f"/episode show {episode_id}", output.append)
+    await MaintenanceCommands(runtime).command(stream, "/episode organize", output.append)
     assert json.loads(output[-1])["outcome"] == "no_history"
     assert json.loads(output[2])["id"] == episode_id
     await runtime.close()
@@ -115,3 +116,43 @@ async def test_input_eof_and_cancel_close_without_executor_shutdown(state):
         Agent(FakeProvider(), create_builtin_registry()), read, output.append, organization=runtime
     )
     assert output[-1] == "再见。"
+
+
+async def test_diagnostics_without_schedule_never_initializes_state(state):
+    db, stream, repo = state
+    runtime = OrganizationRuntime(organizer(repo))
+    before = db._connection.total_changes
+    try:
+        for _ in range(2):
+            assert runtime.diagnostics(stream)["stream_id"] == stream
+            assert runtime.diagnostics(stream, read_only=True)["schedule"] is None
+        assert db._connection.total_changes == before
+    finally:
+        await runtime.close()
+
+
+async def test_maintenance_construction_does_not_start_console_thread(state, monkeypatch):
+    _, _, repo = state
+    original = threading.Thread.start
+
+    def start(thread):
+        assert thread.name != "heybuddy-input"
+        return original(thread)
+
+    monkeypatch.setattr(threading.Thread, "start", start)
+    runtime = OrganizationRuntime(organizer(repo))
+    await runtime.close()
+
+
+async def test_diagnostics_for_selected_stream_only_projects_selection(state):
+    db, stream, repo = state
+    runtime = OrganizationRuntime(organizer(repo))
+    runtime.schedule_repository.ensure(stream, runtime.clock.now(), 14400, activity=False)
+    selected = db.create_conversation(repo.agent_id).id
+    before = db._connection.total_changes
+    try:
+        assert runtime.diagnostics(selected)["stream_id"] == selected
+        assert runtime.diagnostics(selected, read_only=True)["schedule"]["stream_id"] == stream
+        assert db._connection.total_changes == before
+    finally:
+        await runtime.close()

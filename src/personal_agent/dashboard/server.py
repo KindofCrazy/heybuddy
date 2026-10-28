@@ -70,7 +70,7 @@ async def dashboard_server(service: ChatService, port: int = 8765) -> AsyncItera
 
 
 async def run_web(settings: Settings, port: int = 8765) -> None:
-    from personal_agent.channels.qq.runner import stop_on_termination
+    from personal_agent.channels.lifecycle import stop_on_termination
 
     stop = asyncio.Event()
     with stop_on_termination(stop):

@@ -40,3 +40,7 @@ OrganizerModel.ask() 在 Provider 返回后重验 deadline/task cancellation，�
 `tests/test_organization_backlog.py` 覆盖 40 Runs 分批/跨请求预算继续、冷却不提前调用、Store 重启不重复、第二批取消保留第一批、Thread backlog、整轮 timeout、不可能容纳的请求、Repair 退避/连续失败上限、运行时抢占及重建检查点/失败 deadline 重启恢复。`tests/test_p1_recovery.py` 保留真正子进程硬退出验证。
 
 `tests/test_review_integration.py` 验证连续活跃不按时钟机械分段、Provider 吞取消不提交、系统时钟回拨不延迟当前周期或积压冷却、Finalize 不被失败批次卡住，以及真正 os._exit 后 Idle 自动恢复 Repair 已提交页。
+
+## 查询与预算作用域
+
+ScheduleRepository.state() 在无持久行时只返回推导视图，diagnostics() 不再 ensure；observe() 提供 Dashboard 的有界只读投影。只有 schedule()/真实维护才初始化或推进元数据。cycle_providers() 是现有串行维护/手动命令共用的同步作用域，按 model 身份去重，finally 恢复 Provider；共享 MaintenanceBudget 和既有调度顺序不变。

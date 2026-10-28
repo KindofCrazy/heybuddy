@@ -121,6 +121,15 @@ class QQInbox:
                 (status, sent_parts, error_code, run_id, sequence, *self.scope),
             )
 
+    def latest_run_id(self, conversation_id: str) -> str | None:
+        with self.store.reading() as db:
+            row = db.execute(
+                "SELECT m.run_id FROM messages m JOIN conversations c ON c.id=m.conversation_id "
+                "WHERE m.conversation_id=? AND c.agent_id=? ORDER BY m.sequence DESC LIMIT 1",
+                (conversation_id, self.agent_id),
+            ).fetchone()
+        return row[0] if row else None
+
     def pending(self) -> bool:
         with self.store._transaction() as db:
             return (
