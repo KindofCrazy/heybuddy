@@ -1,61 +1,123 @@
-{% from "components/cards.html" import base_card %}
+{% from "components/cards.html" import base_card with context %}
 <!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>HeyBuddy — Observatory</title>
+    <title>HeyBuddy — 观测台</title>
     <link rel="stylesheet" href="/static/observatory.css" />
     <script type="module" src="/static/overview.js"></script>
   </head>
   <body>
-    <a class="skip-link" href="#workspace">Skip to workspace</a>
+    <a class="skip-link" href="#workspace"
+      ><span data-i18n="Skip to workspace"
+        >{{ ui("Skip to workspace") }}</span
+      ></a
+    >
     <div class="shell">
       <header class="masthead">
-        <a class="brand" href="/" aria-label="HeyBuddy home"
+        <a
+          class="brand"
+          href="/"
+          aria-label="HeyBuddy 首页"
+          data-i18n-aria-label="HeyBuddy home"
           ><span class="brand-mark">hb<span>✳</span></span
-          ><span>HeyBuddy<small>OBSERVATORY</small></span></a
+          ><span
+            >HeyBuddy<small
+              ><span data-i18n="OBSERVATORY"
+                >{{ ui("OBSERVATORY") }}</span
+              ></small
+            ></span
+          ></a
         >
-        <nav aria-label="Workspace">
-          <a class="nav-active" href="#workspace">Overview</a
-          ><a href="#threads">Threads</a><a href="#memory">Memory</a
-          ><a href="#runs">Runs</a>
+        <nav aria-label="工作台" data-i18n-aria-label="Workspace">
+          <a class="nav-active" href="#workspace"
+            ><span data-i18n="Overview">{{ ui("Overview") }}</span></a
+          ><a href="#threads"
+            ><span data-i18n="Threads">{{ ui("Threads") }}</span></a
+          ><a href="#memory"
+            ><span data-i18n="Memory">{{ ui("Memory") }}</span></a
+          ><a href="#runs"><span data-i18n="Runs">{{ ui("Runs") }}</span></a>
         </nav>
+        <button
+          id="language-toggle"
+          class="language-toggle"
+          type="button"
+          data-language-toggle
+          aria-label="Switch to English"
+        >
+          English
+        </button>
         <span class="stamp"
           ><span class="status-dot" id="connection-dot"></span
-          ><span id="connection" role="status">Connecting</span
-          ><span class="mono">LOCAL</span></span
+          ><span id="connection" role="status"
+            ><span data-i18n="Connecting">{{ ui("Connecting") }}</span></span
+          ><span class="mono"
+            ><span data-i18n="LOCAL">{{ ui("LOCAL") }}</span></span
+          ></span
         >
       </header>
       <section class="intro" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">PERSONAL AGENT / OPEN NOTEBOOK</p>
+          <p class="eyebrow">
+            <span data-i18n="PERSONAL AGENT / OPEN NOTEBOOK"
+              >{{ ui("PERSONAL AGENT / OPEN NOTEBOOK") }}</span
+            >
+          </p>
           <h1 id="page-title">
-            Inside the agent<span class="title-dot">.</span>
+            <span data-i18n="Inside the agent"
+              >{{ ui("Inside the agent") }}</span
+            ><span class="title-dot">.</span>
           </h1>
           <p class="intro-copy">
-            每一次对话背后，都有迹可循。<span
-              >Runs, memories &amp; the connections in between.</span
+            <span data-i18n="每一次对话背后，都有迹可循。"
+              >{{ ui("每一次对话背后，都有迹可循。") }}</span
+            ><span data-i18n="Runs, memories &amp; the connections in between."
+              >{{ ui("Runs, memories & the connections in between.") }}</span
             >
           </p>
         </div>
         <div class="intro-aside">
           <span class="orbit" aria-hidden="true">✳</span
-          ><span class="mono">OBSERVE. EXPLORE.<br />UNDERSTAND.</span>
+          ><span class="mono"
+            ><span data-i18n="OBSERVE. EXPLORE. UNDERSTAND."
+              >{{ ui("OBSERVE. EXPLORE. UNDERSTAND.") }}</span
+            ></span
+          >
         </div>
       </section>
       <div class="workspace-label">
-        <span class="eyebrow">YOUR AGENT, UNPACKED</span
-        ><span class="mono">READ-ONLY WORKSPACE ↙</span>
+        <span class="eyebrow"
+          ><span data-i18n="YOUR AGENT, UNPACKED"
+            >{{ ui("YOUR AGENT, UNPACKED") }}</span
+          ></span
+        ><span class="mono"
+          ><span data-i18n="READ-ONLY WORKSPACE ↙"
+            >{{ ui("READ-ONLY WORKSPACE ↙") }}</span
+          ></span
+        >
       </div>
-      <main id="workspace" class="bento" aria-label="Agent observatory">
+      <main
+        id="workspace"
+        class="bento"
+        aria-label="智能体观测台"
+        data-i18n-aria-label="Agent observatory"
+      >
         {% for id, title, label in cards %}{{ base_card(id, title, label,
         loop.index) }}{% endfor %}
       </main>
       <footer>
-        <span><b>HeyBuddy</b> / A window into the work.</span
-        ><span class="mono">LOCAL ONLY · NO WEB WRITES · NO MODEL CALLS</span>
+        <span
+          ><b>HeyBuddy</b> /
+          <span data-i18n="A window into the work."
+            >{{ ui("A window into the work.") }}</span
+          ></span
+        ><span class="mono"
+          ><span data-i18n="LOCAL ONLY · NO WEB WRITES · NO MODEL CALLS"
+            >{{ ui("LOCAL ONLY · NO WEB WRITES · NO MODEL CALLS") }}</span
+          ></span
+        >
       </footer>
     </div>
     {% include "components/drawer.html" %}

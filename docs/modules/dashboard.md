@@ -33,3 +33,11 @@
 运行 `uv run personal-agent qq --dashboard`；或先退出其他本地实例，再运行 `uv run personal-agent web`，访问 `http://127.0.0.1:8765`。独立 web 沿用现有环境配置格式，仍需配置字段合法，但不会请求 Provider。
 
 `tests/test_dashboard.py` 覆盖真实关系、分页、脱敏、Memory、P3 与事件；`test_dashboard_lifecycle.py` 使用本机 HTTP、Fake QQ 和 FakeProvider 验证相同服务、查询失败隔离、端口冲突、关闭清理及 observer-only；`test_dashboard_boundaries.py` 验证全类型跨 Agent、硬链接、文件分段冲突和重启。所有测试保留 `tests/conftest.py` 网络保护。浏览器与安装包验收、截图、限制详见 [Observatory 交付与验收](../observatory.md)。
+
+## 默认中文与语言切换
+
+界面默认中文，页头和详情抽屉内的按钮可切换 English / 中文；选择保存在浏览器 localStorage（`heybuddy.observatory.language`），刷新后恢复，仅接受 `zh-CN` 与 `en`。存储不可用时仍允许当前页面切换，未设置时使用中文。
+
+`static/zh-CN.json` 是 UI 中英文对照，英文原文作为键；首页由 `app.py:create_app` 使用同一词典预渲染中文，模板宏通过 context 读取翻译函数，无需等 JavaScript 才显示中文。`i18n.js` 只管理显式标记的界面文案：`ui` 创建文案值，`bindText/writeText` 使用 WeakMap 绑定 DOM，并以 textContent 更新。普通 `node` 文本保持原样；聊天、Markdown、模型生成标题、路径、ID 和审计 JSON 不做翻译。动态状态/按钮/元数据标签在各渲染模块显式绑定，日期格式跟随选定语言。
+
+语言切换直接更新当前 DOM 的文本和 aria-label，不触发 HTTP 业务操作、重新加载对象或重建 Drawer，因此保留已展开消息、滚动位置和 fragment。`tests/test_dashboard_language.py` 验证无 JavaScript 时的中文首页及静态资源；真实 Edge 验收覆盖切换、偏好恢复、存储拒绝容错、详情/正文保持与移动端宽度。

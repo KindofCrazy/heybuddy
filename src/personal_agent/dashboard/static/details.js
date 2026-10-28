@@ -1,3 +1,4 @@
+import { ui } from "./i18n.js";
 import {
   node,
   get,
@@ -11,7 +12,7 @@ import {
 } from "./components.js";
 export function section(target, title) {
   const header = node("div", "section-label");
-  header.append(node("h3", "", title));
+  header.append(node("h3", "", ui(title)));
   target.append(header);
 }
 export function prose(html) {
@@ -67,7 +68,7 @@ export async function cardsPage(target, path, kind, open, cursor = null) {
   target.append(grid);
   if (data.has_more) {
     const more = action(
-      "Load next page ↓",
+      ui("Load next page ↓"),
       async () => {
         more.disabled = true;
         try {
@@ -117,7 +118,7 @@ export async function objectDetail(kind, id, target, open) {
     if (data.memory_ref)
       target.append(
         action(
-          `Linked memory ↗ ${data.memory_ref}`,
+          ui(`Linked memory ↗ ${data.memory_ref}`),
           () => open("file", data.memory_ref),
           "action-button",
         ),
@@ -127,7 +128,9 @@ export async function objectDetail(kind, id, target, open) {
         node(
           "p",
           "notice",
-          "Thread state is marked dirty; it may lag behind its Episode sources.",
+          ui(
+            "Thread state is marked dirty; it may lag behind its Episode sources.",
+          ),
         ),
       );
     section(target, "Episodes");
@@ -142,7 +145,7 @@ export async function objectDetail(kind, id, target, open) {
     target.append(node("p", "prose", data.summary));
     if (data.thread_id)
       target.append(
-        action(`Parent Thread ↗ ${short(data.thread_id)}`, () =>
+        action(ui(`Parent Thread ↗ ${short(data.thread_id)}`), () =>
           open("threads", data.thread_id),
         ),
       );
@@ -157,7 +160,7 @@ export async function objectDetail(kind, id, target, open) {
       for (const source of highlight.sources)
         box.append(
           action(
-            `Evidence ↗ ${short(source.run_id)} / #${source.sequence}`,
+            ui(`Evidence ↗ ${short(source.run_id)} / #${source.sequence}`),
             () => open("runs", source.run_id),
           ),
         );
@@ -172,7 +175,7 @@ export async function objectDetail(kind, id, target, open) {
     );
   } else if (kind === "runs") {
     const reveal = action(
-      "Reveal private messages & tool records ↓",
+      ui("Reveal private messages & tool records ↓"),
       async () => {
         reveal.disabled = true;
         try {
@@ -189,7 +192,9 @@ export async function objectDetail(kind, id, target, open) {
       node(
         "p",
         "notice",
-        "原始对话默认折叠，仅在本机点击后读取。工具记录是历史审计数据，不会执行。",
+        ui(
+          "原始对话默认折叠，仅在本机点击后读取。工具记录是历史审计数据，不会执行。",
+        ),
       ),
       reveal,
     );
@@ -198,7 +203,7 @@ export async function objectDetail(kind, id, target, open) {
     for (const source of data.sources.episodes || [])
       target.append(
         action(
-          `Episode ↗ ${short(source.id)} · REV ${source.revision}`,
+          ui(`Episode ↗ ${short(source.id)} · REV ${source.revision}`),
           () => open("episodes", source.id),
           "file-row",
         ),
@@ -206,7 +211,7 @@ export async function objectDetail(kind, id, target, open) {
     for (const source of data.sources.runs || [])
       target.append(
         action(
-          `Run ↗ ${short(source.id)}`,
+          ui(`Run ↗ ${short(source.id)}`),
           () => open("runs", source.id),
           "file-row",
         ),
@@ -233,11 +238,15 @@ export async function objectDetail(kind, id, target, open) {
       node(
         "p",
         "notice",
-        "回执、Hash 与来源来自实际记录。未保存旧正文时，不提供虚构 Diff 或完整版本历史。",
+        ui(
+          "回执、Hash 与来源来自实际记录。未保存旧正文时，不提供虚构 Diff 或完整版本历史。",
+        ),
       ),
     );
   }
-  return data.title || `${kind === "jobs" ? data.kind : kind} / ${short(id)}`;
+  return (
+    data.title || ui(`${kind === "jobs" ? data.kind : kind} / ${short(id)}`)
+  );
 }
 async function messages(target, id, after) {
   const data = await get(
@@ -249,7 +258,9 @@ async function messages(target, id, after) {
       node(
         "summary",
         "",
-        `#${message.sequence} · ${message.role.toUpperCase()}${message.payload_large ? " · bounded preview" : ""}`,
+        ui(
+          `#${message.sequence} · ${message.role.toUpperCase()}${message.payload_large ? " · bounded preview" : ""}`,
+        ),
       ),
     );
     if (message.text) detail.append(node("pre", "record", message.text));
@@ -266,7 +277,7 @@ async function messages(target, id, after) {
   if (!data.items.length) target.append(empty("No persisted messages"));
   if (data.has_more) {
     const more = action(
-      "Next messages ↓",
+      ui("Next messages ↓"),
       async () => {
         more.disabled = true;
         try {

@@ -13,6 +13,31 @@
   --radius-card: 12px;
   --radius-nested: 8px;
 }
+.language-toggle {
+  border: var(--border-nested);
+  border-radius: 7px;
+  background: var(--surface);
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+html[lang="zh-CN"] .intro h1 {
+  letter-spacing: -0.02em;
+}
+@media (max-width: 680px) {
+  .masthead {
+    gap: 10px;
+  }
+  .stamp {
+    margin-left: auto;
+  }
+  .language-toggle {
+    margin-left: auto;
+  }
+  html[lang="zh-CN"] .intro h1 {
+    font-size: 42px;
+  }
+}
 * {
   box-sizing: border-box;
 }

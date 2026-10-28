@@ -1,22 +1,48 @@
 <dialog id="inspector" class="inspector" aria-labelledby="inspector-title">
   <div class="drawer-toolbar">
-    <span class="eyebrow">OBJECT INSPECTOR</span
-    ><button id="drawer-close" class="icon-button" aria-label="Close inspector">
+    <span class="eyebrow"
+      ><span data-i18n="OBJECT INSPECTOR"
+        >{{ ui("OBJECT INSPECTOR") }}</span
+      ></span
+    ><button
+      id="drawer-language-toggle"
+      class="language-toggle"
+      type="button"
+      data-language-toggle
+      aria-label="Switch to English"
+    >
+      English</button
+    ><button
+      id="drawer-close"
+      class="icon-button"
+      aria-label="关闭详情"
+      data-i18n-aria-label="Close inspector"
+    >
       ✕
     </button>
   </div>
   <nav
     id="breadcrumbs"
     class="breadcrumbs"
-    aria-label="Object breadcrumb"
+    aria-label="详情导航"
+    data-i18n-aria-label="Object breadcrumb"
   ></nav>
   <div class="drawer-heading">
     <span class="mono" id="inspector-kind"></span>
-    <h2 id="inspector-title">Details</h2>
+    <h2 id="inspector-title">
+      <span data-i18n="Details">{{ ui("Details") }}</span>
+    </h2>
   </div>
   <div id="inspector-body" class="inspector-body"></div>
   <footer class="drawer-footer">
-    <span class="mono">SOURCE DATA / READ ONLY</span
-    ><a id="full-view" href="#">Full detail view ↗</a>
+    <span class="mono"
+      ><span data-i18n="SOURCE DATA / READ ONLY"
+        >{{ ui("SOURCE DATA / READ ONLY") }}</span
+      ></span
+    ><a id="full-view" href="#"
+      ><span data-i18n="Full detail view ↗"
+        >{{ ui("Full detail view ↗") }}</span
+      ></a
+    >
   </footer>
 </dialog>

@@ -6,13 +6,17 @@
 >
   <header class="card-header">
     <div>
-      <p class="eyebrow">{{ label }}</p>
-      <h2 id="title-{{ id }}">{{ title }}</h2>
+      <p class="eyebrow" data-i18n="{{ label }}">{{ ui(label) }}</p>
+      <h2 id="title-{{ id }}" data-i18n="{{ title }}">{{ ui(title) }}</h2>
     </div>
     <span class="card-number mono">0{{ number }}</span>
   </header>
   <div id="content-{{ id }}" class="card-content" aria-live="polite">
-    <p class="empty loading">Loading local records…</p>
+    <p class="empty loading">
+      <span data-i18n="Loading local records…"
+        >{{ ui("Loading local records…") }}</span
+      >
+    </p>
   </div>
 </section>
 {%- endmacro %}

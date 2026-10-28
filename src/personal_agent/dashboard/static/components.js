@@ -1,8 +1,9 @@
+import { ui, writeText, locale } from "./i18n.js";
 // Untrusted text enters the DOM through textContent, never HTML interpolation.
 export function node(tag, className = "", text = "") {
   const element = document.createElement(tag);
   element.className = className;
-  if (text !== null && text !== undefined) element.textContent = String(text);
+  if (text !== null && text !== undefined) writeText(element, text);
   return element;
 }
 export function short(id) {
@@ -13,7 +14,7 @@ export function time(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Unavailable"
-    : date.toLocaleString([], {
+    : date.toLocaleString(locale(), {
         month: "short",
         day: "numeric",
         hour: "2-digit",
@@ -26,11 +27,11 @@ export function badge(state) {
     : /fail|error|reconcil|interrupted/.test(state)
       ? "bad"
       : "wait";
-  return node("span", `badge ${tone}`, state || "unknown");
+  return node("span", `badge ${tone}`, ui(state || "unknown"));
 }
 export function empty(title, description = "") {
   const box = node("div", "empty");
-  box.append(node("strong", "", title), node("p", "", description));
+  box.append(node("strong", "", ui(title)), node("p", "", ui(description)));
   return box;
 }
 export function errorBox(
@@ -74,7 +75,9 @@ export function objectCard(kind, item, open) {
       "h3",
       "",
       item.title ||
-        `${kind === "runs" ? "Run" : item.kind || kind} / ${short(item.id)}`,
+        ui(
+          `${kind === "runs" ? "Run" : item.kind || kind} / ${short(item.id)}`,
+        ),
     ),
   );
   card.append(
@@ -91,7 +94,9 @@ export function objectCard(kind, item, open) {
     node(
       "span",
       "mono",
-      `${short(item.id)} ${item.revision ? "· REV " + item.revision : ""} ↗`,
+      ui(
+        `${short(item.id)} ${item.revision ? "· REV " + item.revision : ""} ↗`,
+      ),
     ),
   );
   return card;
@@ -102,8 +107,17 @@ export function metadata(data, keys) {
     if (data[key] === undefined) continue;
     const row = node("div");
     row.append(
-      node("dt", "", key.replaceAll("_", " ")),
-      node("dd", "mono", data[key] ?? "Unavailable"),
+      node("dt", "", ui(key.replaceAll("_", " "))),
+      node(
+        "dd",
+        "mono",
+        data[key] == null
+          ? ui("Unavailable")
+          : ["status", "state", "kind", "outcome"].includes(key) ||
+              typeof data[key] === "boolean"
+            ? ui(data[key])
+            : data[key],
+      ),
     );
     list.append(row);
   }

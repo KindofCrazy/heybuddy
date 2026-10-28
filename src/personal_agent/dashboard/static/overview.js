@@ -1,3 +1,4 @@
+import { ui } from "./i18n.js";
 import {
   node,
   get,
@@ -27,11 +28,11 @@ async function collection(id, kind, limit, className) {
       grid.append(empty(`No ${kind} yet`, "真实记录形成后，会出现在这里。"));
     box.append(
       grid,
-      action(`Explore all ${kind} ↗`, () => open("collection", kind)),
+      action(ui(`Explore all ${kind} ↗`), () => open("collection", kind)),
     );
     if (id === "threads")
       box.append(
-        action("All Episodes, including unassigned ↗", () =>
+        action(ui("All Episodes, including unassigned ↗"), () =>
           open("collection", "episodes"),
         ),
       );
@@ -58,16 +59,20 @@ async function character() {
         node(
           "p",
           "notice",
-          state.active
-            ? `Simulated mood: ${state.active.mood}`
-            : "No active short-term state.",
+          ui(
+            state.active
+              ? `Simulated mood: ${state.active.mood}`
+              : "No active short-term state.",
+          ),
         ),
       );
       if (state.active?.current_focus)
         box.append(node("p", "muted", state.active.current_focus));
     }
     box.append(
-      action("Explore profile & state ↗", () => open("character", "current")),
+      action(ui("Explore profile & state ↗"), () =>
+        open("character", "current"),
+      ),
     );
     replace(content("character"), { profile, state }, box);
   } catch {
@@ -80,7 +85,7 @@ try {
   content("memory").replaceChildren();
   await memoryDirectory(content("memory"), "", open);
   content("memory").append(
-    action("Explore all Learning jobs ↗", () => open("collection", "jobs")),
+    action(ui("Explore all Learning jobs ↗"), () => open("collection", "jobs")),
   );
 } catch {
   content("memory").replaceChildren(errorBox());

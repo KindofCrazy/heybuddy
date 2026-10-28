@@ -20,6 +20,7 @@ from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
 from personal_agent.runtime import ChatService
 
 ASSETS = Path(__file__).parent
+CHINESE = json.loads((ASSETS / "static" / "zh-CN.json").read_text(encoding="utf-8"))
 
 
 def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
@@ -89,7 +90,9 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
     @app.get("/")
     async def home(request: Request):
         return templates.TemplateResponse(
-            request=request, name="index.html", context={"cards": CARDS}
+            request=request,
+            name="index.html",
+            context={"cards": CARDS, "ui": lambda text: CHINESE.get(text, text)},
         )
 
     @app.get("/api/status")

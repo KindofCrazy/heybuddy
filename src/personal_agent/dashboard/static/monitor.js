@@ -1,3 +1,4 @@
+import { ui, bindText } from "./i18n.js";
 import {
   node,
   get,
@@ -27,7 +28,7 @@ export async function status(open) {
     const word = node("div", "status-word");
     word.append(
       node("span", `status-dot ${data.state === "Idle" ? "online" : ""}`),
-      node("span", "", data.state),
+      node("span", "", ui(data.state)),
     );
     const meta = node("dl", "meta-grid");
     const fields = [
@@ -38,7 +39,7 @@ export async function status(open) {
     ];
     for (const [key, value] of fields) {
       const row = node("div");
-      row.append(node("dt", "", key), node("dd", "", value));
+      row.append(node("dt", "", ui(key)), node("dd", "", ui(value)));
       meta.append(row);
     }
     replace(
@@ -47,9 +48,9 @@ export async function status(open) {
       badge("HOST OBSERVED"),
       word,
       meta,
-      action("Runtime diagnostics ↗", () => open("runtime", "current")),
+      action(ui("Runtime diagnostics ↗"), () => open("runtime", "current")),
     );
-    document.getElementById("connection").textContent = "Connected";
+    bindText(document.getElementById("connection"), "Connected");
     document.getElementById("connection-dot").classList.add("online");
     const diagnostics = document.getElementById("job-diagnostics");
     if (diagnostics) {
@@ -58,11 +59,13 @@ export async function status(open) {
         node(
           "p",
           "",
-          diagnostic?.maintenance_running
-            ? `Executing: ${data.current_stage}`
-            : diagnostic?.background_task_active
-              ? "Waiting for idle / maintenance eligibility"
-              : "No background task scheduled",
+          ui(
+            diagnostic?.maintenance_running
+              ? `Executing: ${data.current_stage}`
+              : diagnostic?.background_task_active
+                ? "Waiting for idle / maintenance eligibility"
+                : "No background task scheduled",
+          ),
         ),
       );
       if (diagnostic)
@@ -70,7 +73,9 @@ export async function status(open) {
           node(
             "p",
             "",
-            `Pending jobs ${diagnostic.pending_jobs_capped} · runs ${diagnostic.pending_runs_capped} · dirty threads ${diagnostic.dirty_threads_capped}`,
+            ui(
+              `Pending jobs ${diagnostic.pending_jobs_capped} · runs ${diagnostic.pending_runs_capped} · dirty threads ${diagnostic.dirty_threads_capped}`,
+            ),
           ),
         );
       if (diagnostic?.schedule?.last_error)
@@ -78,7 +83,7 @@ export async function status(open) {
           node(
             "p",
             "notice",
-            `Last cycle outcome: ${diagnostic.schedule.last_error}`,
+            ui(`Last cycle outcome: ${diagnostic.schedule.last_error}`),
           ),
         );
       if (diagnostic?.episode_progress?.error_code)
@@ -86,7 +91,7 @@ export async function status(open) {
           node(
             "p",
             "notice",
-            `Organizer: ${diagnostic.episode_progress.error_code}`,
+            ui(`Organizer: ${diagnostic.episode_progress.error_code}`),
           ),
         );
       if (diagnostic?.curator)
@@ -94,11 +99,11 @@ export async function status(open) {
           node(
             "p",
             "mono",
-            `Curator due: ${time(diagnostic.curator.curator_due_at)}`,
+            ui(`Curator due: ${time(diagnostic.curator.curator_due_at)}`),
           ),
         );
       box.append(
-        action("Inspect runtime & schedule ↗", () =>
+        action(ui("Inspect runtime & schedule ↗"), () =>
           open("runtime", "current"),
         ),
       );
@@ -106,7 +111,7 @@ export async function status(open) {
     }
   } catch {
     replace(content("status"), { error: true }, errorBox());
-    document.getElementById("connection").textContent = "Disconnected";
+    bindText(document.getElementById("connection"), "Disconnected");
     document.getElementById("connection-dot").classList.remove("online");
   }
 }
@@ -118,16 +123,18 @@ function eventItem(event, open) {
   );
   const label = node("span");
   label.append(
-    node("strong", "", event.event_type.replaceAll("_", " ")),
+    node("strong", "", ui(event.event_type)),
     node(
       "span",
       "mono",
-      `${short(event.related_object_id)} · ${time(event.timestamp)}`,
+      ui(`${short(event.related_object_id)} · ${time(event.timestamp)}`),
     ),
     node(
       "span",
       "mono",
-      `${event.origin === "live_runtime" ? "LIVE" : "STORED"} / ${event.timestamp_basis.replaceAll("_", " ")}`,
+      ui(
+        `${event.origin === "live_runtime" ? "LIVE" : "STORED"} / ${event.timestamp_basis.replaceAll("_", " ")}`,
+      ),
     ),
   );
   row.append(
@@ -154,7 +161,7 @@ export async function timeline(open, cursor = "", target = null) {
     if (data.has_more)
       box.append(
         action(
-          "Earlier activity ↓",
+          ui("Earlier activity ↓"),
           () => open("activity", data.next_cursor),
           "more-button",
         ),
@@ -163,7 +170,7 @@ export async function timeline(open, cursor = "", target = null) {
       node(
         "p",
         "muted",
-        "Bounded recent window · source timestamps are labelled.",
+        ui("Bounded recent window · source timestamps are labelled."),
       ),
     );
     if (target) target.append(box);

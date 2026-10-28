@@ -1,3 +1,4 @@
+import { ui, bindText, writeText } from "./i18n.js";
 import { node, action, errorBox } from "./components.js";
 import { objectDetail, cardsPage, section } from "./details.js";
 import {
@@ -78,16 +79,19 @@ async function route() {
   dialog.classList.toggle("full", query === "full=1");
   if (!dialog.open) dialog.showModal();
   document.getElementById("full-view").href = hash + (query ? "" : "?full=1");
-  document.getElementById("full-view").textContent = query
-    ? "Drawer view ↙"
-    : "Full detail view ↗";
+  bindText(
+    document.getElementById("full-view"),
+    query ? "Drawer view ↙" : "Full detail view ↗",
+  );
   const crumbs = document.getElementById("breadcrumbs");
-  crumbs.replaceChildren(action("Workspace", close));
+  crumbs.replaceChildren(action(ui("Workspace"), close));
   path.forEach(([kind, id], index) => {
     crumbs.append(
       node("span", "", "/"),
       action(
-        kind === "file" || kind === "directory" ? id.split("/").at(-1) : kind,
+        kind === "file" || kind === "directory"
+          ? id.split("/").at(-1)
+          : ui(kind),
         () => {
           location.hash = hashFor(path.slice(0, index + 1));
         },
@@ -95,14 +99,14 @@ async function route() {
     );
   });
   const [kind, id] = path.at(-1);
-  document.getElementById("inspector-kind").textContent = kind.toUpperCase();
-  document.getElementById("inspector-title").textContent = "Loading…";
-  body.replaceChildren(node("p", "empty loading", "Reading local source…"));
+  bindText(document.getElementById("inspector-kind"), kind);
+  bindText(document.getElementById("inspector-title"), "Loading…");
+  body.replaceChildren(node("p", "empty loading", ui("Reading local source…")));
   const result = node("div");
   let title;
   try {
     if (kind === "runtime") {
-      title = "Runtime diagnostics";
+      title = ui("Runtime diagnostics");
       result.append(
         node(
           "pre",
@@ -111,21 +115,21 @@ async function route() {
         ),
       );
     } else if (kind === "activity") {
-      title = "Earlier activity";
+      title = ui("Earlier activity");
       await timeline(openObject, id, result);
     } else if (kind === "directory") {
       await memoryDirectory(result, id === "root" ? "" : id, openObject);
-      title = id === "root" ? "Memory files" : id;
+      title = id === "root" ? ui("Memory files") : id;
     } else if (kind === "file")
       title = await memoryFile(result, id, openObject);
     else if (kind === "character") title = await character(result, openObject);
     else if (kind === "state") {
       await state(result, openObject);
-      title = "Character state";
+      title = ui("Character state");
     } else if (kind === "collection") {
       if (!["runs", "episodes", "threads", "jobs"].includes(id))
         throw Error("Unknown collection");
-      title = id;
+      title = ui(id);
       section(result, `All ${id} / newest created first`);
       await cardsPage(
         result,
@@ -135,12 +139,12 @@ async function route() {
       );
     } else title = await objectDetail(kind, id, result, openObject);
     if (version !== requestVersion) return;
-    document.getElementById("inspector-title").textContent = title;
+    writeText(document.getElementById("inspector-title"), title);
     body.replaceChildren(result);
     dialog.scrollTop = 0;
   } catch (error) {
     if (version === requestVersion) {
-      document.getElementById("inspector-title").textContent = "Unavailable";
+      bindText(document.getElementById("inspector-title"), "Unavailable");
       body.replaceChildren(errorBox(error.message));
     }
   }

@@ -1,3 +1,4 @@
+import { ui } from "./i18n.js";
 import {
   node,
   get,
@@ -35,7 +36,7 @@ export async function memoryDirectory(target, directory, open, cursor = "") {
   }
   if (data.has_more) {
     const more = action(
-      "More files ↓",
+      ui("More files ↓"),
       async () => {
         more.disabled = true;
         try {
@@ -58,14 +59,14 @@ export async function memoryFile(target, path, open, offset = 0, hash = null) {
   if (!offset) {
     target.append(
       metadata(data, ["path", "updated_at", "hash"]),
-      node("p", "notice", data.history),
+      node("p", "notice", ui(data.history)),
     );
     section(target, "Markdown content");
   }
   target.append(prose(data.html));
   if (data.next_offset !== null) {
     const more = action(
-      "Continue reading ↓",
+      ui("Continue reading ↓"),
       async () => {
         more.disabled = true;
         try {
@@ -100,7 +101,7 @@ export async function character(target, open) {
         "Character is disabled by Host configuration.",
       ),
     );
-    return "Character";
+    return ui("Character");
   }
   target.append(
     badge("STABLE PROFILE"),
@@ -109,7 +110,7 @@ export async function character(target, open) {
   );
   const behavior = node("details", "message");
   behavior.append(
-    node("summary", "", "Character behavior"),
+    node("summary", "", ui("Character behavior")),
     prose(profile.behavior_html),
   );
   target.append(behavior);
@@ -134,7 +135,7 @@ export async function state(target, open, cursor = null) {
           "age_seconds",
         ]),
         action(
-          `Source Run ↗ ${short(data.active.source_run_id)}`,
+          ui(`Source Run ↗ ${short(data.active.source_run_id)}`),
           () => open("runs", data.active.source_run_id),
           "action-button",
         ),
@@ -149,7 +150,7 @@ export async function state(target, open, cursor = null) {
     if (data.stored && !data.active) {
       const detail = node("details", "message");
       detail.append(
-        node("summary", "", "Last stored state (inactive)"),
+        node("summary", "", ui("Last stored state (inactive)")),
         metadata(data.stored, [
           "mood",
           "current_focus",
@@ -157,7 +158,7 @@ export async function state(target, open, cursor = null) {
           "reason",
           "updated_at",
         ]),
-        action(`Source Run ↗ ${short(data.stored.source_run_id)}`, () =>
+        action(ui(`Source Run ↗ ${short(data.stored.source_run_id)}`), () =>
           open("runs", data.stored.source_run_id),
         ),
       );
@@ -167,8 +168,10 @@ export async function state(target, open, cursor = null) {
       node(
         "p",
         "notice",
-        data.history_note ||
-          "Simulated state is not evidence of subjective emotion.",
+        ui(
+          data.history_note ||
+            "Simulated state is not evidence of subjective emotion.",
+        ),
       ),
     );
     section(target, "State update / source-attempt receipts");
@@ -184,7 +187,9 @@ export async function state(target, open, cursor = null) {
       node(
         "p",
         "",
-        `Episode ${short(receipt.episode_id)} · REV ${receipt.episode_revision}`,
+        ui(
+          `Episode ${short(receipt.episode_id)} · REV ${receipt.episode_revision}`,
+        ),
       ),
     );
     if (receipt.error) row.append(node("p", "muted", receipt.error));
@@ -193,7 +198,7 @@ export async function state(target, open, cursor = null) {
   if (!data.items.length) target.append(empty("No state update receipts"));
   if (data.has_more) {
     const more = action(
-      "More state receipts ↓",
+      ui("More state receipts ↓"),
       async () => {
         more.disabled = true;
         try {

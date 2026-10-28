@@ -103,3 +103,9 @@ Memory 路径复用已有穿越、Symlink/Junction、Hardlink 防护；Dashboard
 单用户本机只读；没有认证、远程部署、Web Chat、编辑器、Repair/Retry、主动消息、自由拖拽或主题系统。独立 web 不与已运行 QQ 并行争夺同库，须重启 QQ 启用同进程 Dashboard。
 
 事件为近期窗口，内存 Stage 事件重启丢失；只有当前 Character 状态正文和来源处理回执，没有完整状态演变正文或 Memory 版本历史。没有可靠旧正文就不显示 Diff。消息、工具结果和文件按预算分页/预览，可能截断；完整审计仍以 SQLite/Markdown 为准。独立 web 遇到遗留 running 记录显示 Unknown，不假装它是当前前台运行。
+
+## 界面语言
+
+默认中文，页头和详情抽屉均可切换 English / 中文，浏览器记住选择。切换仅影响界面文案，不翻译来源正文或改变当前详情。中文界面合成数据示例见 [截图](images/observatory-chinese-synthetic.png)。
+
+语言改动验证：完整离线回归 769 passed、2 skipped；Ruff 检查/格式检查与 `uv build --offline` 通过；实际 Wheel 安装的 10 个 HTML/API/资源请求通过，包含新增词典和语言模块。Edge 验证默认中文、英文切换、刷新恢复、抽屉内切换、存储拒绝、正文/详情状态保持及移动端无溢出，未捕获 JavaScript 异常。截图使用隔离合成数据，未调用真实模型。
