@@ -4,7 +4,7 @@ P2 Review Fix 将 retrieve 与可选 preflight 的异常边界分开：确定性
 
 后处理仅跟踪 RetrievalItem.messages() 新建的 Host 标记，不按文本前缀解析历史消息。历史用户内容即使看起来像损坏的 working_context_reference JSON，也仍原样重放，不获得标记语义或影响去重。引用计数也只统计真实标记。
 
-P3 可选 CharacterContext Protocol 在 Host 后注入有界角色 System，Core JSON 的 persona.md 仅在该视图移除，原文件保留。begin() 通知宿主标记本次 Run，for_request() 将最多 32 个当前/检索/近期 Run ID 交给编译器获取参与标签；Core 不认识 SQLite 或包路径。角色引用、P2 Memory、Summary 都不能赋权；原 prepare() 总预算仍覆盖全部角色内容。真实路径与测试见 [Character](character.md) 和 [State](character-state.md)。
+P3 可选 CharacterContext Protocol 在 Host 前注入有界角色 System，Host 执行契约随后收尾；优先级由明确的 Host 约束和 Registry 校验保证。使用默认提示词时，角色模式改用 CHARACTER_HOST_PROMPT，共享 HOST_EXECUTION_RULES 并避免普通助理身份锚定，自定义 Host 保留。Core JSON 的 persona.md 仅在该视图移除，原文件保留。begin() 通知宿主标记本次 Run，for_request() 将最多 32 个当前/检索/近期 Run ID 交给编译器获取参与标签；Core 不认识 SQLite 或包路径。角色引用、P2 Memory、Summary 都不能赋权；原 prepare() 总预算仍覆盖全部角色内容。真实路径与测试见 [Character](character.md) 和 [State](character-state.md)。
 
 P2 仍用同一个 ContextBuilder。prepare() 首轮 await `_retrieve()`，兼容仅有同步 retrieve() 的宿主，也可 await 一次受限 preflight()；失败只省略可选材料，取消继续传播。for_request() 保持 Base/Core/Summary/当前消息位置，Semantic Memory 以历史低信任 user JSON 进入可选窗口，不作为 System 或 Journal。_select_history() 同时做 Memory path/section_hash 与 Run/call_id 去重，超预算整项省略，保留完整工具配对和最新输入。retrieval 诊断区分候选与实际注入文件、估算 token、预算省略及额外请求。实际实现和测试见 [Retrieval](retrieval.md)、tests/test_memory_retrieval.py。
 

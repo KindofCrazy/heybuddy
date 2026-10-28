@@ -8,7 +8,7 @@ from personal_agent.character.models import CharacterError, CharacterPolicy
 from personal_agent.config import Settings
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextBudget, estimate_request
-from personal_agent.core.context import ContextBuilder
+from personal_agent.core.context import CHARACTER_HOST_PROMPT, DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.models import ModelResponse, TextMessage
 from personal_agent.memory.store import MemoryFS
 from personal_agent.sessions import SessionManager
@@ -40,8 +40,10 @@ async def test_character_view_omits_legacy_persona_preserves_disk_and_host_prece
     agent = Agent(provider, create_builtin_registry(), context=context)
     assert (await agent.run("这个方法肯定能提升性能。")).status == "completed"
     request = provider.requests[0]
-    assert request[0].role == "system" and "registered API tools" in request[0].text
-    assert request[1].role == "system" and "Sherlock" in request[1].text
+    assert request[0].role == "system" and "Sherlock" in request[0].text
+    assert request[1].role == "system" and request[1].text == CHARACTER_HOST_PROMPT
+    assert "registered API tools" in request[1].text
+    assert "helpful personal assistant" not in request[1].text
     core = next(
         json.loads(m.text)
         for m in request
@@ -68,8 +70,8 @@ async def test_identity_persists_through_tool_rounds_without_an_appraisal_call()
     )
     assert (await agent.run("计算后给我结论。 ")).status == "completed"
     assert len(provider.requests) == 2
-    assert all("Sherlock" in request[1].text for request in provider.requests)
-    assert all(request[1].role == "system" for request in provider.requests)
+    assert all("Sherlock" in request[0].text for request in provider.requests)
+    assert all(request[0].role == "system" for request in provider.requests)
     assert all(
         estimate_request(request, tools) < 64000
         for request, tools in zip(provider.requests, provider.tools, strict=True)
@@ -129,3 +131,17 @@ def test_default_settings_leave_character_disabled_and_validate_id():
     settings = Settings(api_key="synthetic", model="synthetic", context_window=64000)
     assert settings.character_id == "none"
     assert settings.character_policy().max_context_bytes == 24576
+
+
+def test_character_layout_keeps_host_contract_last_and_preserves_custom_host():
+    for host in (DEFAULT_SYSTEM_PROMPT, "CUSTOM HOST CONTRACT"):
+        context = ContextBuilder(system_prompt=host, character=compiler())
+        request = context.for_request(context.build("你好"))
+        assert "【说话方式】" in request[0].text
+        assert "【情绪表达】" in request[0].text
+        assert "【情境反应】" in request[0].text
+        assert "character_identity" in request[0].text
+        assert request[1].text == (CHARACTER_HOST_PROMPT if host == DEFAULT_SYSTEM_PROMPT else host)
+        assert request[-1].text == "你好"
+    ordinary = ContextBuilder()
+    assert ordinary.for_request(ordinary.build("你好"))[0].text == DEFAULT_SYSTEM_PROMPT

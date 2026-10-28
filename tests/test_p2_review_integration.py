@@ -225,7 +225,7 @@ async def test_multi_day_correction_survives_partial_publication_reopen_and_cura
         agent = Agent(main, create_builtin_registry(), context=sessions.context())
         assert (await agent.run("还记得我的 HeyBuddy 项目和回复偏好吗？")).status == "completed"
         request = main.requests[0]
-        assert "character_identity" in request[1].text
+        assert "character_identity" in request[0].text
         assert new_preference in " ".join(getattr(m, "text", "") for m in request)
         assert any("方案 B" in str(r.get("content", "")) for r in references(request))
         assert memory.read().blocks["persona.md"] == initial_persona

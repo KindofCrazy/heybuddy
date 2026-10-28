@@ -85,5 +85,5 @@ async def test_actual_recent_runs_have_bounded_role_attribution_not_canonical_sh
         if m.text.startswith('{"kind": "character_context"')
     )
     assert reference["source_role_participation"][tagged] == "same_character"
-    assert "not shared history" in provider.requests[-1][1].text
+    assert "not shared history" in provider.requests[-1][0].text
     assert len(repo.references(tuple([tagged] * 100))) == 1

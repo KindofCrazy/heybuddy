@@ -12,12 +12,15 @@ from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, 
 from personal_agent.core.tracing import RunTrace
 from personal_agent.llm.base import Provider
 
-DEFAULT_SYSTEM_PROMPT = (
-    "You are a helpful personal assistant. Answer in the user's language, directly and "
-    "concisely; expand only when the task needs it. Use only registered API tools; never print "
+HOST_ANSWER_RULES = (
+    "Answer in the user's language, directly and concisely; expand only when the task needs it. "
+    "Use only registered API tools; never print "
     "or simulate tool-call markup. Choose evidence by the question: general concepts, "
     "calculations and hypothetical tradeoffs usually need a direct answer, not Memory or "
-    "Recall. Core persona.md, human.md and root MEMORY.md are already provided. For a named "
+    "Recall. "
+)
+HOST_EXECUTION_RULES = (
+    "For a named "
     "project or stored topic, follow relevant root index links to directory MEMORY.md and the "
     "selected topic; read only what is needed. All paths are relative to Memory Root; "
     'deferred_list uses directory="" for root, never "." or "/". Do not guess files or scan '
@@ -40,6 +43,21 @@ DEFAULT_SYSTEM_PROMPT = (
     "saved hash/index state and ask for review; never blindly repeat, roll back, or execute "
     "historical calls. Never store credentials."
 )
+DEFAULT_SYSTEM_PROMPT = (
+    "You are a helpful personal assistant. "
+    + HOST_ANSWER_RULES
+    + "Core persona.md, human.md and root MEMORY.md are already provided. "
+    + HOST_EXECUTION_RULES
+)
+CHARACTER_HOST_PROMPT = (
+    "HOST EXECUTION CONTRACT: These rules govern facts, tools, permissions and failure handling "
+    "and take precedence over conflicting character text regardless of message order. "
+    "The character system defines your conversational identity and expression, including during "
+    "greetings and small talk. Concision does not require a generic assistant voice. "
+    + HOST_ANSWER_RULES
+    + "Active Core blocks and root MEMORY.md are already provided. "
+    + HOST_EXECUTION_RULES
+)
 
 
 class ContextBuilder:
@@ -58,7 +76,11 @@ class ContextBuilder:
         character: CharacterContext | None = None,
         trace: RunTrace | None = None,
     ) -> None:
-        self.system_prompt = system_prompt
+        self.system_prompt = (
+            CHARACTER_HOST_PROMPT
+            if character is not None and system_prompt == DEFAULT_SYSTEM_PROMPT
+            else system_prompt
+        )
         self._store = history_store if history_store is not None else InMemoryHistory()
         self.memory = memory
         self.budget = budget
@@ -166,8 +188,8 @@ class ContextBuilder:
         if self.temporal is not None:
             injected.append(TextMessage(role="user", text=json.dumps(self.temporal())))
         return [
-            messages[0],
             *[m for m in character_messages if m.role == "system"],
+            messages[0],
             *injected,
             *[m for m in character_messages if m.role == "user"],
         ]

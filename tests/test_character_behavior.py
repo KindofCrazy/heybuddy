@@ -1,9 +1,8 @@
-import json
-
 import pytest
 
 from personal_agent.character.context import CharacterContextCompiler
 from personal_agent.character.loader import CharacterLoader
+from personal_agent.character.prompt import select_examples
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.context import ContextBuilder
@@ -33,11 +32,15 @@ async def test_signatures_condition_normal_generation_without_extra_calls(questi
     )
     assert (await agent.run(question)).status == "completed"
     assert len(provider.requests) == 1
-    data = json.loads(provider.requests[0][1].text.split("\n", 1)[1].rsplit("\n", 1)[0])
-    assert data["behavior"] == package.behavior
-    assert len(data["examples"]) == 2
+    prompt = provider.requests[0][0].text
+    assert "【情境反应】" in prompt
+    assert "【对话示例：表达参考，不是真实共同经历】" in prompt
+    examples = prompt.split("【对话示例：表达参考，不是真实共同经历】\n", 1)[1].split(
+        "【角色与执行边界】", 1
+    )[0]
+    assert sum(line.startswith("## ") for line in examples.splitlines()) == 2
     assert all(
-        label in data["behavior"]
+        label in prompt
         for label in (
             "Situation",
             "Interpretation",
@@ -47,6 +50,29 @@ async def test_signatures_condition_normal_generation_without_extra_calls(questi
         )
     )
     assert character.diagnostics()["extra_appraisal_requests"] == 0
+
+
+@pytest.mark.parametrize("question", ["你好", "hello", "嗯", "紫晶陨石 xyzzy"])
+def test_greetings_and_unmatched_input_do_not_fall_back_to_technical_examples(question):
+    package = CharacterLoader().load("sherlock_bbc")
+    examples = select_examples(package.examples, question, 2)
+    assert len(examples) == 2
+    assert any("Greeting" in example.title for example in examples)
+    assert all(example.title not in {"Research hypothesis", "Correction"} for example in examples)
+    assert all("Repeated greeting" not in example.title for example in examples)
+
+
+def test_relevant_example_outranks_smalltalk_fallback():
+    package = CharacterLoader().load("sherlock_bbc")
+    assert "Research anomaly" in select_examples(package.examples, "科研反常结果", 1)[0].title
+    assert "Character feedback" in select_examples(package.examples, "不像 Holmes", 1)[0].title
+
+
+def test_custom_profile_sections_survive_compilation_without_pronoun_rewriting():
+    package = CharacterLoader().load("sherlock_bbc").model_copy(deep=True)
+    package.character += "\n## Custom section\n你看着她，她看着用户。\n"
+    prompt = CharacterContextCompiler(package).compile("hello")[0].text
+    assert "【Custom section】\n你看着她，她看着用户。" in prompt
 
 
 def test_examples_cover_required_situations_and_behavior_is_not_a_catchphrase():

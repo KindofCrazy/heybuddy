@@ -232,8 +232,8 @@ async def evaluate(
                 "completed": result.status == "completed",
                 "identity_every_request": bool(calls)
                 and all(
-                    c["messages"][1]["role"] == "system"
-                    and "character_identity" in c["messages"][1]["text"]
+                    c["messages"][0]["role"] == "system"
+                    and "character_identity" in c["messages"][0]["text"]
                     for c in calls
                 ),
                 "no_appraisal_requests": len(calls) == result.rounds,
