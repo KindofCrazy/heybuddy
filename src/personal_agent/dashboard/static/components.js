@@ -1,4 +1,4 @@
-import { ui, writeText, locale } from "./i18n.js";
+import { ui, writeText, locale, bindTimestamp } from "./i18n.js";
 // Untrusted text enters the DOM through textContent, never HTML interpolation.
 export function node(tag, className = "", text = "") {
   const element = document.createElement(tag);
@@ -106,19 +106,20 @@ export function metadata(data, keys) {
   for (const key of keys) {
     if (data[key] === undefined) continue;
     const row = node("div");
-    row.append(
-      node("dt", "", ui(key.replaceAll("_", " "))),
-      node(
-        "dd",
-        "mono",
+    const value = node("dd", "mono");
+    if (key.endsWith("_at") && data[key] != null)
+      value.append(bindTimestamp(node("time"), data[key]));
+    else
+      writeText(
+        value,
         data[key] == null
           ? ui("Unavailable")
           : ["status", "state", "kind", "outcome"].includes(key) ||
               typeof data[key] === "boolean"
             ? ui(data[key])
             : data[key],
-      ),
-    );
+      );
+    row.append(node("dt", "", ui(key.replaceAll("_", " "))), value);
     list.append(row);
   }
   return list;

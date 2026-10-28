@@ -30,7 +30,7 @@ async def test_initial_html_is_chinese_without_waiting_for_javascript(observator
     assert 'lang="zh-CN"' in response.text
     assert (await client.get("/static/i18n.js")).status_code == 200
     catalog = (await client.get("/static/zh-CN.json")).json()
-    assert catalog["Model rounds & prompts ↗"] == "模型轮次与 Prompt ↗"
+    assert catalog["Model rounds"] == "模型轮次"
     assert store._connection.total_changes == before and not provider.requests
 
 

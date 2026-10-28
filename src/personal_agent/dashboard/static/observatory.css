@@ -665,6 +665,16 @@ footer {
 .inspector::backdrop {
   background: #1118;
 }
+.inspector[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.drawer-toolbar,
+.drawer-heading,
+.breadcrumbs {
+  flex-shrink: 0;
+}
 .drawer-toolbar {
   display: flex;
   align-items: center;
@@ -704,6 +714,9 @@ footer {
 }
 .inspector-body {
   padding: 0 24px 24px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 .inspector-body p {
   overflow-wrap: anywhere;
@@ -711,12 +724,16 @@ footer {
 .inspector-body .nested-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.drawer-footer {
-  padding: 16px 24px;
-  margin: 0;
+.inspector-actions:not([hidden]) {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  padding: 12px 24px 18px;
+  background: var(--surface);
 }
-.drawer-footer a {
-  font-size: 11px;
+.inspector-actions a {
+  display: inline-block;
+  text-decoration: none;
 }
 .inspector.full {
   width: calc(100vw - 28px);

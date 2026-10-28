@@ -174,9 +174,6 @@ export async function objectDetail(kind, id, target, open) {
       open,
     );
   } else if (kind === "runs") {
-    const rounds = node("a", "action-button", ui("Model rounds & prompts ↗"));
-    rounds.href = `/runs#inspect/rounds/${encodeURIComponent(id)}?full=1`;
-    target.append(rounds);
     section(target, "Messages");
     await messages(target, id, 0);
   } else if (kind === "jobs") {

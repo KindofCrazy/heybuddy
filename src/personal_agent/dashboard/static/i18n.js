@@ -15,6 +15,36 @@ const english = await fetch("/static/en.json")
 export function locale() {
   return language;
 }
+export function timestamp(value) {
+  const date = value ? new Date(value) : new Date(NaN);
+  if (Number.isNaN(date.getTime())) return translate("Unavailable");
+  const pad = (n) => String(n).padStart(2, "0");
+  const day =
+    language === "en"
+      ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+      : `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  const offset = -date.getTimezoneOffset();
+  const utc = `UTC${offset >= 0 ? "+" : "-"}${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}`;
+  const beijing = ["Asia/Shanghai", "Asia/Chongqing"].includes(
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
+  const zone =
+    language === "en"
+      ? beijing
+        ? "Beijing time"
+        : "Local time"
+      : beijing
+        ? "北京时间"
+        : "本地时间";
+  return `${day} ${clock} (${zone} ${utc})`;
+}
+export function bindTimestamp(element, value) {
+  element.dataset.timestamp = value;
+  element.dateTime = value;
+  element.textContent = timestamp(value);
+  return element;
+}
 export function translate(source) {
   source = String(source);
   if (language === "en") return english[source] || source;
@@ -107,6 +137,8 @@ function update() {
     if (bindings.has(element))
       element.textContent = translate(bindings.get(element));
   }
+  for (const element of document.querySelectorAll("[data-timestamp]"))
+    element.textContent = timestamp(element.dataset.timestamp);
   for (const button of document.querySelectorAll("[data-language-toggle]")) {
     button.textContent = language === "en" ? "中文" : "English";
     button.setAttribute(

@@ -11,7 +11,8 @@ import { get } from "./components.js";
 import { timeline } from "./monitor.js";
 import { modelRounds } from "./model-rounds.js";
 const dialog = document.getElementById("inspector"),
-  body = document.getElementById("inspector-body");
+  body = document.getElementById("inspector-body"),
+  actions = document.getElementById("inspector-actions");
 const kinds = new Set([
   "threads",
   "episodes",
@@ -59,6 +60,8 @@ dialog.addEventListener("click", (event) => {
 });
 async function route() {
   const version = ++requestVersion;
+  actions.replaceChildren();
+  actions.hidden = true;
   if (!location.hash.startsWith("#inspect/")) {
     path = [];
     if (dialog.open) dialog.close();
@@ -82,11 +85,6 @@ async function route() {
   }
   dialog.classList.toggle("full", query === "full=1");
   if (!dialog.open) dialog.showModal();
-  document.getElementById("full-view").href = hash + (query ? "" : "?full=1");
-  bindText(
-    document.getElementById("full-view"),
-    query ? "Drawer view ↙" : "Full detail view ↗",
-  );
   const crumbs = document.getElementById("breadcrumbs");
   crumbs.replaceChildren(action(ui("Workspace"), close));
   path.forEach(([kind, id], index) => {
@@ -142,13 +140,19 @@ async function route() {
         openObject,
       );
     } else if (kind === "rounds") {
-      title = ui("Model rounds & prompts");
+      title = ui("Model rounds");
       await modelRounds(result, id, openObject);
     } else title = await objectDetail(kind, id, result, openObject);
     if (version !== requestVersion) return;
     writeText(document.getElementById("inspector-title"), title);
     body.replaceChildren(result);
-    dialog.scrollTop = 0;
+    body.scrollTop = 0;
+    if (kind === "runs") {
+      const rounds = node("a", "action-button", ui("Model rounds"));
+      rounds.href = `/runs#inspect/rounds/${encodeURIComponent(id)}?full=1`;
+      actions.append(rounds);
+      actions.hidden = false;
+    }
   } catch (error) {
     if (version === requestVersion) {
       bindText(document.getElementById("inspector-title"), "Unavailable");
