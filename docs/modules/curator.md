@@ -25,3 +25,7 @@ P2 Review Fix：恢复后的 pending Curator 读取原 sources.memory 与已核�
 ## 阅读与验证
 
 可信调试入口 `/memory curator status|run|retry`，自动执行与 Episode/Thread/Learning 共享维护预算。`tests/test_curator.py` 覆盖重复事实、明确新用户证据、旧稳定偏好、未决冲突、目标先发布/索引后再移除原文、索引失败后安全重试、拒绝 Persona/删除/内容丢失/无来源更正、未变文件 no-op 和低频无工作不调用模型。
+
+## Observatory 只读构造
+
+`MemoryCurator(..., initialize=False)` 在独立 web 中跳过初次 schedule，避免构造时写入 curator_due_at；正常聊天默认仍初始化。Dashboard 从已有状态行读取 due 时间，不调用 Curator.run。验证见 `tests/test_dashboard_lifecycle.py`。

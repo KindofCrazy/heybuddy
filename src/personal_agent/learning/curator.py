@@ -73,7 +73,11 @@ def facts(text: str) -> set[str]:
 
 class MemoryCurator:
     def __init__(
-        self, learning: MemoryLearningService, policy: CuratorPolicy | None = None
+        self,
+        learning: MemoryLearningService,
+        policy: CuratorPolicy | None = None,
+        *,
+        initialize: bool = True,
     ) -> None:
         self.learning = learning
         self.repository = learning.repository
@@ -81,7 +85,7 @@ class MemoryCurator:
         self.model = learning.model
         self.clock = learning.clock
         self.policy = policy or CuratorPolicy()
-        if learning.policy.enabled:
+        if learning.policy.enabled and initialize:
             state = self.repository.activation()
             if state["curator_due_at"] is None:
                 self._schedule()

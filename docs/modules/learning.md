@@ -40,3 +40,7 @@ P2 enabled 时旧 MemoryAutomation 不再自动消费新 Run，旧计划、审�
 ## 阅读与验证
 
 最小入口：`await learner.learn(run_ids=[completed_run_id])`；`tests/test_learning.py` 使用隔离 MemoryFS/SQLite，覆盖偏好更新、同文件合并、跨 Conversation、空提取/no-op、禁止路径/Persona、来源伪造、取消与失败显式重试，以及文件成功/SQLite 失败后只读核对。原 `tests/test_reflection.py`、`tests/test_automation.py` 验证审批和旧记录保持兼容。
+
+## Observatory 只读构造
+
+`MemoryLearningService(..., initialize=False)` 仅由 observer-only 装配使用，跳过构造时的 activate/recover/recover_pending；学习策略和正常聊天构造行为不变，HTTP 不调用 learn/poll。参见 `tests/test_dashboard_lifecycle.py:test_observer_assembly_does_not_recover_or_publish_memory`。

@@ -30,3 +30,7 @@ tests/test_character_state.py 验证引用、no-op、Finalize 去重、Mood/Focu
 
 `CharacterStateRepository.row()` 改用 `SQLiteStore.reading()` 执行有界 SELECT，不取得写事务。Dashboard 复用 `CharacterStateService.active()` 的 TTL 和实际字段；当前/过期存储状态与 source-attempt receipts 分开显示，不建立旧状态正文副本。HTTP 不调用状态生成。验证见 `tests/test_dashboard.py:test_character_state_uses_actual_p3_model_and_receipts`。
 
+
+## 独立观测模式
+
+`CharacterStateService(..., initialize=False)` 跳过状态行创建、包指纹变更清理和 pending 恢复，仅独立 web 装配使用。`CharacterStateRepository.exists()` 只读检查当前 Agent/Character/Package Scope，未形成状态时显示空态。普通聊天默认初始化行为不变。验证见 `tests/test_dashboard_lifecycle.py`。

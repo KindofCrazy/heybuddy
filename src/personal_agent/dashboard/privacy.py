@@ -7,7 +7,7 @@ from personal_agent.memory.safety import PRIVATE
 
 SENSITIVE = re.compile(
     r"api[_ -]?key|app[_ -]?secret|access[_ -]?token|authorization|password|credential|"
-    r"(?:^|_)secret$|openid|session_id|\.env|database_path|memory_root",
+    r"(?:^|_)(?:token|secret)$|openid|session_id|\.env|database_path|memory_root",
     re.I,
 )
 ASSIGNMENT = re.compile(

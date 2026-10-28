@@ -74,7 +74,7 @@ async def run_web(settings: Settings, port: int = 8765) -> None:
 
     stop = asyncio.Event()
     with stop_on_termination(stop):
-        async with open_application(settings) as service:
+        async with open_application(settings, observer_only=True) as service:
             # Read-only standalone mode does not schedule maintenance or call the model.
             async with dashboard_server(service, port):
                 await stop.wait()

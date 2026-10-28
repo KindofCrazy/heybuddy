@@ -100,16 +100,18 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         diagnostics = org.diagnostics(sessions.current.id, read_only=True) if org else None
         return output(
             {
-                "state": "Maintaining"
+                "state": "Running"
+                if service.foreground_active
+                else "Maintaining"
                 if stage
-                else "Running"
-                if recent and recent[0]["status"] == "running"
+                else "Unknown"
+                if service.observer_only and recent and recent[0]["status"] == "running"
                 else "Idle",
                 "current_stage": stage,
                 "latest_run": recent[0] if recent else None,
                 "maintenance_running": stage is not None,
-                "foreground_active": service.foreground_active
-                or bool(recent and recent[0]["status"] == "running"),
+                "foreground_active": service.foreground_active,
+                "observer_only": service.observer_only,
                 "schedule": repository.schedule(),
                 "diagnostics": diagnostics,
                 "qq": service.qq_status() if service.qq_status else {"gateway": "not_attached"},
@@ -128,8 +130,12 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
 
     # Async handlers keep SQLite on its owning event-loop thread.
     @app.get("/api/runs")
-    async def runs(limit: int = Query(8, ge=1, le=20), cursor: int = Query(2**63 - 1, ge=1)):
-        return output(repository.listing("runs", limit, cursor))
+    async def runs(
+        limit: int = Query(8, ge=1, le=20),
+        cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
+        episode_id: str | None = Query(None, max_length=128),
+    ):
+        return output(repository.listing("runs", limit, cursor, episode_id=episode_id))
 
     @app.get("/api/runs/{run_id}")
     async def run(run_id: str):
@@ -144,7 +150,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
     @app.get("/api/episodes")
     async def episodes(
         limit: int = Query(8, ge=1, le=20),
-        cursor: int = Query(2**63 - 1, ge=1),
+        cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
         thread_id: str | None = Query(None, max_length=128),
     ):
         return output(repository.listing("episodes", limit, cursor, thread_id=thread_id))
@@ -154,7 +160,9 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         return output(repository.detail("episodes", episode_id))
 
     @app.get("/api/threads")
-    async def threads(limit: int = Query(8, ge=1, le=20), cursor: int = Query(2**63 - 1, ge=1)):
+    async def threads(
+        limit: int = Query(8, ge=1, le=20), cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1)
+    ):
         return output(repository.listing("threads", limit, cursor))
 
     @app.get("/api/threads/{thread_id}")
@@ -162,7 +170,9 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         return output(repository.detail("threads", thread_id))
 
     @app.get("/api/learning/jobs")
-    async def jobs(limit: int = Query(8, ge=1, le=20), cursor: int = Query(2**63 - 1, ge=1)):
+    async def jobs(
+        limit: int = Query(8, ge=1, le=20), cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1)
+    ):
         return output(repository.listing("jobs", limit, cursor))
 
     @app.get("/api/learning/jobs/{job_id}")
@@ -232,7 +242,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
                     "has_more": False,
                 }
             )
-        stored = actor.repository.current()
+        stored = actor.repository.current() if actor.repository.exists() else None
         return output(
             {
                 "enabled": actor.policy.enabled,

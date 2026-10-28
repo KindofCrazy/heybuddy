@@ -1,6 +1,18 @@
 {% macro base_card(id, title, label, number) -%}
-<section id="{{ id }}" class="card tile-{{ id }}" aria-labelledby="title-{{ id }}">
-  <header class="card-header"><div><p class="eyebrow">{{ label }}</p><h2 id="title-{{ id }}">{{ title }}</h2></div><span class="card-number mono">0{{ number }}</span></header>
-  <div id="content-{{ id }}" class="card-content" aria-live="polite"><p class="empty loading">Loading local records…</p></div>
+<section
+  id="{{ id }}"
+  class="card tile-{{ id }}"
+  aria-labelledby="title-{{ id }}"
+>
+  <header class="card-header">
+    <div>
+      <p class="eyebrow">{{ label }}</p>
+      <h2 id="title-{{ id }}">{{ title }}</h2>
+    </div>
+    <span class="card-number mono">0{{ number }}</span>
+  </header>
+  <div id="content-{{ id }}" class="card-content" aria-live="polite">
+    <p class="empty loading">Loading local records…</p>
+  </div>
 </section>
 {%- endmacro %}

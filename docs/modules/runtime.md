@@ -27,3 +27,7 @@ Agent 的失败继续返回 `RunResult`；初始化失败沿原 CLI 安全错误
 
 `dashboard/app.py:create_app` 接受同一个 `ChatService`，只保留读取投影。QQ 的 `run_qq(..., dashboard=True)` 在 `open_application()` 内通过 `AsyncExitStack` 启动 HTTP，复用同一 SQLite 连接、Agent Scope 与 MemoryFS。独立 `web` 同样调用 `open_application()`，不安排后台维护；已有进程持有锁时拒绝启动。详情见 [dashboard.md](dashboard.md)，验证见 `tests/test_dashboard.py`。
 
+
+## Observatory 只读装配
+
+`assemble_chat`、`open_chat`、`open_application` 支持可信宿主参数 `observer_only=True`，仅独立 `web` 使用。复用原有数据库与服务装配，但不进行 Run/回执恢复、Memory 初始化/迁移、Learning 激活、Curator 调度或角色状态初始化，也不创建后台维护任务。`ChatService.run` 在此模式拒绝执行，`after_reply` 不调度。普通 CLI/QQ 默认行为不变。验证见 `tests/test_dashboard_lifecycle.py` 与 `tests/test_dashboard_boundaries.py`。

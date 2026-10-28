@@ -2,6 +2,7 @@
 
 import base64
 import json
+from datetime import UTC, datetime
 
 from personal_agent.dashboard.repository import ObservatoryRepository
 from personal_agent.runtime import ChatService
@@ -57,7 +58,7 @@ def activity(
     if org:
         events.extend(dict(event) for event in org.events)
         actor = org.character_state
-        stored = actor.repository.current() if actor else None
+        stored = actor.repository.current() if actor and actor.repository.exists() else None
         if stored:
             value = stored.model_dump(mode="json")
             add(
@@ -70,6 +71,10 @@ def activity(
             events[-1].update(
                 {"run_id": stored.source_run_id, "character_state_id": str(stored.revision)}
             )
+    # SQLite source records can contain different valid UTC offsets. Normalize
+    # before ordering/cursor comparison, rather than lexically sorting local times.
+    for event in events:
+        event["timestamp"] = datetime.fromisoformat(event["timestamp"]).astimezone(UTC).isoformat()
     events.sort(key=lambda event: (event["timestamp"], event["event_id"]), reverse=True)
     if cursor:
         try:

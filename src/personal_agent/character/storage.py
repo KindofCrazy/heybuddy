@@ -88,6 +88,17 @@ class CharacterStateRepository:
                 raise HistoryError("Character state is unavailable.")
             return dict(row)
 
+    def exists(self) -> bool:
+        with self.store.reading() as db:
+            return (
+                db.execute(
+                    "SELECT 1 FROM character_states WHERE agent_id=? AND character_id=? "
+                    "AND package_hash=?",
+                    self.scope,
+                ).fetchone()
+                is not None
+            )
+
     def references(self, run_ids: tuple[str, ...]) -> dict:
         """Bounded Host attribution only; no contents or cross-Agent labels are exposed."""
         ids = tuple(dict.fromkeys(run_ids))[:32]

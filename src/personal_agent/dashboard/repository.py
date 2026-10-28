@@ -34,6 +34,7 @@ class ObservatoryRepository:
         cursor: int = 9223372036854775807,
         *,
         thread_id: str | None = None,
+        episode_id: str | None = None,
     ) -> dict:
         # Identifiers come exclusively from this fixed map, never URL interpolation.
         sources = {
@@ -63,6 +64,10 @@ class ObservatoryRepository:
             self.detail("threads", thread_id)
             extra = " AND t.thread_id=?"
             params.append(thread_id)
+        if episode_id is not None:
+            self.detail("episodes", episode_id)
+            extra = " AND t.id IN (SELECT run_id FROM episode_runs WHERE episode_id=?)"
+            params.append(episode_id)
         with self.store.reading() as db:
             rows = db.execute(
                 f"SELECT t.rowid AS position,{columns} FROM {table} t WHERE {scope} "

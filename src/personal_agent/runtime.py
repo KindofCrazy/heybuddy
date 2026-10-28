@@ -47,12 +47,15 @@ class ChatService:
     organization: OrganizationRuntime | None = None
     foreground_active: bool = False
     qq_status: Callable[[], dict] | None = None
+    observer_only: bool = False
 
     async def foreground(self) -> None:
         if self.organization is not None:
             await self.organization.foreground()
 
     async def run(self, text: str, *, permissions: frozenset[str] = frozenset()) -> RunResult:
+        if self.observer_only:
+            raise RuntimeError("Observer-only service cannot start a Run")
         self.foreground_active = True
         try:
             await self.foreground()
@@ -61,6 +64,8 @@ class ChatService:
             self.foreground_active = False
 
     def after_reply(self, result: RunResult | None = None) -> None:
+        if self.observer_only:
+            return
         if self.organization is not None and self.sessions is not None:
             self.organization.schedule(
                 self.sessions.current.id,
@@ -73,7 +78,12 @@ class ChatService:
 
 
 def assemble_chat(
-    settings: Settings, sessions: SessionManager, memory: MemoryFS, provider: Provider
+    settings: Settings,
+    sessions: SessionManager,
+    memory: MemoryFS,
+    provider: Provider,
+    *,
+    observer_only: bool = False,
 ) -> ChatService:
     if settings.character_id != "none":
         policy = settings.character_policy()
@@ -119,12 +129,17 @@ def assemble_chat(
         ),
     )
     automation = MemoryAutomation(reflection, settings.automation_policy())
-    automation.repository.recover()
+    if not observer_only:
+        automation.repository.recover()
     repository = EpisodeRepository(sessions.store, sessions.agent.id)
-    repository.recover()
-    thread_repository.recover()
+    if not observer_only:
+        repository.recover()
+        thread_repository.recover()
     learning = MemoryLearningService(
-        LearningRepository(repository), reflection, settings.learning_policy()
+        LearningRepository(repository),
+        reflection,
+        settings.learning_policy(),
+        initialize=not observer_only,
     )
     character_state = None
     if sessions.character is not None:
@@ -137,6 +152,7 @@ def assemble_chat(
             reflection,
             settings.context_budget(),
             settings.character_state_policy(),
+            initialize=not observer_only,
         )
         sessions.character.on_run = character_repository.tag_run
         sessions.character.source_scope = character_repository.references
@@ -151,7 +167,7 @@ def assemble_chat(
         automation=automation,
         learning=learning,
         character_state=character_state,
-        curator=MemoryCurator(learning, settings.curator_policy()),
+        curator=MemoryCurator(learning, settings.curator_policy(), initialize=not observer_only),
         threads=ThreadOrganizer(
             thread_repository,
             OrganizerModel(
@@ -159,12 +175,14 @@ def assemble_chat(
             ),
         ),
     )
-    return ChatService(agent, sessions, reflection, automation, organization)
+    return ChatService(
+        agent, sessions, reflection, automation, organization, observer_only=observer_only
+    )
 
 
 @asynccontextmanager
 async def open_chat(
-    settings: Settings, sessions: SessionManager, memory: MemoryFS
+    settings: Settings, sessions: SessionManager, memory: MemoryFS, *, observer_only: bool = False
 ) -> AsyncIterator[ChatService]:
     # One request per round; no retry of a possibly executed tool turn.
     async with AsyncOpenAI(
@@ -173,7 +191,13 @@ async def open_chat(
         timeout=settings.request_timeout_seconds,
         max_retries=0,
     ) as client:
-        service = assemble_chat(settings, sessions, memory, OpenAIProvider(client, settings.model))
+        service = assemble_chat(
+            settings,
+            sessions,
+            memory,
+            OpenAIProvider(client, settings.model),
+            observer_only=observer_only,
+        )
         try:
             yield service
         finally:
@@ -181,10 +205,13 @@ async def open_chat(
 
 
 @asynccontextmanager
-async def open_application(settings: Settings) -> AsyncIterator[ChatService]:
+async def open_application(
+    settings: Settings, *, observer_only: bool = False
+) -> AsyncIterator[ChatService]:
     with SQLiteStore(settings.database_path) as store:
         store.initialize()
-        store.recover_incomplete_runs()
+        if not observer_only:
+            store.recover_incomplete_runs()
         sessions = SessionManager(
             store,
             budget=settings.context_budget(),
@@ -195,7 +222,8 @@ async def open_application(settings: Settings) -> AsyncIterator[ChatService]:
             sessions.agent.id,
             max_bytes=settings.memory_max_bytes,
         )
-        memory.initialize()
+        if not observer_only:
+            memory.initialize()
         sessions.memory = memory
-        async with open_chat(settings, sessions, memory) as service:
+        async with open_chat(settings, sessions, memory, observer_only=observer_only) as service:
             yield service

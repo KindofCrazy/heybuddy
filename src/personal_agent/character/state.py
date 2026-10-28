@@ -44,6 +44,8 @@ class CharacterStateService:
         budget: ContextBudget,
         policy: StatePolicy | None = None,
         clock: Clock | None = None,
+        *,
+        initialize: bool = True,
     ) -> None:
         if (
             package.character_id != repository.character_id
@@ -63,7 +65,8 @@ class CharacterStateService:
         self._base_age = 0.0
         self._base_ticks = 0.0
         self.read_error = False
-        repository.initialize()
+        if initialize:
+            repository.initialize()
         self.model = OrganizerModel(
             verifier.provider,
             budget,

@@ -62,6 +62,8 @@ class MemoryLearningService:
         reflection: ReflectionService,
         policy: LearningPolicy | None = None,
         clock: Clock | None = None,
+        *,
+        initialize: bool = True,
     ) -> None:
         if repository.agent_id != reflection.repository.agent_id:
             raise ReflectionError("agent_memory_mismatch")
@@ -79,7 +81,7 @@ class MemoryLearningService:
             self.policy,
         )
         self._lock = asyncio.Lock()
-        if self.policy.enabled:
+        if self.policy.enabled and initialize:
             self.repository.activate(self.clock.now())
             self.repository.recover(self.clock.now())
             self.recover_pending()
