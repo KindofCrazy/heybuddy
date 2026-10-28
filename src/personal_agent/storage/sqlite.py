@@ -29,6 +29,7 @@ from personal_agent.storage import (
     episodes,
     learning,
     maintenance,
+    qq,
     recall,
     reflection,
     threads,
@@ -36,7 +37,7 @@ from personal_agent.storage import (
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -74,6 +75,7 @@ MIGRATIONS = {
     10: maintenance.RETRY_SCHEMA,
     11: learning.SCHEMA,
     12: character_storage.SCHEMA,
+    13: qq.SCHEMA,
 }
 
 

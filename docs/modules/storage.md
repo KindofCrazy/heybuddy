@@ -102,3 +102,6 @@ SQLite 表本身假设由应用追加使用，外部直接篡改已覆盖的原�
 ## V0.7.2 Phase 1 集成
 
 schema 5 追加 storage/automation.py 的 automation_batches 与范围/活动唯一索引。绑定 Agent 检查归属；成功负判断和 reflection_progress 同事务提交，未完成或失败不能推进。原计划、原日志、Recall 与 Compaction 表不改写；已保存计划的 batch 关联可按源范围补记，不重复执行。见[Automation](automation.md)。
+# QQ 收件回执（schema 13）
+
+`storage/qq.py` 原子追加 `qq_receipts` 及去重/待处理索引，不改变原始 Journal、Recall、Learning 或角色表。`QQInbox` 仅保存最小平台回执与有界待处理文本；领取后删除暂存正文，完整对话继续由 `SQLiteStore.begin_run()` 等原路径维护。处理/发送中的遗留回执只改为 uncertain，不重跑工具；received 的恢复绑定同一 Agent、AppID、OpenID 和 Conversation。执行路径、外部发送提交窗口及测试见 [qq.md](qq.md)。

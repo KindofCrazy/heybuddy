@@ -30,3 +30,19 @@ SDK 审查：腾讯 [botpy gateway.py](https://github.com/tencent-connect/botpy/
 - [消息概述](https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/overview.html) 与 [发送单聊消息](https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/v2_users_user_openid_messages.post.html) 顶部写 60 分钟/4 次，但后者 msg_id 字段仍写 5 分钟。当前本地默认 240 秒，宿主最多配置 300 秒，最多 4 次；过期不转主动消息。相同 msg_id+msg_seq 重发可能被平台拒绝，也不能据此承诺 Exactly-once。
 - 发送接口给出总消息 100 QPS；主动消息的 Bot/关系配额不作为本项目被动发送配额。适配器仍进行保守串行节流，平台 429 不盲目重发。当前页面未给出一致的纯文本硬长度计数规则，采用较保守的 1500 UTF-8 字节本地上限，平台仍可按内容、权限或长度拒绝，不能声称等于官方字符上限。
 - 权限、测试账号/沙箱、IP 白名单由 [QQ 开放平台](https://q.qq.com/) 按 AppID 配置。凭据本身不证明 C2C、Gateway 或出口 IP 已被授权。
+
+## Adapter 与收件回执执行路径
+
+`events.parse_text()` 只投影 C2C、非机器人、无附件/卡片/引用元素的纯文本；字段大小、UTF-8、时区时间戳和未来偏移有界。只使用 author.user_openid；不从昵称/union_openid/内容推断授权。`QQAdapter.accept()` 在白名单检查后调用 `storage.qq.QQInbox.receive()`，事务提交后通知单消费者，随后 Gateway 才推进 sequence。接收路径不等待 LLM。
+
+schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁。回执仅保留平台标识、时间、状态、Conversation/Run 关联和段数；仅 received 阶段暂存输入文本，领取时删除这份队列文本。原始完整历史仍只保存在 messages；不创建 QQ 历史或事实数据库。
+
+`_consume()` 按收件 sequence 领取，再调用共享 `foreground()`。普通文本 → `ChatService.run(..., permissions=frozenset())` → 原 Agent/ContextBuilder/Journal；以 `/` 开头的输入返回固定不支持提示，不调用任何 CLI 管理分支。排队不会取消正常 Run；消费者空闲时才调用 `after_reply()` 复用现有维护策略，不强制逐条切 Episode。
+
+领取前提交 processing，回答后提交 processed，再于每段外部发送前提交 sending。发送成功更新 sent_parts，全部完成才记 replied。失败不会重跑 Agent；发送超时、失联、平台审核等无法确认结果时记 uncertain，不重发剩余段。部分已发送的文字无法回滚。发送节流跨不同输入保持串行；每段检查原始时间及本地接收时间，不能延长被动窗口。
+
+去重键为 `(agent_id, app_id, message_id)`，非空 event_id 另有唯一索引；msg_idx 仅作为 metadata。刻意保守按 message_id 拒绝重复，即使重复投递缺少或改变 msg_idx 也不会重复运行。极少数共享同一 msg_id、不同 msg_idx 的独立输入可能被抑制；本版不支持平台并行/引用消息。去重墓碑不自动删除，因此收件回执随消息数增长；队列待处理数默认 16（另有最多一个已领取），不能无限积压。队列满抛出受控错误，不推进当前事件游标，断线后有限 Resume；不承诺平台会无限保留/补发事件。
+
+重启 `QQInbox.recover()` 将 processing/processed/sending 改为 uncertain；已领取但尚未开始 Run 的崩溃窗口也保守放弃。只有 received 可恢复；配置白名单变化不读取旧用户队列，Conversation 被本地切换时旧 received 标记 failed，不重定向到新会话。退出停止接收并取消消费者，正在执行的 Agent 使用既有 cancelled 审计；received 留待下次安全处理。SQLite 失败停止消费，不推进接收游标。数据库与 QQ API 之间没有共同事务，不提供 Exactly-once。
+
+验证：`tests/test_qq_adapter.py` 覆盖授权/未授权、去重、串行/队列上限、命令隔离、伪造权限、Provider 超时、发送失败/不确定、长文本、过期、退出、重启以及 schema 12→13 回滚。
