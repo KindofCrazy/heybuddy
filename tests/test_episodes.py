@@ -496,3 +496,37 @@ def test_source_sequence_gaps_cannot_be_relabelled_as_real_evidence(state):
         connection.execute("UPDATE context_runs SET last_sequence=3 WHERE run_id=?", (run_id,))
     with pytest.raises(HistoryError, match="not contiguous"):
         repo.batch(stream, OrganizationPolicy())
+
+
+async def test_million_token_configuration_reaches_single_bounded_request(
+    state, monkeypatch, tmp_path
+):
+    from personal_agent.config import load_settings
+    from personal_agent.organization.budget import MaintenanceBudget, cycle_providers
+    from personal_agent.organization.clock import SystemClock
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_MODEL", "test-model")
+    monkeypatch.setenv("AGENT_CONTEXT_WINDOW", "1048576")
+    monkeypatch.setenv("AGENT_ORGANIZATION_OUTPUT_TOKENS", "1000000")
+    monkeypatch.setenv("AGENT_ORGANIZATION_MAINTENANCE_TOKENS", "1048576")
+    settings = load_settings(tmp_path / "absent.env")
+    policy = settings.organization_policy()
+    db, stream, repo = state
+    seed(db, stream)
+    provider = SegmentProvider()
+    model = OrganizerModel(provider, settings.context_budget(), policy)
+    budget = MaintenanceBudget(policy, SystemClock())
+    with cycle_providers([model], budget):
+        report = await EpisodeOrganizer(repo, model).organize(stream)
+    assert report["outcome"] == "completed"
+    assert provider.output_limits == [1_000_000]
+    assert provider.tools == [[]]
+    assert len(provider.requests) == 1
+    assert len(repo.list(stream)) == 1
+    assert budget.requests == 1
+    assert 1_000_000 < budget.reserved_tokens <= policy.maintenance_tokens
+    assert model.input_limit == 24576
+    assert (
+        model.input_limit + policy.output_tokens + settings.safety_margin < settings.context_window
+    )

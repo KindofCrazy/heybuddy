@@ -76,7 +76,7 @@ class Settings(ContextBudget, QQSettings):
     organization_run_threshold: int = Field(default=8, ge=1, le=64)
     organization_page_runs: int = Field(default=8, ge=1, le=16)
     organization_input_tokens: int = Field(default=24576, ge=4096, le=131072)
-    organization_output_tokens: int = Field(default=8192, ge=256, le=32768)
+    organization_output_tokens: int = Field(default=8192, ge=256, le=1_000_000)
     organization_timeout_seconds: float = Field(default=60, gt=0, le=300)
     organization_weak_gap_seconds: int = Field(default=900, ge=1)
     organization_strong_gap_seconds: int = Field(default=5400, ge=1)

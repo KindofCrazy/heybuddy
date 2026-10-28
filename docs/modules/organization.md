@@ -53,3 +53,7 @@ episode_runs.run_id 主键防重复，Run/stream 和 Episode/stream 复合外键
 ## 宿主边界
 
 OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维护计量和内存事件；不创建终端线程、不解析 CLI、不执行观察 SQL。console.AsyncInput 与 cli_commands.MaintenanceCommands 由 main.chat 使用；ScheduleRepository.observe 管理观察查询。命令仍先 foreground()，不向模型或 HTTP 注册。tests/test_organization_runtime.py 验证构造无输入线程、诊断零写和前台抢占。
+
+## 单次请求与大输出预算
+
+每批 `EpisodeOrganizer.organize()` 仅调用一次 `OrganizerModel.ask()`，后者用 system 提示与 user JSON 发送一次无工具请求，再校验并发布；没有模型多轮循环或截断续写。积压分批和 Thread 整理各自是独立请求。整理 API 输出上限现在允许显式配置至 1,000,000 tokens（默认 8192），包含推理，可见 JSON 仍单独限制。1M 配置及窗口/维护预留关系见 [配置说明](config.md#显式-1m-整理配置)。

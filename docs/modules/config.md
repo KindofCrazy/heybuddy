@@ -105,3 +105,11 @@ V0.7.2 新增 AGENT_MEMORY_AUTOMATION=suggest、AGENT_MEMORY_AUTOMATION_MAX_REQU
 ## 宿主工具数量限制
 
 AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CALLS_PER_RUN 默认 256、范围 1–1024。Settings 将它们传给原 Agent；在响应进入工具调用 Journal 或执行前检查整批数量，超限返回 invalid_response，已执行的更早批次保留，不截取执行部分批次、不自动重试。限制与 max_rounds/模型输出 token 限额独立。测试见 tests/test_agent.py；原 write-before-execute 和结果配对校验保持。
+
+## 显式 1M 整理配置
+
+整理输出允许 256～1,000,000 tokens，默认仍为 8192；该额度包含推理。需要大输出时，可显式设置 `AGENT_CONTEXT_WINDOW=1048576`、`AGENT_ORGANIZATION_OUTPUT_TOKENS=1000000`、`AGENT_ORGANIZATION_MAINTENANCE_TOKENS=1048576`。窗口需容纳输入、输出和安全余量；输入上限仍为默认 24576，单轮维护按实际输入估算加完整输出额度预留，因此该配置通常一轮只能容纳一次整理调用。API 是否接受这些值取决于实际模型和端点，宿主校验通过不表示服务端支持。
+
+`load_settings()` 在下次启动时读取配置，环境变量优先于本地文件。超时、可见 JSON 字节上限和失败显式重试规则保持独立；增大 tokens 不会自动恢复 failed 批次。离线端到端验证见 `tests/test_episodes.py::test_million_token_configuration_reaches_single_bounded_request`。
+
+例如 [DeepSeek Chat API 文档](https://api-docs.deepseek.com/api/create-chat-completion/)目前规定 deepseek-flash 最大输出为 393216 tokens，1M 上下文不等于 1M 输出；使用此模型时应将上述 OUTPUT_TOKENS 改为 393216。宿主保留 1,000,000 的可配置上界，端点能力仍需分别核对。

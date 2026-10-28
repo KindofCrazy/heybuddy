@@ -19,7 +19,7 @@ class OrganizationPolicy(Model):
     enabled: bool = True
     page_runs: int = Field(default=8, ge=1, le=16)
     input_tokens: int = Field(default=24576, ge=4096, le=131072)
-    output_tokens: int = Field(default=8192, ge=256, le=32768)
+    output_tokens: int = Field(default=8192, ge=256, le=1_000_000)
     response_bytes: int = Field(default=32768, ge=1024, le=65536)
     source_bytes: int = Field(default=65536, ge=1024, le=262144)
     timeout_seconds: float = Field(default=60, gt=0, le=300, allow_inf_nan=False)
