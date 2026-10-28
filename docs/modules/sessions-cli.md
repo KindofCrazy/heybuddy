@@ -76,3 +76,5 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 # Shared Runtime 接线
 
 `main.run_cli()` 通过 `runtime.open_application()` 持有数据库、恢复会话并初始化 MemoryFS；`runtime.open_chat()` / `assemble_chat()` 统一装配 Provider 与 P1/P2/P3。`main._run_session()` 保留为已有会话的兼容入口。CLI 本地命令解析仍在 `main._chat()`，普通输入交给 `ChatService.run()`，展示后 `after_reply()` 恢复既有维护。完整调用路径见 [runtime.md](runtime.md)。
+
+`main.main()` 接受可选的 `chat` / `qq` 位置参数，默认 CLI 兼容。`qq` 调用 `channels.qq.runner.run_qq()`，`qq --discover-openid` 为不初始化 Agent 的限时诊断。两种正常聊天模式共用数据库单进程锁，不能以两个进程同时连接同一数据库；QQ 中的 `/new` 等文本不进入 CLI 命令分支。参见 [qq.md](qq.md)。

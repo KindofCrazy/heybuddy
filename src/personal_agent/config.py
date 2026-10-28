@@ -301,16 +301,26 @@ ENV_FIELDS = {
 }
 
 
-def load_settings(env_file: Path | None = None) -> Settings:
+def _environment_values(fields: dict[str, str], env_file: Path | None = None) -> dict:
     # Explicit project-local file only: never search parent directories for credentials.
     path = env_file if env_file is not None else Path.cwd() / ".env"
     values = dotenv_values(path, encoding="utf-8-sig", interpolate=False)
     data = {}
-    for env_name, field in ENV_FIELDS.items():
+    for env_name, field in fields.items():
         value = os.environ.get(env_name, values.get(env_name))
         if value is not None:
             data[field] = value
-    return Settings.model_validate(data)
+    return data
+
+
+def load_settings(env_file: Path | None = None) -> Settings:
+    return Settings.model_validate(_environment_values(ENV_FIELDS, env_file))
+
+
+def load_qq_settings(env_file: Path | None = None) -> QQSettings:
+    # Discovery has no Provider, Agent, database or paid-model configuration.
+    fields = {"AGENT_" + name.upper(): name for name in QQSettings.model_fields}
+    return QQSettings.model_validate(_environment_values(fields, env_file))
 
 
 def default_memory_root() -> Path:

@@ -46,3 +46,11 @@ schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁�
 重启 `QQInbox.recover()` 将 processing/processed/sending 改为 uncertain；已领取但尚未开始 Run 的崩溃窗口也保守放弃。只有 received 可恢复；配置白名单变化不读取旧用户队列，Conversation 被本地切换时旧 received 标记 failed，不重定向到新会话。退出停止接收并取消消费者，正在执行的 Agent 使用既有 cancelled 审计；received 留待下次安全处理。SQLite 失败停止消费，不推进接收游标。数据库与 QQ API 之间没有共同事务，不提供 Exactly-once。
 
 验证：`tests/test_qq_adapter.py` 覆盖授权/未授权、去重、串行/队列上限、命令隔离、伪造权限、Provider 超时、发送失败/不确定、长文本、过期、退出、重启以及 schema 12→13 回滚。
+
+## 启动与关闭
+
+`main.main()` 默认 `chat` 保持原入口兼容；`uv run personal-agent qq` 选择 `runner.run_qq()`。凭据及 OpenID 检查先于 Runtime/Provider 初始化。`run_qq()` 使用 `runtime.open_application()`，同一个 Agent/Conversation/MemoryFS/Character，不增加渠道专用人格 Prompt。接收任务与消费者被一起监督；任一异常会停止另一方。Ctrl+C 或 SIGTERM 先禁止新收件、取消 Gateway，再保守取消前台消费者，最后退出共享应用上下文；WebSocket 关闭握手最多 3 秒，消费者取消等待默认 10 秒。同步 SQLite/MemoryFS 本地 I/O 不是硬实时可取消操作。
+
+`uv run personal-agent qq --discover-openid` 单独通过 `config.load_qq_settings()` 加载 QQ 配置，不要求 OpenAI Key、模型或 Context Window；不打开数据库/MemoryFS/Character。只在官方 TLS Gateway 收到第一条有效 C2C 文本时输出 author.user_openid，绝不打印正文/原事件，不回复，随后退出。默认最多等待 120 秒（`AGENT_QQ_DISCOVERY_SECONDS`，最多 600），不自动允许该 OpenID，须用户核对测试账号后写入白名单。
+
+关闭 P2 自动学习可以设置 `AGENT_MEMORY_LEARNING_ENABLED=false`；同时设置 `AGENT_MEMORY_AUTOMATION=off`，避免启动兼容的建议式 Reflection。已有 Core/Deferred/Recall 检索继续可用。P1/P3 的空闲维护仍按宿主现有配置与预算执行；角色开关和来源与 CLI 相同，不修改 persona.md 或 Character Core。

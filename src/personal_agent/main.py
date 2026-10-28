@@ -8,8 +8,10 @@ from collections.abc import Callable
 from pydantic import ValidationError
 
 from personal_agent.automation.service import MemoryAutomation
+from personal_agent.channels.qq.config import QQError
+from personal_agent.channels.qq.runner import discover_openid, run_qq
 from personal_agent.character.models import CharacterError
-from personal_agent.config import Settings, load_settings
+from personal_agent.config import Settings, load_qq_settings, load_settings
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
 from personal_agent.core.history import HistoryError
@@ -279,11 +281,19 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Personal Agent / HeyBuddy P3 Passive Character CLI"
+        description="Personal Agent / HeyBuddy CLI and official QQ C2C"
     )
-    parser.parse_args()
+    parser.add_argument("channel", nargs="?", choices=("chat", "qq"), default="chat")
+    parser.add_argument(
+        "--discover-openid",
+        action="store_true",
+        help="QQ only: receive one test OpenID without Agent, database or model calls",
+    )
+    args = parser.parse_args()
+    if args.discover_openid and args.channel != "qq":
+        parser.error("--discover-openid requires qq")
     try:
-        settings = load_settings()
+        settings = load_qq_settings() if args.discover_openid else load_settings()
     except ValidationError as exc:
         # ValidationError.__str__ contains raw input, potentially including the API key.
         fields = ", ".join(
@@ -305,12 +315,24 @@ def main() -> int:
     logger = logging.getLogger("personal_agent")
     previous_logging = (logger.handlers[:], logger.level, logger.propagate)
     logger.handlers = [handler]
-    logger.setLevel(settings.log_level)
+    logger.setLevel(getattr(settings, "log_level", "INFO"))
     logger.propagate = False
     try:
-        asyncio.run(run_cli(settings))
+        if args.discover_openid:
+            asyncio.run(discover_openid(settings))
+        elif args.channel == "qq":
+            asyncio.run(run_qq(settings))
+        else:
+            asyncio.run(run_cli(settings))
     except (KeyboardInterrupt, EOFError):
         print("\n再见。")
+    except QQError as exc:
+        print(
+            f"QQ 错误 [{exc.code}]：检查本地 QQ 配置、平台权限、出口 IP 和网络；"
+            "不会重跑已领取的消息或不确定发送。",
+            file=sys.stderr,
+        )
+        return 2 if exc.code in {"qq_configuration", "qq_openid_required"} else 1
     except HistoryError:
         print(
             "存储错误：无法初始化或访问会话数据库，请检查权限或其他运行中的实例。", file=sys.stderr

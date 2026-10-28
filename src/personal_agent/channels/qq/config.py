@@ -35,6 +35,7 @@ class QQSettings(BaseModel):
     qq_input_max_bytes: int = Field(default=16384, ge=128, le=65536)
     qq_send_interval_seconds: float = Field(default=1, ge=0.1, le=10)
     qq_shutdown_seconds: float = Field(default=10, gt=0, le=30)
+    qq_discovery_seconds: float = Field(default=120, gt=0, le=600)
 
     @field_validator("qq_allowed_openids", mode="before")
     @classmethod

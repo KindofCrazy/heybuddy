@@ -12,6 +12,8 @@
 4. 渠道展示回答后调用 `after_reply()`，沿用 `OrganizationRuntime.schedule()` 的空闲、累计数量和维护预算。它不逐条强制整理 Episode。
 5. 退出上下文先关闭后台任务和输入桥，再关闭 SDK、SQLite 与占用锁。
 
+QQ 入口 `channels.qq.runner.run_qq()` 也调用 `open_application()`，然后把同一 `ChatService` 交给 `QQAdapter`，只传净化后的文本和空权限。它不调用 `main._chat()` 的本地管理命令解析器。P3 的 `CharacterContextCompiler`、`CharacterStateService` 及历史角色标签都沿原路径恢复；P2 的 Learner、Curator、回执核对与 Adaptive Retrieval 也使用同一装配。`tests/test_qq_integration.py` 验证 CLI→退出→QQ 的历史、Memory、已产生的 Character State，以及 QQ 抢占真实后台 Learning。
+
 ## 异常与边界
 
 Agent 的失败继续返回 `RunResult`；初始化失败沿原 CLI 安全错误路径返回。SDK retries 固定为 0。文件与 SQLite 的提交窗口、Reflection 审批和 P2 回执核对不变。`Agent.run()` 的现有锁串行处理前台 Run；渠道负责限制输入积压和外部回复失败。单个数据库只允许一个本地应用进程。
