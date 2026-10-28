@@ -132,9 +132,8 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "memory_read",
             (
-                "Read an authorized Core block (persona.md/human.md/MEMORY.md) with its latest "
-                "hash. Core is already in context; read again before an authorized edit, not "
-                "for ordinary Q&A."
+                "读取获授权的核心记忆块（persona.md/human.md/MEMORY.md）及最新摘要。"
+                "核心记忆已在上下文中；仅在获授权编辑前重新读取，不用于普通问答。"
             ),
             ReadMemoryArguments,
             read,
@@ -143,9 +142,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "memory_edit",
             (
-                "Authorized Core local edit: read first, pass latest expected_hash and nonempty"
-                " unique old_text/new_text. Preserve all other facts. Conflict means "
-                "read/review, not blind retry."
+                "获授权的核心记忆局部编辑：先读取，传入最新 expected_hash，以及非空、精确唯"
+                "一匹配的 old_text 和替换文本 new_text。"
+                "保留其他事实。冲突时重新读取或审阅，不盲目重试。"
             ),
             EditMemoryArguments,
             edit,
@@ -154,9 +153,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "memory_update",
             (
-                "Authorized full Core block replacement only when explicitly requested. Read "
-                "current block/hash first; omitted content is removed. Prefer memory_edit for "
-                "local changes."
+                "仅在明确要求且获得授权时完整替换核心记忆块。"
+                "先读取当前内容和摘要；省略的内容将被删除。"
+                "局部修改优先使用 memory_edit。"
             ),
             UpdateMemoryArguments,
             update,
@@ -165,9 +164,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "deferred_list",
             (
-                'List metadata, not full knowledge. directory="" means root (never "." or "/");'
-                " other directories are root-relative. Follow relevant MEMORY.md links, use "
-                "offset for bounded pages, avoid broad scans."
+                '仅列出元数据，不返回知识全文。directory="" 表示根目录，不能使用 "." 或 "/"'
+                "；其他目录相对根目录。沿相关 MEMORY.md 链接发现内容，使用 offset 有界分页"
+                "，不做广泛扫描。"
             ),
             ListArguments,
             listing,
@@ -176,10 +175,10 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "deferred_read",
             (
-                "Read a relevant index/topic by root-relative path after following MEMORY.md. "
-                "Returns content/hash, truncated and next_offset. Continue with "
-                "offset/expected_hash only if needed; missing/error means acknowledge, not "
-                "invent content."
+                "沿 MEMORY.md 链接，以根目录相对路径读取相关索引或主题。"
+                "返回 content/hash、truncated 和 next_offset。"
+                "仅在需要时使用 offset/expected_hash 续读；"
+                "缺失或错误时如实说明，不编造内容。"
             ),
             ReadArguments,
             deferred_read,
@@ -188,9 +187,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "deferred_create",
             (
-                "Authorized new topic only after checking existing indexes for its subject. "
-                "content needs name/description frontmatter. Host adds index links. Partial "
-                "indexing means file may exist: inspect/check, never recreate blindly."
+                "获得授权并检查相关主题的现有索引后，才能创建新主题。"
+                "content 需要 name/description 文首元数据；"
+                "宿主维护索引链接。索引部分失败时文件可能已存在，先检查，不盲目重新创建。"
             ),
             CreateArguments,
             create,
@@ -199,10 +198,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "deferred_edit",
             (
-                "Authorized local topic/index edit: first read latest hash, then one exact "
-                "unique old_text span. Preserve unrelated knowledge. data.edited=true on "
-                "partial failure means saved: review data.index.path/reason rather than repeat."
-                " Custom index prose is preserved."
+                "获授权的主题或索引局部编辑：先读取最新摘要，再替换一处精确且唯一匹配的 "
+                "old_text，保留无关知识。部分失败时 data.edited=true 表示已保存，应审阅 "
+                "data.index.path/reason，不重复编辑。保留自定义索引说明。"
             ),
             EditArguments,
             deferred_edit,
@@ -211,9 +209,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "deferred_index_check",
             (
-                "Read-only bounded index audit for missing/dangling/invalid/duplicate links and"
-                " stale generated metadata. Paginate issues; custom prose need not match "
-                "frontmatter. Use after discovery/index trouble, not ordinary questions."
+                "只读、有界检查索引中的缺失、悬空、无效和重复链接，以及过期的生成元数据。"
+                "问题分页返回；人工说明不必与文首元数据一致。"
+                "仅在发现或索引异常时使用，不用于普通问答。"
             ),
             CheckArguments,
             check,
@@ -222,9 +220,9 @@ def register_memory_tools(registry: ToolRegistry, fs: MemoryFS) -> None:
         (
             "deferred_index_repair",
             (
-                "Authorized repair adds missing discovery links/indexes and refreshes intact "
-                "generated entries only. Preserves manual/unmarked prose; unresolved issues "
-                "yield data.ok=false. Review leftovers, no automatic rollback/retry."
+                "获授权的索引修复仅补齐缺失的发现链接或索引，并刷新标记完整的生成条目。"
+                "保留人工和无标记说明；未解决问题返回 data.ok=false。"
+                "审阅剩余问题，不自动回滚或重试。"
             ),
             RepairArguments,
             repair,

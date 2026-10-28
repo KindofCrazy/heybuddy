@@ -1,5 +1,7 @@
 # ContextBuilder 与会话工作上下文
 
+宿主回答规则和执行契约现使用中文，普通与角色模式共用事实、检索、权限和部分失败语义。此次语言变更由用户明确要求；历史英文快照不覆盖，当前主提示词和工具说明记录于 `evals/prompts/chinese-main-context.json`。中文化未经真实模型收益验证，不改变动态数据的消息角色或授予权限。
+
 P2 Review Fix 将 retrieve 与可选 preflight 的异常边界分开：确定性成功后先保留结果，Preflight 接收深拷贝，失败不抹除基线。Thread state 去重移到实际预算选择之后，只有被选中的 Memory 覆盖它时才移除重复正文。新增补充超预算仍保留原 Thread 与当前输入；取消仍向外传播。tests/test_preflight_baseline.py 与 test_memory_retrieval.py 验证实际 Provider 请求。
 
 后处理仅跟踪 RetrievalItem.messages() 新建的 Host 标记，不按文本前缀解析历史消息。历史用户内容即使看起来像损坏的 working_context_reference JSON，也仍原样重放，不获得标记语义或影响去重。引用计数也只统计真实标记。

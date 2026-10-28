@@ -1,5 +1,7 @@
 # Passive Character Runtime
 
+主对话编译结果的自然语言统一使用中文，包括角色边界、情境标签和示例标题。源文件中的英文章节锚点保留用于兼容本地包与示例选择，在编译时映射为中文；未知自定义章节和正文保持原样，不进行不可靠的自动翻译。工具名、参数名、来源标签等程序标识及人名保持原样。逐段设计评价见 [Miru 对照](../prompt-comparison-miru.md)。
+
 ## 职责与组成
 
 `character/models.py` 定义 CharacterPackage、Section、独立大小预算和安全错误。`character/loader.py::CharacterLoader.load()` 只读取 Host 指定本地根目录下的四个固定 Markdown，不导入包内代码，不下载或执行任何内容。`character/prompt.py` 将包编译成可读的角色 System 分节，并确定性选择示例；`character/context.py` 负责变体、字节预算、状态和来源引用。包放在 src/personal_agent/character/packages，随 wheel/sdist 分发；Markdown 是角色定义的唯一权威内容，fingerprint 仅用于变化检测，不是人格副本或版本数据库。

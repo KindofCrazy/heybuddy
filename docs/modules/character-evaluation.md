@@ -1,5 +1,7 @@
 # Character Evaluation
 
+当前主对话及工具说明已按用户要求中文化，快照为 `evals/prompts/chinese-main-context.json`；历史英文快照及评分规则保持不变。快照差异不代表模型收益，E0/E1/E2 的编译边界、预算和人工审阅要求继续适用。
+
 本轮真实 API 结果见 [P3 live 检查](../p3-live-validation.md)。evaluate() 参数增加输出总 tokens 和请求超时，条件指纹包含二者；CLI --output-tokens 可显式控制包含 reasoning 的额度，默认 512 保留旧配置。真实对比建议 `--output-tokens 2048 --max-tokens 2200000`。Trace 在异常时也统计安全 usage，不保存未完成正文；日志标准化消息排除 provider_data，真实 Provider 仍收到原样的完整重放数据。
 
 `evaluation/character_state.py` 提供独立 --live smoke：main() 在载入配置前检查显式授权；run() 新建私有合成目录/SQLite/Memory，Clock 固定时间，Host 标记两条 completed Run，顺序调用 EpisodeOrganizer/StateService。最多 4 请求/200000 预留 tokens，Episode 输出 4096、State 输出 2048。第二个事件关闭话题，然后验证去重、有效期、无 Memory 写入与空工具；结果存本地 private-review.json，异常仅打印安全类型，失败检查返回非零。不调用 Main Agent、无 Apply 或主动聊天。该入口测模型更新与发布，Idle/抢占由原离线测试覆盖。最小执行为 `uv run python -m personal_agent.evaluation.character_state --live`，--help 不加载凭证；tests/test_character_evaluation.py 验证授权守卫。

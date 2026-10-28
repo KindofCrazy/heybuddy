@@ -25,10 +25,7 @@ def create_builtin_registry(timeout_seconds: float = 10) -> ToolRegistry:
     registry.register(
         Tool(
             "get_current_time",
-            (
-                "Get the current UTC date/time when the question needs the present time"
-                "; no arguments. Do not use for timeless concepts."
-            ),
+            ("问题需要当前时间时获取 UTC 日期和时间；无参数。不用于与当前时间无关的概念问题。"),
             CurrentTimeArguments,
             get_current_time,
             side_effect_free=True,
@@ -37,10 +34,7 @@ def create_builtin_registry(timeout_seconds: float = 10) -> ToolRegistry:
     registry.register(
         Tool(
             "add_numbers",
-            (
-                "Add two finite numbers a and b when arithmetic verification helps. Ret"
-                "urn sum; do not use for nonnumeric questions."
-            ),
+            ("需要核对算术时，将有限数字 a 和 b 相加并返回 sum；不用于非数值问题。"),
             AddNumbersArguments,
             add_numbers,
             side_effect_free=True,

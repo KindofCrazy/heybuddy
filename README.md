@@ -24,6 +24,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 角色 System 由 Markdown 按身份、性格、说话方式、情境反应和相关示例编译，随后是 Host 执行契约；状态与记忆仍为低信任数据。问候和无匹配输入优先使用闲聊示例。编译路径、预算及验证见 [Character 模块](docs/modules/character.md)。
 
+主对话提示词与工具说明使用中文，保留人名、专业名词和程序标识；参见 [与 Miru 的逐段对照](docs/prompt-comparison-miru.md)，了解当前表达优势、冗余和改进顺序。
+
 [P3 短期状态](docs/modules/character-state.md) 仅在角色 E2 启用后于 Idle 维护，按真实角色 Run 来源保存模拟 Mood/Focus，有独立有效期并共享 P1/P2 预算；不主动发消息。`/character status|run|retry` 查看或调试。
 
 启用时在已有可信配置中设置 `AGENT_CHARACTER_ID=sherlock_bbc`，保持实际模型窗口配置；`none` 恢复普通模式。旧 persona.md 保留但角色启用时不注入；human.md 与 P2 偏好继续使用。`AGENT_CHARACTER_STATE_ENABLED=false` 可关闭状态请求，E0/E1 也不请求状态。角色包是行为模拟，不代表真实人的情绪或经历。

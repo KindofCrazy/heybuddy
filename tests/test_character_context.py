@@ -42,7 +42,7 @@ async def test_character_view_omits_legacy_persona_preserves_disk_and_host_prece
     request = provider.requests[0]
     assert request[0].role == "system" and "Sherlock" in request[0].text
     assert request[1].role == "system" and request[1].text == CHARACTER_HOST_PROMPT
-    assert "registered API tools" in request[1].text
+    assert "只使用已注册的 API 工具" in request[1].text
     assert "helpful personal assistant" not in request[1].text
     core = next(
         json.loads(m.text)
@@ -145,3 +145,16 @@ def test_character_layout_keeps_host_contract_last_and_preserves_custom_host():
         assert request[-1].text == "你好"
     ordinary = ContextBuilder()
     assert ordinary.for_request(ordinary.build("你好"))[0].text == DEFAULT_SYSTEM_PROMPT
+
+
+def test_default_character_instructions_are_chinese_without_changing_machine_identity():
+    context = ContextBuilder(character=compiler())
+    request = context.for_request(context.build("你好"))
+    role, host = request[:2]
+    assert '"character_id": "sherlock_bbc"' in role.text
+    assert "【问候】" in role.text and "【闲聊】" in role.text
+    assert "用户：你好" in role.text and "【宿主执行契约】" in host.text
+    assert "只有 same_character 来源标签证明角色参与" in role.text
+    assert "expected_hash" in host.text and "recall_search" in host.text
+    for old_label in ("CHARACTER LAYER", "Situation：", "User：", "Context："):
+        assert old_label not in role.text

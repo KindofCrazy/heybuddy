@@ -18,7 +18,7 @@ def test_bbc_package_is_complete_original_and_has_stable_identity():
     assert package.character_id == "sherlock_bbc"
     assert "BBC" in package.character and "不是 John" in package.character
     assert "Character Adaptation" in package.character
-    assert "Situation" in package.behavior and len(package.examples) >= 2
+    assert "情境：" in package.behavior and len(package.examples) >= 2
     assert len(package.lore) >= 4 and len(package.fingerprint) == 64
     assert CharacterLoader().load("sherlock_bbc") == package
 

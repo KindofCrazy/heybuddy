@@ -107,7 +107,14 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     retained = json.loads((root / "retained-candidate.json").read_text(encoding="utf-8"))
     baseline = json.loads((root / "phase1-baseline.json").read_text(encoding="utf-8"))
     p1 = json.loads((root / "p1-working-context.json").read_text(encoding="utf-8"))
-    assert capture(tmp_path / "snapshot") == p1
+    current = capture(tmp_path / "snapshot")
+    chinese = json.loads((root / "chinese-main-context.json").read_text(encoding="utf-8"))
+    assert current == chinese
+    assert {k: v for k, v in current.items() if k not in {"main", "tools"}} == {
+        k: v for k, v in p1.items() if k not in {"main", "tools"}
+    }
+    assert current["main"] != p1["main"]  # Explicit Chinese translation, no measured gain.
+    assert current["tools"].keys() == p1["tools"].keys()
     assert {key: value for key, value in p1.items() if key != "summary"} == {
         key: value for key, value in retained.items() if key != "summary"
     }

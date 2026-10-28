@@ -1,5 +1,7 @@
 # Conversation Recall
 
+`recall/tools.py` 的搜索与展开说明使用中文，保留 recall_search、recall_get、message_id 等程序标识；仅翻译描述，不改变查询范围、来源校验或执行历史动作的禁令。当前说明通过 `tests/test_evaluation.py` 与中文快照核对。
+
 ## 职责与架构组成
 
 Recall 是从历史中取证的只读能力，与 Core Memory 的稳定事实和编辑版本分开。SQLite messages 始终是 Conversation History 的唯一权威来源，FTS 只用于候选定位，不保存另一份可单独编辑的事实。

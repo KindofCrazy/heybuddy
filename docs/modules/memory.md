@@ -1,5 +1,7 @@
 # MemoryFS：Core、Deferred 与索引
 
+`memory/tools.py` 注册的工具说明使用中文，保留 expected_hash、old_text、分页与部分成功等准确参数语义；权限、处理函数和文件写入流程不变。当前描述通过 `tests/test_evaluation.py` 与中文快照核对，实际执行仍由 MemoryFS 与注册表校验。
+
 P2 沿用本模块 MemoryFS/Index/Markdown 布局，未增加知识正文副本或版本系统。Host 的 Learner/Curator 调用共用 reflection/writer.py，plan_item() 在自动或手动提案发布前通过 memory/safety.py 保守拒绝凭据模式，原路径/隐私/hash/原子替换/大小检查不变。自动服务不修改 persona.md，索引由现有 index.create/edit 维护；Main Agent 工具权限未放宽。跨存储部分失败的只读核对和显式安全重试见 [Learning](learning.md)、[Curator](curator.md)。凭据模式并非完备秘密识别器，不应将 Memory 当凭据存储。
 
 ## 职责与架构组成

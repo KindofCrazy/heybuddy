@@ -38,15 +38,15 @@ async def test_signatures_condition_normal_generation_without_extra_calls(questi
     examples = prompt.split("【对话示例：表达参考，不是真实共同经历】\n", 1)[1].split(
         "【角色与执行边界】", 1
     )[0]
-    assert sum(line.startswith("## ") for line in examples.splitlines()) == 2
+    assert sum(line.startswith("【") for line in examples.splitlines()) == 2
     assert all(
         label in prompt
         for label in (
-            "Situation",
-            "Interpretation",
-            "Reaction Tendencies",
-            "Observable Behavior",
-            "Moderating Conditions",
+            "情境：",
+            "理解：",
+            "反应倾向：",
+            "表现：",
+            "调节条件：",
         )
     )
     assert character.diagnostics()["extra_appraisal_requests"] == 0
