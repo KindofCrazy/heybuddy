@@ -56,6 +56,9 @@ class Settings(ContextBudget):
     memory_learning_timeout_seconds: float = Field(default=60, gt=0, le=120)
     memory_learning_source_bytes: int = Field(default=131072, ge=4096, le=524288)
     memory_learning_max_files: int = Field(default=2, ge=1, le=3)
+    memory_learning_recovery_attempts: int = Field(default=3, ge=1, le=8)
+    memory_learning_recovery_interval_seconds: float = Field(default=300, gt=0, le=86400)
+    memory_learning_recovery_seconds: float = Field(default=2, gt=0, le=10)
     memory_curator_enabled: bool = True
     memory_curator_interval_seconds: float = Field(default=86400, gt=0, le=2592000)
     memory_curator_update_threshold: int = Field(default=12, ge=1, le=1000)
@@ -159,6 +162,9 @@ class Settings(ContextBudget):
             timeout_seconds=self.memory_learning_timeout_seconds,
             source_bytes=self.memory_learning_source_bytes,
             max_files=self.memory_learning_max_files,
+            recovery_attempts=self.memory_learning_recovery_attempts,
+            recovery_interval_seconds=self.memory_learning_recovery_interval_seconds,
+            recovery_seconds=self.memory_learning_recovery_seconds,
         )
 
     def curator_policy(self) -> CuratorPolicy:

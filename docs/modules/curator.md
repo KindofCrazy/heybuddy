@@ -1,5 +1,7 @@
 # P2 Memory Curator
 
+P2 Review Fix：恢复后的 pending Curator 读取原 sources.memory 与已核实发布的目的文件，保留同一 Job 后重新规划；不重新 CREATE 已保存的 split 目的。当前比较依然受文件/字节限制并排除 persona/index。Learner 的启动/Idle 只读核对和真正冲突保护见 [Learning](learning.md)，tests/test_curator.py 的 partial split 验证补链后从当前文件继续。
+
 ## 职责与组成
 
 `learning/curator.py::MemoryCurator` 在一小组 Markdown 上执行去重、证据支持的状态核对和有限组织。`CuratorPolicy` 默认 86400 秒检查、累计 12 次文件更新或选中文件超过 12000 字节才请求模型，最多三个文件、65536 输入字节。它使用 Learner 的同一锁、`ReflectionService._ask()`、`plan_item()`、`write_item()`、哈希回执和 reconcile，不维护另一个文件操作系统或事实数据库。

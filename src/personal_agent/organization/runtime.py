@@ -185,6 +185,7 @@ class OrganizationRuntime:
         learning_ran = False
         curator_ran = False
         character_ran = False
+        recovery_ran = False
         learning_first = self._learning_first or self._dirty_yield_to_learning
         learning_capacity = bool(
             self.learning
@@ -220,6 +221,21 @@ class OrganizationRuntime:
                     if budget.clock.monotonic() - budget.started >= policy.maintenance_seconds:
                         budget.exhausted = True
                         break
+                    if (
+                        idle
+                        and self.learning
+                        and not recovery_ran
+                        and self.learning.recovery_ready()
+                    ):
+                        recovery_ran = True
+                        attempts += 1
+                        observe(
+                            "memory_recovery",
+                            await self._execute(
+                                "memory_recovery", self.learning.recover_background()
+                            ),
+                        )
+                        continue
                     if (
                         idle
                         and policy.enabled

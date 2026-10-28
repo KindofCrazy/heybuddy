@@ -1,5 +1,7 @@
 # Organization 时间调度
 
+P2 Review Fix：每个 Idle 维护轮可先执行一个 memory_recovery 单元，经原 foreground/run_active 门控、批次数和整轮时间预算；它仅核对本地 hash/索引并保存恢复状态，0 次模型请求。确认后普通学习仍在原完整流水线请求预算中运行；没有另起恢复 Loop。恢复失败的持久退避与次数见 [Learning](learning.md)，tests/test_learning_recovery.py 覆盖前台阻止、Idle 自动核对和后续学习。
+
 P3 在同一维护轮加入可选 CharacterStateService：仅 Idle、新角色来源、最小间隔和共享剩余额度允许时执行一次空工具建议。character_ran 限制一轮最多一次；P2 获得完整学习预算的优先轮时 State 等待。CycleProvider 统一扣减 State 的输入/输出预留与 usage；foreground() 取消并等待 pending 记账，State 永远不产生聊天输出。真实分支与取消/预算测试见 [State](character-state.md)、tests/test_character_state.py。
 
 P2 在同一维护循环加入 MemoryLearningService/MemoryCurator，复用 Clock、MaintenanceBudget、前台门控和冷却，不另起 Scheduler。Priority 入队不发 Classifier，回复后尽快后台执行；Batch 在 Idle 等 finalized Episode 数量/最大等待；Curator 低频且有变化才调用。默认维护轮 4/4/131072/120 同时覆盖 Episode/Thread/Repair/Learning/Curator。学习按整条流水线保守预留，和其他维护交替；Dirty 先执行后允许让出整轮给等待中的学习，避免占满请求饿死 P2。P2 enabled 时不执行旧 MemoryAutomation；disabled 才沿用下文原模式。来源过大保存 failed，不停止其他维护。tests/test_learning_runtime.py、test_p2_integration.py、test_p2_boundaries.py 覆盖双速触发、持续积压公平性、取消与恢复。

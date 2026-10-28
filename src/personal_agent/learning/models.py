@@ -14,6 +14,9 @@ class LearningPolicy(ReflectionPolicy):
     source_bytes: int = Field(default=131072, ge=4096, le=524288)
     max_source_runs: int = Field(default=48, ge=1, le=48)
     max_files: int = Field(default=2, ge=1, le=3)
+    recovery_attempts: int = Field(default=3, ge=1, le=8)
+    recovery_interval_seconds: float = Field(default=300, gt=0, le=86400)
+    recovery_seconds: float = Field(default=2, gt=0, le=10)
 
 
 class Target(Model):

@@ -17,7 +17,11 @@ P3 的 LEARN_EXTRACT 增加边界：Canon/示例/模拟角色心境不是用户�
 
 ## 异常与边界
 
-取消模型等待恢复 pending，不推进来源；已准备/发布文件的任务保守进入 requires_reconciliation。重启 `recover()` 将无回执 processing 恢复 pending，有回执则等待核对。文件成功而记账失败不得宣称回滚。`reconcile(job_id)` 只读比较 after_hash 与索引可发现性，全部核实才 completed，不能核实则保持不确定，不盲目重发 create/update。索引部分成功使用原 /memory repair 补链后再核对。失败任务需显式 retry；persona 不受自动服务修改，Main Agent 没有获得新写权限。
+取消模型等待恢复 pending，不推进来源；已准备/发布文件的任务保守进入 requires_reconciliation。重启 recover() 先将无回执 processing 恢复 pending，有回执转为待核对。构造服务后 recover_pending() 在没有该 Agent running Run 时检查最多一个遗留任务；Runtime 仅在 Idle 再逐轮检查一个。reconcile(job_id) 只读比较前后 hash 和索引：after 且索引完整为 applied；before 或 create 仍不存在为 not_applied；第三种 hash、不可读或索引不完整继续保护，不直接重发旧 CREATE/UPDATE。全部 applied 才 completed；混合已发布/未发布则保留已发布回执、清除旧待写计划，从当前 Markdown 重新提取/选择/整合。该任务中已确认发布路径不能被重新规划再次写入，模型提出这类更新会明确失败而不是重复追加。未发布部分不能只因 A 成功就视为完成。
+
+恢复元数据复用 Job metrics.recovery（无正文），不新增 schema：默认同一不确定任务最多 3 次检查、间隔 300 秒，一轮最多 9 个回执、2 秒协作式检查预算。同步磁盘 IO 不具备硬取消保证；预算在文件间检查。安全重新规划最多 3 次，此后仅把已证明无不确定副作用的任务标为 failed，等待显式 retry，不继续制造全局不明确状态。原失败仍需显式重试，真正冲突/不完整索引达到检查上限后保留 requires_reconciliation；索引修复沿用显式 /memory repair，再核对/重试。Status attention 暴露错误、次数和下次检查时间。前台 Run 或 Learner 锁被占用时不检查。
+
+剩余未核实任务仍是 Agent 级写保护；Selection/Consolidation/Curator 有跨文件比较依赖，本轮没有引入未经证明的文件级并行。ready() 和实际 _execute() 都检查保护，可信调试入口也不能绕过。取消后的常见可证明状态自动恢复，人工修改不会被覆盖；不能验证的情况仍需用户处理。文件成功而 SQLite 失败不宣称撤销，原 Shared Writer、路径、隐私、expected_hash 与单文件原子发布不变，Main Agent 没有获得新权限。
 
 Host 校验结构、真实引文与写入边界，不能数学证明模型的语义判断。假设、外部指令、未接受建议、敏感推测和冲突应由 Extraction/Consolidation 拒绝或标为不确定；原始来源沿用既有脱敏，响应及待发布片段做保守凭据模式检查，不宣称完备秘密识别。FakeProvider 测试不代表真实语义质量。
 

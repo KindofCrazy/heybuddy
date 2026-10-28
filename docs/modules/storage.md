@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+P2 Review Fix 不增加迁移，仍为 schema 12。LearningRepository 在原 metrics.recovery 保存有界检查次数、deadline 与已发布回执，save() 保留这部分元数据不被模型计量覆盖；recovery_job() 查询一个当前 Agent 到期未决任务，running() 防止与该 Agent 前台 Run 交叠。Status attention 显示检查次数/下次检查，来源预留关系不重置，completed 记账仍是原 CAS 短事务。详见 [Learning](learning.md)。
+
 P3 当前 schema 12 追加 `character/storage.py::SCHEMA`：character_runs 保存 Host 角色参与标签，character_states 保存一个当前短期模拟状态与版本，character_state_sources 保存去重/失败/取消进度。原迁移 1–11 不改，无旧 Run 自动归属，也不复制人格或长期事实。初始化、CAS、时间和事务窗口见 [State](character-state.md)，迁移/回滚测试见 tests/test_character_storage.py。
 
 当前 schema 11 追加 `storage/learning.py::LearningRepository` 的 memory_learning_jobs、memory_learning_sources、memory_learning_state；原迁移 1–10 定义不变。只保存任务状态、来源 ID/hash、文件发布回执、计量和首次启用水位，不保存长期知识正文或新事实数据库。Run/Message/Episode/Thread/Reflection 原位保留，initialize() 顺序原子升级。snapshot() 复核 Agent 与真实来源，save() 做状态/更新时间 CAS。跨文件/SQLite 无共同事务，processing 在重启分为 pending 或 requires_reconciliation，行为及原子迁移测试见 [Learning](learning.md)、[P2 交付](../p2-delivery.md)。

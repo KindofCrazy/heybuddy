@@ -204,13 +204,29 @@ class MemoryCurator:
         if not force and not self.due():
             return {"outcome": "no_curator_work"}
         async with self.learning._lock:
-            catalog, comparison = self._files()
+            latest = self._latest()
+            if latest and latest["state"] == "pending" and latest["sources"].get("memory"):
+                catalog = catalogue(self.memory)
+                comparison = read_comparison(
+                    self.memory,
+                    [r["path"] for r in latest["sources"]["memory"] if r["path"] != "human.md"],
+                    {r["path"] for r in catalog},
+                )
+                comparison = {
+                    p: t for p, t in comparison.items() if p not in {"persona.md", "MEMORY.md"}
+                }
+                if (
+                    len(comparison) > self.policy.max_files
+                    or sum(len(t.encode()) for t in comparison.values()) > self.policy.max_bytes
+                ):
+                    raise ReflectionError("curator_input_budget")
+            else:
+                catalog, comparison = self._files()
             refs = {
                 "runs": [],
                 "episodes": [],
                 "memory": [{"path": p, "hash": digest(t.encode())} for p, t in comparison.items()],
             }
-            latest = self._latest()
             known_hashes = {
                 row["path"]: row["hash"]
                 for row in (latest["sources"].get("memory", []) if latest else [])
@@ -239,9 +255,16 @@ class MemoryCurator:
             ]
             jid = (
                 latest["id"]
-                if latest and latest["state"] in {"pending", "failed"} and latest["sources"] == refs
+                if latest
+                and (
+                    latest["state"] == "pending"
+                    or latest["state"] == "failed"
+                    and latest["sources"] == refs
+                )
                 else self.repository.create("curator", refs, self.clock.now())
             )
+            if latest and jid == latest["id"] and latest["sources"] != refs:
+                self.repository.save(jid, "pending", self.clock.now(), sources=refs)
 
             async def propose() -> list:
                 if not comparison:

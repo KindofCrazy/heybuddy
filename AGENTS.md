@@ -1,5 +1,9 @@
 # Personal Agent 开发约束
 
+## P2 Review Fix 明确授权
+
+本轮允许启动与既有 Idle Runtime 中有界自动核对 Learning 回执：已发布的确认，确定未发布的从当前 MemoryFS 重新规划，禁止盲目执行旧 CREATE/UPDATE。真正冲突与索引不完整继续写保护；不改变手动 Reflection 审批、MemoryFS 校验或 P3 人格边界。不实现新的调度平台、事实库或默认历史补学。
+
 ## P3 明确授权
 
 本轮用户明确允许本地只读 Character Package、被动人格上下文、有界后台短期状态及离线角色评测，复用既有 Main Agent、P1/P2 与维护预算。角色默认关闭，不自动替换用户 persona.md；P2 不得修改 Character Core。不实现主动消息、AttentionEngine、角色主动聊天或新的 Agent Loop。真实付费模型/评审调用仍须另行授权。

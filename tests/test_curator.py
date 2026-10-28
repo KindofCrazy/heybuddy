@@ -167,7 +167,8 @@ async def test_split_partial_index_failure_keeps_old_knowledge_and_explicit_safe
     # A fresh plan sees the existing destination; it only updates the old file.
     edit = change(old=section, new="[Recall](topics/recall.md)\n", kind="organization")
     service.model.provider = FakeProvider(ModelResponse(text=json.dumps({"changes": [edit]})))
-    assert (await service.run(force=True, retry=True))["outcome"] == "completed"
+    resumed = await service.run(force=True, retry=True)
+    assert resumed["outcome"] == "completed", resumed
     assert section in memory.read_file("topics/recall.md")["content"]
     assert index.inspect(memory)["ok"]
 

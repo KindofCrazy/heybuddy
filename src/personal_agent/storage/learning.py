@@ -201,7 +201,10 @@ class LearningRepository:
             attention = [
                 dict(r)
                 for r in db.execute(
-                    "SELECT id,kind,state,error FROM memory_learning_jobs WHERE agent_id=? "
+                    "SELECT id,kind,state,error,"
+                    "json_extract(metrics,'$.recovery.attempts') AS recovery_attempts,"
+                    "json_extract(metrics,'$.recovery.next_check_at') AS recovery_next_check_at "
+                    "FROM memory_learning_jobs WHERE agent_id=? "
                     "AND state IN ('failed','requires_reconciliation') ORDER BY rowid LIMIT 8",
                     (self.agent_id,),
                 ).fetchall()
@@ -233,6 +236,30 @@ class LearningRepository:
                     (self.agent_id,),
                 ).fetchone()
             )
+
+    def running(self) -> bool:
+        with self.store._transaction() as db:
+            return (
+                db.execute(
+                    "SELECT 1 FROM runs r JOIN conversations c ON c.id=r.conversation_id "
+                    "WHERE c.agent_id=? AND r.status='running' LIMIT 1",
+                    (self.agent_id,),
+                ).fetchone()
+                is not None
+            )
+
+    def recovery_job(self, now: datetime, attempts: int) -> dict | None:
+        with self.store._transaction() as db:
+            row = db.execute(
+                "SELECT id FROM memory_learning_jobs WHERE agent_id=? "
+                "AND state='requires_reconciliation' "
+                "AND COALESCE(json_extract(metrics,'$.recovery.attempts'),0)<? "
+                "AND (json_extract(metrics,'$.recovery.next_check_at') IS NULL OR "
+                "julianday(json_extract(metrics,'$.recovery.next_check_at'))<=julianday(?)) "
+                "ORDER BY rowid LIMIT 1",
+                (self.agent_id, attempts, now.isoformat()),
+            ).fetchone()
+        return self.get(row[0]) if row else None
 
     def create(self, kind: str, refs: dict, now: datetime) -> str:
         jid = uuid4().hex
@@ -304,6 +331,11 @@ class LearningRepository:
         sources=None,
     ) -> None:
         old = self.get(jid)
+        if metrics is not None:
+            metrics = dict(metrics)
+            # Recovery receipts/progress survive model metrics and publication checkpoints.
+            if "recovery" not in metrics and "recovery" in old["metrics"]:
+                metrics["recovery"] = old["metrics"]["recovery"]
         with self.store._transaction() as db:
             changed = db.execute(
                 "UPDATE memory_learning_jobs SET state=?,updated_at=?,operations=?,"

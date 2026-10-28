@@ -115,7 +115,7 @@ asyncio.run(run())
                 assert learning.repository.get(jid)["state"] == "completed"
                 assert len(provider.requests) == 1
             else:
-                assert learning.repository.get(jid)["state"] == "requires_reconciliation"
+                assert learning.repository.get(jid)["state"] == "completed"
                 assert not provider.requests
                 assert "Concise replies" in memory.read().blocks["human.md"]
                 assert learning.reconcile(jid)["outcome"] == "completed"

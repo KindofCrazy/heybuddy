@@ -2,13 +2,14 @@
 
 import asyncio
 from datetime import datetime, timedelta
+from time import monotonic
 from types import SimpleNamespace
 
 from personal_agent.core.compaction import redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.learning.models import FileDecision, LearningPolicy, Targets
-from personal_agent.memory.models import digest
+from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError
 from personal_agent.reflection.memory import catalogue, plan_item, read_comparison
@@ -81,6 +82,7 @@ class MemoryLearningService:
         if self.policy.enabled:
             self.repository.activate(self.clock.now())
             self.repository.recover(self.clock.now())
+            self.recover_pending()
 
     def poll(self) -> None:
         if self.policy.enabled:
@@ -334,6 +336,13 @@ class MemoryLearningService:
             return {"outcome": "failed", "job_id": jid, "error_code": old["error"]}
         if old["operations"]:
             return {"outcome": "requires_reconciliation", "job_id": jid}
+        if self.repository.unresolved():
+            return {
+                "outcome": "blocked",
+                "job_id": jid,
+                "error_code": "memory_requires_reconciliation",
+            }
+        published = old["metrics"].get("recovery", {}).get("published", [])
         self.repository.save(jid, "processing", self.clock.now())
         self.model.reset_metrics()
         receipts = []
@@ -350,7 +359,11 @@ class MemoryLearningService:
                 for i in items
                 if i.decision.action in {"create", "update"} and i.before_hash != i.after_hash
             ]
-            receipts = [self._receipt(i) for i in writes]
+            if any(i.decision.path in {op["path"] for op in published} for i in writes):
+                raise ReflectionError("recovery_target_already_published")
+            receipts = [*published, *[self._receipt(i) for i in writes]]
+            if len(receipts) > 9:
+                raise ReflectionError("recovery_receipt_budget")
             self.repository.save(
                 jid,
                 "processing",
@@ -362,10 +375,10 @@ class MemoryLearningService:
                 await asyncio.sleep(0)
                 self._fresh(refs, check_memory=False)
                 item.state = "applying"
-                receipts[n] = self._receipt(item)
+                receipts[n + len(published)] = self._receipt(item)
                 self.repository.save(jid, "processing", self.clock.now(), operations=receipts)
                 write_item(self.memory, item)
-                receipts[n] = self._receipt(item)
+                receipts[n + len(published)] = self._receipt(item)
                 state = "processing" if item.state == "applied" else "requires_reconciliation"
                 self.repository.save(
                     jid,
@@ -382,7 +395,7 @@ class MemoryLearningService:
                 self.clock.now(),
                 operations=receipts,
                 metrics={
-                    "updated_files": len(writes),
+                    "updated_files": len(receipts),
                     "proposals": len(items),
                     "usage": self.model.metrics,
                 },
@@ -435,12 +448,74 @@ class MemoryLearningService:
         if fresh != refs:
             raise HistoryError("Learning sources changed before publication.")
 
-    def reconcile(self, jid: str) -> dict:
+    def recovery_ready(self) -> bool:
+        return bool(
+            self.policy.enabled
+            and not self._lock.locked()
+            and not self.repository.running()
+            and self.repository.recovery_job(self.clock.now(), self.policy.recovery_attempts)
+        )
+
+    async def recover_background(self) -> dict:
+        await asyncio.sleep(0)
+        return self.recover_pending()
+
+    def recover_pending(self) -> dict:
+        """At most one bounded, tool/model-free receipt check per startup/idle cycle."""
+        if not self.recovery_ready():
+            return {"outcome": "no_recovery_work"}
+        job = self.repository.recovery_job(self.clock.now(), self.policy.recovery_attempts)
+        recovery = dict(job["metrics"].get("recovery", {}))
+        recovery.update(
+            attempts=recovery.get("attempts", 0) + 1,
+            next_check_at=(
+                self.clock.now() + timedelta(seconds=self.policy.recovery_interval_seconds)
+            ).isoformat(),
+        )
+        self.repository.save(
+            job["id"],
+            job["state"],
+            self.clock.now(),
+            metrics={**job["metrics"], "recovery": recovery},
+        )
+        report = self.reconcile(job["id"], deadline=monotonic() + self.policy.recovery_seconds)
+        if report["outcome"] != "completed":
+            report = self._replan_verified(self.repository.get(job["id"]), automatic=True)
+        return {**report, "requests": 0}
+
+    def reconcile(self, jid: str, *, deadline: float | None = None) -> dict:
         job = self.repository.get(jid)
         if job["state"] != "requires_reconciliation":
             return {"outcome": job["state"], "job_id": jid}
         operations = job["operations"]
+        if len(operations) > 9 or not operations:
+            self.repository.save(jid, job["state"], self.clock.now(), error="invalid_receipt_range")
+            return {"outcome": job["state"], "job_id": jid}
         for op in operations:
+            op["state"] = "uncertain"
+            op["code"] = "recovery_time_budget"
+        for op in operations:
+            if deadline is not None and monotonic() >= deadline:
+                break
+            if op["path"] in {"persona.md", "MEMORY.md"} or op["path"].endswith("/MEMORY.md"):
+                op["code"] = "learning_target_forbidden"
+                continue
+            try:
+                with self.memory.io():
+                    path = self.memory.path(op["path"])
+                    limit = self.memory.max_bytes if op["path"] in BLOCKS else FILE_BYTES
+                    current = digest(self.memory.raw(path, limit)) if path.exists() else None
+                if current != op["after_hash"]:
+                    if current == op["before_hash"] and (
+                        current is not None or op["action"] == "create"
+                    ):
+                        op["state"], op["code"] = "not_applied", "verified_not_published"
+                    else:
+                        op["code"] = "content_changed"
+                    continue
+            except CoreMemoryError as error:
+                op["code"] = error.code
+                continue
             item = SimpleNamespace(
                 decision=Decision(
                     candidate_id=1, action=op["action"], path=op["path"], reason="hash verification"
@@ -456,7 +531,10 @@ class MemoryLearningService:
             op["state"], op["code"] = item.state, item.result_code
         complete = bool(operations) and all(op["state"] == "applied" for op in operations)
         state = "completed" if complete else "requires_reconciliation"
-        self.repository.save(jid, state, self.clock.now(), operations=operations)
+        error = next(
+            (op["code"] for op in operations if op["state"] not in {"applied", "not_applied"}), ""
+        )
+        self.repository.save(jid, state, self.clock.now(), operations=operations, error=error)
         return {"outcome": state, "job_id": jid}
 
     def retry_job(self, jid: str) -> dict:
@@ -466,35 +544,65 @@ class MemoryLearningService:
             verified = self.reconcile(jid)
             if verified["outcome"] == "completed":
                 return verified
-            job = self.repository.get(jid)
-            current = {}
-            for op in job["operations"]:
-                path = self.memory.path(op["path"])
-                with self.memory.io():
-                    value = digest(self.memory.raw(path)) if path.exists() else None
-                if value == op["after_hash"] and op["state"] != "applied":
-                    return {"outcome": "requires_reconciliation", "error_code": "index_incomplete"}
-                if value not in {op["before_hash"], op["after_hash"]}:
-                    return {"outcome": "requires_reconciliation", "error_code": "content_changed"}
-                if value is not None:
-                    current[op["path"]] = value
-            sources = job["sources"]
-            if "memory" in sources:
-                for source in sources["memory"]:
-                    with self.memory.io():
-                        current[source["path"]] = digest(
-                            self.memory.raw(self.memory.path(source["path"]))
-                        )
-                sources["memory"] = [{"path": p, "hash": h} for p, h in current.items()]
-            self.repository.save(
-                jid,
-                "pending",
-                self.clock.now(),
-                operations=[],
-                sources=sources,
-                metrics={"reconciled_receipts": job["operations"]},
-            )
-            return {"outcome": "pending", "job_id": jid, "replanned_after_verified_receipts": True}
+            return self._replan_verified(self.repository.get(jid), automatic=False)
         if job["state"] == "failed":
             self.repository.save(jid, "pending", self.clock.now())
         return {"outcome": self.repository.get(jid)["state"], "job_id": jid}
+
+    def _replan_verified(self, job: dict, *, automatic: bool) -> dict:
+        jid = job["id"]
+        if not job["operations"] or any(
+            op["state"] not in {"applied", "not_applied"} for op in job["operations"]
+        ):
+            return {
+                "outcome": "requires_reconciliation",
+                "job_id": jid,
+                "error_code": job["error"] or "unverified_receipts",
+            }
+        try:
+            self._fresh(job["sources"], check_memory=False)
+            recovery = dict(job["metrics"].get("recovery", {}))
+            published = [op for op in job["operations"] if op["state"] == "applied"]
+            sources = job["sources"]
+            if "memory" in sources:
+                paths = list(
+                    dict.fromkeys(
+                        [r["path"] for r in sources["memory"]] + [op["path"] for op in published]
+                    )
+                )
+                with self.memory.io():
+                    sources["memory"] = [
+                        {
+                            "path": p,
+                            "hash": digest(
+                                self.memory.raw(
+                                    self.memory.path(p),
+                                    self.memory.max_bytes if p in BLOCKS else FILE_BYTES,
+                                )
+                            ),
+                        }
+                        for p in paths
+                    ]
+            replans = recovery.get("replans", 0)
+            limited = automatic and replans >= self.policy.recovery_attempts
+            recovery.update(
+                attempts=0, next_check_at=None, replans=replans + 1, published=published
+            )
+            self.repository.save(
+                jid,
+                "failed" if limited else "pending",
+                self.clock.now(),
+                operations=[],
+                sources=sources,
+                error="recovery_replan_limit" if limited else "",
+                metrics={**job["metrics"], "recovery": recovery},
+            )
+            return {
+                "outcome": "failed" if limited else "pending",
+                "job_id": jid,
+                "replanned_after_verified_receipts": not limited,
+            }
+        except (HistoryError, CoreMemoryError) as error:
+            code = getattr(error, "code", "recovery_source_changed")
+            self.repository.save(jid, "requires_reconciliation", self.clock.now(), error=code)
+            return {"outcome": "requires_reconciliation", "job_id": jid, "error_code": code}
