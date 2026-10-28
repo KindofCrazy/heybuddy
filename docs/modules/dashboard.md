@@ -49,3 +49,13 @@
 `overview.js` 按 `body.dataset.page` 装配当前页面；专页复用 `details.js:cardsPage`，按需读取后续页，总览保留现有低频概览刷新，所有页面继续更新页头连接状态。`monitor.js:replace` 在当前页无对应卡片时跳过渲染，避免查询别页内容或访问空 DOM。Inspector 的 `close` 清除当前路径的 fragment 并执行现有路由清理，保留所在栏目和滚动位置。
 
 模板把状态和语言按钮放在同一个 `.header-controls`，顺序为连接状态 / 本机标记 / 语言按钮；按钮使用浅蓝色、紧凑尺寸、黑边和硬阴影，悬停为浅紫色，移动端保持同组排列。抽屉内语言按钮保留。`tests/test_dashboard_navigation.py` 验证四页内容、链接、当前页标记、控件顺序和读取无副作用。Edge 验证真实文档导航、语言持久化、详情关闭、刷新/后退、按钮位置配色与四页移动端无溢出。
+
+## 总览精简、首屏语言与视口适配
+
+总览现在只呈现 Agent Status、Activity、Character、Background Jobs，Thread/Memory/Run 列表只在对应栏目读取，不再占据总览。`layout.py:PAGES` 选择这四张卡片，`overview.js` 不再请求总览的 Thread/Run 列表或 MemoryFS。
+
+为避免跨页面时中文先显示、随后变成英文，`app.py:home` 只接受 `heybuddy_language` cookie 的 `en` / `zh-CN` 值，并使用共享 `en.json` / `zh-CN.json` 在服务端输出首屏语言。`i18n.js:setLanguage` 同步更新浏览器 localStorage 与仅含语言枚举的 SameSite cookie，不涉及数据库或 Memory 写入。`language-bootstrap.js` 在 CSS 前以普通同源脚本运行，将旧 localStorage 偏好迁移到 cookie；若旧偏好与服务器语言不同，先隐藏错误语言的工作区，待界面翻译完成再显示。正常后续导航由服务端直接输出正确语言，无需等翻译模块才纠正首屏。现有 CSP 保持禁止内联脚本。
+
+CSS 使 `.shell` 占据 `100dvh`，以 flex 给页头、精简标题和页脚预留空间，Bento 使用剩余高度和 `minmax(0, 1fr)` 网格。桌面总览左侧状态/角色上下排列、中间活动、右侧 Jobs；窄屏为 2×2，专页根据宽度切换并列或上下两张卡片。卡片正文独立 overflow，不再撑长文档；短窗口隐藏次要装饰。活动和 Jobs 的预览数量、专页首次页大小按视口预算限制，后续内容继续使用已有分页或 Inspector，不删减原始数据。
+
+`tests/test_dashboard_language.py` 新增带语言 cookie 的四页首屏验证和非法语言回退；导航测试更新总览四卡契约。Edge 在 1440×900、1366×768、1024×600、768×900、390×844、844×390、320×568 下检查四页文档无纵横向溢出且卡片正文有可用高度；阻止翻译模块加载验证服务端英文首屏与旧偏好保护，未捕获 JS 异常。长内容仍可在卡片或 Drawer 内滚动，保持字号可读，不声称无限历史可同时铺在一屏。

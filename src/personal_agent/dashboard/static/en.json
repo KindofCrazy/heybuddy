@@ -1,0 +1,6 @@
+{
+  "每一次对话背后，都有迹可循。": "Every conversation leaves a trail.",
+  "真实记录形成后，会出现在这里。": "Records will appear here as they are created.",
+  "原始对话默认折叠，仅在本机点击后读取。工具记录是历史审计数据，不会执行。": "Private messages are collapsed and loaded only on request. Historical tools are never executed.",
+  "回执、Hash 与来源来自实际记录。未保存旧正文时，不提供虚构 Diff 或完整版本历史。": "Receipts, hashes and sources are real records. No invented diffs or complete version history."
+}

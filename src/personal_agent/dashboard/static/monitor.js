@@ -148,7 +148,7 @@ function eventItem(event, open) {
 export async function timeline(open, cursor = "", target = null) {
   try {
     const data = await get(
-        `/api/activity?limit=10&cursor=${encodeURIComponent(cursor)}`,
+        `/api/activity?limit=${Math.max(1, Math.min(8, Math.floor((innerWidth <= 1100 ? (innerHeight - 200) / 2 : innerHeight - 220) / (innerWidth <= 680 ? 135 : 90))))}&cursor=${encodeURIComponent(cursor)}`,
       ),
       box = node("div", "timeline");
     for (const event of data.items) box.append(eventItem(event, open));

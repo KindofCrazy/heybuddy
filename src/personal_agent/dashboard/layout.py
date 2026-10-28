@@ -11,7 +11,7 @@ CARDS = (
 )
 
 PAGES = {
-    "overview": ("/", "Overview", "Inside the agent", CARDS),
+    "overview": ("/", "Overview", "Inside the agent", (CARDS[0], CARDS[1], CARDS[2], CARDS[5])),
     "threads": (
         "/threads",
         "Threads",

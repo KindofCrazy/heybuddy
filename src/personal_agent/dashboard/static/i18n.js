@@ -1,6 +1,6 @@
 // Only explicitly labelled interface text is translated. Journal/Markdown stay raw.
 const storageKey = "heybuddy.observatory.language";
-let language = "zh-CN";
+let language = document.documentElement.lang === "en" ? "en" : "zh-CN";
 try {
   if (localStorage.getItem(storageKey) === "en") language = "en";
 } catch {}
@@ -8,15 +8,10 @@ const dictionary = await fetch("/static/zh-CN.json")
   .then((r) => (r.ok ? r.json() : {}))
   .catch(() => ({}));
 const bindings = new WeakMap();
-const english = {
-  "每一次对话背后，都有迹可循。": "Every conversation leaves a trail.",
-  "真实记录形成后，会出现在这里。":
-    "Records will appear here as they are created.",
-  "原始对话默认折叠，仅在本机点击后读取。工具记录是历史审计数据，不会执行。":
-    "Private messages are collapsed and loaded only on request. Historical tools are never executed.",
-  "回执、Hash 与来源来自实际记录。未保存旧正文时，不提供虚构 Diff 或完整版本历史。":
-    "Receipts, hashes and sources are real records. No invented diffs or complete version history.",
-};
+const english = await fetch("/static/en.json")
+  .then((r) => (r.ok ? r.json() : {}))
+  .catch(() => ({}));
+
 export function locale() {
   return language;
 }
@@ -96,6 +91,7 @@ export function writeText(element, value) {
 }
 function update() {
   document.documentElement.lang = language;
+  delete document.documentElement.dataset.languagePending;
   document.title =
     language === "en" ? "HeyBuddy — Observatory" : "HeyBuddy — 观测台";
   for (const element of document.querySelectorAll("[data-i18n]"))
@@ -122,6 +118,7 @@ export function setLanguage(value) {
   try {
     localStorage.setItem(storageKey, language);
   } catch {}
+  document.cookie = `heybuddy_language=${language}; Path=/; Max-Age=31536000; SameSite=Strict`;
   update();
 }
 update();

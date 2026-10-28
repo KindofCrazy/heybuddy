@@ -1,11 +1,14 @@
 {% from "components/cards.html" import base_card with context %}
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{ language }}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>HeyBuddy — 观测台</title>
+    <title>
+      HeyBuddy — {{ "Observatory" if language == "en" else "观测台" }}
+    </title>
+    <script src="/static/language-bootstrap.js"></script>
     <link rel="stylesheet" href="/static/observatory.css" />
     <script type="module" src="/static/overview.js"></script>
   </head>
@@ -57,7 +60,7 @@
             data-language-toggle
             aria-label="Switch to English"
           >
-            English
+            {{ "中文" if language == "en" else "English" }}
           </button>
         </div>
       </header>

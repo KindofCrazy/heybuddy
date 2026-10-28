@@ -26,7 +26,7 @@ async def test_navigation_serves_distinct_scoped_pages_without_side_effects(obse
     client, store, _, provider, _ = observatory
     before = store._connection.total_changes
     expected = {
-        "/": ["status", "activity", "character", "threads", "memory", "jobs", "runs"],
+        "/": ["status", "activity", "character", "jobs"],
         "/threads": ["threads", "episodes"],
         "/memory": ["memory", "jobs"],
         "/runs": ["runs"],

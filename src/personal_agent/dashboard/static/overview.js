@@ -91,7 +91,7 @@ async function pageCollection(id, kind) {
   try {
     await cardsPage(
       target,
-      `/api/${kind === "jobs" ? "learning/jobs" : kind}?limit=12`,
+      `/api/${kind === "jobs" ? "learning/jobs" : kind}?limit=${Math.max(3, Math.min(12, Math.floor((innerHeight - 180) / 90) * 3))}`,
       kind,
       open,
     );
@@ -135,9 +135,24 @@ async function refresh() {
       work.push(timeline(open));
       if (refreshCount % 5 === 0)
         work.push(
-          collection("threads", "threads", 3, "nested-grid"),
-          collection("runs", "runs", 8, "run-list"),
-          collection("job-list", "jobs", 4, "stack"),
+          collection(
+            "job-list",
+            "jobs",
+            Math.max(
+              1,
+              Math.min(
+                3,
+                Math.floor(
+                  ((innerWidth <= 1100
+                    ? (innerHeight - 200) / 2
+                    : innerHeight - 220) -
+                    130) /
+                    140,
+                ),
+              ),
+            ),
+            "stack",
+          ),
           character(),
         );
     }

@@ -21,6 +21,7 @@ from personal_agent.runtime import ChatService
 
 ASSETS = Path(__file__).parent
 CHINESE = json.loads((ASSETS / "static" / "zh-CN.json").read_text(encoding="utf-8"))
+ENGLISH = json.loads((ASSETS / "static" / "en.json").read_text(encoding="utf-8"))
 
 
 def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
@@ -94,6 +95,8 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
     async def home(request: Request):
         page = next(key for key, value in PAGES.items() if value[0] == request.url.path)
         _, _, heading, cards = PAGES[page]
+        language = "en" if request.cookies.get("heybuddy_language") == "en" else "zh-CN"
+        catalog = ENGLISH if language == "en" else CHINESE
         return templates.TemplateResponse(
             request=request,
             name="index.html",
@@ -102,7 +105,8 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
                 "page": page,
                 "heading": heading,
                 "pages": PAGES,
-                "ui": lambda text: CHINESE.get(text, text),
+                "language": language,
+                "ui": lambda text: catalog.get(text, text),
             },
         )
 
