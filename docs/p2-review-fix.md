@@ -28,3 +28,11 @@ M2 修复 Preflight 非破坏合并；M3 修复目标相关证据；M4 进行跨
 ContextRetriever.preflight() 在模型调用前复制确定性结果，空选择保持原命中，未知/重复/过量 ID、Provider 失败或重新读取失败都回退到同一 Baseline。补充结果只能在有界集合的余量中加入，既有证据优先，不因新候选被挤掉；最终仍由 ContextBuilder 按原预算、Run/call_id 和 Memory 路径去重。Baseline 为空时沿原 Recall Fallback，普通接话仍不请求 Preflight。
 
 ContextBuilder 也单独保护成功 retrieve 与可选 preflight 的异常边界，自定义 Preflight 清空副本再失败不会破坏原结果。完全重复的 Thread state 在最终 Memory 实际选入预算后才省略，避免超预算补充项使原 Thread 内容消失。tests/test_preflight_baseline.py 覆盖有/无基线、空/非法/过量/重复选择、真实 Thread/Episode/完整 Run、超预算、当前输入、自定义失败和取消；原完整工具重放、角色及快速接话回归保留。
+
+## M3：目标相关的 Curator Evidence
+
+所选 Markdown 路径 → 已完成 Learning Job 的 applied operation.path → 来源 ID/hash → 重新验证后的原始 Run。每路径最近四个成功修改任务，不受全局新近游戏/实习任务干扰；最多三个目标、每目标八引用、合计八 Run 和原有来源字节总量，查询复用 SQLite VM/时间预算。来源重新检查 Agent、Conversation、completed/完整性、hash 与引文。按最新相关任务选择，再按源时间输出，保留旧决定与最新更正的关系。
+
+模型收到每个文件的来源集合与不足状态；Host 对事实修改也按对应文件集合再次验引文，不能用同批另一个文件的证据修改此文件。无来源/无法核实/字节范围不完整时保守结构整理或 no-op；事实修改明确 evidence_insufficient。关联是 Job/文件粒度，不是逐事实 Provenance Graph，语义蕴含仍需审阅。未增加 Episode/Thread fallback 或额外模型判断；不改变写入、split 或稳定偏好保护。
+
+tests/test_curator_evidence.py 覆盖 Day1 项目证据被 Day2/3 无关写入夹在前后的情况、相关多次更新/更正、丢失/跨 Agent/变更 hash、累计字节预算、无来源 No-op 与跨所选文件误引。真实 Writer/索引/来源框架仍由既有 Curator 和集成测试验证。

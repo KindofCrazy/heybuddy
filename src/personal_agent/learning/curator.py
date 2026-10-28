@@ -47,6 +47,9 @@ CURATE = BASE + (
     "preserve stable preferences regardless of age, and organize headings WITHOUT losing claims. "
     "Unresolved conflicts => no_op; never resolve by guessing or by age alone. "
     "Reconciling obsolete state requires supplied USER evidence. "
+    "Use evidence_by_path: a source related to another target is not evidence for this file. "
+    "If evidence_status is insufficient/unavailable for a target, only lossless structural "
+    "edits are allowed; factual changes must be no_op. Markdown is not user confirmation. "
     "No persona/index edits or deletion. "
     "An empty changes list is valid. No-op when already tidy. One exact unique update per file. "
     "deduplicate/organization must preserve non-heading lines verbatim somewhere in the retained "
@@ -171,20 +174,50 @@ class MemoryCurator:
         self._schedule()
         return False
 
-    def _evidence(self) -> list:
-        # Reconciliation can cite only actual recent learning sources, not Memory text itself.
-        with self.repository.store._transaction() as db:
-            rows = db.execute(
-                "SELECT sources FROM memory_learning_jobs WHERE agent_id=? "
-                "AND kind!='curator' AND state='completed' ORDER BY rowid DESC "
-                "LIMIT 2",
-                (self.repository.agent_id,),
-            ).fetchall()
-        import json
-
-        ids = list(dict.fromkeys(r["id"] for row in rows for r in json.loads(row[0])["runs"]))[:8]
-        _, records, _ = self.repository.snapshot(ids, [], self.learning.policy)
-        return records
+    def _evidence(self, paths: list[str]) -> tuple[list, dict, dict]:
+        related = self.repository.related_sources(paths)
+        # Fair round-robin across at most three files, newest references per file first.
+        chosen = {}
+        for offset in range(8):
+            for rows in related.values():
+                if offset < len(rows) and len(chosen) < 8:
+                    chosen.setdefault(rows[offset]["id"], rows[offset])
+        records, verified = [], set()
+        unavailable = set()
+        used = 0
+        for rid, ref in chosen.items():
+            try:
+                _, source, _ = self.repository.snapshot(
+                    [rid],
+                    [],
+                    self.learning.policy,
+                    byte_limit=self.learning.policy.source_bytes - used,
+                )
+                cid, record = source[0]
+                if (
+                    record.turn.source_hash != ref["hash"]
+                    or cid != ref["conversation_id"]
+                    or used + record.payload_bytes > self.learning.policy.source_bytes
+                ):
+                    raise HistoryError("Curator source cannot be verified.")
+                records.append((cid, record))
+                used += record.payload_bytes
+                verified.add(rid)
+            except HistoryError:
+                unavailable.add(rid)
+        records.sort(key=lambda pair: (pair[1].started_at, pair[1].position))
+        by_path = {
+            path: [r["id"] for r in rows if r["id"] in verified] for path, rows in related.items()
+        }
+        status = {
+            path: "unavailable"
+            if any(r["id"] in unavailable for r in rows)
+            else "verified"
+            if by_path[path]
+            else "insufficient"
+            for path, rows in related.items()
+        }
+        return records, by_path, status
 
     async def run(self, *, force=False, retry=False) -> dict:
         try:
@@ -248,7 +281,7 @@ class MemoryCurator:
                 return {"outcome": "completed", "updated_files": 0, "unchanged": True}
             if latest and latest["state"] == "failed" and not retry:
                 return {"outcome": "failed", "error_code": latest["error"]}
-            records = self._evidence()
+            records, evidence_by_path, evidence_status = self._evidence(list(comparison))
             refs["runs"] = [
                 {"id": s.run_id, "hash": s.turn.source_hash, "conversation_id": cid}
                 for cid, s in records
@@ -277,11 +310,15 @@ class MemoryCurator:
                         "memory": {p: redact(t) for p, t in comparison.items()},
                         "catalogue": catalog,
                         "history": history,
+                        "evidence_by_path": evidence_by_path,
+                        "evidence_status": evidence_status,
                         "as_of": self.clock.now().isoformat(),
                         "max_files": self.policy.max_files,
                     },
                 )
-                return self._validate(result, comparison, catalog, records)
+                return self._validate(
+                    result, comparison, catalog, records, evidence_by_path, evidence_status
+                )
 
             report = await self.learning._execute(
                 jid, refs, records, [], retry=retry, proposer=propose
@@ -290,7 +327,9 @@ class MemoryCurator:
                 self._schedule(completed=True)
             return report
 
-    def _validate(self, result, comparison, catalog, records) -> list:
+    def _validate(
+        self, result, comparison, catalog, records, evidence_by_path, evidence_status
+    ) -> list:
         changes = result.changes
         targets = [c.path for c in changes if c.action in {"create", "update"}]
         if (
@@ -316,6 +355,8 @@ class MemoryCurator:
             if change.action == "create" and change.kind != "split":
                 raise ReflectionError("unsafe_memory_split")
             if change.kind == "reconcile":
+                if evidence_status.get(change.path) != "verified":
+                    raise ReflectionError("curator_evidence_insufficient")
                 if not change.evidence:
                     raise ReflectionError("invalid_evidence")
                 evidence = Candidate(
@@ -326,7 +367,11 @@ class MemoryCurator:
                     confidence="confirmed",
                     evidence=change.evidence,
                 )
-                self.learning._verify(Extraction(candidates=[evidence]), records)
+                related = set(evidence_by_path.get(change.path, []))
+                self.learning._verify(
+                    Extraction(candidates=[evidence]),
+                    [(cid, s) for cid, s in records if s.run_id in related],
+                )
             elif change.action == "create":
                 if (
                     change.kind != "split"

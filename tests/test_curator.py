@@ -8,7 +8,7 @@ from personal_agent.memory import index
 from tests.fakes import FakeProvider
 from tests.test_learning import learner, script, state
 from tests.test_organization_schedule import FakeClock
-from tests.test_reflection import TOPIC, seed
+from tests.test_reflection import TOPIC, candidate, seed
 
 __all__ = ["state"]
 
@@ -49,12 +49,31 @@ async def test_deduplicate_and_repeated_run_is_no_meaningless_write(state):
     assert len(service.model.provider.requests) == 1
 
 
-async def test_reconcile_current_state_requires_actual_recent_user_evidence(state):
+async def test_reconcile_current_state_requires_actual_related_user_evidence(state):
     db, sessions, memory, run = state
     index.create(memory, "projects/heybuddy.md", TOPIC + "\n- 正在准备算法实习。\n")
     service = curator(state, [])
     newer = seed(db, sessions.current.id, "明确更正：我已经获得算法实习 Offer。")
-    service.learning.model.provider = script([])
+    service.learning.model.provider = script(
+        [
+            candidate(
+                sessions.current.id,
+                newer,
+                sequence=3,
+                quote="明确更正：我已经获得算法实习 Offer。",
+                content="用户已补充实习进展",
+            )
+        ],
+        [{"path": "projects/heybuddy.md", "candidate_ids": [1]}],
+        [
+            {
+                "action": "update",
+                "old_text": "采用方案 A。",
+                "new_text": "采用方案 A。\n- 用户已补充实习进展。",
+                "reason": "记录已提供的相关进展",
+            }
+        ],
+    )
     await service.learning.learn(run_ids=[newer])
     edit = change(
         old="- 正在准备算法实习。",

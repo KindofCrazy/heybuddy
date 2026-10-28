@@ -8,6 +8,7 @@ from uuid import uuid4
 from personal_agent.core.history import HistoryError
 from personal_agent.learning.models import LearningPolicy
 from personal_agent.storage.episodes import EpisodeRepository
+from personal_agent.storage.recall import query_budget
 
 SCHEMA = (
     """CREATE TABLE memory_learning_jobs (
@@ -36,7 +37,13 @@ class LearningRepository:
         self.agent_id = episodes.agent_id
 
     def snapshot(
-        self, run_ids: list[str], episode_ids: list[str], policy: LearningPolicy, *, floor=0
+        self,
+        run_ids: list[str],
+        episode_ids: list[str],
+        policy: LearningPolicy,
+        *,
+        floor=0,
+        byte_limit: int | None = None,
     ) -> tuple[dict, list, list]:
         """Resolve references afresh, Agent-bound, bounded before deserialization."""
         if len(set(run_ids)) != len(run_ids) or len(episode_ids) > policy.batch_episodes:
@@ -66,7 +73,12 @@ class LearningRepository:
                     raise HistoryError("Learning source inaccessible.")
                 if row["position"] <= floor:
                     continue
-                source = self.episodes._source(db, row, policy.source_bytes - used)
+                cap = (
+                    policy.source_bytes
+                    if byte_limit is None
+                    else min(policy.source_bytes, byte_limit)
+                )
+                source = self.episodes._source(db, row, max(0, cap - used))
                 if source.turn is None:
                     raise HistoryError("Learning source incomplete or oversized.")
                 used += source.payload_bytes
@@ -236,6 +248,32 @@ class LearningRepository:
                     (self.agent_id,),
                 ).fetchone()
             )
+
+    def related_sources(self, paths: list[str]) -> dict[str, list[dict]]:
+        """Bounded job/receipt metadata lookup; Markdown and fact bodies are not searched."""
+        if len(set(paths)) != len(paths) or len(paths) > 3:
+            raise HistoryError("Curator target range exceeds budget.")
+        result = {}
+        for path in paths:
+            with self.store._transaction() as db, query_budget(db):
+                rows = db.execute(
+                    "SELECT j.sources FROM memory_learning_jobs j WHERE j.agent_id=? "
+                    "AND j.kind!='curator' AND j.state='completed' AND EXISTS ("
+                    "SELECT 1 FROM json_each(j.operations) op "
+                    "WHERE json_extract(op.value,'$.path')=? "
+                    "AND json_extract(op.value,'$.state')='applied' "
+                    "AND json_extract(op.value,'$.action') IN ('create','update')) "
+                    "ORDER BY j.rowid DESC LIMIT 4",
+                    (self.agent_id, path),
+                ).fetchall()
+            seen, references = set(), []
+            for row in rows:
+                for ref in reversed(json.loads(row["sources"])["runs"][:48]):
+                    if ref["id"] not in seen:
+                        references.append(ref)
+                        seen.add(ref["id"])
+            result[path] = references[:8]
+        return result
 
     def running(self) -> bool:
         with self.store._transaction() as db:

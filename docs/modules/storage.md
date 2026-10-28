@@ -1,5 +1,7 @@
 # SQLite 会话存储
 
+related_sources(paths) 用参数化 JSON_EACH 对完成 Learning Job 的 applied CREATE/UPDATE 路径关联 sources，最多三个路径、每路径四 Job/八个去重引用；使用已有 query_budget。它不存新事实、不修改原来源，Curator 再用带累计 byte_limit 的 snapshot() 校验实际 Run。无新表/索引或迁移；关联仅到 Job/文件层，不能证明每条语义事实的蕴含关系。
+
 P2 Review Fix 不增加迁移，仍为 schema 12。LearningRepository 在原 metrics.recovery 保存有界检查次数、deadline 与已发布回执，save() 保留这部分元数据不被模型计量覆盖；recovery_job() 查询一个当前 Agent 到期未决任务，running() 防止与该 Agent 前台 Run 交叠。Status attention 显示检查次数/下次检查，来源预留关系不重置，completed 记账仍是原 CAS 短事务。详见 [Learning](learning.md)。
 
 P3 当前 schema 12 追加 `character/storage.py::SCHEMA`：character_runs 保存 Host 角色参与标签，character_states 保存一个当前短期模拟状态与版本，character_state_sources 保存去重/失败/取消进度。原迁移 1–11 不改，无旧 Run 自动归属，也不复制人格或长期事实。初始化、CAS、时间和事务窗口见 [State](character-state.md)，迁移/回滚测试见 tests/test_character_storage.py。
