@@ -3,7 +3,7 @@
 import asyncio
 import signal
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import AsyncExitStack, contextmanager
 
 import httpx
 
@@ -28,12 +28,21 @@ def stop_on_termination(stop: asyncio.Event) -> Iterator[None]:
         signal.signal(signal.SIGTERM, previous)
 
 
-async def run_qq(settings: Settings) -> None:
+async def run_qq(
+    settings: Settings, *, dashboard: bool = False, dashboard_port: int = 8765
+) -> None:
     settings.require_qq()
     stop = asyncio.Event()
     with stop_on_termination(stop):
         async with open_application(settings) as service:
-            async with httpx.AsyncClient(trust_env=False, follow_redirects=False) as client:
+            async with AsyncExitStack() as stack:
+                if dashboard:
+                    from personal_agent.dashboard.server import dashboard_server
+
+                    await stack.enter_async_context(dashboard_server(service, dashboard_port))
+                client = await stack.enter_async_context(
+                    httpx.AsyncClient(trust_env=False, follow_redirects=False)
+                )
                 sessions = service.sessions
                 inbox = QQInbox(
                     sessions.store,

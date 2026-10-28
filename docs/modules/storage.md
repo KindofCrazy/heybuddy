@@ -105,3 +105,7 @@ schema 5 追加 storage/automation.py 的 automation_batches 与范围/活动唯
 # QQ 收件回执（schema 13）
 
 `storage/qq.py` 原子追加 `qq_receipts` 及去重/待处理索引，不改变原始 Journal、Recall、Learning 或角色表。`QQInbox` 仅保存最小平台回执与有界待处理文本；领取后删除暂存正文，完整对话继续由 `SQLiteStore.begin_run()` 等原路径维护。处理/发送中的遗留回执只改为 uncertain，不重跑工具；received 的恢复绑定同一 Agent、AppID、OpenID 和 Conversation。执行路径、外部发送提交窗口及测试见 [qq.md](qq.md)。
+# Observatory 读取
+
+`SQLiteStore.reading()` 供受信任 Repository 在 Owner 事件循环上执行短 SELECT，复用 `storage/recall.py:query_budget`，不执行 `BEGIN IMMEDIATE`、提交或恢复。调用方不得在作用域内 await 或写入。`dashboard/repository.py:ObservatoryRepository` 绑定 Agent Scope，列表只取有界元数据；HTTP 不接收 SQL。测试见 `tests/test_dashboard.py`。
+

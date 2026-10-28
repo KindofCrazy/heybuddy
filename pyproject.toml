@@ -5,10 +5,14 @@ description = "A small, explicit personal agent runtime with a handwritten agent
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "fastapi>=0.115,<1",
     "httpx>=0.28,<1",
+    "jinja2>=3.1,<4",
+    "markdown-it-py>=3,<5",
     "openai>=2,<3",
     "pydantic>=2,<3",
     "python-dotenv>=1,<2",
+    "uvicorn>=0.34,<1",
     "websockets>=15,<18",
 ]
 

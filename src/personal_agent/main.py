@@ -283,7 +283,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Personal Agent / HeyBuddy CLI and official QQ C2C"
     )
-    parser.add_argument("channel", nargs="?", choices=("chat", "qq"), default="chat")
+    parser.add_argument("channel", nargs="?", choices=("chat", "qq", "web"), default="chat")
+    parser.add_argument("--dashboard", action="store_true", help="QQ: enable local Observatory")
+    parser.add_argument("--dashboard-port", type=int, default=8765, help="Loopback HTTP port")
     parser.add_argument(
         "--discover-openid",
         action="store_true",
@@ -292,6 +294,10 @@ def main() -> int:
     args = parser.parse_args()
     if args.discover_openid and args.channel != "qq":
         parser.error("--discover-openid requires qq")
+    if args.dashboard and (args.channel != "qq" or args.discover_openid):
+        parser.error("--dashboard requires qq without --discover-openid")
+    if not 1024 <= args.dashboard_port <= 65535:
+        parser.error("--dashboard-port must be between 1024 and 65535")
     try:
         settings = load_qq_settings() if args.discover_openid else load_settings()
     except ValidationError as exc:
@@ -321,7 +327,14 @@ def main() -> int:
         if args.discover_openid:
             asyncio.run(discover_openid(settings))
         elif args.channel == "qq":
-            asyncio.run(run_qq(settings))
+            if args.dashboard:
+                asyncio.run(run_qq(settings, dashboard=True, dashboard_port=args.dashboard_port))
+            else:
+                asyncio.run(run_qq(settings))
+        elif args.channel == "web":
+            from personal_agent.dashboard.server import run_web
+
+            asyncio.run(run_web(settings, args.dashboard_port))
         else:
             asyncio.run(run_cli(settings))
     except (KeyboardInterrupt, EOFError):
@@ -337,6 +350,9 @@ def main() -> int:
         print(
             "存储错误：无法初始化或访问会话数据库，请检查权限或其他运行中的实例。", file=sys.stderr
         )
+        return 1
+    except OSError:
+        print("本地服务无法启动：请检查监听端口和文件权限。", file=sys.stderr)
         return 1
     except CharacterError as exc:
         print(f"角色配置错误 [{exc.code}]：请检查本地角色包与大小限制。", file=sys.stderr)

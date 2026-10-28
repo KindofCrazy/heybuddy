@@ -118,6 +118,19 @@ class SQLiteStore:
             self._lock.close()
 
     @contextmanager
+    def reading(self) -> Iterator[sqlite3.Connection]:
+        """Short, bounded SELECTs on the owner's event loop; no write transaction.
+
+        Callers must not await or mutate inside this context. This is an internal
+        repository boundary, never a connection exposed to models or HTTP clients.
+        """
+        try:
+            with recall.query_budget(self._connection):
+                yield self._connection
+        except sqlite3.Error:
+            raise HistoryError("Conversation database read failed.") from None
+
+    @contextmanager
     def _transaction(self) -> Iterator[sqlite3.Connection]:
         try:
             self._connection.execute("BEGIN IMMEDIATE")
