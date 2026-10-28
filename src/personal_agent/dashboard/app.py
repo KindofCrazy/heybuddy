@@ -1,5 +1,6 @@
 """HTTP views of a supplied ChatService; never opens or owns another application."""
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.dashboard.layout import CARDS
+from personal_agent.dashboard.memory import MemoryView, markdown
 from personal_agent.dashboard.privacy import safe
 from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
 from personal_agent.runtime import ChatService
@@ -24,6 +26,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         raise ValueError("Observatory requires the existing persistent ChatService")
     sessions = service.sessions
     repository = ObservatoryRepository(sessions.store, sessions.agent.id)
+    memory = MemoryView(sessions.memory)
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.service = service
     app.state.repository = repository
@@ -118,6 +121,12 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
     async def run(run_id: str):
         return output(repository.detail("runs", run_id))
 
+    @app.get("/api/runs/{run_id}/messages")
+    async def messages(
+        run_id: str, limit: int = Query(8, ge=1, le=12), after: int = Query(0, ge=0, le=2**63 - 1)
+    ):
+        return output(repository.messages(run_id, limit, after))
+
     @app.get("/api/episodes")
     async def episodes(
         limit: int = Query(8, ge=1, le=20),
@@ -145,6 +154,82 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
     @app.get("/api/learning/jobs/{job_id}")
     async def job(job_id: str):
         return output(repository.detail("jobs", job_id))
+
+    @app.get("/api/memory")
+    async def memory_tree(
+        directory: str = Query("", max_length=260),
+        limit: int = Query(8, ge=1, le=20),
+        cursor: str = Query("", max_length=128),
+    ):
+        return output(await asyncio.to_thread(memory.listing, directory, limit, cursor))
+
+    @app.get("/api/memory/file")
+    async def memory_file(
+        path: str = Query(..., min_length=1, max_length=260),
+        offset: int = Query(0, ge=0, le=1048576),
+        expected_hash: str | None = Query(None, max_length=64),
+    ):
+        return output(await asyncio.to_thread(memory.file, path, offset, expected_hash))
+
+    @app.get("/api/memory/records")
+    async def memory_records(
+        path: str = Query(..., min_length=1, max_length=260),
+        limit: int = Query(8, ge=1, le=20),
+        cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
+    ):
+        memory.memory.path(path)
+        return output(repository.file_jobs(path, limit, cursor))
+
+    @app.get("/api/character")
+    async def character():
+        compiler = sessions.character
+        if compiler is None:
+            return output({"enabled": False, "message": "No active character package"})
+        package = compiler.package
+        return output(
+            {
+                "enabled": True,
+                "character_id": package.character_id,
+                "fingerprint": package.fingerprint,
+                "profile_html": markdown(package.character),
+                "behavior_html": markdown(package.behavior),
+                "profile": package.character,
+                "behavior": package.behavior,
+                "state_available": bool(
+                    service.organization and service.organization.character_state
+                ),
+            }
+        )
+
+    @app.get("/api/character/state")
+    async def character_state(
+        limit: int = Query(8, ge=1, le=20),
+        cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
+    ):
+        actor = service.organization.character_state if service.organization else None
+        if actor is None:
+            return output(
+                {
+                    "enabled": False,
+                    "active": None,
+                    "stored": None,
+                    "items": [],
+                    "next_cursor": None,
+                    "has_more": False,
+                }
+            )
+        stored = actor.repository.current()
+        return output(
+            {
+                "enabled": actor.policy.enabled,
+                "active": actor.active(),
+                "stored": stored.model_dump(mode="json") if stored else None,
+                "history_note": "Only the current state and source-attempt receipts are retained; "
+                "previous state bodies are unavailable. "
+                "State is simulated, not subjective emotion.",
+                **repository.character_receipts(actor.repository.scope, limit, cursor),
+            }
+        )
 
     app.mount("/static", StaticFiles(directory=ASSETS / "static"), name="static")
     return app

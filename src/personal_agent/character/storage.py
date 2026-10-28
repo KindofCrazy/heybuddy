@@ -78,7 +78,7 @@ class CharacterStateRepository:
             db.execute("INSERT INTO character_runs VALUES (?,?,?,?)", (run_id, *self.scope))
 
     def row(self) -> dict:
-        with self.store._transaction() as db:
+        with self.store.reading() as db:
             row = db.execute(
                 "SELECT * FROM character_states WHERE agent_id=? AND character_id=? "
                 "AND package_hash=?",

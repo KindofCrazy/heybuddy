@@ -150,3 +150,26 @@ class ObservatoryRepository:
                 (self.agent_id,),
             ).fetchone()
         return dict(row) if row else None
+
+    def character_receipts(self, scope: tuple, limit: int, cursor: int) -> dict:
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT s.rowid AS position,s.episode_id,s.episode_revision,s.state,s.error,"
+                "s.source_hash FROM character_state_sources s JOIN episodes e ON e.id=s.episode_id "
+                "JOIN conversations c ON c.id=e.stream_id "
+                "WHERE s.agent_id=? AND s.character_id=? AND s.package_hash=? AND c.agent_id=? "
+                "AND s.rowid<? ORDER BY s.rowid DESC LIMIT ?",
+                (*scope, self.agent_id, cursor, limit + 1),
+            ).fetchall()
+        return page([dict(r) for r in rows], limit)
+
+    def file_jobs(self, path: str, limit: int, cursor: int) -> dict:
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT j.rowid AS position,j.id,j.kind,j.state,j.updated_at "
+                "FROM memory_learning_jobs j WHERE j.agent_id=? AND j.rowid<? "
+                "AND EXISTS (SELECT 1 FROM json_each(j.operations) o "
+                "WHERE json_extract(o.value,'$.path')=?) ORDER BY j.rowid DESC LIMIT ?",
+                (self.agent_id, cursor, path, limit + 1),
+            ).fetchall()
+        return page([dict(r) for r in rows], limit)

@@ -20,6 +20,14 @@
 
 ## 请求错误
 
+## 嵌套详情实际路径
+
+`overview.js` 的卡片调用 `inspectors.js:openObject`，将 `[kind,id]` 链编码进 URL fragment。`route` 在原生 modal dialog 内构造 Breadcrumb，并把当前节点分派到 `details.js:objectDetail` 或 `memory-character.js`。Thread 用 `/api/episodes?thread_id=` 查真正归属；Episode 展示经 Repository 校验的 Run IDs 与 Highlights；Run 的初始 GET 仅取元数据，点击 reveal 才分页读取 `/messages`，每条消息继续折叠。后台概览刷新不触碰 dialog；较早返回的异步详情由 requestVersion 丢弃。ESC、Close、Workspace 或浏览器返回均沿 URL 状态关闭/回退；`?full=1` 展开完整宽度，刷新保持路径。
+
+Memory 逐目录查询 `/api/memory`，由 `MemoryView.listing` 有界扫描当前目录（最多 MemoryFS 的 MAX_ENTRIES），先 guard 再判断类型，跳过非法路径/链接；不递归、不写入、不修复。`/api/memory/file` 使用原 `MemoryFS.path/raw`，按字符 offset 分段并用 expected_hash 检查后续片段；本地文件 I/O 在只读工作线程中进行，不持写锁。`markdown-it-py` 禁止 HTML、图片、链接，前端 `prose` 再复制无属性标签白名单。文件详情经 `/api/memory/records` 展示真实 Learning 回执；无旧正文则无 Diff。
+
+`/api/character` 使用已加载 Character Package；`/api/character/state` 复用 `CharacterStateService.active()` 的实际 TTL 与 mood/current_focus/stance，分别返回 current effective、last stored 和来源 attempt receipts。`CharacterStateRepository.row` 使用 `SQLiteStore.reading()`，HTTP 不创建状态。旧状态正文没有历史副本，界面明确说明；角色关闭不虚构字段或事件。测试见 `tests/test_dashboard.py` 的关系、隐私、Memory 和 P3 用例。
+
 对象不存在或不属于当前 Agent 返回 404；参数错误返回固定 422；存储失败返回固定 503，不返回异常正文。只允许 GET/HEAD，禁用 API 文档写入口、跨站请求和不匹配 Host。所有页面禁止缓存，设置 CSP、no-referrer、nosniff；无远程资源和 CORS。监听端口冲突在启动 consumer 前失败，运行时 HTTP 异常不传播到 QQ task。
 
 ## 阅读与验证

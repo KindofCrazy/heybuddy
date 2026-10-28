@@ -26,3 +26,7 @@ active() 默认一小时后将 Mood 视为 neutral，三小时后清除 Focus/St
 `/character status|run|retry` 是可信调试入口，run/retry 只处理一个有界来源，仍受共享预算；不主动输出角色消息。/episode status 显示状态阶段与安全计量，/context status 显示角色注入大小与状态是否可用，不打印私人 reason/引文。无新事件不请求模型，模型用量由 character_state 阶段单列。
 
 tests/test_character_state.py 验证引用、no-op、Finalize 去重、Mood/Focus 过期、回拨、角色隔离、取消/CAS、真实 SQLite 重开、包变化、限流、旧引文不刷新，以及真实 Main Agent Run 标签且不写入角色 System。tests/test_character_storage.py 验证 11→12 原子回滚、Agent 外键触发器和状态/来源记账失败整体回滚。P2 的调度和存储回归继续保留。
+# Observatory 读取
+
+`CharacterStateRepository.row()` 改用 `SQLiteStore.reading()` 执行有界 SELECT，不取得写事务。Dashboard 复用 `CharacterStateService.active()` 的 TTL 和实际字段；当前/过期存储状态与 source-attempt receipts 分开显示，不建立旧状态正文副本。HTTP 不调用状态生成。验证见 `tests/test_dashboard.py:test_character_state_uses_actual_p3_model_and_receipts`。
+

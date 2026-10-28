@@ -1,12 +1,15 @@
-import {node, get, badge, empty, errorBox, objectCard, time} from './components.js';
+import {node, get, badge, empty, errorBox, objectCard, time, action} from './components.js';
+import {openObject} from './inspectors.js';
+import {memoryDirectory} from './memory-character.js';
 const content = id => document.getElementById(`content-${id}`);
-const open = (kind, id) => {location.hash = `inspect/${kind}/${encodeURIComponent(id)}`;};
+const open = (kind, id) => openObject(kind,id,true);
 async function collection(id, kind, limit, className) {
   const target = content(id);
   try {
     const data = await get(`/api/${kind === 'jobs' ? 'learning/jobs' : kind}?limit=${limit}`);
     if (!data.items.length) {target.replaceChildren(empty(`No ${kind} yet`, '真实记录形成后，会出现在这里。')); return;}
     const grid = node('div', className); data.items.forEach(item => grid.append(objectCard(kind, item, open))); target.replaceChildren(grid);
+    target.append(action(`Explore all ${kind} ↗`,() => open('collection',kind)));
   } catch {target.replaceChildren(errorBox());}
 }
 async function status() {
@@ -21,5 +24,11 @@ async function status() {
 }
 await Promise.allSettled([status(), collection('threads','threads',3,'nested-grid'), collection('runs','runs',8,'run-list'), collection('jobs','jobs',4,'stack')]);
 content('activity').replaceChildren(empty('Following the work','Activity monitoring connects in the next milestone.'));
-content('character').replaceChildren(empty('Character profile','Open the Character inspector to explore available state.'));
-content('memory').replaceChildren(empty('MemoryFS','Markdown files are read on demand.'));
+try {
+  const character = await get('/api/character');
+  content('character').replaceChildren(character.enabled ? node('h3','',character.character_id) : empty('No active character package','Character is disabled.'));
+  if (character.enabled) {const state = await get('/api/character/state?limit=1'); content('character').append(node('p','notice',state.active ? `Simulated mood: ${state.active.mood}` : 'No active short-term state.'));}
+  content('character').append(action('Explore profile & state ↗',() => open('character','current')));
+} catch {content('character').replaceChildren(errorBox());}
+try {content('memory').replaceChildren(); await memoryDirectory(content('memory'),'',open);} catch {content('memory').replaceChildren(errorBox());}
+content('threads').append(action('Explore all Episodes, including unassigned ↗',() => open('collection','episodes')));
