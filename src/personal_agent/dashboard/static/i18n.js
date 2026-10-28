@@ -24,20 +24,7 @@ export function timestamp(value) {
       ? `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
       : `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
   const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-  const offset = -date.getTimezoneOffset();
-  const utc = `UTC${offset >= 0 ? "+" : "-"}${pad(Math.floor(Math.abs(offset) / 60))}:${pad(Math.abs(offset) % 60)}`;
-  const beijing = ["Asia/Shanghai", "Asia/Chongqing"].includes(
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-  );
-  const zone =
-    language === "en"
-      ? beijing
-        ? "Beijing time"
-        : "Local time"
-      : beijing
-        ? "北京时间"
-        : "本地时间";
-  return `${day} ${clock} (${zone} ${utc})`;
+  return `${day} ${clock}`;
 }
 export function bindTimestamp(element, value) {
   element.dataset.timestamp = value;

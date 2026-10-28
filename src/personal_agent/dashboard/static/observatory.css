@@ -341,6 +341,11 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 13px;
 }
+.nested-grid,
+.run-list {
+  /* Reserve space for hover movement, shadows and focus rings inside scrollers. */
+  padding: 10px;
+}
 .nested {
   border: var(--border-nested);
   border-radius: var(--radius-nested);
