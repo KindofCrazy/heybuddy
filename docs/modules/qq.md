@@ -14,7 +14,7 @@
 
 ## 异常与边界
 
-HTTP 响应最大 65536 字节。Token 用 `SecretStr`，wire logger 禁用；只记录固定安全状态和重连次数。TLS 使用库的证书/主机校验，不禁用证书验证；不从环境隐式取得代理。401/403、鉴权/intent/shard 权限拒绝和封禁立即停止。暂时断线使用最多八次、5→60 秒的指数退避；即使中途 READY 也不清零预算，避免快速失败无限循环。无效 session/seq 清理 Resume 状态后重新 Identify；进程重启不恢复 Gateway session。
+HTTP 响应最大 65536 字节，整个请求还受总超时约束，逐块缓慢返回不能无限延长等待。Token 用 `SecretStr`，wire logger 禁用；只记录固定安全状态和重连次数。TLS 使用库的证书/主机校验，不禁用证书验证；不从环境隐式取得代理。401/403、Token 业务拒绝、鉴权/intent/shard 权限拒绝和封禁立即停止。暂时断线使用最多八次、5→60 秒的指数退避；即使中途 READY 也不清零预算，避免快速失败无限循环。无效 session/seq 清理 Resume 状态后重新 Identify；进程重启不恢复 Gateway session。Adapter 构造时复核数据库实例、Agent/AppID/OpenID 绑定，发送 API 再核对目标白名单、段数和大小；进程内回复期限同时受 monotonic deadline 约束，墙钟回退不会延长已领取消息的窗口。
 
 SDK 审查：腾讯 [botpy gateway.py](https://github.com/tencent-connect/botpy/blob/master/botpy/gateway.py) 当前使用固定 30 秒心跳、未检测 ACK、op7/9 不主动退出，`http.py` 在 ConnectionResetError 后重试请求；其 raw DEBUG/异常输出不满足本项目隐私要求。因此参考官方协议实现小型单分片适配，不引入 SDK 的 APScheduler 或 OpenClaw Runtime。WebSocket 基础协议交给 `websockets` 库。
 

@@ -233,3 +233,41 @@ async def test_gateway_reconnect_budget_and_exponential_cap(monkeypatch):
             None
         )
     assert delays == [5, 8, 8]
+
+
+async def test_token_business_rejection_stops_without_retry_or_private_logging(caplog):
+    calls = []
+
+    def handle(request):
+        calls.append(request)
+        return httpx.Response(200, json={"code": 4001, "message": "synthetic-private-body"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        with pytest.raises(QQError, match="qq_token_rejected") as caught:
+            await QQGateway(config(), QQAPI(config(), client)).run(None)
+    assert caught.value.fatal and len(calls) == 1
+    assert "synthetic-private-body" not in caplog.text
+
+
+async def test_total_http_timeout_bounds_trickling_response():
+    class Stream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b"{"
+            await asyncio.Event().wait()
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, stream=Stream()))
+    ) as client:
+        api = QQAPI(config(qq_send_timeout_seconds=0.01), client)
+        async with asyncio.timeout(1):
+            with pytest.raises(QQError, match="qq_network_error"):
+                await api.token()
+
+
+async def test_passive_sender_rejects_unauthorized_target_without_network():
+    def forbidden(request):
+        pytest.fail("Unauthorized reply must not reach the network")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(forbidden)) as client:
+        with pytest.raises(QQError, match="qq_invalid_reply"):
+            await QQAPI(config(), client).send_text("stranger", "message-1", 1, "hello")

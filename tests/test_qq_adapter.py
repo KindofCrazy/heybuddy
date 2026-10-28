@@ -318,3 +318,69 @@ def test_qq_schema_migration_is_atomic(tmp_path, monkeypatch):
         monkeypatch.setitem(storage.MIGRATIONS, 13, original)
         db.initialize()
         assert db.load_messages(sessions.current.id) == before
+
+
+async def test_long_reply_uses_four_sequences_and_partial_failure_keeps_receipt(state):
+    db, _, provider, service, inbox = state
+    provider.responses = [ModelResponse(text="很长的回答🙂。" * 1000)]
+
+    class PartialSender(Sender):
+        async def send_text(self, *args):
+            await super().send_text(*args)
+            if len(self.messages) == 2:
+                raise QQError("qq_network_error", uncertain=True)
+
+    sender = PartialSender()
+    adapter = QQAdapter(
+        config(qq_text_max_bytes=128, qq_send_interval_seconds=0.1), service, inbox, sender
+    )
+    adapter.start()
+    try:
+        await adapter.accept(event())
+        await settled(adapter)
+        await adapter.accept(event())
+        assert len(provider.requests) == 1
+        assert [message[2] for message in sender.messages] == [1, 2]
+        assert all(len(message[-1].encode()) <= 128 for message in sender.messages)
+        assert rows(db)[0]["status"] == "uncertain" and rows(db)[0]["sent_parts"] == 1
+    finally:
+        await adapter.close()
+
+
+async def test_journal_failure_halts_worker_before_queued_next_run(state, monkeypatch):
+    db, _, provider, service, inbox = state
+    sender = Sender()
+    adapter = QQAdapter(config(), service, inbox, sender)
+    adapter.start()
+    original = inbox.mark
+
+    def fail_processed(sequence, status, **kwargs):
+        if status == "processed":
+            raise HistoryError("synthetic-private-body")
+        return original(sequence, status, **kwargs)
+
+    monkeypatch.setattr(inbox, "mark", fail_processed)
+    try:
+        await adapter.accept(event("1"))
+        await adapter.accept(event("2"))
+        with pytest.raises(QQError, match="qq_processing_error"):
+            await asyncio.wait_for(adapter.worker, 1)
+        assert len(provider.requests) == 1 and not sender.messages
+        assert [row["status"] for row in rows(db)] == ["uncertain", "received"]
+    finally:
+        await adapter.close()
+
+
+def test_receipt_scope_cannot_be_misbound(state):
+    db, sessions, _, service, _ = state
+    wrong = QQInbox(db, sessions.agent.id, "different-app", "test-openid")
+    with pytest.raises(QQError, match="qq_scope_mismatch"):
+        QQAdapter(config(), service, wrong, Sender())
+
+
+def test_local_conversation_change_does_not_reroute_received_text(state):
+    db, sessions, _, _, inbox = state
+    inbox.receive(parse_text(event(), config()), sessions.current.id, 16)
+    another = sessions.new()
+    assert inbox.claim(another.id) is None
+    assert rows(db)[0]["error_code"] == "qq_conversation_changed"

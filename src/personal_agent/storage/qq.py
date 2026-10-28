@@ -48,6 +48,8 @@ class QQInbox:
             )
 
     def receive(self, message: QQText, conversation_id: str, capacity: int) -> bool:
+        if message.openid != self.openid:
+            raise QQError("qq_scope_mismatch", fatal=True)
         with self.store._transaction() as db:
             existing = db.execute(
                 """SELECT 1 FROM qq_receipts WHERE agent_id=? AND app_id=?

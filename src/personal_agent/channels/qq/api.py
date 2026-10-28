@@ -26,9 +26,12 @@ class QQAPI:
 
     async def _request(self, method: str, url: str, *, sending: bool = False, **kwargs) -> dict:
         try:
-            async with self.client.stream(
-                method, url, timeout=self.settings.qq_send_timeout_seconds, **kwargs
-            ) as response:
+            async with (
+                asyncio.timeout(self.settings.qq_send_timeout_seconds),
+                self.client.stream(
+                    method, url, timeout=self.settings.qq_send_timeout_seconds, **kwargs
+                ) as response,
+            ):
                 raw = bytearray()
                 async for chunk in response.aiter_bytes():
                     raw.extend(chunk)
@@ -55,14 +58,19 @@ class QQAPI:
     async def token(self) -> str:
         async with self._token_lock:
             if time.monotonic() >= self._expires:
-                data = await self._request(
-                    "POST",
-                    API_BASE + "/app/getAppAccessToken",
-                    json={
-                        "appId": self.settings.qq_app_id,
-                        "clientSecret": self.settings.qq_app_secret.get_secret_value(),
-                    },
-                )
+                try:
+                    data = await self._request(
+                        "POST",
+                        API_BASE + "/app/getAppAccessToken",
+                        json={
+                            "appId": self.settings.qq_app_id,
+                            "clientSecret": self.settings.qq_app_secret.get_secret_value(),
+                        },
+                    )
+                except QQError as exc:
+                    if exc.code == "qq_api_error":
+                        raise QQError("qq_token_rejected", fatal=True) from None
+                    raise
                 token = data.get("access_token")
                 try:
                     expires = int(data.get("expires_in", 0))
@@ -83,21 +91,31 @@ class QQAPI:
     async def gateway(self) -> str:
         data = await self._request("GET", self.base + "/gateway", headers=await self.headers())
         url = data.get("url")
-        parsed = urlsplit(url) if isinstance(url, str) else None
+        try:
+            parsed = urlsplit(url) if isinstance(url, str) else None
+            port = parsed.port if parsed is not None else None
+        except ValueError:
+            raise QQError("qq_gateway_url", fatal=True) from None
         if (
             parsed is None
             or parsed.scheme != "wss"
             or parsed.hostname not in GATEWAY_HOSTS
             or parsed.username is not None
             or parsed.password is not None
-            or parsed.port not in {None, 443}
+            or port not in {None, 443}
             or parsed.fragment
         ):
             raise QQError("qq_gateway_url", fatal=True)
         return url
 
     async def send_text(self, openid: str, message_id: str, sequence: int, text: str) -> None:
-        if not message_id or not 1 <= sequence <= 4 or not text:
+        if (
+            openid not in self.settings.qq_allowed_openids
+            or not message_id
+            or not 1 <= sequence <= self.settings.qq_reply_max_parts
+            or not text
+            or len(text.encode("utf-8")) > self.settings.qq_text_max_bytes
+        ):
             raise QQError("qq_invalid_reply", fatal=True)
         data = await self._request(
             "POST",

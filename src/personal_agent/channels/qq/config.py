@@ -53,7 +53,8 @@ class QQSettings(BaseModel):
         return self
 
     def require_qq(self, *, discover: bool = False) -> None:
-        if not self.qq_enabled or not self.qq_app_id or not self.qq_app_secret.get_secret_value():
+        secret = self.qq_app_secret.get_secret_value()
+        if not self.qq_enabled or not self.qq_app_id or not secret.strip() or len(secret) > 1024:
             raise QQError("qq_configuration", fatal=True)
         if not discover and len(self.qq_allowed_openids) != 1:
             raise QQError("qq_openid_required", fatal=True)

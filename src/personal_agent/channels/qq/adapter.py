@@ -29,6 +29,13 @@ class QQAdapter:
         self.sender = sender
         if service.sessions is None:
             raise QQError("qq_sessions_required", fatal=True)
+        if (
+            inbox.store is not service.sessions.store
+            or inbox.agent_id != service.sessions.agent.id
+            or inbox.app_id != settings.qq_app_id
+            or settings.qq_allowed_openids != (inbox.openid,)
+        ):
+            raise QQError("qq_scope_mismatch", fatal=True)
         self.conversation_id = service.sessions.current.id
         self.wake = asyncio.Event()
         self.worker: asyncio.Task | None = None
@@ -58,7 +65,11 @@ class QQAdapter:
             datetime.fromisoformat(row["platform_at"]),
             datetime.fromisoformat(row["received_at"]),
         )
-        return self.settings.qq_reply_window_seconds - (datetime.now(UTC) - origin).total_seconds()
+        remaining = (
+            self.settings.qq_reply_window_seconds - (datetime.now(UTC) - origin).total_seconds()
+        )
+        deadline = row.get("deadline")
+        return min(remaining, deadline - time.monotonic()) if deadline is not None else remaining
 
     async def _consume(self) -> None:
         result: RunResult | None = None
@@ -81,6 +92,9 @@ class QQAdapter:
                 raise QQError("qq_processing_error", fatal=True) from None
 
     async def _process(self, row: dict) -> RunResult | None:
+        row["deadline"] = time.monotonic() + min(
+            self.settings.qq_reply_window_seconds, max(0, self._remaining(row))
+        )
         await self.service.foreground()
         if self._remaining(row) <= self.settings.qq_send_timeout_seconds:
             self.inbox.mark(row["sequence"], "failed", error_code="qq_reply_expired")

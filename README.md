@@ -303,6 +303,8 @@ uv build
 
 QQ 官方协议、Transport 与离线测试见 [QQ 渠道](docs/modules/qq.md)。
 
+P4-MVP 增加官方 QQ 单人 C2C 文本入口：`uv run personal-agent qq`。先用 `uv run personal-agent qq --discover-openid` 取得并人工核对测试账号的 OpenID，再配置单用户白名单。诊断不调用模型；普通 QQ 对话复用原有会话、Memory 和 Character。完整平台准备、配置、Smoke Test 与限制见 [QQ 接入指南](docs/qq-setup.md)。CLI 与 QQ 不能以两个进程同时使用相同数据库。
+
 ## 当前限制
 
 V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。正常路径只加载有限工作页和摘要；没有精确 tokenizer、向量检索、自动备份或数据加密。摘要有损、估算不精确，单个不可缩减的大 Run 需调整预算或新建会话。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
