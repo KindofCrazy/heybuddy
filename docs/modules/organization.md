@@ -57,3 +57,9 @@ OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维�
 ## 单次请求与大输出预算
 
 每批 `EpisodeOrganizer.organize()` 仅调用一次 `OrganizerModel.ask()`，后者用 system 提示与 user JSON 发送一次无工具请求，再校验并发布；没有模型多轮循环或截断续写。积压分批和 Thread 整理各自是独立请求。整理 API 输出上限现在允许显式配置至 1,000,000 tokens（默认 8192），包含推理，可见 JSON 仍单独限制。1M 配置及窗口/维护预留关系见 [配置说明](config.md#显式-1m-整理配置)。
+
+## 整理内容的语言
+
+`organization/episodes.py::EPISODE_PROMPT` 要求标题、摘要及 Highlight 内容跟随来源对话的主要语言，中文讨论使用简体中文；混合语言按主要讨论判断，不因简短英文问候或技术名词改用英文，来源精确引文保持原文。`organization/threads.py::THREAD_PROMPT` 对标题和 current_state 使用同一原则，以所提供 Episode 代表的讨论为依据，不继承英文提示词或旧 Thread 文本的语言。`REPAIR_PROMPT` 同样约束根据当前关联 Episode 重建的 current_state。
+
+规则由 `OrganizerModel.ask()` 随 system 提示发送，面板仍原样显示已保存内容；修改提示词不会自动翻译已存 Episode/Thread，也不触发重算或真实 API 调用。语言选择属于模型语义行为，现有离线流程测试验证分段、关联及修复契约，不代表语言质量的真实模型评测。验证路径见 `tests/test_episodes.py`、`tests/test_threads.py` 与 `tests/test_thread_repair.py`。

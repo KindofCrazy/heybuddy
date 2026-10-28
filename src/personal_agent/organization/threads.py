@@ -11,7 +11,13 @@ from personal_agent.storage.threads import ThreadRepository
 
 THREAD_PROMPT = (
     "Organize the supplied Episodes into persistent topic Threads. Strict JSON matching "
-    "response_schema. Assign EVERY supplied Episode ID exactly once: groups or no_thread. "
+    "response_schema. Write titles and current_state in the predominant language of the "
+    "discussion represented by the supplied Episodes; use Simplified Chinese for predominantly "
+    "Chinese discussion. For mixed languages, follow the main discussion rather than brief "
+    "greetings or technical terms. Do not inherit the language of this prompt or an existing "
+    "Thread title/state when it differs from that discussion. Preserve technical names and "
+    "identifiers in their original form. "
+    "Assign EVERY supplied Episode ID exactly once: groups or no_thread. "
     "An Episode can have at most one Thread. Prefer a supplied existing thread_id for the same "
     "ongoing topic across days; null creates a new Thread only for a sustained topic/project, "
     "not one-off small talk. Each existing Thread can appear in at most one group. Ordinary "
@@ -27,6 +33,11 @@ THREAD_PROMPT = (
 
 REPAIR_PROMPT = (
     "Rebuild this Thread's current state ONLY from its CURRENT linked Episode evidence. "
+    "Write current_state in the predominant language of the discussion represented by the "
+    "CURRENT linked Episodes; use Simplified Chinese for predominantly Chinese discussion. "
+    "For mixed languages, follow the main discussion rather than brief greetings or technical "
+    "terms. Do not inherit the language of this prompt, the Thread title or previous_rebuild "
+    "when it differs from that discussion. Preserve technical names and identifiers. "
     "Return strict JSON matching response_schema. previous_rebuild is a bounded checkpoint "
     "of earlier pages in this SAME rebuild, not the old Thread state. Merge the supplied "
     "chronological Episode page with it; preserve confirmed goals, status, constraints and "

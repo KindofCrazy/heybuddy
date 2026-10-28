@@ -19,6 +19,10 @@ from personal_agent.storage.episodes import EpisodeRepository
 
 EPISODE_PROMPT = (
     "Organize ONLY the supplied complete runs into chronological contiguous Episodes. "
+    "Write titles, summaries and highlight content in the predominant language of the supplied "
+    "conversation; use Simplified Chinese for predominantly Chinese discussion. For mixed "
+    "languages, follow the main discussion rather than brief greetings or technical terms. "
+    "Preserve technical names, identifiers and exact source quotations in their original form. "
     "Return strict JSON matching response_schema. Every supplied run_id exactly once, in order; "
     "never combine a topic across intervening unrelated interaction. Required boundaries and "
     "excluded-run barriers MUST split; weak/strong boundaries are hints. Midnight is not a "
