@@ -177,17 +177,22 @@ class ContextBuilder:
                 self._pending[0].text,
                 frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
             )
-            preflight = getattr(self.retriever, "preflight", None)
-            if preflight is not None:
-                self._retrieval = await preflight(
-                    self._pending[0].text,
-                    frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
-                    self._retrieval,
-                )
         except Exception:
             # Retrieval is optional. Journal/Core/budget errors on their normal
             # paths are still fatal; failure here leaves Base + recent context.
             self._retrieval = RetrievalResult(path="unavailable")
+        else:
+            preflight = getattr(self.retriever, "preflight", None)
+            if preflight is not None:
+                try:
+                    self._retrieval = await preflight(
+                        self._pending[0].text,
+                        frozenset({self._run_id, *(turn.run_id for turn in self._page.turns)}),
+                        self._retrieval.model_copy(deep=True),
+                    )
+                except Exception:
+                    # A buggy/custom optional preflight cannot erase successful retrieval.
+                    self._retrieval.metrics["error_code"] = "preflight_unavailable"
         self._diagnostics["retrieval_path"] = self._retrieval.path
         self._diagnostics["retrieval"] = self._retrieval.metrics.copy()
 
@@ -208,6 +213,7 @@ class ContextBuilder:
         memory_files = set()
         memory_tokens = 0
         budget_omitted = False
+        selected_memory = []
         for item in self._retrieval.items:
             semantic = item.reference.get("kind") == "semantic_memory"
             memory_key = item.reference.get("section_hash")
@@ -234,9 +240,25 @@ class ContextBuilder:
                 recent.add(item.turn.run_id)
                 call_ids.update(calls)
             if semantic:
+                selected_memory.append(str(item.reference.get("content", "")))
                 memory_seen.add(memory_key)
                 memory_files.add(item.reference.get("path"))
                 memory_tokens += estimate_value(item.reference)
+        # Only remove duplicate state AFTER the covering Memory actually fit the budget.
+        for message in self._selected_history:
+            if isinstance(message, TextMessage) and message.text.startswith(
+                '{"kind": "working_context_reference"'
+            ):
+                data = json.loads(message.text)
+                reference = data["source"]
+                state = reference.get("current_state")
+                if (
+                    reference.get("kind") == "thread"
+                    and state
+                    and any(str(state) in text for text in selected_memory)
+                ):
+                    reference.update(current_state=None, state_covered_by_memory=True)
+                    message.text = json.dumps(data, ensure_ascii=False)
         self._diagnostics.setdefault("retrieval", {}).update(
             {
                 "injected_memory_files": len(memory_files),

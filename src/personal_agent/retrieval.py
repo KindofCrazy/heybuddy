@@ -312,36 +312,59 @@ class ContextRetriever:
         return result
 
     def _merge(self, memories, history):
-        content = "\n".join(str(i.reference.get("content", "")) for i in memories)
-        for item in history:
-            state = item.reference.get("current_state")
-            if state and str(state) in content:
-                item.reference["current_state"] = None
-                item.reference["state_covered_by_memory"] = True
         return [*memories, *history][:8]
+
+    def _supplement(self, baseline, additions):
+        """Existing evidence has priority over optional model-selected additions."""
+        selected, seen = [], set()
+        memory_files, raw_runs = 0, 0
+        for item in [*baseline, *additions]:
+            ref = item.reference
+            semantic = ref.get("kind") == "semantic_memory"
+            key = (
+                ("run", item.turn.run_id)
+                if item.turn
+                else (ref.get("kind"), ref.get("path") or ref.get("id"))
+            )
+            if key in seen or len(selected) >= 8:
+                continue
+            if semantic and memory_files >= self.lookup.policy.file_limit:
+                continue
+            if item.turn and raw_runs >= self.policy.raw_run_limit:
+                continue
+            selected.append(item)
+            seen.add(key)
+            memory_files += semantic
+            raw_runs += item.turn is not None
+        return selected
 
     async def preflight(
         self, user_input: str, exclude_run_ids: frozenset[str], result: RetrievalResult
     ) -> RetrievalResult:
         started = monotonic()
+        baseline = result.model_copy(deep=True)
         try:
-            return await self._preflight(user_input, exclude_run_ids, result)
+            return await self._preflight(user_input, exclude_run_ids, result.model_copy(deep=True))
         except Exception:
             requests = (
                 self.preflight_model.metrics.get("requests", 0) if self.preflight_model else 0
             )
-            return RetrievalResult(
-                path="unavailable",
-                metrics={
-                    "mode": "recall_fallback",
+            baseline.path = baseline.path if baseline.items else "recall_fallback"
+            baseline.metrics.update(
+                {
+                    "mode": baseline.path,
                     "extra_requests": requests,
-                    "memory_files": 0,
-                    "error_code": "retrieval_unavailable",
+                    "memory_files": sum(
+                        i.reference.get("kind") == "semantic_memory" for i in baseline.items
+                    ),
+                    "error_code": "preflight_unavailable",
+                    "preflight_usage": self.preflight_model.metrics if self.preflight_model else {},
                     "elapsed_seconds": float(result.metrics.get("elapsed_seconds", 0))
                     + monotonic()
                     - started,
                 },
             )
+            return baseline
 
     async def _preflight(
         self, user_input: str, exclude_run_ids: frozenset[str], result: RetrievalResult
@@ -380,12 +403,17 @@ class ContextRetriever:
             if threads or episodes
             else []
         )
-        result.items = self._merge(memories, history)
-        result.path = "llm_preflight" if result.items else "recall_fallback"
+        additions = self._merge(memories, history)
+        result.items = self._supplement(result.items, additions)
+        result.path = (
+            "llm_preflight" if additions else (result.path if result.items else "recall_fallback")
+        )
         result.metrics.update(
             {
                 "mode": result.path,
-                "memory_files": len(memories),
+                "memory_files": sum(
+                    i.reference.get("kind") == "semantic_memory" for i in result.items
+                ),
                 "extra_requests": 1,
                 "preflight_usage": self.preflight_model.metrics,
                 "elapsed_seconds": float(result.metrics.get("elapsed_seconds", 0))

@@ -6,9 +6,9 @@
 
 MemoryLookup.read() 对短文件提供全文，对长文件仅选最多两段完整 Heading Section，单文件可选内容默认 6144 字节。不能容纳的整节省略，仍可由 Agent 使用 Memory Read Tools 展开；没有持久化 Chunk/Embedding。引用包含 Agent 根相对路径、文件 hash、章节、section_hash 和文件修改时间；mtime 明确不代表用户事实确认时间。Core human/persona 不重复作为 Semantic Memory 注入。
 
-词法不能可靠决定时，`preflight()` 允许一次受限选择：默认 12 个候选、8192 输入估算 tokens、2048 输出 tokens、10 秒、4096 响应字节，无工具。候选来自刚读取的 Memory Index、至多两个 Agent Thread 和两个最近 Episode。模型只能返回已有候选 ID；Host 验证后重新读取索引和 Agent 归属，拒绝未知路径/跨 Agent ID。没有新 Planner Loop，不执行工具、不写记忆。`AGENT_MEMORY_RETRIEVAL_LLM_PREFLIGHT=false` 可关闭额外调用；空选择保留 recall_fallback。
+词法不能可靠决定时，preflight() 允许一次受限补充选择：默认 12 个候选、8192 输入估算 tokens、2048 输出 tokens、10 秒、4096 响应字节，无工具。候选来自刚读取的 Memory Index、至多两个 Agent Thread 和两个最近 Episode。模型只能返回已有候选 ID，重复/过量/未知 ID 拒绝；Host 验证后重新读取索引和 Agent 归属。确定性结果被复制为 Baseline，空选择或 Provider/解析/读取错误不清空它；只有 Baseline 也为空才继续 Recall Fallback。补充项排在既有证据之后，按 Memory 路径、Thread/Episode ID、Run ID 去重，同时限制最多 8 项、原 Memory 文件数和原始 Run 数。没有新 Planner Loop，不执行工具、不写记忆，AGENT_MEMORY_RETRIEVAL_LLM_PREFLIGHT=false 可关闭额外调用。
 
-`ContextBuilder.prepare()` 在每个 Run 首次加载时 await 可选 preflight，兼容只有同步 retrieve() 的旧 Retriever。失败退回 Core+Recent，不让检索失败中断普通回答；取消继续传播，不伪造成功。原 `_select_history()` 决定最后预算：完整 Raw Run 不拆工具配对，保留 Current Input/近期历史，按 Run/call_id 和 Memory 路径/章节 hash 去重，超预算整项省略。Thread state 与已选 Markdown 完全重复时省略重复 state，但保留 Thread 来源。部分重叠仍依赖最终模型判断，不宣称语义去重。
+ContextBuilder.prepare() 在每个 Run 首次加载时 await 可选 preflight，兼容只有同步 retrieve() 的旧 Retriever。确定性 retrieve 失败仍回退 Core+Recent；可选 preflight 自身失败保留此前成功结果，包括自定义 Preflight 修改副本后抛错的情况。取消继续传播。_select_history() 负责最终预算，完整 Raw Run 不拆工具配对，Current Input/近期历史受保护；按 Run/call_id、Memory 路径/章节 hash 去重，超预算整项省略。只在覆盖的 Memory 真正选入预算后才省略重复 Thread state；新增 Memory 超预算时不会误清除原 Thread 状态。保留 Thread 来源，部分重叠不宣称语义去重。
 
 `/context status` 的 retrieval 显示 fast/lexical/llm_preflight/recall_fallback、实际注入文件数、Memory token 估算、budget_omitted、额外请求数、耗时和安全用量；不输出正文。时间与层级不是绝对真值优先级，最新明确用户更正优先，存在冲突时回查 Run。`tests/test_memory_retrieval.py` 覆盖上述路径和低信任注入/权限边界，原 tests/test_working_context.py 继续验证完整 Provider 和 ToolCall/Result 重放。
 
