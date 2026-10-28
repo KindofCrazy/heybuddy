@@ -1,0 +1,463 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HeyBuddy · 个人 Agent 运行架构",
+    "locale": "zh-CN",
+    "output": ".archify/architecture-heybuddy-20261028-212702/heybuddy.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/KindofCrazy/heybuddy.git",
+      "revision": "b05f43cfd0376cf38365d285183afa7293cb0a29"
+    }
+  },
+  "components": [
+    {
+      "id": "entry",
+      "type": "frontend",
+      "label": "CLI / 官方 QQ C2C",
+      "sublabel": "本地命令 · 白名单被动回复",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/main.py",
+          "line": 265,
+          "end_line": 293
+        },
+        {
+          "path": "src/personal_agent/channels/qq/adapter.py",
+          "line": 51,
+          "end_line": 59
+        },
+        {
+          "path": "src/personal_agent/channels/qq/adapter.py",
+          "line": 94,
+          "end_line": 123
+        }
+      ]
+    },
+    {
+      "id": "host",
+      "type": "backend",
+      "label": "共享 Runtime / Agent",
+      "sublabel": "ChatService · asyncio Agent Loop",
+      "pos": [
+        460,
+        40
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 40,
+          "end_line": 114
+        },
+        {
+          "path": "src/personal_agent/core/agent.py",
+          "line": 84,
+          "end_line": 122
+        },
+        {
+          "path": "src/personal_agent/core/agent.py",
+          "line": 223,
+          "end_line": 253
+        }
+      ],
+      "tag": "单一对话主链路"
+    },
+    {
+      "id": "provider",
+      "type": "cloud",
+      "label": "Provider / 模型端点",
+      "sublabel": "OpenAI adapter · Responses API",
+      "pos": [
+        880,
+        40
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 185,
+          "end_line": 206
+        },
+        {
+          "path": "src/personal_agent/llm/openai_provider.py",
+          "line": 61,
+          "end_line": 100
+        }
+      ],
+      "tag": "SDK 仅限 adapter"
+    },
+    {
+      "id": "maintenance",
+      "type": "backend",
+      "label": "有界后台维护",
+      "sublabel": "Episode / Thread · P2 Learning",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/organization/runtime.py",
+          "line": 149,
+          "end_line": 176
+        },
+        {
+          "path": "src/personal_agent/organization/runtime.py",
+          "line": 399,
+          "end_line": 450
+        },
+        {
+          "path": "src/personal_agent/learning/service.py",
+          "line": 357,
+          "end_line": 393
+        }
+      ],
+      "tag": "回答后调度 · 前台抢占"
+    },
+    {
+      "id": "context",
+      "type": "backend",
+      "label": "上下文与会话",
+      "sublabel": "ContextBuilder · 检索 / 压缩",
+      "pos": [
+        460,
+        260
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/sessions.py",
+          "line": 37,
+          "end_line": 47
+        },
+        {
+          "path": "src/personal_agent/core/context.py",
+          "line": 111,
+          "end_line": 170
+        },
+        {
+          "path": "src/personal_agent/core/context.py",
+          "line": 276,
+          "end_line": 355
+        }
+      ],
+      "tag": "历史经 Protocol 访问"
+    },
+    {
+      "id": "tools",
+      "type": "security",
+      "label": "工具注册与执行",
+      "sublabel": "ToolRegistry · Memory / Recall",
+      "pos": [
+        880,
+        260
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/tools/registry.py",
+          "line": 63,
+          "end_line": 125
+        },
+        {
+          "path": "src/personal_agent/memory/tools.py",
+          "line": 74,
+          "end_line": 112
+        },
+        {
+          "path": "src/personal_agent/recall/tools.py",
+          "line": 8,
+          "end_line": 46
+        }
+      ],
+      "tag": "Host 授权 · 顺序执行"
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "MemoryFS / Markdown",
+      "sublabel": "Core + Deferred + 分层索引",
+      "pos": [
+        40,
+        490
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/memory/store.py",
+          "line": 110,
+          "end_line": 179
+        },
+        {
+          "path": "src/personal_agent/reflection/writer.py",
+          "line": 11,
+          "end_line": 38
+        }
+      ],
+      "tag": "长期记忆唯一权威源"
+    },
+    {
+      "id": "character",
+      "type": "backend",
+      "label": "P3 可选人格",
+      "sublabel": "只读角色包 · 有界短期状态",
+      "pos": [
+        460,
+        490
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 88,
+          "end_line": 95
+        },
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 146,
+          "end_line": 161
+        },
+        {
+          "path": "src/personal_agent/character/loader.py",
+          "line": 43,
+          "end_line": 65
+        }
+      ],
+      "tag": "默认关闭 · 不改 persona"
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite / schema 13",
+      "sublabel": "会话 · Run · 回执 · 派生索引",
+      "pos": [
+        880,
+        490
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/storage/sqlite.py",
+          "line": 40,
+          "end_line": 40
+        },
+        {
+          "path": "src/personal_agent/storage/sqlite.py",
+          "line": 94,
+          "end_line": 106
+        },
+        {
+          "path": "src/personal_agent/storage/history.py",
+          "line": 20,
+          "end_line": 48
+        }
+      ],
+      "tag": "单 Owner · 完整消息账本"
+    },
+    {
+      "id": "observatory",
+      "type": "frontend",
+      "label": "只读 Observatory",
+      "sublabel": "127.0.0.1 · FastAPI / Uvicorn",
+      "pos": [
+        460,
+        730
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/dashboard/server.py",
+          "line": 25,
+          "end_line": 42
+        },
+        {
+          "path": "src/personal_agent/dashboard/server.py",
+          "line": 72,
+          "end_line": 80
+        },
+        {
+          "path": "src/personal_agent/dashboard/app.py",
+          "line": 27,
+          "end_line": 49
+        }
+      ],
+      "tag": "GET / HEAD · 有界查询"
+    }
+  ],
+  "connections": [
+    {
+      "id": "entry-host",
+      "from": "entry",
+      "to": "host",
+      "label": "用户输入",
+      "variant": "emphasis"
+    },
+    {
+      "id": "host-provider",
+      "from": "host",
+      "to": "provider",
+      "label": "模型请求",
+      "variant": "emphasis"
+    },
+    {
+      "id": "host-context",
+      "from": "host",
+      "to": "context",
+      "label": "prepare",
+      "variant": "default"
+    },
+    {
+      "id": "host-tools",
+      "from": "host",
+      "to": "tools",
+      "label": "工具调用",
+      "variant": "default"
+    },
+    {
+      "id": "host-maintenance",
+      "from": "host",
+      "to": "maintenance",
+      "label": "回答后",
+      "variant": "dashed"
+    },
+    {
+      "id": "context-memory",
+      "from": "context",
+      "to": "memory",
+      "label": "编译 / 检索",
+      "variant": "default"
+    },
+    {
+      "id": "context-sqlite",
+      "from": "context",
+      "to": "sqlite",
+      "label": "历史 / 账本",
+      "variant": "default"
+    },
+    {
+      "id": "context-character",
+      "from": "context",
+      "to": "character",
+      "label": "启用时读取",
+      "variant": "default"
+    },
+    {
+      "id": "maintenance-memory",
+      "from": "maintenance",
+      "to": "memory",
+      "label": "P2 开启才写",
+      "variant": "dashed"
+    },
+    {
+      "id": "maintenance-sqlite",
+      "from": "maintenance",
+      "to": "sqlite",
+      "label": "进度 / 回执",
+      "variant": "dashed"
+    },
+    {
+      "id": "tools-memory",
+      "from": "tools",
+      "to": "memory",
+      "label": "授权后写入",
+      "variant": "security"
+    },
+    {
+      "id": "tools-sqlite",
+      "from": "tools",
+      "to": "sqlite",
+      "label": "Recall 只读",
+      "variant": "default"
+    },
+    {
+      "id": "observatory-sqlite",
+      "from": "observatory",
+      "to": "sqlite",
+      "label": "只读投影",
+      "variant": "default"
+    },
+    {
+      "id": "observatory-memory",
+      "from": "observatory",
+      "to": "memory",
+      "label": "只读浏览",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "主链路与上下文",
+      "items": [
+        "CLI 与 QQ 复用 open_application → open_chat → assemble_chat。ChatService 在前台输入时取消并等待后台任务，再运行 Agent；渠道交付答案后才调用 after_reply。",
+        "ContextBuilder 每轮 prepare：最新 Core、可选角色、会话摘要、按需检索、近期完整 Run 与当前 Run，共同经过输入预算。Context、工具和维护请求均复用同一 Provider。",
+        "SessionManager 绑定持久 Agent 与当前 Conversation。SQLiteConversationHistory 实现 Core 的历史 Protocol；completed / failed 可重放，其他状态仅保留审计。"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "权限与一致性",
+      "items": [
+        "ToolRegistry 过滤工具定义并在执行前复查 Host 权限。Core 读写与 Deferred 写入仅在当前 Run 明确授权后开放；Deferred 读取与同 Agent 的 Recall 默认可用，Recall 不执行历史调用。",
+        "MemoryFS 校验 Agent 路径、链接、Git 隐私、容量和 expected_hash，以短锁及同目录临时文件发布。Markdown 与 SQLite 无共同事务；文件已发布而记账失败时不宣称回滚、不盲目重做。",
+        "Agent 先记录模型工具调用，再顺序执行并保存每个结果；错误携带 call_id 返回模型。无任意 shell、eval、exec 或自动工具重试。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "维护、审批与角色",
+      "items": [
+        "P1：有界 Episode / Thread 整理；P2：Priority / Batch Learning、低频 Curator 与回执核对。共用 asyncio 与维护请求、token、时间预算；仅按配置启用。P2 开启时暂停兼容 Automation。",
+        "手动 Reflection 与后台 Learning 是两条授权路径：ReflectionService.apply 只从可信 Host 审批入口进入；P2 经证据校验、计划与受限 writer 自动写入 human.md / 主题文件，禁止修改 persona.md 和 Character Core。",
+        "P3 仅显式开启时加载角色包并编译被动上下文，后台状态沿既有维护预算运行，状态与来源标签保存在 SQLite；无主动消息、AttentionEngine 或额外 Agent Loop。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "观测范围与版本依据",
+      "items": [
+        "QQ 可附带 Observatory，共享 SQLite Owner 和 ChatService。独立 web 使用 observer_only：不启动 Run、不调度维护、不请求模型；HTTP 仅监听 loopback，提供有界只读投影与 Memory 浏览。",
+        "本图是运行时系统总览，按职责聚合辅助类；连接表示调用或访问方向，返回值沿原调用返回。未展开离线 evaluation、迁移细节与每个派生表。",
+        "源码证据固定在 b05f43c；工作区尚未提交的 core/agent.py、core/context.py、sessions.py、storage/sqlite.py、dashboard/ 及新增 tracing 文件不作为该提交的证据。"
+      ]
+    }
+  ]
+}
