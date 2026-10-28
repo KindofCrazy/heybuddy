@@ -1,4 +1,5 @@
-{% macro base_card(id, title, label, number) -%}
+{% from "components/icons.html" import icon %} {% macro base_card(id, title,
+label, number) -%}
 <section
   id="{{ id }}"
   class="card tile-{{ id }}"
@@ -9,7 +10,12 @@
       <p class="eyebrow" data-i18n="{{ label }}">{{ ui(label) }}</p>
       <h2 id="title-{{ id }}" data-i18n="{{ title }}">{{ ui(title) }}</h2>
     </div>
-    <span class="card-number mono">0{{ number }}</span>
+    <span class="card-icon card-icon-{{ id }}"
+      >{{ icon({"status":"cpu", "activity":"activity", "character":"user-round",
+      "threads":"messages-square", "episodes":"messages-square",
+      "memory":"book-open", "jobs":"brain", "runs":"terminal"}.get(id,
+      "file-text")) }}</span
+    >
   </header>
   <div id="content-{{ id }}" class="card-content" aria-live="polite">
     <p class="empty loading">

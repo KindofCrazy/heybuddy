@@ -1,4 +1,5 @@
-{% from "components/cards.html" import base_card with context %}
+{% from "components/icons.html" import icon %} {% from "components/cards.html"
+import base_card with context %}
 <!doctype html>
 <html lang="{{ language }}">
   <head>
@@ -13,6 +14,7 @@
     <script type="module" src="/static/overview.js"></script>
   </head>
   <body class="page-{{ page }}" data-page="{{ page }}">
+    {% include "components/icons.svg" %}
     <a class="skip-link" href="#workspace"
       ><span data-i18n="Skip to workspace"
         >{{ ui("Skip to workspace") }}</span
@@ -40,7 +42,11 @@
             href="{{ info[0] }}"
             class="{{ 'nav-active' if key == page else '' }}"
             aria-current="{{ 'page' if key == page else 'false' }}"
-            ><span data-i18n="{{ info[1] }}">{{ ui(info[1]) }}</span></a
+            >{{ icon({"overview":"layout-dashboard",
+            "threads":"messages-square", "memory":"book-open",
+            "runs":"terminal"}[key]) }}<span data-i18n="{{ info[1] }}"
+              >{{ ui(info[1]) }}</span
+            ></a
           >
           {% endfor %}
         </nav>
@@ -72,8 +78,7 @@
             >
           </p>
           <h1 id="page-title">
-            <span data-i18n="{{ heading }}">{{ ui(heading) }}</span
-            ><span class="title-dot">.</span>
+            <span data-i18n="{{ heading }}">{{ ui(heading) }}</span>
           </h1>
           <p class="intro-copy">
             <span data-i18n="每一次对话背后，都有迹可循。"
@@ -109,8 +114,9 @@
         aria-label="智能体观测台"
         data-i18n-aria-label="Agent observatory"
       >
-        {% for id, title, label in cards %}{{ base_card(id, title, label,
-        loop.index) }}{% endfor %}
+        {% for id, title, label in cards if page != 'overview' or id in
+        ['status', 'activity', 'character', 'jobs'] %}{{ base_card(id, title,
+        label, loop.index) }}{% endfor %}
       </main>
       <footer>
         <span

@@ -59,3 +59,13 @@
 CSS 使 `.shell` 占据 `100dvh`，以 flex 给页头、精简标题和页脚预留空间，Bento 使用剩余高度和 `minmax(0, 1fr)` 网格。桌面总览左侧状态/角色上下排列、中间活动、右侧 Jobs；窄屏为 2×2，专页根据宽度切换并列或上下两张卡片。卡片正文独立 overflow，不再撑长文档；短窗口隐藏次要装饰。活动和 Jobs 的预览数量、专页首次页大小按视口预算限制，后续内容继续使用已有分页或 Inspector，不删减原始数据。
 
 `tests/test_dashboard_language.py` 新增带语言 cookie 的四页首屏验证和非法语言回退；导航测试更新总览四卡契约。Edge 在 1440×900、1366×768、1024×600、768×900、390×844、844×390、320×568 下检查四页文档无纵横向溢出且卡片正文有可用高度；阻止翻译模块加载验证服务端英文首屏与旧偏好保护，未捕获 JS 异常。长内容仍可在卡片或 Drawer 内滚动，保持字号可读，不声称无限历史可同时铺在一屏。
+
+## 稀疏记忆阅读与图标
+
+总览模板在 `for` 循环中限制四个允许卡片 ID，CSS 同时隐藏旧上下文中的 Thread/Memory/Run 卡片，兼容旧 Runtime 的七卡 context 与热更新模板/资源混用；最新 PAGES 仍仅提供四卡。阅读测试模拟旧 CARDS context，验证 HTML 不产生多余卡片。标题删除原白底黑边句点装饰，避免看起来像未知控件。
+
+`static/memory-workspace.js:memoryWorkspace` 在 Memory 栏目创建受限文件导航与内联阅读区。首次仅请求根目录的一页合法条目，默认读取 MEMORY.md，导航目录时维持有界分页；文件选择调用原 `memory-character.js:memoryFile`，展示正文、Hash、修改时间与已有学习记录，完整详情仍打开原 Inspector。只读取已选文件，不递归扫描、不做写入、修复或虚构统计。并发文件读取用 generation 检查丢弃旧响应。基础文件附有用途标签；无正文或无学习记录显示明确空态。`MemoryView.file` 只在 HTML 展示中规范化 CRLF 并移除完整 Frontmatter，原 content、Hash 与 Markdown 字节不变。
+
+导航、卡片、活动和文件使用本地 [Lucide](https://lucide.dev/) SVG 子集。`templates/components/icons.svg` 包含固定 symbol，模板宏和 `static/icons.js:icon` 只引用允许名称，不渲染用户提供 SVG。无需放宽 CSP，无远程字体、图片或脚本。原始 ISC/MIT 版权与许可保存在 `static/ICONS-LICENSE.txt`，随 Python 包分发，来源见 [官方许可证](https://lucide.dev/license)。不依赖 Flaticon 账号或在线资源。
+
+`tests/test_dashboard_presentation.py` 验证旧布局上下文、标题装饰删除、图标许可资源和 LF/CRLF Frontmatter 的显示/原文分离。真实 Edge 验证图标非空、默认索引、目录与文件切换、完整来源详情、安全 Markdown 以及桌面/手机布局，截图仅使用合成数据。

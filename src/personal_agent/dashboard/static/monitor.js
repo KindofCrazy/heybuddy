@@ -1,3 +1,4 @@
+import { icon } from "./icons.js";
 import { ui, bindText } from "./i18n.js";
 import {
   node,
@@ -138,11 +139,9 @@ function eventItem(event, open) {
       ),
     ),
   );
-  row.append(
-    node("span", "activity-icon", event.origin === "live_runtime" ? "↯" : "↗"),
-    label,
-    badge(event.status),
-  );
+  const marker = node("span", "activity-icon");
+  marker.append(icon(event.origin === "live_runtime" ? "cpu" : "activity"));
+  row.append(marker, label, badge(event.status));
   return row;
 }
 export async function timeline(open, cursor = "", target = null) {

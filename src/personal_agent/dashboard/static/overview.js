@@ -9,7 +9,7 @@ import {
 } from "./components.js";
 import { openObject } from "./inspectors.js";
 import { cardsPage } from "./details.js";
-import { memoryDirectory } from "./memory-character.js";
+import { memoryWorkspace } from "./memory-workspace.js";
 import { status, timeline, replace } from "./monitor.js";
 
 const content = (id) => document.getElementById(`content-${id}`);
@@ -99,19 +99,8 @@ async function pageCollection(id, kind) {
     target.replaceChildren(errorBox());
   }
 }
-if (content("memory")) {
-  try {
-    content("memory").replaceChildren();
-    await memoryDirectory(content("memory"), "", open);
-    content("memory").append(
-      action(ui("Explore all Learning jobs ↗"), () =>
-        open("collection", "jobs"),
-      ),
-    );
-  } catch {
-    content("memory").replaceChildren(errorBox());
-  }
-}
+if (page === "memory" && content("memory"))
+  await memoryWorkspace(content("memory"), open);
 if (content("jobs")) {
   const jobs = node("div");
   jobs.id = "job-diagnostics";

@@ -76,11 +76,19 @@ class MemoryView:
             # Character offsets, with fixed UTF-8 response bounds (at most 16 KiB text).
             excerpt = text[offset : offset + 4096]
             end = offset + len(excerpt)
+            display = excerpt.replace("\r\n", "\n")
+            if offset == 0 and display.startswith("---\n"):
+                _, separator, body = display[4:].partition("\n---\n")
+                if separator:
+                    display = body
             return {
                 "path": relative,
                 "hash": current_hash,
                 "content": safe(excerpt),
-                "html": markdown(excerpt),
+                "html": markdown(display),
+                "is_empty": not any(
+                    line.strip() and not line.lstrip().startswith("#") for line in text.splitlines()
+                ),
                 "offset": offset,
                 "next_offset": end if end < len(text) else None,
                 "truncated": end < len(text),

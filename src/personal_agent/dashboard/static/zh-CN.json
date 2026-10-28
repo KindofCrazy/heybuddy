@@ -224,5 +224,16 @@
   "no_episodes": "暂无片段",
   "no_history": "暂无历史",
   "no_dirty_work": "暂无待更新内容",
-  "budget_exhausted": "预算已用尽"
+  "budget_exhausted": "预算已用尽",
+  "Memory index": "记忆总索引",
+  "User context": "用户背景与偏好",
+  "Core persona": "基础人格说明",
+  "Topic folder": "主题目录",
+  "Topic document": "主题文档",
+  "Open full details ↗": "打开完整详情 ↗",
+  "Memory root": "记忆根目录",
+  "Select a memory file": "选择一份记忆文件",
+  "Select a file to read its content and learning evidence.": "选择文件，查看正文、来源与学习记录。",
+  "No notes in this file yet": "这份文件尚未整理笔记",
+  "Browse the core files or topic folders on the left. Learning records appear when available.": "可以从左侧浏览基础文件或主题目录；学习记录会在实际产生后显示。"
 }

@@ -64,6 +64,13 @@ export async function memoryFile(target, path, open, offset = 0, hash = null) {
     section(target, "Markdown content");
   }
   target.append(prose(data.html));
+  if (!offset && data.is_empty)
+    target.append(
+      empty(
+        "No notes in this file yet",
+        "Browse the core files or topic folders on the left. Learning records appear when available.",
+      ),
+    );
   if (data.next_offset !== null) {
     const more = action(
       ui("Continue reading ↓"),

@@ -127,3 +127,13 @@ Memory 路径复用已有穿越、Symlink/Junction、Hardlink 防护；Dashboard
 [桌面一屏截图（合成数据）](images/observatory-fit-desktop-synthetic.png) · [手机一屏截图（合成数据）](images/observatory-fit-mobile-synthetic.png)。Edge 完成七种窗口尺寸 × 四个页面共 28 组文档溢出/卡片可用高度检查；延迟/阻止翻译模块时的首屏语言检查通过，无 JavaScript 异常。
 
 本轮最终验证：完整离线回归 771 passed、2 skipped；Ruff 检查/格式检查、离线构建通过。最终 Wheel 安装后的四页及资源共 15 个请求通过；七种视口 × 四页和翻译脚本加载前的语言验证通过。截图全部使用隔离合成数据，无真实模型调用。
+
+## 记忆阅读与图标更新
+
+总览模板兼容旧运行进程传入的七卡 context，只渲染状态、活动、角色、后台任务，避免新 CSS 将旧卡片压缩。标题后的白框原为描边句点装饰，现已移除。记忆栏目默认打开总索引，左侧导航基础文件/主题目录，中间阅读正文与来源，右侧查看真实学习任务；不以装饰性统计填补没有数据的空白。
+
+图标采用 [Lucide](https://lucide.dev/) 本地 SVG 子集，许可随包附带于 `static/ICONS-LICENSE.txt`，来源为[官方许可证](https://lucide.dev/license)。无需外部请求或额外运行时依赖。浏览器已验证图标、文件阅读、来源抽屉、恶意 Markdown 防护和响应式布局。
+
+[总览图标截图（合成数据）](images/observatory-icons-synthetic.png) · [记忆阅读截图（合成数据）](images/observatory-memory-reader-synthetic.png)。
+
+本轮验证：完整离线回归 784 passed、2 skipped；Ruff 检查/格式检查与离线构建通过；实际安装 Wheel 的四页与图标/语言/记忆阅读资源共 18 个请求通过。当前本机服务只读取 HTML 卡片 ID，确认旧上下文已仅渲染四卡。Edge 的记忆阅读、安全展示和图标/多视口检查通过；所有截图均为隔离合成数据，未执行付费模型调用。
