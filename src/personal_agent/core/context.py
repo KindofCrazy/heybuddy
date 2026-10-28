@@ -214,6 +214,7 @@ class ContextBuilder:
         memory_tokens = 0
         budget_omitted = False
         selected_memory = []
+        selected_markers = []
         for item in self._retrieval.items:
             semantic = item.reference.get("kind") == "semantic_memory"
             memory_key = item.reference.get("section_hash")
@@ -229,13 +230,15 @@ class ContextBuilder:
                 }
                 if item.turn.run_id in recent or calls & call_ids:
                     continue
-            trial = [*self._selected_history, *item.messages()]
+            item_messages = item.messages()
+            trial = [*self._selected_history, *item_messages]
             # Same estimator includes marker, internal messages, Provider JSON and
             # tool framing. Whole Runs fit or are omitted, never truncated.
             if estimate_request(trial, []) - estimate_request([], []) > allowance:
                 budget_omitted = True
                 continue
             self._selected_history = trial
+            selected_markers.append(item_messages[0])
             if item.turn:
                 recent.add(item.turn.run_id)
                 call_ids.update(calls)
@@ -245,20 +248,17 @@ class ContextBuilder:
                 memory_files.add(item.reference.get("path"))
                 memory_tokens += estimate_value(item.reference)
         # Only remove duplicate state AFTER the covering Memory actually fit the budget.
-        for message in self._selected_history:
-            if isinstance(message, TextMessage) and message.text.startswith(
-                '{"kind": "working_context_reference"'
+        for message in selected_markers:
+            data = json.loads(message.text)
+            reference = data["source"]
+            state = reference.get("current_state")
+            if (
+                reference.get("kind") == "thread"
+                and state
+                and any(str(state) in text for text in selected_memory)
             ):
-                data = json.loads(message.text)
-                reference = data["source"]
-                state = reference.get("current_state")
-                if (
-                    reference.get("kind") == "thread"
-                    and state
-                    and any(str(state) in text for text in selected_memory)
-                ):
-                    reference.update(current_state=None, state_covered_by_memory=True)
-                    message.text = json.dumps(data, ensure_ascii=False)
+                reference.update(current_state=None, state_covered_by_memory=True)
+                message.text = json.dumps(data, ensure_ascii=False)
         self._diagnostics.setdefault("retrieval", {}).update(
             {
                 "injected_memory_files": len(memory_files),
@@ -266,10 +266,7 @@ class ContextBuilder:
                 "budget_omitted": budget_omitted,
             }
         )
-        self._diagnostics["retrieved_items"] = sum(
-            isinstance(m, TextMessage) and m.text.startswith('{"kind": "working_context_reference"')
-            for m in self._selected_history
-        )
+        self._diagnostics["retrieved_items"] = len(selected_markers)
 
     def begin(self, user_input: str) -> list[Message]:
         """Create Run/user atomically; prepare history inside the failure-handled loop."""

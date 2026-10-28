@@ -1,5 +1,7 @@
 # HeyBuddy — P3 Passive Character Agent
 
+[P2 Review Fix](docs/p2-review-fix.md) 增加有界启动/Idle 回执核对，安全恢复部分 Memory 发布；Preflight 保留确定性基线，Curator 按目标路径查找真实来源。真实文件冲突继续写保护，不盲目重试、不修改 P3 人格或长期记忆权限。
+
 [P3 真实 API 效果检查](docs/p3-live-validation.md) 使用 deepseek-flash 完成 E0/E1/E2 对比和真实 Episode/State smoke，记录用量、实际表现、预算问题与局限；没有把 FakeProvider 或单次小样本当成角色质量证明。
 
 P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即可持续聊天；`/new`、`/sessions`、`/resume` 仅保留为开发者历史管理命令。每次请求加入本地带时区时间与上次互动间隔，跨午夜不清空上下文。旧流不合并或删除，仍可通过 Recall 查到。

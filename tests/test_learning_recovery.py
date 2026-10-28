@@ -229,3 +229,39 @@ async def test_after_hash_without_index_stays_protected_until_explicit_repair(st
     index.repair(memory)
     assert recovered.reconcile(jid)["outcome"] == "completed"
     assert not recovered.model.provider.requests
+
+
+async def test_expired_recovery_budget_does_not_clear_unpublished_receipts(state, monkeypatch):
+    learning, jid = await interrupt(state, monkeypatch, before=True)
+    ticks = iter([0, 0, 0, 3])
+    monkeypatch.setattr("personal_agent.learning.service.monotonic", lambda: next(ticks, 3))
+    assert learning.recover_pending()["error_code"] == "recovery_time_budget"
+    job = learning.repository.get(jid)
+    assert job["state"] == "requires_reconciliation" and len(job["operations"]) == 2
+    assert not learning.model.provider.requests
+    assert not state[2].path(TARGET).exists()
+
+
+async def test_fresh_replan_cannot_append_to_already_published_target(state, monkeypatch):
+    db, sessions, memory, run = state
+    _, jid = await interrupt(state, monkeypatch)
+    published = memory.read().blocks["human.md"]
+    provider = script(
+        [candidate(sessions.current.id, run)],
+        [{"path": "human.md", "candidate_ids": [1]}],
+        [
+            {
+                "action": "update",
+                "old_text": published,
+                "new_text": published + published,
+                "reason": "故意错误的重复计划",
+            }
+        ],
+    )
+    learning = learner(state, provider)
+    result = await learning.learn_priority()
+    assert result["error_code"] == "recovery_target_already_published"
+    assert learning.repository.get(jid)["state"] == "failed"
+    assert memory.read().blocks["human.md"] == published
+    assert not memory.path(TARGET).exists()
+    assert learning.repository.activation()["updates"] == 0

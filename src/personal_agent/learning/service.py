@@ -478,9 +478,12 @@ class MemoryLearningService:
             self.clock.now(),
             metrics={**job["metrics"], "recovery": recovery},
         )
-        report = self.reconcile(job["id"], deadline=monotonic() + self.policy.recovery_seconds)
+        deadline = monotonic() + self.policy.recovery_seconds
+        report = self.reconcile(job["id"], deadline=deadline)
         if report["outcome"] != "completed":
-            report = self._replan_verified(self.repository.get(job["id"]), automatic=True)
+            report = self._replan_verified(
+                self.repository.get(job["id"]), automatic=True, deadline=deadline
+            )
         return {**report, "requests": 0}
 
     def reconcile(self, jid: str, *, deadline: float | None = None) -> dict:
@@ -549,7 +552,9 @@ class MemoryLearningService:
             self.repository.save(jid, "pending", self.clock.now())
         return {"outcome": self.repository.get(jid)["state"], "job_id": jid}
 
-    def _replan_verified(self, job: dict, *, automatic: bool) -> dict:
+    def _replan_verified(
+        self, job: dict, *, automatic: bool, deadline: float | None = None
+    ) -> dict:
         jid = job["id"]
         if not job["operations"] or any(
             op["state"] not in {"applied", "not_applied"} for op in job["operations"]
@@ -560,7 +565,14 @@ class MemoryLearningService:
                 "error_code": job["error"] or "unverified_receipts",
             }
         try:
+
+            def check_time():
+                if deadline is not None and monotonic() >= deadline:
+                    raise ReflectionError("recovery_time_budget")
+
+            check_time()
             self._fresh(job["sources"], check_memory=False)
+            check_time()
             recovery = dict(job["metrics"].get("recovery", {}))
             published = [op for op in job["operations"] if op["state"] == "applied"]
             sources = job["sources"]
@@ -571,18 +583,22 @@ class MemoryLearningService:
                     )
                 )
                 with self.memory.io():
-                    sources["memory"] = [
-                        {
-                            "path": p,
-                            "hash": digest(
-                                self.memory.raw(
-                                    self.memory.path(p),
-                                    self.memory.max_bytes if p in BLOCKS else FILE_BYTES,
-                                )
-                            ),
-                        }
-                        for p in paths
-                    ]
+                    refreshed = []
+                    for p in paths:
+                        check_time()
+                        refreshed.append(
+                            {
+                                "path": p,
+                                "hash": digest(
+                                    self.memory.raw(
+                                        self.memory.path(p),
+                                        self.memory.max_bytes if p in BLOCKS else FILE_BYTES,
+                                    )
+                                ),
+                            }
+                        )
+                    sources["memory"] = refreshed
+            check_time()
             replans = recovery.get("replans", 0)
             limited = automatic and replans >= self.policy.recovery_attempts
             recovery.update(
@@ -602,7 +618,7 @@ class MemoryLearningService:
                 "job_id": jid,
                 "replanned_after_verified_receipts": not limited,
             }
-        except (HistoryError, CoreMemoryError) as error:
+        except (HistoryError, CoreMemoryError, ReflectionError) as error:
             code = getattr(error, "code", "recovery_source_changed")
             self.repository.save(jid, "requires_reconciliation", self.clock.now(), error=code)
             return {"outcome": "requires_reconciliation", "job_id": jid, "error_code": code}

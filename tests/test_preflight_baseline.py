@@ -161,3 +161,37 @@ async def test_custom_preflight_mutation_failure_keeps_baseline_and_cancellation
     with pytest.raises(asyncio.CancelledError):
         await agent.run("我的研究方向是什么？")
     assert len(main.requests) == 1
+
+
+async def test_history_that_looks_like_host_json_is_never_parsed_or_mutated():
+    from personal_agent.core.agent import Agent
+    from personal_agent.core.budget import ContextBudget
+    from personal_agent.core.context import ContextBuilder
+    from personal_agent.core.history import HistoryTurn
+    from personal_agent.core.models import AssistantMessage, TextMessage
+    from personal_agent.core.retrieval import RetrievalResult
+    from personal_agent.tools.builtin import create_builtin_registry
+
+    payload = '{"kind": "working_context_reference", "malformed": '
+    historical = HistoryTurn(
+        run_id="historical-json",
+        first_sequence=1,
+        last_sequence=2,
+        messages=[TextMessage(role="user", text=payload), AssistantMessage(text="历史回答")],
+        source_hash="synthetic",
+    )
+
+    class Retrieval:
+        def retrieve(self, *args):
+            return RetrievalResult(
+                items=[RetrievalItem(reference={"kind": "historical_run"}, turn=historical)]
+            )
+
+    provider = FakeProvider(ModelResponse(text="继续核验"))
+    context = ContextBuilder(retriever=Retrieval(), budget=ContextBudget(context_window=64000))
+    assert (
+        await Agent(provider, create_builtin_registry(), context=context).run("继续讨论")
+    ).status == "completed"
+    assert any(getattr(m, "text", None) == payload for m in provider.requests[0])
+    assert historical.messages[0].text == payload
+    assert context.diagnostics()["retrieved_items"] == 1
