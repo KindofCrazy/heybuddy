@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.dashboard.activity import activity
-from personal_agent.dashboard.layout import CARDS
+from personal_agent.dashboard.layout import PAGES
 from personal_agent.dashboard.memory import MemoryView, markdown
 from personal_agent.dashboard.privacy import safe
 from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
@@ -88,11 +88,22 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         return JSONResponse(data)
 
     @app.get("/")
+    @app.get("/threads")
+    @app.get("/memory")
+    @app.get("/runs")
     async def home(request: Request):
+        page = next(key for key, value in PAGES.items() if value[0] == request.url.path)
+        _, _, heading, cards = PAGES[page]
         return templates.TemplateResponse(
             request=request,
             name="index.html",
-            context={"cards": CARDS, "ui": lambda text: CHINESE.get(text, text)},
+            context={
+                "cards": cards,
+                "page": page,
+                "heading": heading,
+                "pages": PAGES,
+                "ui": lambda text: CHINESE.get(text, text),
+            },
         )
 
     @app.get("/api/status")

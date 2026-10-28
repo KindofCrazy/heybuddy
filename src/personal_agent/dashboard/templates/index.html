@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/static/observatory.css" />
     <script type="module" src="/static/overview.js"></script>
   </head>
-  <body>
+  <body class="page-{{ page }}" data-page="{{ page }}">
     <a class="skip-link" href="#workspace"
       ><span data-i18n="Skip to workspace"
         >{{ ui("Skip to workspace") }}</span
@@ -32,31 +32,34 @@
           ></a
         >
         <nav aria-label="工作台" data-i18n-aria-label="Workspace">
-          <a class="nav-active" href="#workspace"
-            ><span data-i18n="Overview">{{ ui("Overview") }}</span></a
-          ><a href="#threads"
-            ><span data-i18n="Threads">{{ ui("Threads") }}</span></a
-          ><a href="#memory"
-            ><span data-i18n="Memory">{{ ui("Memory") }}</span></a
-          ><a href="#runs"><span data-i18n="Runs">{{ ui("Runs") }}</span></a>
+          {% for key, info in pages.items() %}
+          <a
+            href="{{ info[0] }}"
+            class="{{ 'nav-active' if key == page else '' }}"
+            aria-current="{{ 'page' if key == page else 'false' }}"
+            ><span data-i18n="{{ info[1] }}">{{ ui(info[1]) }}</span></a
+          >
+          {% endfor %}
         </nav>
-        <button
-          id="language-toggle"
-          class="language-toggle"
-          type="button"
-          data-language-toggle
-          aria-label="Switch to English"
-        >
-          English
-        </button>
-        <span class="stamp"
-          ><span class="status-dot" id="connection-dot"></span
-          ><span id="connection" role="status"
-            ><span data-i18n="Connecting">{{ ui("Connecting") }}</span></span
-          ><span class="mono"
-            ><span data-i18n="LOCAL">{{ ui("LOCAL") }}</span></span
-          ></span
-        >
+        <div class="header-controls">
+          <span class="stamp"
+            ><span class="status-dot" id="connection-dot"></span
+            ><span id="connection" role="status"
+              ><span data-i18n="Connecting">{{ ui("Connecting") }}</span></span
+            ><span class="mono"
+              ><span data-i18n="LOCAL">{{ ui("LOCAL") }}</span></span
+            ></span
+          >
+          <button
+            id="language-toggle"
+            class="language-toggle"
+            type="button"
+            data-language-toggle
+            aria-label="Switch to English"
+          >
+            English
+          </button>
+        </div>
       </header>
       <section class="intro" aria-labelledby="page-title">
         <div>
@@ -66,8 +69,7 @@
             >
           </p>
           <h1 id="page-title">
-            <span data-i18n="Inside the agent"
-              >{{ ui("Inside the agent") }}</span
+            <span data-i18n="{{ heading }}">{{ ui(heading) }}</span
             ><span class="title-dot">.</span>
           </h1>
           <p class="intro-copy">

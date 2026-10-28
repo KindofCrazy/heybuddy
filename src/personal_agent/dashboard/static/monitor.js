@@ -12,6 +12,7 @@ import {
 const content = (id) => document.getElementById(`content-${id}`);
 const signatures = new Map();
 export function replace(target, data, ...children) {
+  if (!target) return;
   const signature = JSON.stringify(data);
   if (
     signatures.get(target) === signature ||

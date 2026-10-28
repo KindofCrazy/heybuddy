@@ -39,7 +39,9 @@ export function openObject(kind, id, root = false) {
   location.hash = hashFor(next.slice(-12));
 }
 function close() {
-  location.hash = "workspace";
+  // Stay on the current section page and do not jump to an anchor.
+  history.replaceState(null, "", location.pathname + location.search);
+  route();
 }
 document.getElementById("drawer-close").addEventListener("click", close);
 dialog.addEventListener("cancel", (event) => {

@@ -41,3 +41,11 @@
 `static/zh-CN.json` 是 UI 中英文对照，英文原文作为键；首页由 `app.py:create_app` 使用同一词典预渲染中文，模板宏通过 context 读取翻译函数，无需等 JavaScript 才显示中文。`i18n.js` 只管理显式标记的界面文案：`ui` 创建文案值，`bindText/writeText` 使用 WeakMap 绑定 DOM，并以 textContent 更新。普通 `node` 文本保持原样；聊天、Markdown、模型生成标题、路径、ID 和审计 JSON 不做翻译。动态状态/按钮/元数据标签在各渲染模块显式绑定，日期格式跟随选定语言。
 
 语言切换直接更新当前 DOM 的文本和 aria-label，不触发 HTTP 业务操作、重新加载对象或重建 Drawer，因此保留已展开消息、滚动位置和 fragment。`tests/test_dashboard_language.py` 验证无 JavaScript 时的中文首页及静态资源；真实 Edge 验收覆盖切换、偏好恢复、存储拒绝容错、详情/正文保持与移动端宽度。
+
+## 栏目独立页面与页头布局
+
+`layout.py:PAGES` 定义四个固定页面：总览 `/` 保留 Bento 概览，`/threads` 展示有界分页的主题与片段，`/memory` 展示 MemoryFS 及学习回执，`/runs` 展示有界分页运行列表。`app.py:home` 的固定 GET 路由按路径选择卡片和标题；顶部使用普通链接进行文档导航，不再使用滚动锚点，`aria-current` 与当前路径一致。直接访问、刷新和浏览器后退均沿普通 HTTP 页面语义。默认语言和本地偏好保持不变。
+
+`overview.js` 按 `body.dataset.page` 装配当前页面；专页复用 `details.js:cardsPage`，按需读取后续页，总览保留现有低频概览刷新，所有页面继续更新页头连接状态。`monitor.js:replace` 在当前页无对应卡片时跳过渲染，避免查询别页内容或访问空 DOM。Inspector 的 `close` 清除当前路径的 fragment 并执行现有路由清理，保留所在栏目和滚动位置。
+
+模板把状态和语言按钮放在同一个 `.header-controls`，顺序为连接状态 / 本机标记 / 语言按钮；按钮使用浅蓝色、紧凑尺寸、黑边和硬阴影，悬停为浅紫色，移动端保持同组排列。抽屉内语言按钮保留。`tests/test_dashboard_navigation.py` 验证四页内容、链接、当前页标记、控件顺序和读取无副作用。Edge 验证真实文档导航、语言持久化、详情关闭、刷新/后退、按钮位置配色与四页移动端无溢出。

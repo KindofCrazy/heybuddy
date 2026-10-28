@@ -13,13 +13,45 @@
   --radius-card: 12px;
   --radius-nested: 8px;
 }
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
 .language-toggle {
   border: var(--border-nested);
   border-radius: 7px;
-  background: var(--surface);
-  padding: 6px 10px;
+  background: var(--thread);
+  color: var(--ink);
+  min-width: 72px;
+  min-height: 34px;
+  padding: 5px 12px;
   font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
   white-space: nowrap;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.language-toggle:hover {
+  background: var(--memory);
+}
+.language-toggle:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+.page-threads .tile-threads,
+.page-threads .tile-episodes {
+  grid-column: span 12;
+}
+body:not(.page-overview) .intro h1 {
+  font-size: clamp(36px, 4vw, 56px);
+}
+body:not(.page-overview) .intro {
+  padding: 30px 0;
+}
+.drawer-toolbar .language-toggle {
+  margin-left: auto;
 }
 html[lang="zh-CN"] .intro h1 {
   letter-spacing: -0.02em;
@@ -28,11 +60,14 @@ html[lang="zh-CN"] .intro h1 {
   .masthead {
     gap: 10px;
   }
-  .stamp {
+  .header-controls {
     margin-left: auto;
+    gap: 10px;
   }
-  .language-toggle {
-    margin-left: auto;
+  .header-controls .language-toggle {
+    min-width: 64px;
+    min-height: 32px;
+    padding: 5px 9px;
   }
   html[lang="zh-CN"] .intro h1 {
     font-size: 42px;

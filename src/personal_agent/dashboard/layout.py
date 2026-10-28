@@ -9,3 +9,15 @@ CARDS = (
     ("jobs", "Background jobs", "BEHIND THE SCENES"),
     ("runs", "Recent runs", "FROM THE SOURCE"),
 )
+
+PAGES = {
+    "overview": ("/", "Overview", "Inside the agent", CARDS),
+    "threads": (
+        "/threads",
+        "Threads",
+        "Threads",
+        (CARDS[3], ("episodes", "Episodes", "FROM THE SOURCE")),
+    ),
+    "memory": ("/memory", "Memory", "Memory", (CARDS[4], CARDS[5])),
+    "runs": ("/runs", "Runs", "Runs", (("runs", "Runs", "FROM THE SOURCE"),)),
+}

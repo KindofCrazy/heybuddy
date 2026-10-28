@@ -109,3 +109,11 @@ Memory 路径复用已有穿越、Symlink/Junction、Hardlink 防护；Dashboard
 默认中文，页头和详情抽屉均可切换 English / 中文，浏览器记住选择。切换仅影响界面文案，不翻译来源正文或改变当前详情。中文界面合成数据示例见 [截图](images/observatory-chinese-synthetic.png)。
 
 语言改动验证：完整离线回归 769 passed、2 skipped；Ruff 检查/格式检查与 `uv build --offline` 通过；实际 Wheel 安装的 10 个 HTML/API/资源请求通过，包含新增词典和语言模块。Edge 验证默认中文、英文切换、刷新恢复、抽屉内切换、存储拒绝、正文/详情状态保持及移动端无溢出，未捕获 JavaScript 异常。截图使用隔离合成数据，未调用真实模型。
+
+## 栏目导航与按钮布局更新
+
+顶部总览、主题线索、记忆、运行记录改为独立页面，地址分别为 `/`、`/threads`、`/memory`、`/runs`，不再向下滚动定位。专页显示对应内容并支持分页，详情仍用原 Drawer，关闭后保留所属页面。语言按钮移到连接状态与本机标记右侧，使用紧凑浅蓝色样式和浅紫色悬停反馈。
+
+[独立主题页截图（合成数据）](images/observatory-pages-synthetic.png)。真实 Edge 检查四页导航、当前页高亮、语言保持、直接刷新/后退、详情关闭位置、按钮顺序/配色及 390 px 无水平溢出均通过，未捕获 JavaScript 异常。
+
+栏目更新验证：完整离线回归 770 passed、2 skipped；Ruff 检查与格式检查、离线构建通过。实际安装 Wheel 的四页与相关资源共 13 个请求通过；浏览器导航与移动布局验证通过，无真实模型调用。

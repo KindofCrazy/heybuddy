@@ -8,15 +8,18 @@ import {
   action,
 } from "./components.js";
 import { openObject } from "./inspectors.js";
+import { cardsPage } from "./details.js";
 import { memoryDirectory } from "./memory-character.js";
 import { status, timeline, replace } from "./monitor.js";
 
 const content = (id) => document.getElementById(`content-${id}`);
 const open = (kind, id) => openObject(kind, id, true);
 let profile = null;
+const page = document.body.dataset.page || "overview";
 
 async function collection(id, kind, limit, className) {
   const target = content(id);
+  if (!target) return;
   try {
     const data = await get(
       `/api/${kind === "jobs" ? "learning/jobs" : kind}?limit=${limit}`,
@@ -80,33 +83,64 @@ async function character() {
   }
 }
 
-// Memory is read once, then only by explicit navigation. No polling of the file tree.
-try {
-  content("memory").replaceChildren();
-  await memoryDirectory(content("memory"), "", open);
-  content("memory").append(
-    action(ui("Explore all Learning jobs ↗"), () => open("collection", "jobs")),
-  );
-} catch {
-  content("memory").replaceChildren(errorBox());
+// Dedicated pages read their own bounded lists once; pagination is user-driven.
+async function pageCollection(id, kind) {
+  const target = content(id);
+  if (!target) return;
+  target.replaceChildren();
+  try {
+    await cardsPage(
+      target,
+      `/api/${kind === "jobs" ? "learning/jobs" : kind}?limit=12`,
+      kind,
+      open,
+    );
+  } catch {
+    target.replaceChildren(errorBox());
+  }
 }
-const jobs = node("div");
-jobs.id = "job-diagnostics";
-const jobList = node("div");
-jobList.id = "content-job-list";
-content("jobs").replaceChildren(jobs, jobList);
+if (content("memory")) {
+  try {
+    content("memory").replaceChildren();
+    await memoryDirectory(content("memory"), "", open);
+    content("memory").append(
+      action(ui("Explore all Learning jobs ↗"), () =>
+        open("collection", "jobs"),
+      ),
+    );
+  } catch {
+    content("memory").replaceChildren(errorBox());
+  }
+}
+if (content("jobs")) {
+  const jobs = node("div");
+  jobs.id = "job-diagnostics";
+  const jobList = node("div");
+  jobList.id = "content-job-list";
+  content("jobs").replaceChildren(jobs, jobList);
+}
+if (page === "threads")
+  await Promise.allSettled([
+    pageCollection("threads", "threads"),
+    pageCollection("episodes", "episodes"),
+  ]);
+if (page === "runs") await pageCollection("runs", "runs");
+if (page === "memory") await pageCollection("job-list", "jobs");
 
 let refreshCount = 0;
 async function refresh() {
   if (!document.hidden) {
-    const work = [status(open), timeline(open)];
-    if (refreshCount % 5 === 0)
-      work.push(
-        collection("threads", "threads", 3, "nested-grid"),
-        collection("runs", "runs", 8, "run-list"),
-        collection("job-list", "jobs", 4, "stack"),
-        character(),
-      );
+    const work = [status(open)];
+    if (page === "overview") {
+      work.push(timeline(open));
+      if (refreshCount % 5 === 0)
+        work.push(
+          collection("threads", "threads", 3, "nested-grid"),
+          collection("runs", "runs", 8, "run-list"),
+          collection("job-list", "jobs", 4, "stack"),
+          character(),
+        );
+    }
     await Promise.allSettled(work);
     refreshCount++;
   }
