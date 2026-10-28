@@ -73,3 +73,6 @@ V0.7.1 的 Reflection 模型失败会附加阶段及安全 ProviderDiagnostics�
 ## V0.7.2 Phase 1 集成
 
 V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()；模式 off 不触发。/memory automation off|suggest|auto|status|run|retry 由可信 CLI 解析，不注册为工具，运行中模式只在当前进程有效。用户处理完计划后，下次 completed Run 或显式 run 继续积压；失败/cancel 不改变普通 Run 终态。
+# Shared Runtime 接线
+
+`main.run_cli()` 通过 `runtime.open_application()` 持有数据库、恢复会话并初始化 MemoryFS；`runtime.open_chat()` / `assemble_chat()` 统一装配 Provider 与 P1/P2/P3。`main._run_session()` 保留为已有会话的兼容入口。CLI 本地命令解析仍在 `main._chat()`，普通输入交给 `ChatService.run()`，展示后 `after_reply()` 恢复既有维护。完整调用路径见 [runtime.md](runtime.md)。

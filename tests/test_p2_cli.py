@@ -1,6 +1,6 @@
 import json
 
-from personal_agent import main
+from personal_agent import main, runtime
 from personal_agent.config import Settings
 from personal_agent.core.agent import Agent
 from personal_agent.learning.curator import MemoryCurator
@@ -27,8 +27,8 @@ async def test_production_assembly_has_one_learning_entry_and_shared_retriever(s
             pass
 
     provider = FakeProvider()
-    monkeypatch.setattr(main, "AsyncOpenAI", Client)
-    monkeypatch.setattr(main, "OpenAIProvider", lambda *_: provider)
+    monkeypatch.setattr(runtime, "AsyncOpenAI", Client)
+    monkeypatch.setattr(runtime, "OpenAIProvider", lambda *_: provider)
     called = []
 
     async def chat(agent, *, organization, reflection, automation, sessions):

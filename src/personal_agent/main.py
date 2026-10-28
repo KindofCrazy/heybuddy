@@ -5,44 +5,24 @@ import logging
 import sys
 from collections.abc import Callable
 
-from openai import AsyncOpenAI
 from pydantic import ValidationError
 
 from personal_agent.automation.service import MemoryAutomation
-from personal_agent.character.context import CharacterContextCompiler
-from personal_agent.character.loader import CharacterLoader
 from personal_agent.character.models import CharacterError
-from personal_agent.character.state import CharacterStateService
-from personal_agent.character.storage import CharacterStateRepository
-from personal_agent.config import Settings, load_settings, memory_root_for
+from personal_agent.config import Settings, load_settings
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextError
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
-from personal_agent.learning.curator import MemoryCurator
-from personal_agent.learning.service import MemoryLearningService
-from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory import index
 from personal_agent.memory.store import MemoryFS
-from personal_agent.memory.tools import register_memory_tools
-from personal_agent.organization.episodes import EpisodeOrganizer
-from personal_agent.organization.models import OrganizationError, OrganizationPolicy
-from personal_agent.organization.provider import OrganizerModel
+from personal_agent.organization.models import OrganizationError
 from personal_agent.organization.runtime import OrganizationRuntime
-from personal_agent.organization.threads import ThreadOrganizer
-from personal_agent.recall.service import Recall
-from personal_agent.recall.tools import register_recall_tools
 from personal_agent.reflection.cli import command as reflection_command
 from personal_agent.reflection.models import ReflectionError
 from personal_agent.reflection.service import ReflectionService
-from personal_agent.retrieval import ContextRetriever
+from personal_agent.runtime import ChatService, open_application, open_chat
 from personal_agent.sessions import SessionManager
-from personal_agent.storage.episodes import EpisodeRepository
-from personal_agent.storage.learning import LearningRepository
-from personal_agent.storage.reflection import ReflectionRepository
-from personal_agent.storage.sqlite import SQLiteStore
-from personal_agent.storage.threads import ThreadRepository
-from personal_agent.tools.builtin import create_builtin_registry
 
 
 async def chat(
@@ -89,6 +69,7 @@ async def _chat(
     write("Deferred 默认可读；/memory edit <请求> 本轮授权写入；/memory check|repair 检查或补链。")
     if sessions is not None:
         write(sessions.status())
+    service = ChatService(agent, sessions, reflection, automation, organization)
     while True:
         if organization is not None and sessions is not None and organization.task is None:
             organization.schedule(sessions.current.id)
@@ -248,7 +229,7 @@ async def _chat(
             except HistoryError:
                 write("会话错误 > 无法读取或切换会话，请检查 ID 和数据库状态。")
             continue
-        result = await agent.run(user_input, permissions=permissions)
+        result = await service.run(user_input, permissions=permissions)
         if result.status == "completed":
             write(f"Agent > {result.text}")
         else:
@@ -270,127 +251,29 @@ async def _chat(
                 write("Memory > " + json.dumps(report, ensure_ascii=False))
             except (HistoryError, CoreMemoryError):
                 write("Memory > 检查存储失败；普通回答已保存，不会自动重试。")
-        if organization is not None and sessions is not None:
-            organization.schedule(sessions.current.id, after_answer=result.status == "completed")
+        service.after_reply(result)
     write("再见。")
 
 
 async def run_cli(settings: Settings) -> None:
-    with SQLiteStore(settings.database_path) as store:
-        store.initialize()
-        recovered = store.recover_incomplete_runs()
-        if recovered:
-            print(f"发现 {recovered} 个未完成 Run，已标记 interrupted；不会重试工具。")
-        sessions = SessionManager(
-            store,
-            budget=settings.context_budget(),
-            optional_history_tokens=settings.retrieval_optional_tokens,
+    async with open_application(settings) as service:
+        await chat(
+            service.agent,
+            sessions=service.sessions,
+            reflection=service.reflection,
+            automation=service.automation,
+            organization=service.organization,
         )
-        root = memory_root_for(settings, sessions.agent.id)
-        memory = MemoryFS.for_agent(root, sessions.agent.id, max_bytes=settings.memory_max_bytes)
-        memory.initialize()
-        sessions.memory = memory
-        await _run_session(settings, sessions, memory)
 
 
 async def _run_session(settings: Settings, sessions: SessionManager, memory: MemoryFS) -> None:
-    if settings.character_id != "none":
-        policy = settings.character_policy()
-        package = CharacterLoader(settings.character_root, policy).load(settings.character_id)
-        sessions.character = CharacterContextCompiler(
-            package, policy, variant=settings.character_variant
-        )
-    else:
-        sessions.character = None
-    thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
-    sessions.retriever = ContextRetriever(
-        thread_repository,
-        settings.retrieval_policy(),
-        memory=memory,
-        memory_policy=settings.memory_retrieval_policy(),
-    )
-    tools = create_builtin_registry(settings.tool_timeout_seconds)
-    register_memory_tools(tools, memory)
-    register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
-    # Disable SDK retries: each loop round is exactly one bounded model request.
-    async with AsyncOpenAI(
-        api_key=settings.api_key.get_secret_value(),
-        base_url=str(settings.base_url) if settings.base_url else None,
-        timeout=settings.request_timeout_seconds,
-        max_retries=0,
-    ) as client:
-        agent = Agent(
-            OpenAIProvider(client, settings.model),
-            tools,
-            context=sessions.context(),
-            max_rounds=settings.max_rounds,
-            request_timeout_seconds=settings.request_timeout_seconds,
-        )
-        reflection = ReflectionService(
-            ReflectionRepository(sessions.store, sessions.agent.id),
-            memory,
-            agent.provider,
-            settings.context_budget(),
-            settings.reflection_policy(),
-        )
-        retrieval_policy = settings.memory_retrieval_policy()
-        sessions.retriever.preflight_model = OrganizerModel(
-            agent.provider,
-            settings.context_budget(),
-            OrganizationPolicy(
-                input_tokens=retrieval_policy.input_tokens,
-                output_tokens=retrieval_policy.output_tokens,
-                timeout_seconds=retrieval_policy.timeout_seconds,
-                response_bytes=4096,
-            ),
-        )
-        automation = MemoryAutomation(reflection, settings.automation_policy())
-        automation.repository.recover()
-        repository = EpisodeRepository(sessions.store, sessions.agent.id)
-        repository.recover()
-        thread_repository.recover()
-        learning = MemoryLearningService(
-            LearningRepository(repository), reflection, settings.learning_policy()
-        )
-        character_state = None
-        if sessions.character is not None:
-            character_repository = CharacterStateRepository(
-                repository, settings.character_id, sessions.character.package.fingerprint
-            )
-            character_state = CharacterStateService(
-                character_repository,
-                sessions.character.package,
-                reflection,
-                settings.context_budget(),
-                settings.character_state_policy(),
-            )
-            sessions.character.on_run = character_repository.tag_run
-            sessions.character.source_scope = character_repository.references
-            sessions.character.state = character_state.active
-        organization = OrganizationRuntime(
-            EpisodeOrganizer(
-                repository,
-                OrganizerModel(
-                    agent.provider, settings.context_budget(), settings.organization_policy()
-                ),
-            ),
-            automation=automation,
-            learning=learning,
-            character_state=character_state,
-            curator=MemoryCurator(learning, settings.curator_policy()),
-            threads=ThreadOrganizer(
-                thread_repository,
-                OrganizerModel(
-                    agent.provider, settings.context_budget(), settings.organization_policy()
-                ),
-            ),
-        )
+    async with open_chat(settings, sessions, memory) as service:
         await chat(
-            agent,
-            sessions=sessions,
-            reflection=reflection,
-            automation=automation,
-            organization=organization,
+            service.agent,
+            sessions=service.sessions,
+            reflection=service.reflection,
+            automation=service.automation,
+            organization=service.organization,
         )
 
 

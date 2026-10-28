@@ -299,6 +299,8 @@ uv build
 
 测试使用 Fake Provider、SDK MockTransport、临时 SQLite 和记忆目录，隔离真实配置并禁用外网，不需要真实 API Key，不消耗模型费用。覆盖重启恢复、会话隔离、完整消息/Provider JSON 重放、迁移回滚、数据库异常、批量工具调用中断、真实进程退出和多次重启，以及原有 Runtime 测试。 Core 回归覆盖跨会话记忆、更新冲突、原子写失败、大小限制、权限过期和 Base System Prompt 隔离。 Recall 测试覆盖 旧库回填、索引事务回滚、字面检索、跨 Agent 隔离、展开限制、索引重建及恶意历史的权限边界。 V0.5 增加旧格式迁移中断、编辑器可见性、索引补链/部分失败、Deferred 分页、Junction 和 CLI 重启渐进读取测试。 Windows 沙箱临时目录受限时使用 `uv run pytest --basetemp=.pytest_cache/tmp`； asyncio 需要允许本地 socketpair，测试仍禁止外网。 uv 缓存目录不可写时设置 `$env:UV_CACHE_DIR = "$PWD/.uv-cache"`。
 
+共享渠道装配与前台执行入口见 [Shared Chat Runtime](docs/modules/runtime.md)。
+
 ## 当前限制
 
 V0.1 原有的进程内历史无法事后导入，V0.2 从首次启动时开始保存。 SQLite 操作同步执行，使用短事务和 2 秒繁忙等待，适合单人本机，不支持并发多进程服务。正常路径只加载有限工作页和摘要；没有精确 tokenizer、向量检索、自动备份或数据加密。摘要有损、估算不精确，单个不可缩减的大 Run 需调整预算或新建会话。记忆工具具备按 Run 授权，通用外部工具的细粒度权限、幂等和任务恢复仍需后续设计。记忆读取、Git 检查和提交均在事件循环中同步执行，async def 包装不意味着可及时取消；磁盘卡顿不能被 asyncio 超时中断；不保留日常版本历史。 Markdown 单文件发布与 SQLite 结果保存没有共同事务：后者失败不能撤销已提交的记忆。原子文件替换不等于断电级持久性，当前无目录 fsync 或网络文件系统保证。路径与摘要校验不是 OS 沙箱；低优先级数据不代表模型绝不受恶意记忆文本影响。
