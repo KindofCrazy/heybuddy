@@ -14,6 +14,12 @@
 
 ## 异常与边界
 
+## 视觉与组件
+
+`layout.py:CARDS` 只声明卡片身份、标题与标签；`templates/components/cards.html:base_card` 渲染公共结构，`components/drawer.html` 提供独立原生 dialog。`static/observatory.css` 实现 12 列不对称 Bento、黄色画布、黑色粗边框与硬阴影、移动端重排和 reduced-motion。字体均有离线 fallback，无 CDN。`components.js` 用 `textContent` 构造可复用卡片、状态、空态和元数据，按钮阻止冒泡；`overview.js` 从真实 GET 列表加载概览。布局与对象投影不耦合。
+
+## 请求错误
+
 对象不存在或不属于当前 Agent 返回 404；参数错误返回固定 422；存储失败返回固定 503，不返回异常正文。只允许 GET/HEAD，禁用 API 文档写入口、跨站请求和不匹配 Host。所有页面禁止缓存，设置 CSP、no-referrer、nosniff；无远程资源和 CORS。监听端口冲突在启动 consumer 前失败，运行时 HTTP 异常不传播到 QQ task。
 
 ## 阅读与验证

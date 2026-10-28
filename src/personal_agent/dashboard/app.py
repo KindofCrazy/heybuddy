@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
+from personal_agent.dashboard.layout import CARDS
 from personal_agent.dashboard.privacy import safe
 from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
 from personal_agent.runtime import ChatService
@@ -83,7 +84,9 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
 
     @app.get("/")
     async def home(request: Request):
-        return templates.TemplateResponse(request=request, name="index.html", context={})
+        return templates.TemplateResponse(
+            request=request, name="index.html", context={"cards": CARDS}
+        )
 
     @app.get("/api/status")
     async def status():

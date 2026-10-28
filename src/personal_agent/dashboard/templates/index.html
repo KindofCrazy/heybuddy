@@ -1,3 +1,30 @@
+{% from "components/cards.html" import base_card %}
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HeyBuddy Observatory</title></head>
-<body><h1>HeyBuddy Observatory</h1><p>Local · Read-only · Shared runtime</p><p>Observatory foundation is connected. Explore <a href="/api/status">runtime status</a>.</p></body></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light"><title>HeyBuddy — Observatory</title>
+  <link rel="stylesheet" href="/static/observatory.css">
+  <script type="module" src="/static/overview.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <div class="shell">
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="HeyBuddy home"><span class="brand-mark">hb<span>✳</span></span><span>HeyBuddy<small>OBSERVATORY</small></span></a>
+      <nav aria-label="Workspace"><a class="nav-active" href="#workspace">Overview</a><a href="#threads">Threads</a><a href="#memory">Memory</a><a href="#runs">Runs</a></nav>
+      <span class="stamp"><span class="status-dot" id="connection-dot"></span><span id="connection" role="status">Connecting</span><span class="mono">LOCAL</span></span>
+    </header>
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">PERSONAL AGENT / OPEN NOTEBOOK</p><h1 id="page-title">Inside the agent<span class="title-dot">.</span></h1><p class="intro-copy">每一次对话背后，都有迹可循。<span>Runs, memories &amp; the connections in between.</span></p></div>
+      <div class="intro-aside"><span class="orbit" aria-hidden="true">✳</span><span class="mono">OBSERVE. EXPLORE.<br>UNDERSTAND.</span></div>
+    </section>
+    <div class="workspace-label"><span class="eyebrow">YOUR AGENT, UNPACKED</span><span class="mono">READ-ONLY WORKSPACE ↙</span></div>
+    <main id="workspace" class="bento" aria-label="Agent observatory">
+      {% for id, title, label in cards %}{{ base_card(id, title, label, loop.index) }}{% endfor %}
+    </main>
+    <footer><span><b>HeyBuddy</b> / A window into the work.</span><span class="mono">LOCAL ONLY · NO WEB WRITES · NO MODEL CALLS</span></footer>
+  </div>
+  {% include "components/drawer.html" %}
+</body>
+</html>
