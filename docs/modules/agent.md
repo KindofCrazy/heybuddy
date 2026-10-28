@@ -11,7 +11,7 @@
 1. CLI 的 `src/personal_agent/main.py::chat()` 调用 `Agent.run(user_input, permissions=...)`。
 2. `run()` 拒绝空输入，获取会话锁，调用 `core/context.py::ContextBuilder.begin()`，先原子创建 Run 及原始用户消息，只构建 Base 和本次输入，再进入 `_run()`；历史读取留在可处理失败的准备阶段。
 3. `_run()` 开始一轮模型请求。若还有后续请求预算，则通过 `tools.definitions(permissions=...)` 提供本轮授权的工具；最后一轮提供空列表，预留给最终回答。`max_rounds=1` 时第一轮就是最后一轮。
-4. await `ContextBuilder.prepare(messages, definitions, provider)`，它编译最新 Core、检查本轮全部输入预算，必要时先执行无工具分批摘要并提交检查点。通过后才在 asyncio.timeout(request_timeout_seconds) 内 await Provider.generate(max_output_tokens=reserved_output_tokens)。返回的文本、调用、Provider JSON 和可选 TokenUsage 均是内部普通模型；usage 仅用于安全诊断。
+4. await `ContextBuilder.prepare(messages, definitions, provider)`，它编译最新 Core、检查本轮全部输入预算，必要时先执行无工具分批摘要并提交检查点。通过后进入 `_generate()`，持久会话先通过 RunTrace 保存本轮输入快照，再在 asyncio.timeout(request_timeout_seconds) 内 await Provider.generate(max_output_tokens=reserved_output_tokens)。返回后先保存响应快照、实际用量与耗时，随后沿原流程校验并保存消息；失败/取消同样保存固定状态。审计快照不含 opaque Provider 数据，具体大小和失败边界见[模型调用审计](tracing.md)。返回的文本、调用、Provider JSON 和可选 TokenUsage 均是内部普通模型；usage 仅用于安全诊断。
 5. 检查调用 ID 是否与历史或本次其他调用重复，检查是否既无文本也无工具调用。校验失败时不执行工具，返回 `invalid_response`。
 6. 通过 `ContextBuilder.record()` 将有效响应先写入运行日志，再加入当前上下文。没有工具调用时，将文本作为最终回答，持久化完成状态后返回 `completed`。有工具调用时，即使同时有文本，也不将文本当作最终回答。
 7. 非终轮按顺序 await `ToolRegistry.execute(call, permissions=...)`，逐个落库并加入带原调用 ID 的 `ToolMessage`，再开始下一次模型请求，让模型读取这些结果。

@@ -174,30 +174,11 @@ export async function objectDetail(kind, id, target, open) {
       open,
     );
   } else if (kind === "runs") {
-    const reveal = action(
-      ui("Reveal private messages & tool records ↓"),
-      async () => {
-        reveal.disabled = true;
-        try {
-          await messages(target, id, 0);
-          reveal.remove();
-        } catch (error) {
-          reveal.disabled = false;
-          target.append(errorBox(error.message));
-        }
-      },
-      "action-button",
-    );
-    target.append(
-      node(
-        "p",
-        "notice",
-        ui(
-          "原始对话默认折叠，仅在本机点击后读取。工具记录是历史审计数据，不会执行。",
-        ),
-      ),
-      reveal,
-    );
+    const rounds = node("a", "action-button", ui("Model rounds & prompts ↗"));
+    rounds.href = `/runs#inspect/rounds/${encodeURIComponent(id)}?full=1`;
+    target.append(rounds);
+    section(target, "Messages");
+    await messages(target, id, 0);
   } else if (kind === "jobs") {
     section(target, "Source Episodes / Runs");
     for (const source of data.sources.episodes || [])
@@ -254,15 +235,18 @@ async function messages(target, id, after) {
   );
   for (const message of data.items) {
     const detail = node("details", "message");
-    detail.append(
+    const summary = node("summary", "message-heading");
+    summary.append(
+      node("span", "message-role", ui(message.role)),
       node(
-        "summary",
-        "",
-        ui(
-          `#${message.sequence} · ${message.role.toUpperCase()}${message.payload_large ? " · bounded preview" : ""}`,
-        ),
+        "span",
+        "mono message-sequence",
+        ui(`Stored message #${message.sequence}`),
       ),
     );
+    if (message.payload_large)
+      summary.append(node("span", "badge", ui("Bounded preview")));
+    detail.append(summary);
     if (message.text) detail.append(node("pre", "record", message.text));
     if (message.tool_calls) {
       section(detail, "Tool calls");

@@ -17,6 +17,7 @@
 3. [Agent Loop](modules/agent.md) 与 [ContextBuilder](modules/context.md)：一次输入如何变成模型上下文、工具循环和最终结果。
 4. [Provider](modules/provider.md) 与 [工具注册](modules/tools.md)：模型接口转换、工具参数校验及超时契约。
 5. [SQLite 存储](modules/storage.md) 与 [数据模型](modules/models.md)：消息怎样保存、排序、关联和恢复。
+   [模型轮次与 Prompt 审计](modules/tracing.md)说明正常调用输入快照、元数据、历史缺失与只读展示边界。
 6. [MemoryFS](modules/memory.md)：Core/Deferred 分层、索引发现、摘要冲突、原子文件、大小和权限边界。另见[Letta Code 调研](memory-design.md)与[迁移说明](memory-migration.md)。
 7. [Conversation Recall](modules/recall.md)：FTS5 中文取舍、schema 迁移、派生索引、只读证据与重建。
 8. [会话管理与 CLI](modules/sessions-cli.md) 与 [配置](modules/config.md)：应用入口、会话选择和配置校验。

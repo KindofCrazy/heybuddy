@@ -2,7 +2,7 @@
 
 ## 当前实现范围与历史阶段说明
 
-当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复和 loopback 只读 Observatory。SQLite 当前 schema 13，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限、无主动消息和真实付费调用另行授权的边界继续有效。
+当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复和 loopback 只读 Observatory。SQLite 当前 schema 14，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限、无主动消息和真实付费调用另行授权的边界继续有效。
 
 ## P2 Review Fix 明确授权
 

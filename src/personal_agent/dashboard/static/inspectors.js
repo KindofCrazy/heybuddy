@@ -9,6 +9,7 @@ import {
 } from "./memory-character.js";
 import { get } from "./components.js";
 import { timeline } from "./monitor.js";
+import { modelRounds } from "./model-rounds.js";
 const dialog = document.getElementById("inspector"),
   body = document.getElementById("inspector-body");
 const kinds = new Set([
@@ -23,6 +24,7 @@ const kinds = new Set([
   "collection",
   "runtime",
   "activity",
+  "rounds",
 ]);
 let path = [],
   requestVersion = 0;
@@ -139,6 +141,9 @@ async function route() {
         id,
         openObject,
       );
+    } else if (kind === "rounds") {
+      title = ui("Model rounds & prompts");
+      await modelRounds(result, id, openObject);
     } else title = await objectDetail(kind, id, result, openObject);
     if (version !== requestVersion) return;
     writeText(document.getElementById("inspector-title"), title);

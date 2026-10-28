@@ -1,7 +1,9 @@
 """SELECT-only, Agent-bound projections over the existing owner's SQLite connection."""
 
 import json
+from typing import Literal
 
+from personal_agent.dashboard.privacy import snapshot_safe
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.storage.threads import ThreadRepository
@@ -155,6 +157,54 @@ class ObservatoryRepository:
                 (self.agent_id,),
             ).fetchone()
         return dict(row) if row else None
+
+    def rounds(self, run_id: str, limit: int, after: int) -> dict:
+        self.detail("runs", run_id)
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT t.number AS position,t.number,"
+                "CASE WHEN t.state='requesting' AND r.status!='running' THEN 'interrupted' "
+                "ELSE t.state END AS state,t.started_at,t.ended_at,t.elapsed_ms,"
+                "t.message_count,t.tool_count,t.max_output_tokens,t.input_tokens,t.output_tokens,"
+                "t.reasoning_tokens,t.prompt_state,t.response_state "
+                "FROM model_rounds t JOIN runs r ON r.id=t.run_id "
+                "JOIN conversations c ON c.id=r.conversation_id "
+                "WHERE t.run_id=? AND c.agent_id=? AND t.number>? ORDER BY t.number LIMIT ?",
+                (run_id, self.agent_id, after, limit + 1),
+            ).fetchall()
+        return page([dict(row) for row in rows], limit)
+
+    def round_payload(
+        self, run_id: str, number: int, part: Literal["prompt", "response"], offset: int
+    ) -> dict:
+        self.detail("runs", run_id)
+        # Fixed identifiers, selected by the trusted handler's Literal parameter.
+        column = "prompt_json" if part == "prompt" else "response_json"
+        state_column = "prompt_state" if part == "prompt" else "response_state"
+        with self.store.reading() as db:
+            row = db.execute(
+                f"SELECT {column} AS body,{state_column} AS state "
+                "FROM model_rounds t JOIN runs r ON r.id=t.run_id "
+                "JOIN conversations c ON c.id=r.conversation_id "
+                "WHERE t.run_id=? AND t.number=? AND c.agent_id=?",
+                (run_id, number, self.agent_id),
+            ).fetchone()
+        if row is None:
+            raise NotFound
+        # Redact the complete bounded JSON before paging so a boundary cannot split a secret.
+        text = (
+            json.dumps(snapshot_safe(json.loads(row["body"])), ensure_ascii=False, indent=2)
+            if row["body"] is not None
+            else ""
+        )
+        end = offset + 12000
+        more = end < len(text)
+        return {
+            "state": row["state"] or "unavailable",
+            "content": text[offset:end],
+            "has_more": more,
+            "next_offset": end if more else None,
+        }
 
     def character_receipts(self, scope: tuple, limit: int, cursor: int) -> dict:
         with self.store.reading() as db:

@@ -3,8 +3,10 @@
 import asyncio
 import json
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, Query, Request
+from fastapi import Path as PathParameter
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -164,6 +166,28 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         run_id: str, limit: int = Query(8, ge=1, le=12), after: int = Query(0, ge=0, le=2**63 - 1)
     ):
         return output(repository.messages(run_id, limit, after))
+
+    @app.get("/api/runs/{run_id}/rounds")
+    async def rounds(
+        run_id: str,
+        limit: int = Query(6, ge=1, le=12),
+        after: int = Query(0, ge=0, le=2**63 - 1),
+    ):
+        data = repository.rounds(run_id, limit, after)
+        if service.observer_only:
+            for item in data["items"]:
+                if item["state"] == "requesting":
+                    item["state"] = "unknown"
+        return output(data)
+
+    @app.get("/api/runs/{run_id}/rounds/{number}/payload")
+    async def round_payload(
+        run_id: str,
+        number: int = PathParameter(..., ge=1, le=2**31 - 1),
+        part: Literal["prompt", "response"] = "prompt",
+        offset: int = Query(0, ge=0, le=16777216),
+    ):
+        return output(repository.round_payload(run_id, number, part, offset))
 
     @app.get("/api/episodes")
     async def episodes(

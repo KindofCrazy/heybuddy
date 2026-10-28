@@ -9,6 +9,7 @@ from personal_agent.core.history import ConversationHistory, HistoryError, InMem
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
 from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
+from personal_agent.core.tracing import RunTrace
 from personal_agent.llm.base import Provider
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -55,6 +56,7 @@ class ContextBuilder:
         retriever: ContextRetrieval | None = None,
         optional_history_tokens: int = 12288,
         character: CharacterContext | None = None,
+        trace: RunTrace | None = None,
     ) -> None:
         self.system_prompt = system_prompt
         self._store = history_store if history_store is not None else InMemoryHistory()
@@ -63,6 +65,7 @@ class ContextBuilder:
         self.temporal = temporal
         self.retriever = retriever
         self.character = character
+        self.trace = trace
         if not 512 <= optional_history_tokens <= 32768:
             raise ValueError("Invalid optional history budget")
         self.optional_history_tokens = optional_history_tokens
@@ -356,6 +359,10 @@ class ContextBuilder:
 
     def observe_usage(self, usage: TokenUsage | None) -> None:
         self._usage = usage
+
+    @property
+    def run_id(self) -> str | None:
+        return self._run_id
 
     def diagnostics(self) -> dict:
         self._load()

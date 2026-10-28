@@ -12,7 +12,7 @@
 2. QQ 的 `channels/qq/runner.py:run_qq` 在原 `open_application()` 内通过 `AsyncExitStack` 启动 HTTP，再启动原 consumer；二者收到同一个 ChatService、Agent Scope、SQLite Owner 和 MemoryFS。
 3. 独立 `run_web` 调用相同 `open_application(settings, observer_only=True)`。仍初始化 SQLite schema/会话选择并取得原 Owner 锁，但跳过未完成 Run 恢复、Memory 初始化/迁移、Automation/Organizer/Learning 回执恢复、Curator 调度与 Character State 初始化；不安排维护。`ChatService.run` 拒绝 observer-only 执行，`after_reply` 不调度任务。已有实例持锁时拒绝启动。
 4. FastAPI handler 均为 async，保持 SQLite 在线程归属正确的 event loop 上。`reading()` 只供受信任固定 SELECT，复用 SQLite VM 工作预算，不开启写事务、不 await。列表按 rowid 倒序、整数 cursor、limit 分页；默认不读正文。
-5. 点击卡片后 `openObject` 将 `[kind,id]` 链编码进 fragment，`route` 选择详情渲染器。Thread 用 `/api/episodes?thread_id=` 查询真正归属；Episode 用 `/api/runs?episode_id=` 读取实际 Run 元数据与来源 Highlights；Run 初始 GET 仅取元数据，点击 reveal 才读取 `/messages`，逐条继续折叠。工具调用/结果保留 call_id，不执行历史工具，不返回 opaque Provider/reasoning 数据。
+5. 点击卡片后 `openObject` 将 `[kind,id]` 链编码进 fragment，`route` 选择详情渲染器。Thread 用 `/api/episodes?thread_id=` 查询真正归属；Episode 用 `/api/runs?episode_id=` 读取实际 Run 元数据与来源 Highlights；Run 详情读取元数据和一页 `/messages`，默认列出用户/助手/工具消息标题，正文逐条折叠，不再增加总 reveal 按钮。工具调用/结果保留 call_id，不执行历史工具，不返回 opaque Provider/reasoning 数据。
 6. Memory 树只扫描当前目录（最多 MemoryFS 的 MAX_ENTRIES），先 guard 再检查类型，跳过非法路径/链接，不递归。文件使用既有 `MemoryFS.path/raw`，按字符 offset 分段、expected_hash 校验后续页；只读文件 I/O 使用工作线程，不持写锁。Markdown 渲染禁用原始 HTML、图片和链接，前端再复制无属性标签白名单。`/api/memory/records` 查询真实 Learning operations 中的目标路径，不生成旧正文或虚构 Diff。
 7. `/api/character` 使用已经加载的 Package；`/api/character/state` 复用 `CharacterStateService.active()` 的真实 TTL 和 mood/current_focus/stance，区分 effective、last stored 与 source-attempt receipts。缺少初始化状态行时返回无状态，Character 关闭时无虚构字段。旧状态正文不另建副本。
 8. `OrganizationRuntime._execute` 在原 Stage await 前后记录最多 128 条无正文内存事件，取消/失败仍沿原路径传播。`diagnostics(..., read_only=True)` 只读已有 schedule/progress、封顶 pending 计数和最近失败，不调用 ensure/poll/模型。`ChatService.run` 在 try/finally 维护 foreground_active；QQ 状态来自真实 Gateway 与 consumer 生命周期，不从更新时间推断任务正在执行。
@@ -69,3 +69,9 @@ CSS 使 `.shell` 占据 `100dvh`，以 flex 给页头、精简标题和页脚预
 导航、卡片、活动和文件使用本地 [Lucide](https://lucide.dev/) SVG 子集。`templates/components/icons.svg` 包含固定 symbol，模板宏和 `static/icons.js:icon` 只引用允许名称，不渲染用户提供 SVG。无需放宽 CSP，无远程字体、图片或脚本。原始 ISC/MIT 版权与许可保存在 `static/ICONS-LICENSE.txt`，随 Python 包分发，来源见 [官方许可证](https://lucide.dev/license)。不依赖 Flaticon 账号或在线资源。
 
 `tests/test_dashboard_presentation.py` 验证旧布局上下文、标题装饰删除、图标许可资源和 LF/CRLF Frontmatter 的显示/原文分离。真实 Edge 验证图标非空、默认索引、目录与文件切换、完整来源详情、安全 Markdown 以及桌面/手机布局，截图仅使用合成数据。
+
+## 消息列表与模型轮次
+
+运行详情自动加载一页消息，用户、助手、工具名称作为主要标题，`sequence` 以“存储序号 #n”次要标注。它是整个 Conversation 中包含工具消息的稳定顺序，不表示助手调用轮次。单条正文保持原生 details 折叠，后续消息仍用有界分页。原隐私说明和总展开按钮已删除，hb 标记上的星形装饰也已移除。
+
+“模型轮次与 Prompt”链接进入 `/runs#inspect/rounds/{id}?full=1` 的完整详情视图，可直接刷新。`inspectors.js` 分派给 `model-rounds.js:modelRounds`，先读轮次元数据，按需读取输入/返回快照。输入包含调用当时的 Base、动态注入、选中历史、当前 Run 消息、工具定义和输出上限；时间、耗时与 token 数独立展示，正文不随语言切换改变。快照分段读取、错误可重试，后续轮次有界分页。旧 Run 缺失时显示明确空态，不按当前 Memory 伪造历史。保存路径及边界见[模型调用审计](tracing.md)。

@@ -80,6 +80,8 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 `main.main()` 接受可选的 `chat` / `qq` 位置参数，默认 CLI 兼容。`qq` 调用 `channels.qq.runner.run_qq()`，`qq --discover-openid` 为不初始化 Agent 的限时诊断。两种正常聊天模式共用数据库单进程锁，不能以两个进程同时连接同一数据库；QQ 中的 `/new` 等文本不进入 CLI 命令分支。参见 [qq.md](qq.md)。
 # Observatory 入口
 
+`SessionManager.context()` 为持久会话传入 `SQLiteRunTrace(self.store)`，关联的请求快照沿用原数据库锁和 Run ID，不新开 Owner，也不影响跨会话记忆或历史选择。调用路径见[模型调用审计](tracing.md)。
+
 `main.py:main` 新增 `web` 和 QQ 专用 `--dashboard`，`--dashboard-port` 限定 1024–65535，默认 8765。`web` 不读取聊天输入，不调用 `Agent.run()`，通过原 Owner 锁保护独立实例；`qq --dashboard` 共享 `run_qq` 内的同一 `open_application()`。Ctrl+C/SIGTERM 沿原 Runtime 生命周期退出。详见 [dashboard.md](dashboard.md)。
 
 

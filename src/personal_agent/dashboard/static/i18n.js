@@ -20,6 +20,8 @@ export function translate(source) {
   if (language === "en") return english[source] || source;
   if (Object.hasOwn(dictionary, source)) return dictionary[source];
   const rules = [
+    [/^Stored message #(\d+)$/, (m) => `存储序号 #${m[1]}`],
+    [/^Model round (\d+)$/, (m) => `第 ${m[1]} 轮模型调用`],
     [/^No (.+) yet$/, (m) => `暂无${translate(m[1])}`],
     [/^Explore all (.+) ↗$/, (m) => `查看全部${translate(m[1])} ↗`],
     [

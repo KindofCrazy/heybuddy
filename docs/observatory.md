@@ -137,3 +137,13 @@ Memory 路径复用已有穿越、Symlink/Junction、Hardlink 防护；Dashboard
 [总览图标截图（合成数据）](images/observatory-icons-synthetic.png) · [记忆阅读截图（合成数据）](images/observatory-memory-reader-synthetic.png)。
 
 本轮验证：完整离线回归 784 passed、2 skipped；Ruff 检查/格式检查与离线构建通过；实际安装 Wheel 的四页与图标/语言/记忆阅读资源共 18 个请求通过。当前本机服务只读取 HTML 卡片 ID，确认旧上下文已仅渲染四卡。Edge 的记忆阅读、安全展示和图标/多视口检查通过；所有截图均为隔离合成数据，未执行付费模型调用。
+
+## 对话消息与逐轮 Prompt
+
+运行详情自动展示用户、助手和工具消息的折叠标题，正文逐条点击打开，移除原隐私说明与总展开按钮。原 `#29` 一类数字是 Conversation 内的存储序号，现作为次要标注，避免与模型轮次混淆。hb 标记上的星号为装饰，已移除。
+
+新增“模型轮次与 Prompt”完整详情入口。schema 14 在原 Owner 内为后续主 Agent 调用保存当时的内部消息/工具定义、返回、实际 token 用量、耗时和失败状态，不保存 opaque Provider/reasoning 数据，不参与模型重放。旧 Run 缺失时显示空态，不用当前 Memory 推测旧 Prompt；快照最多 2 MiB，网页按需脱敏分页。详细执行和异常边界见[审计模块](modules/tracing.md)。重启正在运行的服务后才启用新迁移、接口和记录器。
+
+[消息列表（合成数据）](images/observatory-messages-synthetic.png) · [模型轮次（合成数据）](images/observatory-model-rounds-synthetic.png)。
+
+本轮验证：完整离线回归 803 passed、2 skipped；Ruff 检查/格式检查、`uv build --offline` 与 CLI `--help` 通过。构建遇到系统 C 盘空间不足后改用工作区 D 盘临时目录完成，不清理用户文件。隔离安装 Wheel 的 19 个页面/API/资源请求及 schema 14 检查通过。Edge 验证默认消息折叠、旧按钮/说明删除、轮次完整视图、输入/返回按需读取、Prompt 分页、第二轮工具证据、语言切换保持正文、刷新、桌面/手机宽度和旧 Run 空态，无 JavaScript 异常。仅使用合成数据和 FakeProvider，未调用付费模型。

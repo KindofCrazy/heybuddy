@@ -33,11 +33,12 @@ from personal_agent.storage import (
     recall,
     reflection,
     threads,
+    tracing,
 )
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -76,6 +77,7 @@ MIGRATIONS = {
     11: learning.SCHEMA,
     12: character_storage.SCHEMA,
     13: qq.SCHEMA,
+    14: tracing.SCHEMA,
 }
 
 

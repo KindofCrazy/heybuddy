@@ -21,20 +21,29 @@ def safe(value):
     return _safe(value, 0)
 
 
-def _safe(value, depth):
+def snapshot_safe(value):
+    """Redact a size-bounded stored snapshot before splitting it into HTTP pages."""
+    return _safe(value, 0, bounded=False)
+
+
+def _safe(value, depth, *, bounded=True):
     if depth > 12:
         return "[depth limit]"
     if isinstance(value, str):
         text = ASSIGNMENT.sub(
             "[REDACTED]", PRIVATE.sub("[REDACTED]", SECRET.sub("[REDACTED]", value))
         )
-        return text[:16384] + ("\n[truncated]" if len(text) > 16384 else "")
+        return text[:16384] + ("\n[truncated]" if len(text) > 16384 else "") if bounded else text
     if isinstance(value, dict):
         return {
-            str(k): "[REDACTED]" if SENSITIVE.search(str(k)) else _safe(v, depth + 1)
-            for k, v in list(value.items())[:128]
+            str(k): "[REDACTED]"
+            if SENSITIVE.search(str(k))
+            else _safe(v, depth + 1, bounded=bounded)
+            for k, v in (list(value.items())[:128] if bounded else value.items())
             if k not in {"provider_data", "reasoning", "result_json", "agent_id"}
         }
     if isinstance(value, (list, tuple)):
-        return [_safe(item, depth + 1) for item in value[:128]]
+        return [
+            _safe(item, depth + 1, bounded=bounded) for item in (value[:128] if bounded else value)
+        ]
     return value

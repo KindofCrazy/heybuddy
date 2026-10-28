@@ -10,6 +10,7 @@ from personal_agent.core.temporal import temporal_context
 from personal_agent.storage.history import SQLiteConversationHistory
 from personal_agent.storage.models import ConversationRecord
 from personal_agent.storage.sqlite import SQLiteStore
+from personal_agent.storage.tracing import SQLiteRunTrace
 
 
 class SessionManager:
@@ -44,6 +45,7 @@ class SessionManager:
             retriever=self.retriever,
             optional_history_tokens=self.optional_history_tokens,
             character=self.character,
+            trace=SQLiteRunTrace(self.store),
         )
 
     def new(self) -> ConversationRecord:

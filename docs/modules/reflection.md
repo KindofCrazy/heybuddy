@@ -26,7 +26,7 @@ SQLite proposals 是审阅记录，不是第二套长期 Memory 权威源。成�
 
 ## 代码实际运行路径：提取到计划
 
-1. `main.run_cli()` 经 open_application() 原子迁移到当前 schema 13（Reflection 表来自迁移 4），恢复正常 Run，初始化 MemoryFS；`runtime.assemble_chat()` 把与 Agent 相同的 Provider、MemoryFS、ContextBudget 及 ReflectionPolicy 传给 ReflectionService，Repository 绑定 agent_id。
+1. `main.run_cli()` 经 open_application() 原子迁移到当前 schema 14（Reflection 表来自迁移 4），恢复正常 Run，初始化 MemoryFS；`runtime.assemble_chat()` 把与 Agent 相同的 Provider、MemoryFS、ContextBudget 及 ReflectionPolicy 传给 ReflectionService，Repository 绑定 agent_id。
 2. `chat()` 识别 `/reflect`，调用 `reflection.cli.command()` → await `ReflectionService.reflect(current_conversation_id)`。这些命令不创建普通聊天 Run，不给下一次输入附加 Memory 工具权限。
 3. 若当前 Conversation 已有未关闭计划，直接返回它，不再次请求模型。否则读取 reflection_progress 的独立 through_sequence；不复用 context_summaries 的压缩边界。
 4. `ReflectionRepository.window()` 先确认 Conversation 属于当前 Agent，再复用 `storage/context.py::page(completed_only=True)`，以 context_runs 索引获取最多 page_runs 个完整 Run；先检查 payload 字节、消息数，再读取并验证配对。failed/interrupted/cancelled/running 均不作为 Reflection 源，V0.6 的 completed/failed 重放规则不变。

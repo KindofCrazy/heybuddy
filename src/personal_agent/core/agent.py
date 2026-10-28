@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from time import perf_counter
 
 from personal_agent.core.budget import ContextError
 from personal_agent.core.context import ContextBuilder
@@ -8,7 +9,9 @@ from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import (
     AssistantMessage,
     Message,
+    ModelResponse,
     RunResult,
+    ToolDefinition,
     ToolError,
     ToolMessage,
     ToolResult,
@@ -117,8 +120,7 @@ class Agent:
                     if self.context.budget
                     else {}
                 )
-                async with asyncio.timeout(self.request_timeout_seconds):
-                    response = await self.provider.generate(request, definitions, **options)
+                response = await self._generate(request, definitions, options, round_number)
                 self.context.observe_usage(response.usage)
             except ContextError as exc:
                 return finish(
@@ -259,3 +261,43 @@ class Agent:
                 error="Model round limit reached; final-round tools were not executed.",
             )
         )
+
+    async def _generate(
+        self,
+        request: list[Message],
+        definitions: list[ToolDefinition],
+        options: dict,
+        number: int,
+    ) -> ModelResponse:
+        trace, run_id = self.context.trace, self.context.run_id
+        if trace is not None and run_id is not None:
+            trace.start(run_id, number, request, definitions, options.get("max_output_tokens"))
+        started = perf_counter()
+
+        def complete(state: str, response: ModelResponse | None = None) -> None:
+            if trace is not None and run_id is not None:
+                trace.finish(
+                    run_id, number, state, int((perf_counter() - started) * 1000), response
+                )
+
+        try:
+            async with asyncio.timeout(self.request_timeout_seconds):
+                response = await self.provider.generate(request, definitions, **options)
+        except asyncio.CancelledError:
+            try:
+                complete("cancelled")
+            except HistoryError:
+                logger.error("request_audit_cancel_failed")
+            raise
+        except Exception as exc:
+            state = (
+                "timeout"
+                if isinstance(exc, (TimeoutError, ProviderTimeout))
+                else "provider_error"
+                if isinstance(exc, ProviderError)
+                else "runtime_error"
+            )
+            complete(state)
+            raise
+        complete("responded", response)
+        return response

@@ -83,4 +83,6 @@ DEFAULT_SYSTEM_PROMPT 明确一般问答/假设无需 Memory，项目按根索�
 
 ## 一次准备的共同视图
 
+`ContextBuilder` 可接收 `core/tracing.py:RunTrace`，并通过只读 `run_id` 让 Agent 将主调用快照关联至本次 Run。它不参与 `_assemble()` 或历史回放；持久会话由 `SessionManager.context()` 装配 SQLiteRunTrace，无持久化 Context 默认不记录。实际保存时机和异常路径见[模型调用审计](tracing.md)。
+
 prepare() 的每次迭代先 _injections() 编译 Base/角色/Core/摘要/时间前缀，再由 _select_history() 与 _assemble() 复用相同视图进行预算选择和最终请求，避免一次准备重复磁盘/角色查询。工具后下一轮、Compaction checkpoint 后新迭代继续重新编译，不跨轮缓存 Memory。PreflightRetrieval 和 RunCharacter 是显式可选 Protocol；只有实现它们的适配器会收到异步 preflight 或 Run 标签通知。CoreMemory 字符串接口保留，角色模式由 without_legacy_persona 校验结构化 JSON，错误显式返回。验证见 tests/test_working_context.py 的编译次数测试及原 Memory 更新可见性测试。

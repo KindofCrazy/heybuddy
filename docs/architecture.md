@@ -1,6 +1,6 @@
 # HeyBuddy P2：整体架构与 Pipeline
 
-本文串起从启动到退出的真实执行路径。当前是一个本地进程、SQLite schema 13 和普通 Markdown；CLI、QQ 与只读 Web 复用 runtime.py 的应用装配。P1 增加有界 asyncio 事后整理及可抢占输入，没有消息队列、通用任务平台或工具续跑。先看下面共享 Runtime 路径，再读后续保留的 Journal、Provider、Memory、Reflection 细节。迁移、测试、限制与 P2 接口见 [P1 交付](p1-delivery.md)。
+本文串起从启动到退出的真实执行路径。当前是一个本地进程、SQLite schema 14 和普通 Markdown；CLI、QQ 与只读 Web 复用 runtime.py 的应用装配。P1 增加有界 asyncio 事后整理及可抢占输入，没有消息队列、通用任务平台或工具续跑。先看下面共享 Runtime 路径，再读后续保留的 Journal、Provider、Memory、Reflection 细节。迁移、测试、限制与 P2 接口见 [P1 交付](p1-delivery.md)。
 
 [P2 完整交付与验证](p2-delivery.md) 描述双速自动学习、Curator、Adaptive Retrieval 和跨存储恢复；P1 历史报告仅保留基线记录。
 
@@ -146,7 +146,7 @@ runtime.py 是共享装配入口，知道使用哪个具体 Provider、存储和
 2. `config.py::load_settings()` 读取当前目录配置，环境变量优先；Pydantic 校验模型、密钥、超时及 API 地址。失败时报告字段并返回退出码 2。
 3. `main()` 配置安全日志，通过 `asyncio.run(run_cli(settings))` 进入异步应用。
 4. `SQLiteStore(settings.database_path)` 解析路径、创建必要目录、取得进程占用锁，再打开数据库。同一路径已被其他应用实例占用时失败，避免两个 CLI 同时处理同一份运行状态。
-5. `SQLiteStore.initialize()` 显式迁移到 schema 13，顺序执行 Recall、Context、Reflection、Automation、Episode、Thread 及维护追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
+5. `SQLiteStore.initialize()` 显式迁移到 schema 14，顺序执行 Recall、Context、Reflection、Automation、Episode、Thread 及维护追加迁移，结构和 user_version 在同一事务内更新，遇到更新版本或陌生数据库时拒绝继续。
 6. `recover_incomplete_runs()` 将遗留 running Run 标记为 interrupted。这个步骤只更新状态，不调用 Provider 或任何工具。它在占用锁下进行，因此不会把另一正常运行实例的 Run 当作遗留任务。
 7. `SessionManager(store)` 读取或创建持久 Agent，读取 client_state；首次创建空会话，后续校验摘要检查点并恢复上次选择的会话，不全量反序列化旧消息。
 8. `run_cli()` 构造 `MemoryFS.for_agent()`，初始化或迁移普通 Markdown，绑定到 SessionManager。新安装默认用户数据目录，已有数据库旁 `.memory` 目录沿用；可配置根目录，详见迁移说明。

@@ -22,7 +22,7 @@ P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running R
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 13 与发行包版本 0.7.2 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 14 与发行包版本 0.7.2 是不同概念。
 
 ## 表字段与一致性约束
 
@@ -106,6 +106,8 @@ schema 5 追加 storage/automation.py 的 automation_batches 与范围/活动唯
 
 `storage/qq.py` 原子追加 `qq_receipts` 及去重/待处理索引，不改变原始 Journal、Recall、Learning 或角色表。`QQInbox` 仅保存最小平台回执与有界待处理文本；领取后删除暂存正文，完整对话继续由 `SQLiteStore.begin_run()` 等原路径维护。处理/发送中的遗留回执只改为 uncertain，不重跑工具；received 的恢复绑定同一 Agent、AppID、OpenID 和 Conversation。执行路径、外部发送提交窗口及测试见 [qq.md](qq.md)。
 # Observatory 读取
+
+schema 14 通过 `storage/tracing.py:SCHEMA` 原子追加 model_rounds，保存主 Agent 每次请求的内部输入/返回投影与元数据。`SQLiteRunTrace` 使用同一 Store 的短事务，不改变 messages、Recall 或 Summary；旧 Run 不回填。观测端仍只读查询，详细流程与失败测试见[模型调用审计](tracing.md)。
 
 `SQLiteStore.reading()` 供受信任 Repository 在 Owner 事件循环上执行短 SELECT，复用 `storage/recall.py:query_budget`，不执行 `BEGIN IMMEDIATE`、提交或恢复。调用方不得在作用域内 await 或写入。`dashboard/repository.py:ObservatoryRepository` 绑定 Agent Scope，列表只取有界元数据；HTTP 不接收 SQL。测试见 `tests/test_dashboard.py`。
 
