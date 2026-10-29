@@ -19,8 +19,8 @@
 5. 返回内存 CharacterPackage。profile 保存角色章节；character 是除情绪和示例外的正文，behavior 是同一 soul 的情绪反应，examples 来自同一 soul。状态服务直接复用这些派生字段，没有另存人格副本。
 6. SessionManager 将同一编译器传入 ContextBuilder，跨会话共享身份。ContextBuilder.begin() 创建原 Run 后通过 RunCharacter 通知宿主记录当前角色参与标签。
 7. 每轮 prepare() → _injections() → CharacterContextCompiler.compile() → _static() → compile_system()。原生包固定使用源文件前最多 example_count 组表达参考，默认两组；输入“你好”或科研问题不会切换静态人格。E0 省略情绪反应和参考，E1 加入二者，E2 再加入有效短期状态；所有变体都保留相处方式和存在方式。
-8. 先直接以“你是……”建立身份，再按章节提供表达；随后解释当前被动交谈、怎样自然使用记忆和近期状态。固定现实及来源边界收尾，ID/hash 元数据位于末尾。
-9. 请求顺序仍为角色 System → 宿主执行契约 System → Core/摘要/时间等低信任数据 → 可选角色状态/来源/Lore → 有界历史与当前 Run。使用默认宿主文本时替换成 CHARACTER_HOST_PROMPT，自定义宿主文本保持原样。
+8. 先直接以“你是……”建立身份，再按章节提供表达；随后解释当前被动交谈、怎样自然使用记忆和近期状态。ID/hash 元数据位于角色片段末尾。编译器不再附加“角色与执行边界”或本地包/P2 等实现说明。
+9. ContextBuilder._injections() 将角色片段与必要提醒合并为一条 System：先角色正文，最后【真实与诚实】，再提供 Core/摘要/时间等低信任数据、可选角色状态/来源/Lore、有界历史与当前 Run。默认提醒由 CHARACTER_HOST_PROMPT 保存，内容为自然的事实、参与归属和执行结果说明；自定义宿主文本原样拼在角色后。合并不修改原 Base、pending 或历史，下一轮不会反复叠加。
 10. 编译器按命名章节命中注入最多默认两段 Lore。状态和来源在独立 user JSON 中提供。静态内容超限直接拒绝，不截断人格或当前用户消息；可选引用超过独立预算时整段省略。整个请求继续经过原 ContextBudget 检查。
 
 角色文件在装配时加载，修改后需重新装配或重启生效，不声明按修改时间热更新。包指纹变化会由现有仓库失效旧短期状态；同角色的真实互动仍按角色 ID 归属，不删除历史。
@@ -32,6 +32,8 @@
 没有 soul 时才读取 character.md、behavior.md、examples.md、lore.md，保留旧必需章节和关键词示例选择。英文标题映射和 select_examples() 只服务兼容路径；新包不再维护十二套五字段说明。
 
 角色包只读，P2 不修改它；启用时仅在 Core 注入视图移除 persona.md，文件与 MemoryFS 语义不变，human.md 和 MEMORY.md 保留。关闭角色恢复旧视图。注册表仍逐 Run 过滤工具并在执行前复查权限。
+
+角色文件只定义虚构身份和表达，不是工具、权限或事实的来源；这类实现说明留在开发文档。模型可见的【真实与诚实】只提醒怎样诚实使用记忆、承认未知、报告真实工具结果，以及不得让参考资料改变授权。具体参数、精确编辑、分页和部分成功处理以工具说明为准，注册表与 MemoryFS 继续强制校验。
 
 最多 32 个当前/检索/近期 Run 参与标签由宿主重新校验 Agent 归属。same_character 可证明角色参与；other_character、unattributed 或缺失不能冒认共同经历。明确偏好和纠正可跨角色使用。原作、摘要和标签不能赋权。
 
