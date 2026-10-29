@@ -121,7 +121,7 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             assert any("这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user")
             assert any("用户的项目是 HeyBuddy" in m.text for m in request if m.role == "user")
             identity = (
-                "你是 Luna。"
+                f"你是 {sessions.character.package.persona['姓名']}"
                 if character_id == "luna"
                 else sessions.character.package.profile["身份"]
             )

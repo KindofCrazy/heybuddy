@@ -14,9 +14,9 @@
 4. `persona.parse_persona()` 使用标准库 JSON 和 Pydantic 验证 Soul。最低要求是 identity 的 personaName、slug、bio 与 character 的 personality、speakingStyle；这些字段必须是非空字符串。角色、年龄、氛围、表情、背景、边界和行为指南为可选描述。不要求固定 Markdown 章节、对话示例或 Lore。
 5. behaviorGuide 可以是直接的文本；文件引用仅支持上游预设使用的 `file:soul/behavior-guide.md`。Loader 读取并校验这一固定本地文件，不按任意路径或 URL 追踪内容。指纹包括实际读取的 JSON 与指南正文。
 6. CharacterPackage.persona 保存白名单字段的内存解析结果，没有另一份持久角色库。character/behavior 仅为兼容数据接口派生，examples/lore 为空。
-7. `SessionManager.context()` → `ContextBuilder.prepare()/for_request()` → `CharacterContextCompiler.compile()` → `compile_system()`：以“你是 Luna”开始，提供性格、说话方式、背景和指南，然后说明现有记忆的用途与检索工具，最后追加一份通用交谈提示词。
+7. `SessionManager.context()` → `ContextBuilder.prepare()/for_request()` → `CharacterContextCompiler.compile()` → `compile_system()`：先以“你是 Luna”建立身份，年龄与类型并入这一句，再提供简介、相处定位和背景；性格、说话方式、氛围与表情合并为一段表达说明；边界与完整行为指南随后编入一次。最后提供现有记忆的用途与检索工具，并追加一份通用交谈提示词。没有逐项的年龄、类型、表情等属性标题，指南中的具体情境与例子不再被概括掉。上游组装方式及适配理由见 [对照说明](../openpersona-prompt-assembly.md)。
 8. 编译器不为 JSON 角色选择情境示例、检索角色 Lore、读取短期状态或注入角色审计 JSON。E0/E1/E2 对这条简单路径不改变正文；与用户输入无关的稳定设定不会因关键词切换。
-9. 编译完整正文 hash 和字节大小后，ContextBuilder 沿原路径提供 Core Memory、时间、会话摘要、历史与当前 Run。这些数据仍是独立的低信任 user 消息，角色文件不改写会话或 Markdown 记忆。
+9. 编译完整正文 hash 和字节大小后，ContextBuilder 沿原路径提供 Core Memory、时间、会话摘要、历史与当前 Run。自动注入的 Core、时间和摘要是独立的低信任 user 数据消息，历史与当前 Run 保留原消息角色；角色文件不改写会话或 Markdown 记忆。
 10. 主模型依旧使用生产工具注册表与逐 Run 权限。后台 Learning/Curator、手动 Reflection 审批和 QQ 被动回复保持现有路径。JSON 角色只保留宿主的 Run 参与记录，不启动角色状态学习，也不会因为上游 heartbeat 等配置增加模型请求或主动消息。
 
 ## 异常与边界
@@ -39,4 +39,4 @@ compiler = CharacterContextCompiler(CharacterLoader().load("luna"))
 print(compiler.compile("你好")[0].text)
 ```
 
-`tests/test_character_persona.py` 验证五字段最小配置、指南读取、JSON 优先级、损坏输入、白名单、文件隔离、指纹和预算；`tests/test_conversation_prompt.py` 验证一条 System 与一份通用提示词；`tests/test_qq_integration.py` 验证 CLI→重启→QQ 共享历史和记忆、原有四个工具及没有角色状态服务。默认测试完全离线，真实对话效果仍需另行授权调用并人工审阅。构建后核对 wheel 中的 persona.json、本地指南、SOURCE.md 和 LICENSE。
+`tests/test_character_persona.py` 验证五字段最小配置、指南完整且仅编入一次、保留描述信息、通用表达位于末尾、JSON 优先级、损坏输入、白名单、文件隔离、指纹和预算；`tests/test_conversation_prompt.py` 验证一条 System 与一份通用提示词；`tests/test_qq_integration.py` 验证 CLI→重启→QQ 共享历史和记忆、原有四个工具及没有角色状态服务。默认测试完全离线，真实对话效果仍需另行授权调用并人工审阅。构建后核对 wheel 中的 persona.json、本地指南、SOURCE.md 和 LICENSE。

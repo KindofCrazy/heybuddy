@@ -30,6 +30,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 当前开发使用 [Luna persona.json](src/personal_agent/character/packages/luna/persona.json)，配置示例为 `AGENT_CHARACTER_ID=luna`。设定来自 [OpenPersona 的 ai-girlfriend 预设](https://github.com/acnlabs/OpenPersona/blob/main/presets/ai-girlfriend/persona.json)，已整理为中文并保留 MIT 声明，详见 [来源与适配](src/personal_agent/character/packages/luna/SOURCE.md)。原文件中的语音、自拍、主动联系和工具授权不随角色启用，实际能力继续由 heybuddy 提供。Miru/Sherlock 的完善与评测暂列入 [TODO](TODO.md)。
 
+[OpenPersona 组装对照](docs/openpersona-prompt-assembly.md) 解释 injection.md 与 SKILL.md 的区别、完整 behavior-guide.md 怎样参与编译，以及当前身份/背景、表达、指南和通用聊天规则的顺序。
+
 [角色对话自然度诊断](docs/character-dialogue-diagnosis.md) 对照 Miru/SillyTavern，说明自我分析、示例风格和时间冲突，并提供尚未替换生产配置的候选写法。
 
 [Holmes 与 Miru 的逐段改写](docs/holmes-miru-prompt-rewrite.md) 记录已应用的角色改写、运行时段落编译和一次无历史真实调用；本轮结果仍有自我说明问题，不宣称自然度已改善。

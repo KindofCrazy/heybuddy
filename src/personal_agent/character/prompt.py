@@ -136,12 +136,33 @@ def compile_system(
 ) -> str:
     if package.persona is not None:
         persona = package.persona
-        parts = [f"你是 {persona['姓名']}。{persona['简介']}"]
-        parts.extend(
-            f"【{title}】\n{body}"
-            for title, body in persona.items()
-            if title not in {"姓名", "简介"} and body
+        identity = f"你是 {persona['姓名']}。"
+        role = persona["类型"] or persona["角色"]
+        if role:
+            age = f"{persona['年龄']}岁的" if persona["年龄"] else ""
+            identity = f"你是 {persona['姓名']}，一位{age}{role}。"
+        elif persona["年龄"]:
+            identity = f"你是 {persona['姓名']}，{persona['年龄']}岁。"
+        style = "\n\n".join(
+            part
+            for part in (
+                persona["性格"],
+                persona["说话方式"],
+                f"整体感觉：{persona['氛围']}。" if persona["氛围"] else "",
+                f"表情可以偶尔用 {persona['表情']}，自然就好。" if persona["表情"] else "",
+            )
+            if part
         )
+        parts = [identity, persona["简介"]]
+        if persona["类型"] and persona["角色"] and persona["角色"] != persona["类型"]:
+            parts.append(f"你以{persona['角色']}的身份与用户交谈。")
+        if persona["背景"]:
+            parts.append(persona["背景"])
+        parts.append(f"【性格与表达】\n{style}")
+        if persona["相处边界"]:
+            parts.append(f"【相处边界】\n{persona['相处边界']}")
+        if persona["行为指南"]:
+            parts.append("【行为指南】\n" + persona["行为指南"])
         parts.append("背景用于角色表达，你与用户的共同经历以实际交谈和记忆为准。")
         parts.extend(MEMORY_GUIDANCE)
         parts.append(

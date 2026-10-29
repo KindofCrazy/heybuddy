@@ -36,7 +36,8 @@ def test_minimum_openpersona_needs_no_markdown_sections_examples_or_lore(tmp_pat
     compiler = CharacterContextCompiler(package)
     context = ContextBuilder(character=compiler)
     messages = context.for_request(context.build("你好"))
-    assert messages[0].text.startswith("你是 Luna。喜欢音乐和代码")
+    assert messages[0].text.startswith("你是 Luna。")
+    assert "喜欢音乐和代码" in messages[0].text
     assert messages[0].text.count(CONVERSATION_PROMPT) == 1
     assert (
         compiler.diagnostics()["system_hash"]
@@ -82,6 +83,18 @@ def test_unused_runtime_permissions_and_unknown_soul_fields_never_enter_prompt(t
     save_persona(tmp_path, document)
     prompt = CharacterContextCompiler(CharacterLoader(tmp_path).load("luna")).compile("你好")[0]
     assert "INERT_" not in prompt.text
+
+
+def test_full_guide_is_inlined_once_and_chat_style_remains_the_final_default():
+    package = CharacterLoader().load("luna")
+    prompt = CharacterContextCompiler(package).compile("你好")[0].text
+    assert prompt.startswith("你是 Luna，一位22岁的AI 女友。")
+    assert "陪伴者" in prompt and "💕" in prompt
+    assert package.persona["背景"] in prompt
+    assert prompt.count(package.persona["行为指南"]) == 1
+    assert prompt.endswith(CONVERSATION_PROMPT)
+    for heading in ("【年龄】", "【类型】", "【角色】", "【表情】", "【氛围】"):
+        assert heading not in prompt
 
 
 @pytest.mark.parametrize(
