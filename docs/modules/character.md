@@ -1,5 +1,7 @@
 # 被动角色系统
 
+本轮按 Miru 逐段重写 Sherlock 的 soul.md，增加可选外貌以及角色自有的行为、交谈、记忆和工具说明。`character/prompt.py::runtime_sections()` 对角色已提供的运行时段落只编译一次，缺失时回退共享默认，不再同时追加两份说明；旧四文件包不受影响。RUNTIME_ORDER 仅组织文字，不授予权限或新增工具。段落对应、单次真实调用及尚未解决的问题见 [逐段改写记录](../holmes-miru-prompt-rewrite.md)。tests/test_character_behavior.py 验证覆盖与回退；不把离线契约测试视作人格收益。
+
 ## 职责与组成
 
 角色定义采用 Miru 式单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。默认 Sherlock 包只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。Miru 的路径、缓存与状态机制见 [Miru 角色系统说明](../miru-character-system.md)。

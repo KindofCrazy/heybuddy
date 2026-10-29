@@ -1,5 +1,7 @@
 # 角色回复的自然度诊断与候选设置
 
+本页记录 aa828be 版本的诊断与早期候选。用户随后明确要求按 Miru 逐段改写并调用，当前角色改动和仍未解决的问题见 [Holmes 逐段改写](holmes-miru-prompt-rewrite.md)；下文保留为当时的分析，不代表当前角色正文仍未修改。
+
 本说明对照实际请求审计、本地 Miru 的 soul.md、agent_behavior.md 与 prompt.py，以及 [SillyTavern 角色设计文档](https://docs.sillytavern.app/usage/core-concepts/characterdesign/)。只读核对不调用模型。以下人格稿是待验证的候选，不替换生产角色，不宣称自然度已有提升；时间工具冲突是独立的确定性修复。
 
 ## 已确认的问题

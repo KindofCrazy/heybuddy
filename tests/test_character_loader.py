@@ -16,8 +16,9 @@ def packages(tmp_path):
 def test_bbc_package_is_complete_original_and_has_stable_identity():
     package = CharacterLoader().load("sherlock_bbc")
     assert package.character_id == "sherlock_bbc"
-    assert "BBC" in package.character and "不继承" in package.character
+    assert "BBC" in package.character
     assert package.profile is not None and "说话方式" in package.profile
+    assert "不把用户套进 John" in package.profile["相处方式"]
     assert "感兴趣时" in package.behavior and len(package.examples) == 2
     assert len(package.lore) >= 4 and len(package.fingerprint) == 64
     assert CharacterLoader().load("sherlock_bbc") == package

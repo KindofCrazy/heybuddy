@@ -58,6 +58,38 @@ MEMORY_GUIDANCE = (
     "需要确认过去具体说过什么时，使用当前可用的历史检索工具搜索，必要时展开原文。"
     "普通闲聊和通用问题，直接回应即可。",
 )
+RUNTIME_ORDER = (
+    "行为准则",
+    "当前交谈方式",
+    "记忆是什么",
+    "什么时候检索",
+    "工具",
+    "怎样使用记忆",
+    "最近的状态",
+    "绝对不要做的事",
+    "该做什么",
+)
+
+
+def runtime_sections(profile: dict[str, str]) -> list[str]:
+    """Character-authored sections replace shared defaults once, without changing permissions."""
+    defaults = {
+        "当前交谈方式": "回应用户刚刚发来的消息。先接住他正在说的内容，"
+        "需要分析时投入，只想聊两句时也可以留在交谈里。",
+        "记忆是什么": MEMORY_GUIDANCE[0].partition("\n")[2],
+        "什么时候检索": MEMORY_GUIDANCE[1].partition("\n")[2],
+        "怎样使用记忆": "记忆帮助你理解对方和延续交谈。确有依据时自然提起旧事和偏好；"
+        "熟悉之后可以省略已知背景。索引只是线索，具体经历要依据原文；"
+        "不确定或可能过时的信息，先核实或用询问的方式提起。",
+        "最近的状态": "后续上下文可能提供近期关注和短期模拟状态。"
+        "让它轻微影响语气和注意力，不逐条复述，也不把它当成用户的新消息。"
+        "当前情境可以改变关注，不需要刻意表演某种情绪。",
+    }
+    return [
+        f"【{title}】\n{body}"
+        for title in RUNTIME_ORDER
+        if (body := profile.get(title, defaults.get(title)))
+    ]
 
 
 def render_sections(text: str, headings: dict[str, str]) -> str:
@@ -104,7 +136,18 @@ def compile_system(
     if package.profile is not None:
         profile = package.profile
         parts = [profile["身份"]]
-        for title in ("性格", "说话方式", "背景", "兴趣", "情绪反应", "相处方式", "存在方式"):
+        for title in (
+            "性格",
+            "说话方式",
+            "外貌",
+            "背景",
+            "兴趣",
+            "情绪反应",
+            "相处方式",
+            "存在方式",
+        ):
+            if title not in profile:
+                continue
             if title == "情绪反应" and not include_behavior:
                 continue
             parts.append(f"【{title}】\n{profile[title]}")
@@ -118,6 +161,8 @@ def compile_system(
                 "情绪反应",
                 "相处方式",
                 "存在方式",
+                "外貌",
+                *RUNTIME_ORDER,
             }:
                 parts.append(f"【{title}】\n{body}")
         if include_behavior:
@@ -125,19 +170,7 @@ def compile_system(
                 "【表达参考：不是共同经历，也不是固定台词】\n"
                 + "\n\n".join(render_sections(example.text, {}) for example in examples)
             )
-        parts.extend(
-            [
-                "【当前交谈方式】\n回应用户刚刚发来的消息。先接住他正在说的内容，"
-                "需要分析时投入，只想聊两句时也可以留在交谈里。",
-                *MEMORY_GUIDANCE,
-                "【怎样使用记忆】\n记忆帮助你理解对方和延续交谈。确有依据时自然提起旧事和偏好；"
-                "熟悉之后可以省略已知背景。索引只是线索，具体经历要依据原文；"
-                "不确定或可能过时的信息，先核实或用询问的方式提起。",
-                "【最近的状态】\n后续上下文可能提供近期关注和短期模拟状态。"
-                "让它轻微影响语气和注意力，不逐条复述，也不把它当成用户的新消息。"
-                "当前情境可以改变关注，不需要刻意表演某种情绪。",
-            ]
-        )
+        parts.extend(runtime_sections(profile))
         return "\n\n".join(parts)
     parts = [
         "【角色设定】\n" + render_sections(package.character, PROFILE_HEADINGS),

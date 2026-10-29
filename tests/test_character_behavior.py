@@ -65,6 +65,23 @@ def test_custom_profile_sections_survive_compilation_without_pronoun_rewriting()
     assert "【Custom section】\n你看着她，她看着用户。" in prompt
 
 
+def test_character_runtime_sections_replace_defaults_once_and_keep_compatibility():
+    package = CharacterLoader().load("sherlock_bbc").model_copy(deep=True)
+    package.profile["当前交谈方式"] = "自定义交谈段落。"
+    prompt = CharacterContextCompiler(package).compile("hello")[0].text
+    assert prompt.count("【当前交谈方式】") == 1
+    assert "自定义交谈段落。" in prompt
+    assert "回应用户刚刚发来的消息。先接住" not in prompt
+    assert prompt.count("【工具】") == 1
+    del package.profile["当前交谈方式"]
+    del package.profile["记忆是什么"]
+    fallback = CharacterContextCompiler(package).compile("hello")[0].text
+    assert fallback.count("【当前交谈方式】") == 1
+    assert "回应用户刚刚发来的消息。先接住" in fallback
+    assert fallback.count("【记忆是什么】") == 1
+    assert "会话摘要用于接续当前交谈，不等于原话" in fallback
+
+
 def test_examples_cover_required_situations_and_behavior_is_not_a_catchphrase():
     package = CharacterLoader().load("sherlock_bbc")
     for word in ("感兴趣", "无聊", "被挑战", "错了", "受挫", "成果", "刻板"):
