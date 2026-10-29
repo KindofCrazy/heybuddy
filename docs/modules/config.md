@@ -104,6 +104,8 @@ V0.7.2 新增 AGENT_MEMORY_AUTOMATION=suggest、AGENT_MEMORY_AUTOMATION_MAX_REQU
 
 `Settings` 同时包含 `channels.qq.config.QQSettings`，`ENV_FIELDS` 将 `qq_` 字段映射为 `AGENT_QQ_*`。只有 QQ 启动入口调用 `require_qq()` 检查 enabled、凭据与单一 OpenID，原 CLI 不要求 QQ 凭证。SecretStr 不显示明文；白名单拒绝通配符与多用户。队列、超时、回复窗口/段数、UTF-8 字节、重连次数和退避都设上限，详见 [qq.md](qq.md)。
 
+自然拆条与轻量停顿默认开启，由 `AGENT_QQ_HUMANIZE_ENABLED` 统一关闭。`MS_PER_CHAR=25`、`MAX_DELAY_SECONDS=1.5`、`GAP_SECONDS=1.2`、`JITTER=0.2` 均带 `AGENT_QQ_HUMANIZE_` 前缀；分别限制在 0–150、0–5、0–2、0–0.5，拒绝非有限值。设暂停上限为 0 仅保留拆条。字段通过同一映射进入完整 `load_settings()` 和只需 QQ 配置的 `load_qq_settings()`，不读取角色或更改模型请求。验证见 `tests/test_qq_humanize.py`。
+
 ## 宿主工具数量限制
 
 AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CALLS_PER_RUN 默认 256、范围 1–1024。Settings 将它们传给原 Agent；在响应进入工具调用 Journal 或执行前检查整批数量，超限返回 invalid_response，已执行的更早批次保留，不截取执行部分批次、不自动重试。限制与 max_rounds/模型输出 token 限额独立。测试见 tests/test_agent.py；原 write-before-execute 和结果配对校验保持。

@@ -7,7 +7,8 @@ from datetime import UTC, datetime
 from typing import Protocol
 
 from personal_agent.channels.qq.config import QQError, QQSettings
-from personal_agent.channels.qq.events import parse_text, split_reply
+from personal_agent.channels.qq.events import parse_text
+from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.core.models import RunResult
 from personal_agent.runtime import ChatService
 from personal_agent.storage.qq import QQInbox
@@ -27,6 +28,7 @@ class QQAdapter:
         self.service = service
         self.inbox = inbox
         self.sender = sender
+        self.humanizer = Humanizer(settings)
         if service.sessions is None:
             raise QQError("qq_sessions_required", fatal=True)
         if (
@@ -84,14 +86,25 @@ class QQAdapter:
             try:
                 result = await self._process(row)
             except asyncio.CancelledError:
-                self.inbox.mark(row["sequence"], "uncertain", error_code="qq_shutdown")
+                self.inbox.mark(
+                    row["sequence"],
+                    "uncertain",
+                    sent_parts=row.get("sent_parts", 0),
+                    error_code="qq_shutdown",
+                )
                 raise
             except Exception:
                 # Do not print private exception bodies or continue after storage failure.
-                self.inbox.mark(row["sequence"], "uncertain", error_code="qq_processing_error")
+                self.inbox.mark(
+                    row["sequence"],
+                    "uncertain",
+                    sent_parts=row.get("sent_parts", 0),
+                    error_code="qq_processing_error",
+                )
                 raise QQError("qq_processing_error", fatal=True) from None
 
     async def _process(self, row: dict) -> RunResult | None:
+        started = time.monotonic()
         row["deadline"] = time.monotonic() + min(
             self.settings.qq_reply_window_seconds, max(0, self._remaining(row))
         )
@@ -119,18 +132,20 @@ class QQAdapter:
                 if result.status == "completed"
                 else "这次处理未完成，请稍后发一条新消息。已执行的操作不会自动重试。"
             )
-        await self._reply(row, text)
+        await self._reply(row, text, elapsed=time.monotonic() - started)
         return result
 
     def _latest_run(self) -> str | None:
         return self.inbox.latest_run_id(self.conversation_id)
 
-    async def _reply(self, row: dict, text: str) -> None:
+    async def _reply(self, row: dict, text: str, *, elapsed: float = 0) -> None:
         sent = 0
-        for sequence, part in enumerate(
-            split_reply(text, self.settings.qq_text_max_bytes, self.settings.qq_reply_max_parts), 1
-        ):
+        for sequence, part in enumerate(self.humanizer.split(text), 1):
             delay = max(0, self._next_send - time.monotonic())
+            pause = self.humanizer.delay(part, first=sequence == 1, elapsed=elapsed)
+            # Cosmetic pauses overlap rate limiting, and never consume the last send window.
+            if self._remaining(row) > max(delay, pause) + self.settings.qq_send_timeout_seconds:
+                delay = max(delay, pause)
             if self._remaining(row) <= delay + self.settings.qq_send_timeout_seconds:
                 self.inbox.mark(
                     row["sequence"], "failed", sent_parts=sent, error_code="qq_reply_expired"
@@ -138,6 +153,12 @@ class QQAdapter:
                 return
             if delay:
                 await asyncio.sleep(delay)
+            # Scheduling or wall-clock movement may have consumed the window during sleep.
+            if self._remaining(row) <= self.settings.qq_send_timeout_seconds:
+                self.inbox.mark(
+                    row["sequence"], "failed", sent_parts=sent, error_code="qq_reply_expired"
+                )
+                return
             self.inbox.mark(row["sequence"], "sending", sent_parts=sent)
             try:
                 async with asyncio.timeout(self.settings.qq_send_timeout_seconds):
@@ -155,6 +176,8 @@ class QQAdapter:
                     raise
                 return
             sent += 1
+            row["sent_parts"] = sent
+            self.inbox.mark(row["sequence"], "processed", sent_parts=sent)
             self._next_send = time.monotonic() + self.settings.qq_send_interval_seconds
         self.inbox.mark(row["sequence"], "replied", sent_parts=sent)
         logger.info("qq_replied parts=%d", sent)

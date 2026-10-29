@@ -12,6 +12,8 @@ QQAdapter._process() 对所有斜杠管理命令返回本地 CLI 提示，普通
 
 `src/personal_agent/channels/qq/config.py` 定义可选宿主配置和不含原始错误体的 `QQError`。`api.py::QQAPI` 仅连接固定官方 HTTPS 域名，缓存短期 AccessToken，发现 Gateway，发送绑定原消息的纯文本被动回复。`gateway.py::QQGateway` 实现单分片 Gateway，不包含 Agent Loop，也不读取角色或学习状态。
 
+`humanize.py::Humanizer` 仅负责发送计划中的自然拆条和轻量停顿，不调用模型、不改人格或记忆、不执行网络发送。`adapter.py::QQAdapter` 继续统一处理节流、回复期限、取消和回执。模型生成的完整回答仍只按原样保存在 Journal，不将气泡拆成多个模型消息。
+
 ## 代码实际运行路径
 
 1. Host 验证 `QQSettings.require_qq()`，仅 QQ 入口要求 enabled、AppID、Secret 和单一 OpenID。CLI 不要求 QQ 凭证。
@@ -19,6 +21,31 @@ QQAdapter._process() 对所有斜杠管理命令返回本地 CLI 提示，普通
 3. `serve()` 等待 Hello，使用平台的 `heartbeat_interval`，发送 Identify（`GROUP_AND_C2C_EVENT = 1<<25`、`shard=[0,1]`）或已有 session 的 Resume。READY/RESUMED 后分发事件。
 4. 宿主接收回调返回后才推进内存 sequence。接收回调必须完成持久化或明确忽略，不能等待模型/回复。周期心跳携带最新已接受 sequence；缺少 ACK 则断开并有限重连。
 5. `QQAPI.send_text()` 固定 POST `/v2/users/{user_openid}/messages`，只发送 `msg_type=0`、content、原 `msg_id`、递增 `msg_seq`。不发送主动消息，不自动重试 POST。
+
+## 自然拆条与发送节奏
+
+`QQAdapter._process()` 用 monotonic 记录本次处理耗时，将完整回答和耗时交给 `_reply()`。`Humanizer.split()` 先调用 `events.split_reply()` 取得原有 UTF-8 字节限制计划，再仅用剩余段数按换行及句末标点拆成聊天气泡；短于六字符的片段优先和后一句放在一起，溢出片段按原空白合回末条。因此自然拆条不会挤占原本能发送的正文容量，也不会超过宿主的段数/字节上限。
+
+识别到代码标记、缩进代码、列表、标题、表格、引用、链接或数学标记时，整条回答跳过额外自然拆条。它们仍遵守原平台字节限制，过长时仍可能因硬限制分段或附续问提示；不承诺跨段保留完整代码块。普通文本的段首尾空白会被去除，不改写正文。该规则是保守的语法识别，不是语义分类模型。
+
+`Humanizer.delay()` 对首段按字数估算暂停，默认 25ms/字符，加入 ±20% 波动后再限制为最多 1.5 秒；本次前台处理耗时从首段暂停中扣除，生成较慢时直接发送。后续段以默认 1.2 秒条间暂停加同样波动，并受同一单次上限限制。暂停和 `qq_send_interval_seconds` 取较大值，不叠加等待。每次暂停均使用可取消的 `asyncio.sleep()`，先检查回复窗口；装饰性暂停会耗尽发送预留时间时直接省略，但仍执行必要节流。醒来后再次检查期限，过期停止发送，不转成主动消息。
+
+`AGENT_QQ_HUMANIZE_ENABLED=false` 同时关闭额外拆条和装饰性停顿，恢复原字节限制拆分及固定节流。其余有界配置为 `AGENT_QQ_HUMANIZE_MS_PER_CHAR`（0–150）、`MAX_DELAY_SECONDS`（0–5）、`GAP_SECONDS`（0–2）、`JITTER`（0–0.5），后三者也使用 `AGENT_QQ_HUMANIZE_` 前缀；单次暂停上限设为 0 可只体验拆条。没有深夜减速、模拟睡眠、输入状态 API 或额外后台任务。
+
+发送成功后立即保存 `sent_parts`，下一段等待期间仍可查看确认进度。关闭、发送异常或存储错误保留内存中已确认段数；重启按既有规则将未终结回执归为 uncertain，不恢复剩余气泡。等待期间的新输入按既有队列串行处理，不打断已生成回答；Ctrl+C 可取消等待。外部发送成功但回执落库失败仍存在双系统窗口，不声称已回滚或能够可靠重发。
+
+最小离线例子（无需 QQ 或模型配置）：
+
+```python
+from personal_agent.channels.qq.config import QQSettings
+from personal_agent.channels.qq.humanize import Humanizer
+
+human = Humanizer(QQSettings(qq_humanize_jitter=0))
+print(human.split("今天终于跑通了？\n之前卡住的地方，最后怎么解决的？"))
+print(human.delay("今天终于跑通了？", first=True, elapsed=2))  # 0.0
+```
+
+`tests/test_qq_humanize.py` 验证拆条、结构化内容、容量保留、关闭开关、延迟/波动上限与环境配置；`tests/test_qq_adapter.py` 用 Fake Provider、可控时钟和发送器验证完整 Journal、零额外模型请求、生成时间抵扣、节流重叠、期限前后检查、等待取消/排队及第二条发送失败。运行 `uv run pytest tests/test_qq_humanize.py tests/test_qq_adapter.py`；测试不依赖真实等待来证明时间策略，也不证明主观自然度已提升。
 
 ## 异常与边界
 

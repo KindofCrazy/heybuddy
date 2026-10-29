@@ -52,6 +52,24 @@ AGENT_MEMORY_AUTOMATION=off
 
 模型结果与工具运行保存在原 messages Journal。发送失败不重跑 Agent；某段已发送、后段失败时，已发段不会撤销。回复始终绑定原 `msg_id`、递增 msg_seq，最多四段；长回答按自然断点控制 UTF-8 字节，超出段数给出简短续问提示。当前文档对时效存在冲突，本地保守使用 240 秒，过期后绝不转换成主动消息。
 
+## 聊天气泡与停顿
+
+QQ 默认开启自然拆条：普通聊天按换行或句末标点分成最多四个气泡，短碎片合并；代码、列表、表格与链接等结构化回答跳过额外拆条。原来的每段字节上限仍适用，自然拆条不会导致可发送正文变少。
+
+首条按 25ms/字符估算轻量暂停，扣除模型生成等前台处理已花费的时间；后续条间默认约 1.2 秒，并有 ±20% 波动。每次装饰性暂停最多 1.5 秒，与原发送节流取较大值，临近回复期限时省略装饰性暂停。没有额外模型调用；不按深夜时段变慢，也不发送“正在输入”状态。退出时取消等待，已经发送的气泡保留确认段数，不自动补发。
+
+配置可从 `.env.example` 对照追加，重启 QQ 进程后生效：
+
+```dotenv
+AGENT_QQ_HUMANIZE_ENABLED=true
+AGENT_QQ_HUMANIZE_MS_PER_CHAR=25
+AGENT_QQ_HUMANIZE_MAX_DELAY_SECONDS=1.5
+AGENT_QQ_HUMANIZE_GAP_SECONDS=1.2
+AGENT_QQ_HUMANIZE_JITTER=0.2
+```
+
+将 `AGENT_QQ_HUMANIZE_ENABLED=false` 可恢复原字节限制分段及固定节流；将 `AGENT_QQ_HUMANIZE_MAX_DELAY_SECONDS=0` 可保留自然拆条、去掉装饰性停顿。`AGENT_QQ_SEND_INTERVAL_SECONDS` 仍是必须遵守的最小发送间隔。CLI 输出不受这些 QQ 配置影响。
+
 ## 安全状态与排错
 
 | 现象/安全代码 | 检查事项 |

@@ -16,6 +16,7 @@ from personal_agent.config import Settings, load_settings
 
 
 def config(**kwargs):
+    kwargs.setdefault("qq_humanize_enabled", False)
     return QQSettings(
         qq_enabled=True,
         qq_app_id="12345",

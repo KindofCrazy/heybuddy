@@ -1,8 +1,10 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
+from personal_agent.channels.qq import adapter as adapter_module
 from personal_agent.channels.qq.adapter import QQAdapter
 from personal_agent.channels.qq.config import QQError
 from personal_agent.channels.qq.events import parse_text, split_reply
@@ -384,3 +386,156 @@ def test_local_conversation_change_does_not_reroute_received_text(state):
     another = sessions.new()
     assert inbox.claim(another.id) is None
     assert rows(db)[0]["error_code"] == "qq_conversation_changed"
+
+
+@pytest.fixture
+def delivery_clock(monkeypatch):
+    clock = SimpleNamespace(now=0.0, sleeps=[])
+
+    async def sleep(seconds):
+        clock.sleeps.append(seconds)
+        clock.now += seconds
+
+    monkeypatch.setattr(adapter_module, "time", SimpleNamespace(monotonic=lambda: clock.now))
+    monkeypatch.setattr(
+        adapter_module, "asyncio", SimpleNamespace(**{**vars(asyncio), "sleep": sleep})
+    )
+    return clock
+
+
+async def test_natural_delivery_keeps_one_original_journal_answer(state, delivery_clock):
+    db, sessions, provider, service, inbox = state
+    text = "今天终于跑通了？\n之前卡住的地方，最后怎么解决的？"
+    provider.responses = [ModelResponse(text=text)]
+    sender = Sender()
+    adapter = QQAdapter(
+        config(qq_humanize_enabled=True, qq_humanize_jitter=0), service, inbox, sender
+    )
+    await adapter.accept(event())
+    await adapter._process(inbox.claim(sessions.current.id))
+    assert [m[-1] for m in sender.messages] == text.splitlines()
+    assert [m[2] for m in sender.messages] == [1, 2]
+    assert len(provider.requests) == 1
+    assert db.load_messages(sessions.current.id)[-1].content.text == text
+    assert rows(db)[0]["status"] == "replied" and rows(db)[0]["sent_parts"] == 2
+    assert delivery_clock.sleeps == pytest.approx([len(text.splitlines()[0]) * 0.025, 1.2])
+
+
+async def test_generation_time_counts_toward_first_bubble_wait(state, delivery_clock, monkeypatch):
+    _, sessions, _, service, inbox = state
+    original = service.run
+
+    async def slow_generation(*args, **kwargs):
+        delivery_clock.now += 10
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(service, "run", slow_generation)
+    adapter = QQAdapter(config(qq_humanize_enabled=True), service, inbox, Sender())
+    await adapter.accept(event())
+    await adapter._process(inbox.claim(sessions.current.id))
+    assert delivery_clock.sleeps == []
+
+
+@pytest.mark.parametrize("window,expected_status", [(10.1, "replied"), (10, "failed")])
+async def test_deadline_skips_cosmetic_wait_but_keeps_send_reserve(
+    state, delivery_clock, window, expected_status
+):
+    db, sessions, _, service, inbox = state
+    sender = Sender()
+    adapter = QQAdapter(config(qq_humanize_enabled=True), service, inbox, sender)
+    await adapter.accept(event())
+    row = inbox.claim(sessions.current.id)
+    row["deadline"] = window
+    await adapter._reply(row, "今天终于跑通了。")
+    assert delivery_clock.sleeps == []
+    assert rows(db)[0]["status"] == expected_status
+    assert len(sender.messages) == (expected_status == "replied")
+
+
+async def test_rate_limit_overlaps_pause_and_deadline_is_rechecked_after_sleep(
+    state, delivery_clock
+):
+    db, sessions, _, service, inbox = state
+    sender = Sender()
+    adapter = QQAdapter(
+        config(qq_humanize_enabled=True, qq_humanize_jitter=0), service, inbox, sender
+    )
+    await adapter.accept(event())
+    row = inbox.claim(sessions.current.id)
+    adapter._next_send = 1
+    row["deadline"] = 30
+    await adapter._reply(row, "今天终于跑通了。\n最后怎么解决的？")
+    assert delivery_clock.sleeps == pytest.approx([1, 1.2])
+    assert len(sender.messages) == 2
+    # Simulate a heavily delayed wake-up: no send after the deadline.
+    await adapter.accept(event("late"))
+    row = inbox.claim(sessions.current.id)
+    row["deadline"] = delivery_clock.now + 11
+    adapter._next_send = delivery_clock.now + 0.5
+    delivery_clock.now += 0.2
+    original_sleep = adapter_module.asyncio.sleep
+
+    async def late_sleep(seconds):
+        await original_sleep(seconds + 5)
+
+    adapter_module.asyncio.sleep = late_sleep
+    await adapter._reply(row, "今天终于跑通了。")
+    assert len(sender.messages) == 2
+    assert rows(db)[1]["error_code"] == "qq_reply_expired"
+
+
+async def test_cancel_between_bubbles_preserves_confirmed_parts_and_queued_input(
+    state, monkeypatch
+):
+    db, _, provider, service, inbox = state
+    provider.responses = [ModelResponse(text="今天终于跑通了。\n最后怎么解决的？")]
+    waiting = asyncio.Event()
+
+    async def pause(seconds):
+        waiting.set()
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(
+        adapter_module, "asyncio", SimpleNamespace(**{**vars(asyncio), "sleep": pause})
+    )
+    sender = Sender()
+    adapter = QQAdapter(
+        config(qq_humanize_enabled=True, qq_humanize_ms_per_char=0), service, inbox, sender
+    )
+    adapter.start()
+    try:
+        await adapter.accept(event())
+        await asyncio.wait_for(waiting.wait(), 2)
+        assert rows(db)[0]["sent_parts"] == 1
+        await adapter.accept(event("queued"))
+    finally:
+        await adapter.close()
+    assert len(provider.requests) == len(sender.messages) == 1
+    assert [r["status"] for r in rows(db)] == ["uncertain", "received"]
+    assert rows(db)[0]["sent_parts"] == 1
+    inbox.recover()
+    assert rows(db)[0]["sent_parts"] == 1
+
+
+async def test_second_natural_bubble_failure_never_replays_answer(state, delivery_clock):
+    db, _, provider, service, inbox = state
+    provider.responses = [ModelResponse(text="今天终于跑通了。\n最后怎么解决的？")]
+
+    class PartialSender(Sender):
+        async def send_text(self, *args):
+            await super().send_text(*args)
+            if len(self.messages) == 2:
+                raise QQError("qq_network_error", uncertain=True)
+
+    sender = PartialSender()
+    adapter = QQAdapter(config(qq_humanize_enabled=True), service, inbox, sender)
+    adapter.start()
+    try:
+        await adapter.accept(event())
+        await settled(adapter)
+        await adapter.accept(event())
+        assert len(provider.requests) == 1 and len(sender.messages) == 2
+        assert rows(db)[0]["status"] == "uncertain"
+        assert rows(db)[0]["sent_parts"] == 1
+    finally:
+        await adapter.close()

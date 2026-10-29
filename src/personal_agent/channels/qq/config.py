@@ -34,6 +34,11 @@ class QQSettings(BaseModel):
     qq_text_max_bytes: int = Field(default=1500, ge=128, le=1500)
     qq_input_max_bytes: int = Field(default=16384, ge=128, le=65536)
     qq_send_interval_seconds: float = Field(default=1, ge=0.1, le=10)
+    qq_humanize_enabled: bool = True
+    qq_humanize_ms_per_char: float = Field(default=25, ge=0, le=150)
+    qq_humanize_max_delay_seconds: float = Field(default=1.5, ge=0, le=5)
+    qq_humanize_gap_seconds: float = Field(default=1.2, ge=0, le=2)
+    qq_humanize_jitter: float = Field(default=0.2, ge=0, le=0.5)
     qq_shutdown_seconds: float = Field(default=10, gt=0, le=30)
     qq_discovery_seconds: float = Field(default=120, gt=0, le=600)
 
