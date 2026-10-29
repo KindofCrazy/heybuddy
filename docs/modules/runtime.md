@@ -1,5 +1,7 @@
 # Shared Chat Runtime
 
+assemble_chat() 向 create_builtin_registry 显式传入 local_time=True，使 CLI/QQ 的时间工具与 ContextBuilder 时间注入使用同一宿主本地时钟和显示格式；该选择不改变默认离线 Harness 的 UTC 契约。
+
 生产工具装配关闭 add_numbers 演示，并启用 archival_memory_search 统一只读入口。CLI、QQ 和只读 Observatory 都沿用该装配，普通聊天通常提供四个工具。离线测试使用兼容注册表，不代表生产能力。tests/test_config_cli.py 和 test_qq_integration.py 检查实际装配的模型工具定义，tests/test_archival_memory.py 验证统一入口。
 
 ## 职责与架构组成

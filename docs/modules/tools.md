@@ -1,5 +1,7 @@
 # 工具注册与执行
 
+生产时间工具采用 create_builtin_registry(..., local_time=True)，与自动注入时间共用 core.temporal.temporal_context，返回本地 YYYY-MM-DD HH:MM:SS，不再让 UTC 工具覆盖已提供的本地时间。上下文时间够用时可直接使用，需要刷新再调用。默认兼容注册表保留 UTC 行为，不改变历史评测基线。tests/test_tools.py 校验同源本地输出，tests/test_qq_integration.py 校验实际生产工具描述。
+
 生产 runtime.assemble_chat() 使用 create_builtin_registry(..., include_add_numbers=False)，不向主模型注册算术演示；register_memory_tools(..., unified_reads=True) 把主题搜索、路径读取、目录与索引检查收拢到 archival_memory_search。旧 Harness 和离线评测保留兼容注册表，避免改动冻结的工具调用基线。生产 CLI/QQ 默认四个工具、完整记忆授权时十个。
 
 统一工具由 memory/archival.py::ArchivalMemoryArguments 严格校验互斥操作，再交给 memory/search.py::search_topics() 或现有 MemoryFS/Index 只读方法；搜索先沿索引建立有界目录，再读取有限正文，不新增知识副本、向量库或写权限。参数、搜索范围、分页与验证见 [Memory](memory.md) 的统一只读入口，以及 tests/test_archival_memory.py。

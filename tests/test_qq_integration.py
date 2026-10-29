@@ -100,6 +100,8 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             await settled(adapter)
             request = provider.requests[0]
             assert "add_numbers" not in {tool.name for tool in provider.tools[0]}
+            clock = next(t for t in provider.tools[0] if t.name == "get_current_time")
+            assert "UTC" not in clock.description
             assert {tool.name for tool in provider.tools[0]} == {
                 "get_current_time",
                 "archival_memory_search",

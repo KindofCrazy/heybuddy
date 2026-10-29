@@ -28,6 +28,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [当前记忆系统与模型工具](docs/memory-and-tools.md) 说明 persona.md 与 soul.md 的分工、记忆存储/检索/更新路径，以及默认工具和逐 Run 授权。
 
+[角色对话自然度诊断](docs/character-dialogue-diagnosis.md) 对照 Miru/SillyTavern，说明自我分析、示例风格和时间冲突，并提供尚未替换生产配置的候选写法。
+
 [Miru 记忆架构](docs/miru-memory-system.md) 对照核心块、主题槽位、后台写入和检索工具；生产入口已移除 add_numbers 演示工具。
 
 [P3 短期状态](docs/modules/character-state.md) 仅在角色 E2 启用后于 Idle 维护，按真实角色 Run 来源保存模拟 Mood/Focus，有独立有效期并共享 P1/P2 预算；不主动发消息。`/character status|run|retry` 查看或调试。

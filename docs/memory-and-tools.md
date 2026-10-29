@@ -79,7 +79,7 @@ CLI `/memory read <请求>` 仅在本 Run 增加 memory.read，共 5 个工具�
 
 角色共用说明新增【记忆是什么】与【什么时候检索】，分别解释材料类型和检索时机，不重复工具参数，也不恢复已删除的审计 JSON 或【真实与诚实】。
 
-core.temporal.temporal_context() 发送给模型的 current_time 和 previous_interaction_at 使用本地 YYYY-MM-DD HH:MM:SS，不显示时区或单独 timezone 字段；内部转换和间隔计算仍使用带时区 datetime，跨午夜保持准确。本次修改针对自动注入的时间显示，不修改 SQLite 时间记录或独立时间工具的返回契约。
+core.temporal.temporal_context() 发送给模型的 current_time 和 previous_interaction_at 使用本地 YYYY-MM-DD HH:MM:SS，不显示时区或单独 timezone 字段；内部转换和间隔计算仍使用带时区 datetime，跨午夜保持准确。生产 get_current_time 也共用该时钟，避免用 UTC 覆盖已提供的本地时间；SQLite 时间记录不变，默认离线 Harness 保留旧 UTC 契约。
 
 源码入口：`runtime.py::assemble_chat()`、`sessions.py::SessionManager.context()`、`core/context.py::ContextBuilder.prepare()`、`retrieval.py::ContextRetriever`、`memory/retrieval.py::MemoryLookup`、`learning/service.py::MemoryLearningService`、`tools/registry.py::ToolRegistry`。模块细节见 [Memory](modules/memory.md)、[Learning](modules/learning.md)、[Retrieval](modules/retrieval.md)、[Recall](modules/recall.md) 和 [工具](modules/tools.md)。
 

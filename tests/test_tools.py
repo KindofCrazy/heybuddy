@@ -21,6 +21,18 @@ async def test_builtin_time_is_aware_utc():
     assert result.data["timezone"] == "UTC"
 
 
+async def test_production_clock_uses_same_local_time_source_as_context(monkeypatch):
+    from personal_agent.tools import builtin
+
+    monkeypatch.setattr(
+        builtin, "temporal_context", lambda previous: {"current_time": "2026-10-29 18:29:21"}
+    )
+    registry = create_builtin_registry(include_add_numbers=False, local_time=True)
+    result = await registry.execute(ToolCall(id="clock", name="get_current_time", arguments="{}"))
+    assert result.ok and result.data == {"time": "2026-10-29 18:29:21"}
+    assert "UTC" not in registry.definitions()[0].description
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
