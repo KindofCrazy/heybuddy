@@ -14,7 +14,7 @@
 
 1. `uv run python -m personal_agent.evaluation.character` 进入 main()，解析变体、case IDs、请求/token 额度和输出目录，验证目录在源码库内时被完整忽略，再创建唯一 p3-* 子目录。默认构造 OfflineProvider，不加载 Settings/.env/Key，不创建真实 API Client。
 2. evaluate() 加载同一个 sherlock_bbc 包。每个场景每一轮重建 InMemoryHistory 和 FixedRetrieval，固定时间、工具、模型/窗口/输出参数并计算 condition_hash。固定检索是合成 P1/P2 输出夹具，不重新生成 Episode/Thread，不代表组织模型质量。
-3. E0 只有 Profile；E1 增加 Behavior 和 Examples；E2 再接入受控状态夹具。漂移样本前七轮 curious、随后 focused，第十四轮起无有效状态；状态更新由运行时测试验证，评测不增加维护请求。Lore/历史/检索规则相同。
+3. 原生 soul 包中，E0 保留身份、性格、说话方式和相处/存在方式；E1 加入情绪反应及固定表达参考；E2 再接入受控状态夹具。旧包仍按 Profile/Behavior/Examples 分层。漂移样本前七轮 curious、随后 focused，第十四轮起无有效状态；状态更新由运行时测试验证，评测不增加维护请求。Lore/历史/检索规则相同。新包指纹与旧包不同，旧真实结果只代表原版本，不声称此次自然度提升。
 4. Agent.run() 正常生成，Trace 在每次请求前 Budget.reserve()，记录合成完整请求、答案、工具调用、Provider usage 和耗时。角色编译为可读分节 System 并位于 Host 执行契约之前；identity_every_request 检查首条 System 的 character_identity 标识。工具案例执行真实 add_numbers，Registry 校验和 call_id 配对仍执行；没有 Memory Apply 或外部副作用工具。
 5. 下一轮使用相同合成 teacher-forced 前文，不使用候选答案，确保三组暴露条件完全相同。condition_hash 可逐轮配对。该模式测固定历史下的漂移敏感性，不代表自由生成长对话的自反馈漂移。
 6. 每组输出独立 E*.json，包含机械 checks、请求/估算/usage/延迟、待人工评分 rubric 和合成请求。usage 是本组增量，shared_budget 是整个运行累计。CLI stdout 只给目录、检查和总额度，不打印正文/推理。

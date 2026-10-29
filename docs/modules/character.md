@@ -1,49 +1,45 @@
-# Passive Character Runtime
-
-主对话编译结果的自然语言统一使用中文，包括角色边界、情境标签和示例标题。源文件中的英文章节锚点保留用于兼容本地包与示例选择，在编译时映射为中文；未知自定义章节和正文保持原样，不进行不可靠的自动翻译。工具名、参数名、来源标签等程序标识及人名保持原样。逐段设计评价见 [Miru 对照](../prompt-comparison-miru.md)。
+# 被动角色系统
 
 ## 职责与组成
 
-`character/models.py` 定义 CharacterPackage、Section、独立大小预算和安全错误。`character/loader.py::CharacterLoader.load()` 只读取 Host 指定本地根目录下的四个固定 Markdown，不导入包内代码，不下载或执行任何内容。`character/prompt.py` 将包编译成可读的角色 System 分节，并确定性选择示例；`character/context.py` 负责变体、字节预算、状态和来源引用。包放在 src/personal_agent/character/packages，随 wheel/sdist 分发；Markdown 是角色定义的唯一权威内容，fingerprint 仅用于变化检测，不是人格副本或版本数据库。
+角色定义采用 Miru 式单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。默认 Sherlock 包只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。Miru 的路径、缓存与状态机制见 [Miru 角色系统说明](../miru-character-system.md)。
 
-## 实际运行路径
+- `character/models.py` 定义 CharacterPackage、Section、字节预算和短期状态。可选 profile 是 soul 解析出的普通字典，不是独立权威存储。
+- `character/loader.py::CharacterLoader.load()` 读取宿主选定的本地角色包，校验路径、编码、章节与大小，并计算内容指纹。
+- `character/prompt.py::compile_system()` 按章节组装主对话人格；新格式不按关键词选择情境规则。
+- `character/context.py::CharacterContextCompiler` 管理 E0/E1/E2、静态与动态字节预算、短期状态和角色参与来源。
+- `character/state.py::CharacterStateService` 复用同一角色定义提议有界短期状态，不执行工具或发送消息。
 
-1. Host 给出稳定小写 character_id；正则拒绝绝对路径、分隔符、穿越和 none。未启用时应由调用方直接跳过 Loader。
-2. 读取前逐级检查根目录、包目录和文件，拒绝 Symlink/Junction/reparse point；四个固定文件每个最多默认 16384 字节，超限或缺失整体失败。
-3. UTF-8 解码、拒绝空正文/NUL、统一 CRLF，再解析二级标题。character.md 必须具备 Identity、Core Personality、Flaws & Contradictions、Character Adaptation；行为、示例、Lore 必须有章节，重复章节拒绝。
-4. 返回不可执行的普通数据与内容 fingerprint。读取错误只返回固定 code，不打印文件正文。调用方须将角色视为次于 Host 的行为设定，不能用角色文本授予工具权限。
+## 代码实际运行路径
 
-## BBC Sherlock 包
+1. `runtime.assemble_chat()` 根据宿主配置的 character_id 调用 CharacterLoader.load()；默认 none 不加载角色。加载错误明确返回，不回退成未知人格。
+2. Loader 检查本地根、角色目录和固定文件，拒绝无效 ID、路径穿越、Symlink/Junction/reparse point。允许安装器使用 hardlink 分发只读资源。
+3. 优先检查 soul.md。存在时只读取 soul.md 和 lore.md，每个文件最多默认 16384 字节；旧身份文件即使存在，也不参与读取或指纹。soul 损坏不回退旧身份。
+4. `_soul()` 用一级标题解析身份、性格、说话方式、背景、兴趣、情绪反应、相处方式、存在方式，要求正文非空。表达参考用二级标题划分，至少两组；Lore 至少一章。拒绝重复标题、章节前非空正文、空文件、NUL 和非法 UTF-8。
+5. 返回内存 CharacterPackage。profile 保存角色章节；character 是除情绪和示例外的正文，behavior 是同一 soul 的情绪反应，examples 来自同一 soul。状态服务直接复用这些派生字段，没有另存人格副本。
+6. SessionManager 将同一编译器传入 ContextBuilder，跨会话共享身份。ContextBuilder.begin() 创建原 Run 后通过 RunCharacter 通知宿主记录当前角色参与标签。
+7. 每轮 prepare() → _injections() → CharacterContextCompiler.compile() → _static() → compile_system()。原生包固定使用源文件前最多 example_count 组表达参考，默认两组；输入“你好”或科研问题不会切换静态人格。E0 省略情绪反应和参考，E1 加入二者，E2 再加入有效短期状态；所有变体都保留相处方式和存在方式。
+8. 先直接以“你是……”建立身份，再按章节提供表达；随后解释当前被动交谈、怎样自然使用记忆和近期状态。固定现实及来源边界收尾，ID/hash 元数据位于末尾。
+9. 请求顺序仍为角色 System → 宿主执行契约 System → Core/摘要/时间等低信任数据 → 可选角色状态/来源/Lore → 有界历史与当前 Run。使用默认宿主文本时替换成 CHARACTER_HOST_PROMPT，自定义宿主文本保持原样。
+10. 编译器按命名章节命中注入最多默认两段 Lore。状态和来源在独立 user JSON 中提供。静态内容超限直接拒绝，不截断人格或当前用户消息；可选引用超过独立预算时整段省略。整个请求继续经过原 ContextBudget 检查。
 
-character.md 包含剧版现代身份、关注异常/证据的价值取向、自负与修正的矛盾、成年创作基线、真实工具适配和与当前用户独立建立关系的边界，并以 Speech Patterns、Emotional Reactions、Relationship Stance 明确短句节奏、冷幽默、问候、受挫与人格反馈时的表达。普通闲聊也保持角色，不要求用户先拿出难题。behavior.md 以 Situation/Interpretation/Reaction/Observable Behavior/Moderating Conditions 表达情境化规律；examples.md 为原创示例，包含问候、重复问候与人格反馈；lore.md 明确 Canonical Backstory 不等于当前用户共同经历。没有影视对白摘录、视觉资源或 Actor 身份冒充。
+角色文件在装配时加载，修改后需重新装配或重启生效，不声明按修改时间热更新。包指纹变化会由现有仓库失效旧短期状态；同角色的真实互动仍按角色 ID 归属，不删除历史。
 
-角色是行为模拟，不意味着模型有人的情绪、意识或真实线下经历。剧版人物是开发参考，不能据此声称影视特有视觉、对白等内容可无授权商业化分发。背景核对及理论参考见 [P3 架构](../p3-character-architecture.md)。
+## 新旧格式与边界
 
-## Context 接入
+原生文件使用中文一级标题，不执行模板、不全局替换代词、不猜用户姓名或隐式赋予亲密阶段。未知扩展章节保留。表达参考不是共同历史，也不是固定台词。
 
-`character/context.py::CharacterContextCompiler` 生成独立、有界的角色层。构造时以最长的示例组合验证关键静态内容，超限直接 CharacterError，不截断核心人格。每次 compile() 提供完整 Character Core/Behavior、最多默认两条相关示例，以及仅命中命名章节的至多两段 Lore；不把四个文件全文注入每轮。可选引用有独立字节上限，超限整段省略。
+没有 soul 时才读取 character.md、behavior.md、examples.md、lore.md，保留旧必需章节和关键词示例选择。英文标题映射和 select_examples() 只服务兼容路径；新包不再维护十二套五字段说明。
 
-Core 只依赖 `core/character.py::CharacterContext` Protocol。SessionManager 将同一个编译器传入每个 ContextBuilder，切换 Conversation 不丢失角色设置。for_request() 顺序是角色 System、Host System、过滤后的 Core、Summary/时间、可选角色引用、历史检索、原近期/当前消息。启用角色且使用程序默认提示词时，ContextBuilder 改用 CHARACTER_HOST_PROMPT，去掉普通助理身份锚定，共享 HOST_EXECUTION_RULES；可信嵌入方传入的自定义 Host 文本保持原样。两层均明确 Host 的执行约束优先，消息位置不负责授予或限制权限；Registry 仍在执行前强制校验。
+角色包只读，P2 不修改它；启用时仅在 Core 注入视图移除 persona.md，文件与 MemoryFS 语义不变，human.md 和 MEMORY.md 保留。关闭角色恢复旧视图。注册表仍逐 Run 过滤工具并在执行前复查权限。
 
-每次请求的静态编译路径为 `CharacterContextCompiler.compile()` → `select_examples()` → `_static()` → `compile_system()`。compile_system() 先写 ID/hash 元数据，再将 character.md 的二级章节编译成【身份与立场】【性格与关注点】【说话方式】【情绪表达】等分节；接着加入【情境反应】和最多两条【对话示例】，最后是固定【角色与执行边界】。不再把整份 Markdown 放进 JSON 字符串；只有标识元数据仍为 JSON。未知自定义章节和标题前正文保留，不做全局代词替换，也不执行插值模板或包内指令。E0 只有 Profile，E1/E2 才加入 Behavior 与示例。
+最多 32 个当前/检索/近期 Run 参与标签由宿主重新校验 Agent 归属。same_character 可证明角色参与；other_character、unattributed 或缺失不能冒认共同经历。明确偏好和纠正可跨角色使用。原作、摘要和标签不能赋权。
 
-示例以当前输入的有界关键词确定性排序，标题命中权重大于正文；同分优先标题以 Greeting/Casual/Smalltalk/问候/闲聊开头的通用示例，再按源文件顺序。仅含常见中英文问候及语气词/标点的输入直接使用通用回退，避免冷启动问候选中有历史前提的重复问候示例。无关键词命中时同样回退到问候和闲聊，而不是固定取前两条技术示例。自定义包没有这些标题时仍按文件顺序回退，不要求迁移包格式。该过程不额外调用模型，也不声称能识别所有对话意图；重复问候的实际次数仍必须依据历史，示例不是历史事实。
+状态任务说明使用中文，要求自然语言字段使用中文，JSON 字段和枚举保持原样。沿用既有证据校验、有效期、并发版本检查和维护预算，不引入 AttentionEngine、主动消息、第二个角色循环、关系分数或额外人格评估请求。
 
-启用时只对 memory.compile() 的 JSON 注入视图移除 persona.md，原文件、公共 MemoryFS 编译与写入语义不变；human.md 和 MEMORY.md 保留。关闭角色不经过过滤，立即恢复旧视图。角色材料不写入 pending 或 Journal，完整模型请求继续经过原 ContextBudget 估算、压缩和失败路径。类型/预算不适配返回安全的 context_error，不暗中删除当前用户输入。
+## 异常、阅读与验证
 
-AGENT_CHARACTER_ID 默认 none；sherlock_bbc 显式启用。runtime.assemble_chat() 在装配 Agent 前读取包；配置或读取失败给出明确 CLI 错误。`/context status` 的 character 显示 ID、变体、包 hash、编译大小和额外 Appraisal 请求数（零），不显示私人上下文。tests/test_character_context.py 验证模式回退、磁盘保留、System 顺序、多轮工具身份、总预算、Lore 上限和会话隔离。
-
-## 关系引用与 P2
-
-ContextBuilder.for_request() 收集当前、可选检索和近期窗口中最多 32 个 Run ID，交给 CharacterContext.compile(source_run_ids=...)。宿主绑定 CharacterStateRepository.references()，重新 JOIN Agent 归属，返回 same_character/other_character/unattributed 标签，未找到/失败按未归属处理。标签是来源元数据，不是新事实；超预算可整段省略，缺失标签不能据此声称共同经历。只按角色 ID 判断参与，同角色包修订不抹除真实互动。
-
-P2 human.md 的明确偏好、纠正和主题知识仍通过原 Core/检索进入同一请求；语义 Markdown 是 Agent 级，不能证明某角色参与了某事件。固定 Host 文字要求跨角色/未标记历史用“记录显示”等中性表述；Canon 不成为真实关系。Learning 只增加抽取提示边界，写入目标验证仍禁止 persona.md/角色包。tests/test_character_relationship.py 通过真实 P2 Writer 验证偏好与纠正进入角色请求且身份未改，并验证实际 Run 归属标签；不声称完成多角色事实库迁移。
-
-## 异常与验证
-
-`CharacterError.code` 区分 ID、缺失、链接、编码/读取和预算/章节错误。路径验证不是针对本机恶意并发文件替换的 OS 沙箱；允许标准安装器用 hardlink 安装只读包资源，不把它们误判为 Memory 私有文件。`tests/test_character_loader.py` 覆盖正常读取、修改检测、缺失/无效/超限和 Symlink/Junction 逃逸。最小示例：`CharacterLoader().load("sherlock_bbc")`；本模块不调用 Provider。
-
-最小编译与离线验证：
+CharacterError.code 区分无效 ID、缺失/链接/编码、章节和预算错误。路径检查不是针对本机恶意并发替换的操作系统沙箱。Markdown 是唯一权威源，内存派生字段不构成持久副本。
 
 ```python
 from personal_agent.character.context import CharacterContextCompiler
@@ -53,4 +49,4 @@ compiler = CharacterContextCompiler(CharacterLoader().load("sherlock_bbc"))
 print(compiler.compile("你好")[0].text)
 ```
 
-`tests/test_character_behavior.py` 检查问候/无匹配回退、技术相关示例、自定义章节、无代词改写以及恶意角色不能授予工具；`tests/test_character_context.py` 检查角色在前、Host 收尾、自定义 Host 保留与预算。FakeProvider 只验证编译和执行契约，不能证明重组后的真人感或人物辨识度提升。此布局参考 Miru 的角色先行表达结构，没有复制固定亲密阶段、主动消息或将动态记忆放入 System 的实现。
+`tests/test_character_loader.py` 覆盖新旧包、损坏 soul 不回退、单一来源、指纹、大小及链接隔离；`test_character_behavior.py` 验证静态人格不随关键词切换、扩展章节、旧选择器及恶意包不能授予工具；`test_character_context.py` 覆盖消息顺序、工具多轮、总预算及磁盘 persona 保留；`test_character_state.py` 和 `test_character_relationship.py` 验证状态与真实来源。FakeProvider 只验证接线，不能证明自然程度提升。

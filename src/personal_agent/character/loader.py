@@ -14,6 +14,8 @@ from personal_agent.character.models import (
 
 PACKAGE_ROOT = Path(__file__).parent / "packages"
 FILES = ("character.md", "behavior.md", "examples.md", "lore.md")
+SOUL_FILES = ("soul.md", "lore.md")
+SOUL_SECTIONS = ("身份", "性格", "说话方式", "背景", "兴趣", "情绪反应", "相处方式", "存在方式")
 IDENTIFIER = re.compile(r"[a-z][a-z0-9_]{0,47}\Z")
 
 
@@ -27,8 +29,8 @@ def guard(path: Path) -> None:
                 raise CharacterError("linked_package_path")
 
 
-def sections(text: str) -> list[Section]:
-    matches = list(re.finditer(r"(?m)^## ([^\r\n]+)\s*$", text))
+def sections(text: str, *, level: int = 2) -> list[Section]:
+    matches = list(re.finditer(r"(?m)^" + "#" * level + r" ([^\r\n]+)\s*$", text))
     return [
         Section(
             title=m[1].strip(),
@@ -54,7 +56,11 @@ class CharacterLoader:
             guard(directory)
             if not directory.is_dir():
                 raise CharacterError("character_not_found")
-            for name in FILES:
+            guard(directory / "soul.md")
+            if (directory / "soul.md").exists() and not (directory / "soul.md").is_file():
+                raise CharacterError("invalid_package_text")
+            files = SOUL_FILES if (directory / "soul.md").is_file() else FILES
+            for name in files:
                 path = directory / name
                 guard(path)
                 if not path.is_file():
@@ -69,6 +75,8 @@ class CharacterLoader:
                 content[name] = text
         except (OSError, UnicodeError):
             raise CharacterError("package_read_failed") from None
+        if "soul.md" in content:
+            return self._soul(character_id, content)
         required = {
             "Identity",
             "Core Personality",
@@ -97,4 +105,36 @@ class CharacterLoader:
             examples=sections(content["examples.md"]),
             lore=sections(content["lore.md"]),
             fingerprint=fingerprint,
+        )
+
+    def _soul(self, character_id: str, content: dict[str, str]) -> CharacterPackage:
+        parsed = sections(content["soul.md"], level=1)
+        titles = [s.title for s in parsed]
+        if len(titles) != len(set(titles)):
+            raise CharacterError("duplicate_package_sections")
+        profile = {s.title: s.text.partition("\n")[2].strip() for s in parsed}
+        if not all(profile.get(title) for title in SOUL_SECTIONS):
+            raise CharacterError("character_sections_missing")
+        if content["soul.md"].split("# ", 1)[0].strip():
+            raise CharacterError("invalid_package_text")
+        examples = sections(profile.pop("表达参考", ""))
+        lore = sections(content["lore.md"])
+        for items in (examples, lore):
+            if len({s.title for s in items}) != len(items):
+                raise CharacterError("duplicate_package_sections")
+        if len(examples) < 2 or not lore:
+            raise CharacterError("package_sections_missing")
+        character = "\n\n".join(
+            f"## {title}\n\n{body}" for title, body in profile.items() if title != "情绪反应"
+        )
+        return CharacterPackage(
+            character_id=character_id,
+            character=character,
+            behavior=profile["情绪反应"],
+            examples=examples,
+            lore=lore,
+            profile=profile,
+            fingerprint=hashlib.sha256(
+                b"".join(name.encode() + b"\x00" + content[name].encode() for name in SOUL_FILES)
+            ).hexdigest(),
         )

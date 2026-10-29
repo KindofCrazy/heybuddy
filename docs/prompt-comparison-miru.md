@@ -1,5 +1,7 @@
 # Miru 与 HeyBuddy 主对话提示词逐段对照
 
+本文保留 2026-10-28 四文件编译版本的审阅记录。2026-10-29 已切换单一 soul.md 原生格式，当前实现见 [Miru 角色系统说明](miru-character-system.md)；下述十二套行为说明和关键词示例选择只描述旧版。
+
 ## 对照范围与证据
 
 对照于 2026-10-28。Miru 依据本机源码 `Miru/prompt.py::_build_agent_system_prompt()`、默认 `soul.md`、`agent_behavior.md`，以及此前真实执行 `call_chat_agent()` 保存的完整请求。那次使用 deepseek-flash，输入“你好”，无历史、无动态记忆、无工具；关系阶段由原实现固定返回“很亲近”。真实回复为“嗯，你好呀～\n\n今天怎么样？”，输入 4305 tokens、输出 8 tokens。这只验证了一个冷启动样本，不能证明人格、持续关系或整体质量更好。

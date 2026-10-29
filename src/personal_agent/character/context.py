@@ -49,7 +49,11 @@ class CharacterContextCompiler:
         self, user_input: str, *, source_run_ids: tuple[str, ...] = ()
     ) -> list[TextMessage]:
         words = [word for word in terms(user_input) if word not in {"关系", "其他", "解释", "用户"}]
-        chosen = select_examples(self.package.examples, user_input, self.policy.example_count)
+        chosen = (
+            self.package.examples[: self.policy.example_count]
+            if self.package.profile is not None
+            else select_examples(self.package.examples, user_input, self.policy.example_count)
+        )
         messages = [self._static(chosen)]
         if size(messages) > self.policy.max_context_bytes:
             raise CharacterError("character_base_budget")

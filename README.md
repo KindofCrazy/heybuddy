@@ -22,7 +22,7 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [P3 Character Runtime](docs/modules/character.md) 与 [架构说明](docs/p3-character-architecture.md) 提供本地、只读、可替换的角色包；默认普通模式保持兼容，首个包为原创 BBC Sherlock 适配。
 
-角色 System 由 Markdown 按身份、性格、说话方式、情境反应和相关示例编译，随后是 Host 执行契约；状态与记忆仍为低信任数据。问候和无匹配输入优先使用闲聊示例。编译路径、预算及验证见 [Character 模块](docs/modules/character.md)。
+原生角色以单一 `soul.md` 定义身份、性格、说话方式、情绪反应和相处方式，参考 Miru 固定顺序编译，随后是宿主执行契约；状态与记忆仍为低信任数据。新格式不按关键词更换人格示例，旧四文件包保留兼容。见 [Miru 角色系统说明](docs/miru-character-system.md) 与 [Character 模块](docs/modules/character.md)。
 
 主对话提示词与工具说明使用中文，保留人名、专业名词和程序标识；参见 [与 Miru 的逐段对照](docs/prompt-comparison-miru.md)，了解当前表达优势、冗余和改进顺序。
 

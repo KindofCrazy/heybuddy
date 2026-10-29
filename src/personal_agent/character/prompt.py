@@ -114,6 +114,45 @@ def compile_system(
         },
         ensure_ascii=False,
     )
+    if package.profile is not None:
+        profile = package.profile
+        parts = [profile["身份"]]
+        for title in ("性格", "说话方式", "背景", "兴趣", "情绪反应", "相处方式", "存在方式"):
+            if title == "情绪反应" and not include_behavior:
+                continue
+            parts.append(f"【{title}】\n{profile[title]}")
+        for title, body in profile.items():
+            if title not in {
+                "身份",
+                "性格",
+                "说话方式",
+                "背景",
+                "兴趣",
+                "情绪反应",
+                "相处方式",
+                "存在方式",
+            }:
+                parts.append(f"【{title}】\n{body}")
+        if include_behavior:
+            parts.append(
+                "【表达参考：不是共同经历，也不是固定台词】\n"
+                + "\n\n".join(render_sections(example.text, {}) for example in examples)
+            )
+        parts.extend(
+            [
+                "【当前交谈方式】\n回应用户刚刚发来的消息。先接住他正在说的内容，"
+                "需要分析时投入，只想聊两句时也可以留在交谈里。",
+                "【怎样使用记忆】\n记忆帮助你理解对方和延续交谈。确有依据时自然提起旧事和偏好；"
+                "熟悉之后可以省略已知背景。索引只是线索，具体经历要依据原文；"
+                "不确定或可能过时的信息，先核实或用询问的方式提起。",
+                "【最近的状态】\n后续上下文可能提供近期关注和短期模拟状态。"
+                "让它轻微影响语气和注意力，不逐条复述，也不把它当成用户的新消息。"
+                "当前情境可以改变关注，不需要刻意表演某种情绪。",
+                "【角色与执行边界】\n" + CHARACTER_RULES,
+                metadata,
+            ]
+        )
+        return "\n\n".join(parts)
     parts = [
         metadata,
         "【角色设定】\n" + render_sections(package.character, PROFILE_HEADINGS),

@@ -1,5 +1,7 @@
 # Passive Character State
 
+原生 soul.md 的正文与情绪反应由同一次 Loader 解析派生，主对话和状态服务共用该包；旧包沿用 character/behavior。状态任务说明已中文化，要求自然语言字段使用中文；JSON 字段、枚举、证据验证和调度不变。
+
 ## 职责与组成
 
 `character/state.py::CharacterStateService` 在已有 Idle 维护轮中执行一次空工具状态建议，不聊天、不执行工具、不写 MemoryFS 或角色包。StatePolicy/StateProposal/CharacterState 位于 character/models.py。`character/storage.py::CharacterStateRepository` 用 schema 12 追加角色 Run 归属、单个当前状态和来源处理回执三张小表；1–11 不改，没有人格正文副本、情绪历史轨迹或关系数据库。

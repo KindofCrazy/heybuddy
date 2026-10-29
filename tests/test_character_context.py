@@ -91,7 +91,7 @@ async def test_total_context_budget_accounts_for_character_without_dropping_curr
         context=ContextBuilder(
             character=compiler(),
             budget=ContextBudget(
-                context_window=8192,
+                context_window=4096,
                 reserved_output_tokens=512,
                 summary_tokens=64,
                 summary_output_tokens=512,
@@ -138,8 +138,8 @@ def test_character_layout_keeps_host_contract_last_and_preserves_custom_host():
         context = ContextBuilder(system_prompt=host, character=compiler())
         request = context.for_request(context.build("你好"))
         assert "【说话方式】" in request[0].text
-        assert "【情绪表达】" in request[0].text
-        assert "【情境反应】" in request[0].text
+        assert "【情绪反应】" in request[0].text
+        assert "【存在方式】" in request[0].text
         assert "character_identity" in request[0].text
         assert request[1].text == (CHARACTER_HOST_PROMPT if host == DEFAULT_SYSTEM_PROMPT else host)
         assert request[-1].text == "你好"
@@ -152,7 +152,7 @@ def test_default_character_instructions_are_chinese_without_changing_machine_ide
     request = context.for_request(context.build("你好"))
     role, host = request[:2]
     assert '"character_id": "sherlock_bbc"' in role.text
-    assert "【问候】" in role.text and "【闲聊】" in role.text
+    assert "【日常交谈】" in role.text
     assert "用户：你好" in role.text and "【宿主执行契约】" in host.text
     assert "只有 same_character 来源标签证明角色参与" in role.text
     assert "expected_hash" in host.text and "recall_search" in host.text

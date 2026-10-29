@@ -35,6 +35,7 @@ class CharacterPackage(Model):
     examples: list[Section]
     lore: list[Section]
     fingerprint: str
+    profile: dict[str, str] | None = None
 
 
 class StatePolicy(Model):

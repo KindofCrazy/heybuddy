@@ -19,7 +19,7 @@ async def test_all_ablations_share_conditions_but_differ_in_character_layers():
     assert conditions[0] == conditions[1] == conditions[2]
     for index, report in enumerate(reports):
         first = report["results"][0]["calls"][0]["messages"]
-        assert ("【情境反应】" in first[0]["text"]) is (index > 0)
+        assert ("【情绪反应】" in first[0]["text"]) is (index > 0)
         assert any("transient_simulated_state" in m.get("text", "") for m in first) is (index == 2)
         tool = next(r for r in report["results"] if r["case"] == "tool_review")
         assert len(tool["calls"]) == 2
