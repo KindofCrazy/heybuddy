@@ -36,6 +36,7 @@ class CharacterPackage(Model):
     lore: list[Section]
     fingerprint: str
     profile: dict[str, str] | None = None
+    persona: dict[str, str] | None = None
 
 
 class StatePolicy(Model):

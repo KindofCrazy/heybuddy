@@ -29,7 +29,7 @@ from tests.test_qq_transport import config
 __all__ = ["state"]
 
 
-@pytest.mark.parametrize("character_id", ["sherlock_bbc", "miru"])
+@pytest.mark.parametrize("character_id", ["sherlock_bbc", "miru", "luna"])
 async def test_production_cli_then_qq_restart_share_history_memory_and_character(
     tmp_path, character_id
 ):
@@ -70,12 +70,16 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             organization=service.organization,
         )
         state_service = service.organization.character_state
-        assert (await organizer(state_service.repository.episodes).organize(conversation_id))[
-            "outcome"
-        ] == "completed"
-        state_service.model.provider = StateProvider()
-        assert (await state_service.run(force=True))["outcome"] == "completed"
-        assert state_service.active()["mood"] == "curious"
+        if character_id == "luna":
+            assert state_service is None
+            assert sessions.character.state is None
+        else:
+            assert (await organizer(state_service.repository.episodes).organize(conversation_id))[
+                "outcome"
+            ] == "completed"
+            state_service.model.provider = StateProvider()
+            assert (await state_service.run(force=True))["outcome"] == "completed"
+            assert state_service.active()["mood"] == "curious"
         await service.close()
     with SQLiteStore(path) as db:
         db.initialize()
@@ -89,7 +93,10 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
         assert sessions.current.id == conversation_id
         assert sessions.character.package.fingerprint == fingerprint
         assert service.agent.context.character is sessions.character
-        assert service.organization.character_state.active()["mood"] == "curious"
+        if character_id == "luna":
+            assert service.organization.character_state is None
+        else:
+            assert service.organization.character_state.active()["mood"] == "curious"
         assert service.organization.learning.policy.enabled is False
         assert service.organization.learning.reflection is service.reflection
         assert service.organization.curator.learning is service.organization.learning
@@ -113,12 +120,14 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             }
             assert any("这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user")
             assert any("用户的项目是 HeyBuddy" in m.text for m in request if m.role == "user")
-            assert any(
-                m.text.startswith(sessions.character.package.profile["身份"])
-                for m in request
-                if m.role == "system"
+            identity = (
+                "你是 Luna。"
+                if character_id == "luna"
+                else sessions.character.package.profile["身份"]
             )
-            assert any("curious" in m.text for m in request if m.role == "user")
+            assert any(m.text.startswith(identity) for m in request if m.role == "system")
+            if character_id != "luna":
+                assert any("curious" in m.text for m in request if m.role == "user")
             assert len(provider.requests) == 1
             assert len(db.list_runs(conversation_id)) == 2
             assert sender.messages[0][-1] == "继续核对反例。"

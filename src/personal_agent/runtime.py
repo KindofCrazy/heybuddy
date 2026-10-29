@@ -150,17 +150,18 @@ def assemble_chat(
         character_repository = CharacterStateRepository(
             repository, settings.character_id, sessions.character.package.fingerprint
         )
-        character_state = CharacterStateService(
-            character_repository,
-            sessions.character.package,
-            agent.provider,
-            settings.context_budget(),
-            settings.character_state_policy(),
-            initialize=not observer_only,
-        )
         sessions.character.on_run = character_repository.tag_run
-        sessions.character.source_scope = character_repository.references
-        sessions.character.state = character_state.active
+        if sessions.character.package.persona is None:
+            character_state = CharacterStateService(
+                character_repository,
+                sessions.character.package,
+                agent.provider,
+                settings.context_budget(),
+                settings.character_state_policy(),
+                initialize=not observer_only,
+            )
+            sessions.character.source_scope = character_repository.references
+            sessions.character.state = character_state.active
     organization = OrganizationRuntime(
         EpisodeOrganizer(
             repository,

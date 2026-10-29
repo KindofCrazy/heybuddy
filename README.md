@@ -22,13 +22,13 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [P3 Character Runtime](docs/modules/character.md) 与 [架构说明](docs/p3-character-architecture.md) 提供本地、只读、可替换的角色包；默认普通模式保持兼容，首个包为原创 BBC Sherlock 适配。
 
-原生角色以单一 `soul.md` 定义身份、性格、说话方式、情绪反应和相处方式，参考 Miru 固定顺序编译为一条系统消息，不再附加角色审计 JSON 或【真实与诚实】；状态与记忆仍为低信任数据。新格式不按关键词更换人格示例，旧四文件包保留兼容。见 [Miru 角色系统说明](docs/miru-character-system.md) 与 [Character 模块](docs/modules/character.md)。
+角色入口简化为 OpenPersona 风格的 `persona.json`：读取身份、性格、说话方式、背景和可选本地指南，再接上独立的 [通用交谈提示词](src/personal_agent/prompts/conversation.md)，生成一条系统消息。无需固定八个章节、情境示例或 Lore，不运行额外角色状态请求。完整装配、字段白名单和异常边界见 [简化角色模块](docs/modules/persona.md)；旧 Markdown 角色保留只读兼容，见 [Character 模块](docs/modules/character.md)。
 
 主对话提示词与工具说明使用中文，保留人名、专业名词和程序标识；参见 [与 Miru 的逐段对照](docs/prompt-comparison-miru.md)，了解当前表达优势、冗余和改进顺序。
 
 [当前记忆系统与模型工具](docs/memory-and-tools.md) 说明 persona.md 与 soul.md 的分工、记忆存储/检索/更新路径，以及默认工具和逐 Run 授权。
 
-当前开发使用本地 `miru` 角色包，配置示例为 `AGENT_CHARACTER_ID=miru`。人物设定见 [Miru soul.md](src/personal_agent/character/packages/miru/soul.md)，接线和适配说明见 [开发角色说明](docs/miru-development-character.md)。Sherlock 等人格的完善与评测暂列入 [TODO](TODO.md)，已有包与对照记录保留。
+当前开发使用 [Luna persona.json](src/personal_agent/character/packages/luna/persona.json)，配置示例为 `AGENT_CHARACTER_ID=luna`。设定来自 [OpenPersona 的 ai-girlfriend 预设](https://github.com/acnlabs/OpenPersona/blob/main/presets/ai-girlfriend/persona.json)，已整理为中文并保留 MIT 声明，详见 [来源与适配](src/personal_agent/character/packages/luna/SOURCE.md)。原文件中的语音、自拍、主动联系和工具授权不随角色启用，实际能力继续由 heybuddy 提供。Miru/Sherlock 的完善与评测暂列入 [TODO](TODO.md)。
 
 [角色对话自然度诊断](docs/character-dialogue-diagnosis.md) 对照 Miru/SillyTavern，说明自我分析、示例风格和时间冲突，并提供尚未替换生产配置的候选写法。
 
@@ -38,7 +38,7 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [P3 短期状态](docs/modules/character-state.md) 仅在角色 E2 启用后于 Idle 维护，按真实角色 Run 来源保存模拟 Mood/Focus，有独立有效期并共享 P1/P2 预算；不主动发消息。`/character status|run|retry` 查看或调试。
 
-开发时在已有可信配置中设置 `AGENT_CHARACTER_ID=miru`，保持实际模型窗口配置；`none` 恢复普通模式。库级 Settings 默认仍为 none，示例配置显式选择 Miru。persona.md 现在保存有真实用户证据的相处认识与反思，并在角色模式注入；旧的非空静态人格仍保留且不自动重新解释。human.md 保存用户资料，soul.md 保持稳定人格。`AGENT_CHARACTER_STATE_ENABLED=false` 可关闭状态请求，E0/E1 也不请求状态。角色包是行为模拟，不代表真实人的情绪或经历。
+开发时在已有可信配置中设置 `AGENT_CHARACTER_ID=luna`，保持实际模型窗口配置；`none` 恢复普通模式。库级 Settings 默认仍为 none。persona.md 保存有真实用户证据的相处认识与反思，human.md 保存用户资料，角色 persona.json 保持稳定设定；旧的非空静态人格仍保留且不自动重新解释。Luna 不使用旧角色状态任务；旧 Markdown 角色仍可通过 `AGENT_CHARACTER_STATE_ENABLED=false` 关闭状态请求。修改角色或通用提示词后重启生效。
 
 [P3 离线评测](docs/modules/character-evaluation.md)：`uv run python -m personal_agent.evaluation.character`，13 个情境含 20 轮漂移，E0/E1/E2 固定条件对比；默认无网络/费用。FakeProvider 只验证工程契约，真实角色一致性需后续显式生成和人工审阅。
 

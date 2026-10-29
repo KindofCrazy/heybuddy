@@ -8,7 +8,7 @@
 
 1. 主对话模块导入时，_load_conversation_prompt() 有界读取 UTF-8 文件，拒绝缺失、空白、非法编码、NUL 或超过 8192 字节的文件。
 2. 无角色时，core/context.py 的 DEFAULT_SYSTEM_PROMPT 在构建时追加通用段落；显式自定义非角色 System 仍按调用者提供的原文处理，不擅自重写它。
-3. 有角色时，character/prompt.py::compile_system() 在原生和兼容格式的最终正文中追加通用段落。角色模式仍使用空的默认 Host Base，所以不会再叠加普通助理正文或重复通用段落。
+3. 有角色时，character/prompt.py::compile_system() 在 persona.json、原生 Markdown 和旧兼容格式的最终正文中追加通用段落。角色模式仍使用空的默认 Host Base，所以不会再叠加普通助理正文或重复通用段落。当前开发使用 [OpenPersona Luna](persona.md)，不把通用闲聊规则复制进角色文件。
 4. CharacterContextCompiler 对包含通用段落的完整正文计算 system_hash、字节大小和预算；ContextBuilder 仍合并为一条 System，再提供独立的 Core、时间等数据。工具轮次继续重新编译，Journal 不额外保存一份系统提示词作为聊天消息。
 
 Miru/Sherlock 卡中相同的长度、收尾和通用套话说明已收拢，角色卡继续决定身份、性格、语气词、幽默、兴趣和相处反应。用户当前任务与格式要求优先，闲聊格式不限制技术解释、代码或结构化任务。

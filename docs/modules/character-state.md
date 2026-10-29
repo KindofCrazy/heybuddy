@@ -1,5 +1,7 @@
 # Passive Character State
 
+此模块目前只服务旧 Markdown 角色。当前开发的 OpenPersona Luna 使用 persona.json，运行时不创建 CharacterStateService；详见 [简化角色设定](persona.md)。
+
 原生 soul.md 的正文与情绪反应由同一次 Loader 解析派生，主对话和状态服务共用该包；旧包沿用 character/behavior。状态任务说明已中文化，要求自然语言字段使用中文；JSON 字段、枚举、证据验证和调度不变。
 
 ## 职责与组成

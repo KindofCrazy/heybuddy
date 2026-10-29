@@ -1,10 +1,10 @@
 # 配置与 API 地址校验
 
-当前开发示例显式配置 AGENT_CHARACTER_ID=miru，读取内置 Miru 角色包；Settings 的库级默认仍是 none。既有显式角色配置不被程序自动覆盖，本轮本地开发配置已按用户要求切换。角色修改在下次装配/重启时生效，不修改数据库、历史或记忆路径。完整说明见 [开发角色](../miru-development-character.md)。
+当前开发示例显式配置 AGENT_CHARACTER_ID=luna，读取内置 OpenPersona JSON 角色；Settings 的库级默认仍是 none。程序不自动覆盖已有显式配置。角色修改在下次装配/重启时生效，不修改数据库、历史或记忆路径。完整说明见 [简化角色设定](persona.md)。
 
 P2 Review Fix 的 AGENT_MEMORY_LEARNING_RECOVERY_ATTEMPTS/INTERVAL_SECONDS/SECONDS 默认 3/300/2，映射到 LearningPolicy 的有界检查次数、退避和协作时间预算。核对不调用 LLM，重新规划使用原维护额度；没有文件系统硬超时保证。详见 [Learning](learning.md)。
 
-P3 `Settings.character_policy()/character_state_policy()` 对应 AGENT_CHARACTER_*。ID 默认 none，合法 ID 为小写字母起始、后接字母/数字/下划线，最大 48 字符；ROOT 仅可信本地目录。VARIANT 只接受 E0/E1/E2；State 仅在非 none 且 E2 时启用，可独立关闭。包/上下文字节、示例/Lore 数、Mood/Focus 有效期、维护间隔、输入输出/超时/来源都有界。完整默认值在 .env.example；实际接线见 [Character](character.md)、[State](character-state.md)。
+P3 `Settings.character_policy()/character_state_policy()` 对应 AGENT_CHARACTER_*。ID 默认 none，合法 ID 为小写字母起始、后接字母/数字/下划线，最大 48 字符；ROOT 仅可信本地目录。JSON 角色只使用文件与上下文字节预算，不使用示例/Lore 选择、E0/E1/E2 差异或 State。旧 Markdown 角色的 VARIANT 只接受 E0/E1/E2，State 仅在 E2 时启用且可独立关闭；Mood/Focus 有效期、维护间隔、输入输出/超时/来源都有界。完整默认值在 .env.example；实际接线见 [Persona](persona.md)、[Character](character.md)、[State](character-state.md)。
 
 P2 的 `Settings.learning_policy()/curator_policy()/memory_retrieval_policy()` 对应 `.env.example` 的 AGENT_MEMORY_LEARNING_*、PRIORITY_ENABLED、CURATOR_*、RETRIEVAL_*，全部有界。默认启用 Learning、Curator 和条件性 Preflight；普通 Batch 3 Episodes/21600 秒，Curator 86400 秒/累计 12 更新或文件长度条件。P2 与 Episode/Thread 共用维护轮额度，不与旧 MemoryAutomation 同时自动运行。默认两目标学习在开始提取前保守预留四次请求容量；自定义预算不足显示 learning_budget_config，不付费重复提取。输入/输出/来源字节/文件数及各阶段超时见 [Learning](learning.md)、[Curator](curator.md)、[Retrieval](retrieval.md)。关闭 P2 恢复旧 Automation 配置，关闭 Memory Retrieval 不清空既有 Markdown。配置来自可信 Host，模型不能修改开关或权限。
 

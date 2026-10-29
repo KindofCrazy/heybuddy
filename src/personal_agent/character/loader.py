@@ -1,4 +1,4 @@
-"""Fixed-name, read-only local Markdown packages; no code, network or dynamic installation."""
+"""Local persona.json descriptions, with read-only compatibility for older Markdown roles."""
 
 import hashlib
 import re
@@ -11,6 +11,7 @@ from personal_agent.character.models import (
     CharacterPolicy,
     Section,
 )
+from personal_agent.character.persona import parse_persona
 
 PACKAGE_ROOT = Path(__file__).parent / "packages"
 FILES = ("character.md", "behavior.md", "examples.md", "lore.md")
@@ -56,6 +57,9 @@ class CharacterLoader:
             guard(directory)
             if not directory.is_dir():
                 raise CharacterError("character_not_found")
+            guard(directory / "persona.json")
+            if (directory / "persona.json").exists():
+                return self._persona(character_id, directory)
             guard(directory / "soul.md")
             if (directory / "soul.md").exists() and not (directory / "soul.md").is_file():
                 raise CharacterError("invalid_package_text")
@@ -105,6 +109,43 @@ class CharacterLoader:
             examples=sections(content["examples.md"]),
             lore=sections(content["lore.md"]),
             fingerprint=fingerprint,
+        )
+
+    def _read(self, path: Path) -> str:
+        guard(path)
+        if not path.is_file():
+            raise CharacterError("package_file_missing")
+        with path.open("rb") as stream:
+            raw = stream.read(self.policy.max_file_bytes + 1)
+        if len(raw) > self.policy.max_file_bytes:
+            raise CharacterError("package_file_budget")
+        text = raw.decode("utf-8-sig").replace("\r\n", "\n")
+        if not text.strip() or "\x00" in text:
+            raise CharacterError("invalid_package_text")
+        return text
+
+    def _persona(self, character_id: str, directory: Path) -> CharacterPackage:
+        content = {"persona.json": self._read(directory / "persona.json")}
+        persona = parse_persona(content["persona.json"])
+        guide = persona["行为指南"]
+        if guide.startswith("file:"):
+            # Support the preset's fixed local resource, without following arbitrary references.
+            if guide != "file:soul/behavior-guide.md":
+                raise CharacterError("invalid_persona_guide")
+            content["soul/behavior-guide.md"] = self._read(directory / "soul/behavior-guide.md")
+            persona["行为指南"] = content["soul/behavior-guide.md"].strip()
+        elif guide.startswith(("https:", "http:")):
+            raise CharacterError("invalid_persona_guide")
+        return CharacterPackage(
+            character_id=character_id,
+            character="\n\n".join(value for key, value in persona.items() if key != "行为指南"),
+            behavior=persona["行为指南"],
+            examples=[],
+            lore=[],
+            persona=persona,
+            fingerprint=hashlib.sha256(
+                b"".join(name.encode() + b"\x00" + text.encode() for name, text in content.items())
+            ).hexdigest(),
         )
 
     def _soul(self, character_id: str, content: dict[str, str]) -> CharacterPackage:

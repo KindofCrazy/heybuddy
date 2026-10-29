@@ -16,7 +16,7 @@ assemble_chat() 向 create_builtin_registry 显式传入 local_time=True，使 C
 4. 渠道展示回答后调用 `after_reply()`，沿用 `OrganizationRuntime.schedule()` 的空闲、累计数量和维护预算。它不逐条强制整理 Episode。
 5. 退出时 CLI 先关闭自己的输入桥；open_chat 最终关闭后台任务，再关闭 SDK、SQLite 与占用锁。
 
-QQ 入口 `channels.qq.runner.run_qq()` 也调用 `open_application()`，然后把同一 `ChatService` 交给 `QQAdapter`，只传净化后的文本和空权限。它不调用 `main._chat()` 的本地管理命令解析器。P3 的 `CharacterContextCompiler`、`CharacterStateService` 及历史角色标签都沿原路径恢复；P2 的 Learner、Curator、回执核对与 Adaptive Retrieval 也使用同一装配。`tests/test_qq_integration.py` 验证 CLI→退出→QQ 的历史、Memory、已产生的 Character State，以及 QQ 抢占真实后台 Learning。
+QQ 入口 `channels.qq.runner.run_qq()` 也调用 `open_application()`，然后把同一 `ChatService` 交给 `QQAdapter`，只传净化后的文本和空权限。它不调用 `main._chat()` 的本地管理命令解析器。Luna 等 persona.json 角色只装配稳定提示词和历史角色标签，不创建 CharacterStateService；旧 Markdown 角色仍沿原路径恢复状态。P2 的 Learner、Curator、回执核对与 Adaptive Retrieval 也使用同一装配。`tests/test_qq_integration.py` 验证 CLI→退出→QQ 的历史、Memory、旧角色的 Character State、新 JSON 角色无状态服务，以及 QQ 抢占真实后台 Learning。
 
 ## 异常与边界
 

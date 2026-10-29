@@ -49,6 +49,19 @@ class CharacterContextCompiler:
     def compile(
         self, user_input: str, *, source_run_ids: tuple[str, ...] = ()
     ) -> list[TextMessage]:
+        if self.package.persona is not None:
+            messages = [self._static([])]
+            if size(messages) > self.policy.max_context_bytes:
+                raise CharacterError("character_base_budget")
+            self._last = {
+                "system_hash": hashlib.sha256(messages[0].text.encode()).hexdigest(),
+                "compiled_bytes": size(messages),
+                "lore_omitted": 0,
+                "contextual_injected": False,
+                "state_available": False,
+                "extra_appraisal_requests": 0,
+            }
+            return messages
         words = [word for word in terms(user_input) if word not in {"关系", "其他", "解释", "用户"}]
         chosen = (
             self.package.examples[: self.policy.example_count]

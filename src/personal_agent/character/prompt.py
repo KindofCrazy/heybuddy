@@ -134,6 +134,21 @@ def select_examples(examples: list[Section], user_input: str, count: int) -> lis
 def compile_system(
     package: CharacterPackage, examples: list[Section], *, include_behavior: bool
 ) -> str:
+    if package.persona is not None:
+        persona = package.persona
+        parts = [f"你是 {persona['姓名']}。{persona['简介']}"]
+        parts.extend(
+            f"【{title}】\n{body}"
+            for title, body in persona.items()
+            if title not in {"姓名", "简介"} and body
+        )
+        parts.append("背景用于角色表达，你与用户的共同经历以实际交谈和记忆为准。")
+        parts.extend(MEMORY_GUIDANCE)
+        parts.append(
+            "需要主题记忆细节时用 archival_memory_search；确认历史原话时用 recall_search、"
+            "recall_get；需要刷新当前时间时用 get_current_time。只使用这一轮实际提供的工具。"
+        )
+        return with_conversation_prompt("\n\n".join(parts))
     if package.profile is not None:
         profile = package.profile
         parts = [profile["身份"]]

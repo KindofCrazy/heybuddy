@@ -1,8 +1,8 @@
 # 被动角色系统
 
-当前开发角色为内置 miru 包，使用相同 soul.md/lore.md 格式、加载器、编译器、关系记忆和短期状态通路，不增加角色专属 Runtime。开发示例显式选择 miru，库级默认仍关闭；Sherlock 等人格保留供未来完善，见 [开发角色说明](../miru-development-character.md) 与根目录 TODO.md。tests/test_qq_integration.py 对两种角色验证同一生产入口。
+当前开发改用 OpenPersona 的 Luna persona.json，加上独立的通用交谈提示词，不运行角色状态学习。简单 JSON 角色的组成、完整执行路径、异常与验证见 [简化角色设定](persona.md)。开发示例显式选择 luna，库级默认仍关闭；Miru/Sherlock 包保留只读兼容，tests/test_qq_integration.py 对三种角色验证同一生产入口。
 
-本轮按 Miru 逐段重写 Sherlock 的 soul.md，增加可选外貌以及角色自有的行为、交谈、记忆和工具说明。`character/prompt.py::runtime_sections()` 对角色已提供的运行时段落只编译一次，缺失时回退共享默认，不再同时追加两份说明；旧四文件包不受影响。RUNTIME_ORDER 仅组织文字，不授予权限或新增工具。段落对应、单次真实调用及尚未解决的问题见 [逐段改写记录](../holmes-miru-prompt-rewrite.md)。tests/test_character_behavior.py 验证覆盖与回退；不把离线契约测试视作人格收益。
+以下描述旧 Markdown 角色的兼容实现；persona.json 存在时优先使用新的简单路径。旧 Sherlock 的逐段改写与真实调用记录见 [历史记录](../holmes-miru-prompt-rewrite.md)，不作为当前 Luna 的效果结论。
 
 ## 职责与组成
 
