@@ -77,6 +77,42 @@ async def test_preference_auto_apply_source_idempotency_and_no_reflection_progre
         assert "回答先给结论" not in str(tuple(rows[0]))
 
 
+async def test_heading_only_core_is_an_existing_update_target(state):
+    _, sessions, memory, run = state
+    provider = script(
+        [candidate(sessions.current.id, run)],
+        [{"path": "human.md", "candidate_ids": [1]}],
+        [human_write()],
+    )
+    assert memory.read().blocks["human.md"] == "# Human\n"
+    result = await learner(state, provider).learn(run_ids=[run])
+    assert result["updated_files"] == 1
+    request = json.loads(provider.requests[2][1].text)
+    assert request["target_exists"] is True
+    assert request["memory"]["human.md"] == "# Human\n"
+    assert set(request["response_schema"]["properties"]["action"]["enum"]) == {
+        "update",
+        "no_op",
+        "reject",
+        "review",
+    }
+
+
+async def test_create_for_existing_core_is_rejected_without_writes_or_retry(state):
+    _, sessions, memory, run = state
+    before = memory.read()
+    provider = script(
+        [candidate(sessions.current.id, run)],
+        [{"path": "human.md", "candidate_ids": [1]}],
+        [{"action": "create", "new_text": "# Human\n新增资料。\n", "reason": "错误地新建核心"}],
+    )
+    result = await learner(state, provider).learn(run_ids=[run])
+    assert result["outcome"] == "failed"
+    assert result["error_code"] == "invalid_reflection_output"
+    assert memory.read() == before
+    assert len(provider.requests) == 3
+
+
 async def test_project_group_consolidation_once_with_mixed_conversation_evidence(state):
     db, sessions, memory, run = state
     index.create(memory, "projects/heybuddy.md", TOPIC)

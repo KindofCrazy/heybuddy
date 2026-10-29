@@ -30,6 +30,8 @@ Markdown 是整理后长期知识的权威来源；SQLite 原始消息是历史�
 
 手动 Reflection 仍是独立的提案、审阅、批准流程。P2 开启时旧 MemoryAutomation 暂停自动消费新 Run；P2 关闭后才使用兼容的 off/suggest/auto 配置。后台学习、手动 Reflection 与模型本轮工具授权不是同一回事。
 
+普通聊天不依赖主模型编辑记忆：Learner 负责从实际来源提取和整合，Curator 负责低频维护，MemoryFS 负责最终校验和发布；模型写入工具只在可信本地维护命令显式授权时提供。Curator 默认启用，但到检查时间后还要满足累计更新或长文件条件，并受共享维护预算约束，不能由 enabled 推断已经执行过整理。主模型的只读记忆搜索也不负责更新画像或运行 Reflection。
+
 ## 检索与利用的实际路径
 
 1. 每次请求，ContextBuilder 通过 memory.compile() 读取最新 Core；角色模式过滤 persona.md，保留 human.md 和根 MEMORY.md。不是启动时只读一次，也不把整个主题库全部放进去。

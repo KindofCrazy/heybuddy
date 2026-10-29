@@ -11,9 +11,12 @@ P3 的 LEARN_EXTRACT 增加边界：Canon/示例/模拟角色心境不是用户�
 1. Host 调用 `learn(run_ids=...)` 或 `learn(episode_ids=...)`。`snapshot()` 重新 JOIN Agent/Conversation/Run，拒绝非 completed Run；Episode 必须 finalized。先查询数量/字节预算，再通过原 `read_source()` 加载完整 Run。跨 Conversation 的来源分别携带真实归属、started_at/ended_at，并提供独立处理时间 as_of；按真实来源开始时间排序，相对时间不能按处理日期猜测。摘要只是定位提示。
 2. `create()` 以来源 ID/revision 去重，`_execute()` 先保存 processing。`propose()` 直接 Extraction，允许空列表，不强制 Worthiness。`verify_candidates()` 对每个引用复用 core.evidence 的精确引文校验，confirmed 必须有真实用户消息，不能仅引用 Assistant 或 Tool。
 3. Selection 返回每个目标及 candidate_ids，可另外选有界相关文件进行对照。Host 要求候选完整覆盖、路径唯一、有界；只读真实 catalogue 中的现有路径。拒绝 persona.md 和索引直接写入。
+
 4. 每个目标一次 Consolidation，按实际来源时间排序所有候选，更新当前认识、替换明确过时状态，重复/不确定结果可 no-op/review。`plan_item()` 校验唯一 old_text、expected_hash、大小、Frontmatter 和主题冲突。所有目标计划完成后才开始写入。
 5. 再次校验原始来源哈希及 Episode revision；写入前保存仅含路径、前后哈希的回执。`write_item()` 同步复用 MemoryFS/index.create/index.edit，短锁、Git 隐私、Agent 路径检查和原子文件发布全部保留。每个目标最多一次写入，目标之间让出事件循环。
 6. 文件成功后记录回执，全部终结后任务 completed。空提取、全 no-op 同样完成来源；不修改 Reflection、Episode、Thread 的独立进度。
+
+Consolidation 依据实际 comparison 判断目标是否存在，并传入 target_exists。现有 Core 或主题使用 ExistingFileDecision，只接受 update/no_op/reject/review；只有标题的 human.md 也属于现有文件，首次添加资料须精确替换一个非空原文片段，不能 create。尚不存在的主题继续使用 FileDecision，由 plan_item 校验目录、元数据与创建冲突。不会把模型错误的 create 自动转换成整块覆盖，也不会自动重试请求。tests/test_learning.py 覆盖空白核心的首次更新及错误 create 被拒绝且不写入。
 
 ## 异常与边界
 

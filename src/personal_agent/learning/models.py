@@ -1,5 +1,7 @@
 """Bounded learning policy and target-grouped semantic proposals."""
 
+from typing import Literal
+
 from pydantic import Field
 
 from personal_agent.core.models import Model
@@ -44,3 +46,9 @@ class FileDecision(Model):
             new_text=self.new_text,
             reason=self.reason,
         )
+
+
+class ExistingFileDecision(FileDecision):
+    """Existing blocks/topics can only be edited, including heading-only Core files."""
+
+    action: Literal["update", "no_op", "reject", "review"]

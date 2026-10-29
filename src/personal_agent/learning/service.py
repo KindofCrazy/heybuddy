@@ -9,7 +9,12 @@ from time import monotonic
 from personal_agent.core.evidence import redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
-from personal_agent.learning.models import FileDecision, LearningPolicy, Targets
+from personal_agent.learning.models import (
+    ExistingFileDecision,
+    FileDecision,
+    LearningPolicy,
+    Targets,
+)
 from personal_agent.memory.models import BLOCKS, FILE_BYTES, digest
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError
@@ -46,15 +51,17 @@ LEARN_SELECT = LEARNING_BASE + (
     "up to six existing catalogue paths to read for duplicates/conflicts."
 )
 LEARN_CONSOLIDATE = LEARNING_BASE + (
-    "Perform ONE memory-centric consolidation for this target, considering ALL its candidates "
-    "and the related memory together in source chronology. Current knowledge replaces obsolete "
-    "stages; do not append contradictory current states. Later explicit user corrections override "
-    "older claims. No-op if already accurately captured; review/no_op for unresolved conflict. "
-    "Keep stable preferences; elapsed time alone never invalidates them. Do not infer sensitive "
-    "traits, copy credentials, or promote hypotheses/unaccepted suggestions to facts. "
-    "Return create/update/no_op/reject/review. Update is ONE nonempty unique exact old_text span "
-    "and its new_text replacement. Create requires name/description frontmatter. Never delete "
-    "whole files or change persona/indexes. Non-write actions have empty old_text/new_text."
+    "针对当前目标，把全部候选和相关记忆按来源时间合并成一次整合决定。"
+    "新的明确状态替换已过时状态，不追加互相矛盾的当前事实；用户后来的明确更正优先。"
+    "已经准确记录则 no_op，无法解决的冲突返回 review 或 no_op。"
+    "稳定偏好不因时间经过而失效，不推断敏感特征，不复制凭据，"
+    "不把假设或未经用户接受的建议升级为事实。"
+    "target_exists 由宿主按实际读取结果提供，不按正文多少判断文件是否存在。"
+    "现有文件只能 update/no_op/reject/review；只有标题的 human.md 也已经存在，必须用 update。"
+    "update 的 old_text 必须是目标原文中非空、精确且唯一的片段，new_text 只替换该片段；"
+    "首次添加核心资料时可以精确替换现有标题并保留标题。不为核心块添加主题元数据。"
+    "只有尚不存在的目录下主题文件才能 create，并提供 name/description 元数据。"
+    "不得删除整份文件、修改 persona 或索引；非写入操作的 old_text/new_text 必须为空。"
 )
 
 
@@ -248,11 +255,13 @@ class MemoryLearningService:
                 key=lambda c: max(chronology[(e.conversation_id, e.run_id)] for e in c.evidence)
             )
             # One request and at most one write per target; all evidence remains available.
+            target_exists = group.path in comparison
             result = await self.model.ask(
-                FileDecision,
+                ExistingFileDecision if target_exists else FileDecision,
                 LEARN_CONSOLIDATE,
                 {
                     "target": group.path,
+                    "target_exists": target_exists,
                     "candidates": [c.model_dump() for c in grouped],
                     "history": evidence,
                     "as_of": self.clock.now().isoformat(),
