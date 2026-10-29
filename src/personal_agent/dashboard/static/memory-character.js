@@ -99,6 +99,16 @@ export async function memoryFile(target, path, open, offset = 0, hash = null) {
   }
   return path;
 }
+export function characterPortrait(profile) {
+  if (!profile.portrait_url) return null;
+  const image = node("img", "character-portrait");
+  image.src = profile.portrait_url;
+  image.alt = profile.character_id === "luna" ? "Luna" : profile.character_id;
+  image.decoding = "async";
+  image.width = 1254;
+  image.height = 1254;
+  return image;
+}
 export async function character(target, open) {
   const profile = await get("/api/character");
   if (!profile.enabled) {
@@ -109,6 +119,12 @@ export async function character(target, open) {
       ),
     );
     return ui("Character");
+  }
+  const portrait = characterPortrait(profile);
+  if (portrait) {
+    const figure = node("figure", "character-artwork");
+    figure.append(portrait);
+    target.append(figure);
   }
   target.append(
     badge("STABLE PROFILE"),

@@ -364,6 +364,49 @@ button.nested:active {
 .character-accent {
   background: var(--character);
 }
+.character-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.character-description {
+  min-width: 0;
+}
+.portrait-button {
+  flex: 0 0 auto;
+  padding: 0;
+  border: var(--border-nested);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--ink);
+}
+.character-portrait {
+  display: block;
+  object-fit: cover;
+  width: 100px;
+  height: 100px;
+}
+.character-artwork {
+  margin: 20px 0;
+}
+.character-artwork .character-portrait {
+  width: min(100%, 400px);
+  height: auto;
+  object-fit: contain;
+  border: var(--border-nested);
+  border-radius: 12px;
+}
+@media (max-width: 680px) {
+  .character-identity {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .character-portrait {
+    width: 80px;
+    height: 80px;
+  }
+}
 .badge {
   display: inline-flex;
   align-items: center;

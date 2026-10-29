@@ -89,3 +89,6 @@ Inspector 删除原“来源数据 / 只读、完整详情”底栏及 full-view
 `templates/index.html` 的品牌区只保留 `HB` 与 `HeyBuddy`，二者继承相同字号并垂直居中，删除“观测台”副标题。主标题从 `pages[page][1]` 读取当前导航名称，总览为 Overview / 总览，其他三页使用对应栏目名；图标复用导航的 layout-dashboard、messages-square、book-open、terminal 本地 symbol。`layout.py:PAGES` 的总览标题同步为 Overview，模板不再依赖旧运行上下文中的 Inside the agent。
 
 删除原个人智能体/运行笔记眉题、引导说明、星形装饰、展开你的智能体和只读工作台一行；底部只保留左侧品牌短句，移除仅本机访问/只读/不调用模型说明。查询接口与本机访问约束保持原实现。CSS 清理对应无用规则，小窗口仍显示栏目标题；品牌、导航和语言按钮在窄屏及中等宽度下收紧间距，避免中英文页头溢出，并继续把剩余高度分配给卡片。
+## Luna 设定图
+
+Luna 的用户提供设定图保存于 `static/characters/luna.png`，原始 PNG 不改写。`/api/character` 仅对当前 Luna 返回固定同源 portrait_url，其他角色返回空值；总览显示可点击头像，`memory-character.js:character` 展示完整比例图片。展示资源不参与角色包编译、指纹或模型输入。CSP 的 img-src 允许同源图片，仍禁止外部图片与 data URL；Markdown 渲染及前端 prose 标签白名单继续排除 img。资源来源说明见 `static/characters/README.md`，只读和角色关联测试见 `tests/test_dashboard_portrait.py`。

@@ -59,7 +59,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
                 "Cache-Control": "no-store",
                 "Content-Security-Policy": "default-src 'self'; script-src 'self'; "
                 "style-src 'self'; "
-                "img-src 'none'; connect-src 'self'; object-src 'none'; base-uri 'none'; "
+                "img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; "
                 "frame-ancestors 'none'; form-action 'none'",
                 "X-Content-Type-Options": "nosniff",
                 "Referrer-Policy": "no-referrer",
@@ -256,6 +256,9 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
             {
                 "enabled": True,
                 "character_id": package.character_id,
+                "portrait_url": "/static/characters/luna.png"
+                if package.character_id == "luna"
+                else None,
                 "fingerprint": package.fingerprint,
                 "profile_html": markdown(package.character),
                 "behavior_html": markdown(package.behavior),

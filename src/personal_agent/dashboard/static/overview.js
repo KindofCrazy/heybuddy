@@ -10,6 +10,7 @@ import {
 import { openObject } from "./inspectors.js";
 import { cardsPage } from "./details.js";
 import { memoryWorkspace } from "./memory-workspace.js";
+import { characterPortrait } from "./memory-character.js";
 import { status, timeline, replace } from "./monitor.js";
 
 const content = (id) => document.getElementById(`content-${id}`);
@@ -57,8 +58,26 @@ async function character() {
         empty("No active character package", "Character is disabled."),
       );
     else {
-      box.append(node("h3", "", profile.character_id));
-      box.append(
+      const identity = node("div", "character-identity");
+      const portrait = characterPortrait(profile);
+      if (portrait) {
+        const button = action(
+          "",
+          () => open("character", "current"),
+          "portrait-button",
+        );
+        button.append(portrait);
+        identity.append(button);
+      }
+      const description = node("div", "character-description");
+      description.append(
+        node(
+          "h3",
+          "",
+          profile.character_id === "luna" ? "Luna" : profile.character_id,
+        ),
+      );
+      description.append(
         node(
           "p",
           "notice",
@@ -69,6 +88,8 @@ async function character() {
           ),
         ),
       );
+      identity.append(description);
+      box.append(identity);
       if (state.active?.current_focus)
         box.append(node("p", "muted", state.active.current_focus));
     }

@@ -169,3 +169,9 @@ Memory 路径复用已有穿越、Symlink/Junction、Hardlink 防护；Dashboard
 页面标题直接取当前导航名称，兼容旧服务传入的旧总览 heading。CSS 清理已删除内容的规则，窄屏和中等宽度收紧品牌/控件间距，英文导航也保持可见。短窗口继续显示栏目标题，卡片使用剩余高度。
 
 [桌面（合成数据）](images/observatory-clean-overview-synthetic.png) · [手机（合成数据）](images/observatory-clean-mobile-synthetic.png)。完整离线回归 812 passed、2 skipped，Ruff 检查/格式检查、离线构建和隔离安装 Wheel 的 19 个页面/API/资源请求通过。禁用浏览器扩展的独立 Edge 完成四页 × 七种视口 × 两种语言共 56 组检查，验证标题/图标、品牌对齐、文案删除、页头边界和卡片可用高度，无页面脚本异常。验证仅用合成数据，未调用真实模型。
+
+## Luna 设定图
+
+保存用户提供的原始 PNG 至 `static/characters/luna.png`，源文件和保存文件 SHA-256 相同。当前角色为 Luna 时，总览显示可点击头像，角色详情显示完整比例设定图，其他角色不关联此图。图片不参与模型上下文或角色包指纹；来源单独记于展示资源 README，不混入文字设定的上游许可。
+
+[展示效果（合成数据）](images/observatory-luna-portrait-synthetic.png)。离线回归 927 passed、3 skipped，Ruff 检查/格式检查及离线构建通过；Wheel 内 PNG 与保存原图逐字节一致。独立浏览器验证头像加载、点击完整 1254×1254 图片、桌面/手机/窄屏布局，无 JavaScript 异常。测试保留 Markdown 图片禁用与外部图片 CSP 限制，无真实模型调用。旧服务需重启以加载新的接口与 CSP。
