@@ -28,6 +28,31 @@ async def test_activation_watermark_does_not_silently_relearn_old_runs(state):
     assert learning.repository.activation()["run_floor"] > 0
 
 
+@pytest.mark.parametrize(
+    "text,queued",
+    [
+        ("我是陈宁", True),
+        ("我叫陈宁。", True),
+        ("请叫我小陈", True),
+        ("我的名字是陈宁", True),
+        ("我叫什么名字？", False),
+        ("今天看了一本书。", False),
+    ],
+)
+async def test_self_introduction_is_priority_hint_without_episode_or_model(state, text, queued):
+    db, sessions, _, _ = state
+    provider = FakeProvider()
+    learning = learner(state, provider)
+    run = seed(db, sessions.current.id, text)
+    learning.poll()
+    pending = learning.repository.pending_job("priority")
+    assert bool(pending) is queued
+    if queued:
+        assert [r["id"] for r in pending["sources"]["runs"]] == [run]
+    assert not learning.repository.pending_episodes(3)
+    assert not provider.requests
+
+
 async def test_priority_then_batch_keeps_other_run_and_consolidates_no_op(state):
     db, sessions, memory, _ = state
     learning = learner(state, FakeProvider())

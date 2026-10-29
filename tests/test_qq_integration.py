@@ -102,9 +102,7 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             assert "add_numbers" not in {tool.name for tool in provider.tools[0]}
             assert {tool.name for tool in provider.tools[0]} == {
                 "get_current_time",
-                "deferred_list",
-                "deferred_read",
-                "deferred_index_check",
+                "archival_memory_search",
                 "recall_search",
                 "recall_get",
             }

@@ -1,6 +1,8 @@
 # 工具注册与执行
 
-生产 runtime.assemble_chat() 使用 create_builtin_registry(..., include_add_numbers=False)，不向主模型注册算术演示。旧 Harness 和离线评测保留兼容注册表，避免改动冻结的工具调用基线。生产 CLI/QQ 默认六个工具、完整记忆授权时十二个。
+生产 runtime.assemble_chat() 使用 create_builtin_registry(..., include_add_numbers=False)，不向主模型注册算术演示；register_memory_tools(..., unified_reads=True) 把主题搜索、路径读取、目录与索引检查收拢到 archival_memory_search。旧 Harness 和离线评测保留兼容注册表，避免改动冻结的工具调用基线。生产 CLI/QQ 默认四个工具、完整记忆授权时十个。
+
+统一工具由 memory/archival.py::ArchivalMemoryArguments 严格校验互斥操作，再交给 memory/search.py::search_topics() 或现有 MemoryFS/Index 只读方法；搜索先沿索引建立有界目录，再读取有限正文，不新增知识副本、向量库或写权限。参数、搜索范围、分页与验证见 [Memory](memory.md) 的统一只读入口，以及 tests/test_archival_memory.py。
 
 内置工具的自然语言描述使用中文，API 工具名、参数模型、参数名和执行函数保持不变；描述翻译不参与注册或权限判断。`tests/test_evaluation.py` 将当前主提示词和全部工具说明与中文快照核对，旧英文基线继续保留。
 

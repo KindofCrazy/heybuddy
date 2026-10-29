@@ -2,11 +2,12 @@
 
 ## 角色开启后的记忆分工
 
-开启角色只在自动注入视图中移除 persona.md，不关闭记忆系统。文件仍保存在磁盘上，关闭角色时恢复普通模式的 Core 视图；显式授权的 Core 工具接口也未删除。P2 不自动写 persona.md，也不能修改角色包。
+persona.md 现在保存真实相处形成的认识、共同经历与交流反思，首行为“# 相处记忆”。后台 Learner 只接受带用户证据的 relationship 候选，沿用精确编辑和发布回执；角色开启后也会作为低信任 Core 数据提供，不改写 soul.md。旧的非空静态人格文件保持原字节、不自动重新解释，角色模式继续过滤它；旧空 # Persona 模板可在首次关系学习时转换。Curator 暂不修改相处记忆，手动维护仍需原授权。
 
 | 内容 | 存储位置 | 如何使用 |
 | --- | --- | --- |
 | 稳定人格 | 角色包 soul.md | 装配时读取，每次主请求编译为系统正文 |
+| 相处认识与交流反思 | Agent 记忆目录 persona.md | 后台按真实证据更新，每次请求注入；不定义稳定人格 |
 | 用户重要信息与偏好 | Agent 记忆目录 human.md | 每次请求重新编译并注入 |
 | 记忆索引与重要原则 | Agent 记忆目录根 MEMORY.md | 每次请求注入，用于渐进发现主题 |
 | 整理后的项目、人物与知识 | 主题 Markdown 及各层 MEMORY.md | 有界自动选取相关章节，或由模型用工具按需读取 |
@@ -24,7 +25,7 @@ Markdown 是整理后长期知识的权威来源；SQLite 原始消息是历史�
 1. 用户输入由 Agent/ContextBuilder 写入 SQLite；Run、完整内部消息、工具调用及结果按原事务契约保存。中断记录保留审计，不自动重放或重试历史操作。
 2. 回答交付后，ChatService.after_reply() 通知既有维护运行时。达到空闲或积累条件时，EpisodeOrganizer 整理已完成来源，ThreadOrganizer 维护跨片段话题；新前台输入可以抢占维护工作。
 3. P2 默认启用，但实际开关以启动配置为准。明确的记住、偏好、决定、更正等信号可进入 Priority 队列；普通内容通过 finalized Episode 的 Batch 进入学习。不是每句话立即写长期记忆，也不默认回头补学所有旧历史。
-4. MemoryLearningService 读取有界真实来源，提取候选、核对精确引文、读取现有记忆、按目标文件整合；重复和不确定内容可以不写或留待审阅。目标主要是 human.md 和主题文件，不写 persona.md 或角色包。说“记住”是学习线索，不等于给主 Agent 的记忆工具授予写权限。
+4. MemoryLearningService 读取有界真实来源，提取候选、核对精确引文、读取现有记忆、按目标文件整合；重复和不确定内容可以不写或留待审阅。用户资料主要进入 human.md，关系候选进入可用的 persona.md，详细知识进入主题文件，不改写角色包。说“记住”是学习线索，不等于给主 Agent 的记忆工具授予写权限。
 5. 发布复用 MemoryFS/index：检查 Agent 路径、Git 隐私、容量、expected_hash 及局部精确匹配，在短锁内原子替换文件，并维护必要索引。人工编辑发生冲突时不覆盖。文件与 SQLite 没有共同事务，部分成功保留回执，由有界核对处理，不能声称回滚成功。
 6. 低频 Curator 对少量相关文件去重、整理及核对有证据的状态变化；不是定时全库重写。失败或真实冲突继续保护，部分结果不盲目重做。
 
@@ -34,23 +35,21 @@ Markdown 是整理后长期知识的权威来源；SQLite 原始消息是历史�
 
 ## 检索与利用的实际路径
 
-1. 每次请求，ContextBuilder 通过 memory.compile() 读取最新 Core；角色模式过滤 persona.md，保留 human.md 和根 MEMORY.md。不是启动时只读一次，也不把整个主题库全部放进去。
+1. 每次请求，ContextBuilder 通过 memory.compile() 读取最新 Core；角色模式保留关系语义的 persona.md、human.md 和根 MEMORY.md，仅过滤旧静态人格。不是启动时只读一次，也不把整个主题库全部放进去。
 2. ContextRetriever 在有个人或历史依赖线索时尝试检索；普通通用问题走快速路径。MemoryLookup 沿实际索引构造有界目录，用词法匹配挑选少量文件/章节。没有向量或 Embedding 数据库。
 3. 历史路径有界匹配 Thread/Episode，必要时补充完整原始 Run。候选不明确且配置允许时，Preflight 只选择已有候选，可能增加一次受限模型请求；失败保留确定性结果。
 4. ContextBuilder 去重并按剩余预算放入相关主题、话题线索和历史。可选材料放不下可省略，不挤掉当前用户消息。索引、摘要和文件修改时间不等于事实已经确认。
-5. 主模型需要补充细节时，调用 deferred_list/deferred_read 渐进读取；需要过去具体说法时，用 recall_search 搜索、recall_get 展开。Recall 基于 SQLite 字面 FTS/受限短查询，原始检索只开放当前 Agent 的 completed/failed 历史，不执行旧工具调用。
+5. 主模型需要补充细节时，调用 archival_memory_search 搜索主题正文、读取路径/索引或分页查看目录；需要过去具体说法时，用 recall_search 搜索、recall_get 展开。Recall 基于 SQLite 字面 FTS/受限短查询，原始检索只开放当前 Agent 的 completed/failed 历史，不执行旧工具调用。
 6. 模型用当前提供的材料自然回答。工具调用和结果保存为普通消息并进入后续轮次；自动注入的 Core、时间和检索引用不追加为新的 Journal 原始消息。
 
 ## 注册了哪些工具
 
-共享 runtime.assemble_chat() 注册 12 个生产工具。普通 CLI 输入和 QQ 被动消息默认没有写权限，通常提供以下 6 个：
+共享 runtime.assemble_chat() 注册 10 个生产工具。普通 CLI 输入和 QQ 被动消息默认没有写权限，通常提供以下 4 个：
 
 | 工具 | 用途 |
 | --- | --- |
 | get_current_time | 获取当前时间 |
-| deferred_list | 分页查看记忆目录元数据 |
-| deferred_read | 分页读取主题或索引 |
-| deferred_index_check | 只读检查索引问题 |
+| archival_memory_search | 统一搜索主题、读取路径/索引、分页列目录或检查索引 |
 | recall_search | 搜索过去原始对话 |
 | recall_get | 展开命中消息附近的历史 |
 
@@ -65,13 +64,15 @@ Markdown 是整理后长期知识的权威来源；SQLite 原始消息是历史�
 | deferred_edit | deferred.update | 局部编辑主题或索引 |
 | deferred_index_repair | deferred.update | 修复允许自动维护的索引条目 |
 
-CLI `/memory read <请求>` 仅在本 Run 增加 memory.read，共 7 个工具；`/memory edit <请求>` 增加 memory.read、memory.update、deferred.update，共 12 个。下一次普通输入不继承授权。QQ 入口明确传入空权限集合。Reflection、Learner、Curator、Episode/Thread 和角色状态服务是宿主内部流程，不作为主模型工具注册。add_numbers 只保留在兼容的离线 Harness/评测注册表中，生产装配显式禁用。
+CLI `/memory read <请求>` 仅在本 Run 增加 memory.read，共 5 个工具；`/memory edit <请求>` 增加 memory.read、memory.update、deferred.update，共 10 个。下一次普通输入不继承授权。QQ 入口明确传入空权限集合。Reflection、Learner、Curator、Episode/Thread 和角色状态服务是宿主内部流程，不作为主模型工具注册。add_numbers 以及旧分立的只读工具只保留在兼容的离线 Harness/评测注册表中，生产装配不提供。
+
+统一入口的 query/path/directory/check_index 只选择一种：query 搜索有界索引和主题正文；query 或 path 为 index 时读取根 MEMORY.md；path 按相对路径读取；directory 为空字符串时列根目录；check_index=true 只检查索引。搜索最多扫描 16 个已索引主题、131072 字节，返回最多 5 个片段及文件 hash；scope_limited 表示范围不完整，空结果不等于全库不存在。读取沿用 limit、next_offset、expected_hash，不提供画像读写或任意文件访问。
 
 ## 哪些信息实际发送给模型
 
 - messages 包含角色系统正文、过滤后的 Core、可选会话摘要、运行时时间、有效角色状态/来源、预算允许的检索结果、近期历史及当前 Run。
 - 工具名称、中文描述和参数 JSON Schema 由 ToolRegistry.definitions(permissions=...) 过滤后，通过 Provider 的独立 tools 字段发送。它们不一定出现在单独导出的系统正文里，但计入总上下文预算。
-- Agent 最后一轮不提供工具定义，要求结束回答；因此“默认 6 个”不表示每个请求都固定有 6 个。
+- Agent 最后一轮不提供工具定义，要求结束回答；因此“默认 4 个”不表示每个请求都固定有 4 个。
 - 模型返回调用后，注册表仍检查未知工具、当前权限和严格参数，随后顺序执行。工具文字不是权限授予机制。
 
 ## 本轮提示词与时间调整

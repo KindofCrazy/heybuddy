@@ -1,5 +1,9 @@
 # Reflection 与长期记忆整合
 
+Reflection 从已完成原始对话提取值得长期保存的信息，读取相关现有记忆后生成带来源、理由和精确局部修改的计划，手动流程须批准后发布。它关注“对话带来了什么新认识”。Curator 从已存的少量记忆出发去重、整理及核对过时状态，事实更正仍须相关真实用户证据，关注“已有记忆是否一致、清楚、可用”；它不能替代学习，也不是再次全量阅读聊天。当前 P2 Learner 自动复用 Reflection 的底层请求、证据校验和 Writer，但不自动批准手动计划；P2 开启时旧 suggest/auto Automation 暂停。
+
+关系语义更新后，Candidate 增加 relationship 类别，EXTRACT/CONSOLIDATE 说明 persona.md 保存有用户证据的相处认识，首行为“# 相处记忆”，不承担稳定角色身份。手动计划仍先展示再审批；Learner 的额外自动目标限制见 [Learning](learning.md)，Curator 暂不修改 persona.md。新增快照 relationship-memory-context.json 描述当前提示词，历史评测快照不覆盖。
+
 P2 复用本服务的请求、来源投影/校验、比较和计划验证，手动 reflect/apply 的审批语义不变。reflection/writer.py 抽取原单文件写入与只读核对供两者复用；P2 自动授权只在专门 Host 服务，不通过新增 approval_source 或模型工具绕过人工审批。ReflectionModel.ask() 返回后重验 timeout/cancellation，并记录请求、输入/输出和 reasoning 子集；不存放响应正文或秘密。P2 独立进度不推进原 reflection_progress。真实执行链见 [Learning](learning.md)。
 
 ## 职责与架构组成

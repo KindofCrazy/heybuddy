@@ -41,6 +41,7 @@ class Candidate(Model):
         "correction",
         "ongoing_goal",
         "current_state",
+        "relationship",
     ]
     subject: str = Field(min_length=1, max_length=120)
     content: str = Field(min_length=1, max_length=1600)

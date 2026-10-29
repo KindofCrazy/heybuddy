@@ -1,8 +1,18 @@
 # MemoryFS：Core、Deferred 与索引
 
+## 关系记忆和统一只读入口
+
+`core/persona.py` 定义关系标题和新旧语义识别。新目录的 persona.md 默认为“# 相处记忆”；已有非空旧人格不会迁移或覆盖，旧空模板可在首次关系学习时精确更新。`learning/service.py` 只允许带用户证据的 relationship 候选更新此块，结果保留关系标题；`core/character.py::without_legacy_persona()` 将它作为低信任 Core 数据注入，角色包保持只读。跨存储部分失败继续使用相同回执与只读核对。验证见 tests/test_relationship_memory.py；最小读取仍为 memory.read().blocks["persona.md"]。
+
+生产 `runtime.assemble_chat()` → `register_memory_tools(..., unified_reads=True)` → `memory/archival.py::archival_memory()`：ArchivalMemoryArguments 只允许 query/path/directory/check_index 四选一；query 搜索、path 读取、directory 分页列目录、check_index 检查索引。query 或 path 为 index 时读取根 MEMORY.md。后面三条路径直接复用 MemoryFS.list_directory/read_file 或 index.inspect，保留原 Agent 路径、Symlink/Junction、分页、hash 和输出限制。主模型不能借此读取 human.md/persona.md 正文或写入文件；非法组合在 Registry 返回 invalid_arguments，文件/冲突等错误返回关联 call_id 的安全工具结果。
+
+搜索由 `memory/search.py::search_topics()` 调用 MemoryLookup.catalogue/rank，从真实索引构造有界目录，优先相关元数据，再扫描最多 16 个主题和 131072 正文字节；不做无界目录遍历。正文按词法匹配排序，最多返回 5 个各约 512 字节的片段，附路径、hash、字符 offset 和截断标志；scope_limited 表示目录或正文搜索范围不完整，不把空结果解释为全库不存在。单文件和整体工具输出仍受原限制。读取详情可传 path、offset、expected_hash；文件在两次读取间变化会返回 memory_conflict。它不调用模型，不新增 SQLite 知识正文、向量库或后台循环。
+
+最小工具请求：`{"query":"实验结果"}`、`{"path":"index"}`、`{"directory":""}`、`{"check_index":true}`。tests/test_archival_memory.py 覆盖正文命中、单字查询、继续读取、hash 冲突、互斥参数、路径隔离、搜索范围及下一轮工具结果关联。旧分立读取工具只在默认兼容注册表中保留，生产默认四个工具、完整本地记忆授权十个。离线评测新增 relationship-memory-context.json 快照，历史基线不覆盖，也不据 FakeProvider 结果声称语义收益。
+
 `memory/tools.py` 注册的工具说明使用中文，保留 expected_hash、old_text、分页与部分成功等准确参数语义；权限、处理函数和文件写入流程不变。当前描述通过 `tests/test_evaluation.py` 与中文快照核对，实际执行仍由 MemoryFS 与注册表校验。
 
-P2 沿用本模块 MemoryFS/Index/Markdown 布局，未增加知识正文副本或版本系统。Host 的 Learner/Curator 调用共用 reflection/writer.py，plan_item() 在自动或手动提案发布前通过 memory/safety.py 保守拒绝凭据模式，原路径/隐私/hash/原子替换/大小检查不变。自动服务不修改 persona.md，索引由现有 index.create/edit 维护；Main Agent 工具权限未放宽。跨存储部分失败的只读核对和显式安全重试见 [Learning](learning.md)、[Curator](curator.md)。凭据模式并非完备秘密识别器，不应将 Memory 当凭据存储。
+P2 沿用本模块 MemoryFS/Index/Markdown 布局，未增加知识正文副本或版本系统。Host 的 Learner/Curator 调用共用 reflection/writer.py，plan_item() 在自动或手动提案发布前通过 memory/safety.py 保守拒绝凭据模式，原路径/隐私/hash/原子替换/大小检查不变。Learner 可更新关系语义的 persona.md，Curator 暂不更新此块，索引由现有 index.create/edit 维护；Main Agent 工具权限未放宽。跨存储部分失败的只读核对和显式安全重试见 [Learning](learning.md)、[Curator](curator.md)。凭据模式并非完备秘密识别器，不应将 Memory 当凭据存储。
 
 ## 职责与架构组成
 

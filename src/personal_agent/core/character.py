@@ -5,6 +5,7 @@ from typing import Protocol, runtime_checkable
 
 from personal_agent.core.budget import ContextError
 from personal_agent.core.models import TextMessage
+from personal_agent.core.persona import relationship_persona
 
 
 class CharacterContext(Protocol):
@@ -33,6 +34,12 @@ def without_legacy_persona(compiled: str) -> str:
         or not isinstance(data.get("blocks"), dict)
     ):
         raise ContextError("character_core_contract", "Character mode needs structured Core data.")
-    data["blocks"].pop("persona.md", None)
-    data["legacy_persona"] = "preserved_on_disk_not_active_identity"
+    persona = data["blocks"].get("persona.md", "")
+    if not isinstance(persona, str):
+        raise ContextError("character_core_contract", "Persona must be Markdown text.")
+    if relationship_persona(persona):
+        data["persona_semantics"] = "relationship_memory_not_character_identity"
+    else:
+        data["blocks"].pop("persona.md", None)
+        data["legacy_persona"] = "preserved_on_disk_not_active_identity"
     return json.dumps(data, ensure_ascii=False)

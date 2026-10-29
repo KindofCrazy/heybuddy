@@ -144,7 +144,9 @@ class LearningRepository:
                 and policy.priority_enabled
                 and re.search(
                     r"记住|偏好|正式决定|明确更正|记错了|以后.{0,20}回答|\bremember\b|\bprefer\b|"
-                    r"\bwe (?:have )?decided\b|\bcorrection\b",
+                    r"\bwe (?:have )?decided\b|\bcorrection\b|"
+                    r"^\s*(?:我叫(?!什么)|我的名字是|请叫我|叫我)[^？?。\n]{1,20}[。！!]*\s*$|"
+                    r"^\s*我是[\u4e00-\u9fff]{2,4}[。！!]*\s*$",
                     row["text"] or "",
                     re.I,
                 )

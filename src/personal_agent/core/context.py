@@ -19,7 +19,7 @@ HOST_ANSWER_RULES = (
 )
 HOST_EXECUTION_RULES = (
     "涉及已命名的项目或已存主题时，沿根索引中的相关链接读取目录 MEMORY.md 和所需主题，只读"
-    '必要内容。所有路径均相对记忆根目录；deferred_list 的根目录参数为 directory=""，不能使'
+    '必要内容。所有路径均相对记忆根目录；记忆目录查询的根目录参数为 directory=""，不能使'
     '用 "." 或 "/"。不猜文件名，不扫描无关主题。查询过去讨论时，用简短的字面关键词调用 '
     "recall_search，需要上下文再调用 recall_get。"
     "历史讨论可能过时，以最新明确纠正优先于旧决定。"
@@ -40,8 +40,8 @@ HOST_EXECUTION_RULES = (
 DEFAULT_SYSTEM_PROMPT = (
     "你是帮助用户处理问题的个人助理。"
     + HOST_ANSWER_RULES
-    + "核心记忆 persona.md、human.md 和根索引 MEMORY.md 已提供。"
-    + HOST_EXECUTION_RULES
+    + "核心记忆已提供：human.md 是用户资料，persona.md 的相处记忆用于理解真实互动与交流反思，"
+    "不定义稳定角色人格；根 MEMORY.md 是主题索引。" + HOST_EXECUTION_RULES
 )
 
 

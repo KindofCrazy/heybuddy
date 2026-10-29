@@ -32,7 +32,7 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [P3 短期状态](docs/modules/character-state.md) 仅在角色 E2 启用后于 Idle 维护，按真实角色 Run 来源保存模拟 Mood/Focus，有独立有效期并共享 P1/P2 预算；不主动发消息。`/character status|run|retry` 查看或调试。
 
-启用时在已有可信配置中设置 `AGENT_CHARACTER_ID=sherlock_bbc`，保持实际模型窗口配置；`none` 恢复普通模式。旧 persona.md 保留但角色启用时不注入；human.md 与 P2 偏好继续使用。`AGENT_CHARACTER_STATE_ENABLED=false` 可关闭状态请求，E0/E1 也不请求状态。角色包是行为模拟，不代表真实人的情绪或经历。
+启用时在已有可信配置中设置 `AGENT_CHARACTER_ID=sherlock_bbc`，保持实际模型窗口配置；`none` 恢复普通模式。persona.md 现在保存有真实用户证据的相处认识与反思，并在角色模式注入；旧的非空静态人格仍保留且不自动重新解释。human.md 保存用户资料，soul.md 保持稳定人格。`AGENT_CHARACTER_STATE_ENABLED=false` 可关闭状态请求，E0/E1 也不请求状态。角色包是行为模拟，不代表真实人的情绪或经历。
 
 [P3 离线评测](docs/modules/character-evaluation.md)：`uv run python -m personal_agent.evaluation.character`，13 个情境含 20 轮漂移，E0/E1/E2 固定条件对比；默认无网络/费用。FakeProvider 只验证工程契约，真实角色一致性需后续显式生成和人工审阅。
 
@@ -44,7 +44,7 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 P2 自动 Learning 默认启用，接管旧的回答后 Automation；首次启动只记录水位，不静默重学历史。普通路径在 Idle 按 Finalized Episode 数量/六小时等待触发；明确记住/决定/更正可后台优先处理。`/memory learning status|run|retry` 查看和调试，`AGENT_MEMORY_LEARNING_ENABLED=false` 关闭 P2 并恢复原 Automation 配置。含不确定发布的任务先用 `reconcile <job_id>` 核对，不盲目重写。
 
-持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；P2 默认通过 Host 策略自动学习到受限 Markdown，不修改 persona；关闭 P2 后可沿用原回答后提案与审批模式；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
+持久 Agent 拥有多个独立 Conversation；每个 Conversation 保存完整 Message 与 Run。重启可继续上次会话，创建新会话则不会自动继承其他会话的聊天记录。借鉴 [Letta Code 的会话消息路由](https://github.com/letta-ai/letta-code/blob/main/src/agent/list-messages-routing.ts) 对 Agent 与 Conversation 的分离，以及 Markdown Core Memory 的思路，不复制其复杂后端。 **Conversation History 与 Core Memory 独立**：前者按会话隔离，后者归属 Agent、每次请求自动编译。Core Memory 可通过本轮显式授权的受限工具修改，或由用户批准具体 Reflection 计划后更新；P2 默认通过 Host 策略自动学习到受限 Markdown，关系候选可更新相处记忆，不修改角色包；关闭 P2 后可沿用原回答后提案与审批模式；Recall 可以在同一 Agent 的不同会话之间查找已结束的历史文本。
 
 三层分工：**Core** 每次请求加载身份、稳定偏好和根索引；**Deferred** 保存按主题提炼的长期理解，由模型沿分层 MEMORY.md 按需读取；**Recall** 查询原始历史证据。普通 Markdown 是 Core/Deferred 的唯一权威源，可以直接在编辑器修改。没有 Git-backed Memory 或 Snapshot 版本系统。
 

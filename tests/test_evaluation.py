@@ -109,10 +109,18 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     p1 = json.loads((root / "p1-working-context.json").read_text(encoding="utf-8"))
     current = capture(tmp_path / "snapshot")
     chinese = json.loads((root / "chinese-main-context.json").read_text(encoding="utf-8"))
-    assert current == chinese
-    assert {k: v for k, v in current.items() if k not in {"main", "tools"}} == {
+    relationship = json.loads(
+        (root / "relationship-memory-context.json").read_text(encoding="utf-8")
+    )
+    assert current == relationship
+    assert {k: v for k, v in chinese.items() if k not in {"main", "tools"}} == {
         k: v for k, v in p1.items() if k not in {"main", "tools"}
     }
+    assert current["summary"] == chinese["summary"]
+    assert current["worthiness"] == chinese["worthiness"]
+    assert current["tools"] == chinese["tools"]  # Legacy offline tool fixtures stay frozen.
+    assert current["reflection"]["BASE"] == chinese["reflection"]["BASE"]
+    assert current["reflection"]["SELECT"] == chinese["reflection"]["SELECT"]
     assert current["main"] != p1["main"]  # Explicit Chinese translation, no measured gain.
     assert current["tools"].keys() == p1["tools"].keys()
     assert {key: value for key, value in p1.items() if key != "summary"} == {

@@ -31,7 +31,7 @@
 
 没有 soul 时才读取 character.md、behavior.md、examples.md、lore.md，保留旧必需章节和关键词示例选择。英文标题映射和 select_examples() 只服务兼容路径；新包不再维护十二套五字段说明。
 
-角色包只读，P2 不修改它；启用时仅在 Core 注入视图移除 persona.md，文件与 MemoryFS 语义不变，human.md 和 MEMORY.md 保留。关闭角色恢复旧视图。注册表仍逐 Run 过滤工具并在执行前复查权限。
+角色包只读，P2 不修改它。core/persona.py::relationship_persona() 识别“# 相处记忆”或旧空模板；core/character.py::without_legacy_persona() 保留关系语义的 persona.md 并标注其不定义稳定人格，仅在注入视图移除非空旧静态人格。原文件不被自动改写，human.md 和 MEMORY.md 保留。Learner 对关系候选的来源、标题与精确编辑校验见 [Learning](learning.md)，tests/test_relationship_memory.py 验证后台写入、数据注入、角色系统正文不变和旧人格保护。注册表仍逐 Run 过滤工具并在执行前复查权限。
 
 角色文件只定义虚构身份和表达，不是工具、权限或事实的来源；这类实现说明留在开发文档，不再通过额外规则段落注入角色提示词。具体参数、精确编辑、分页和部分成功处理由工具说明提供，注册表与 MemoryFS 继续强制校验。删除文字不修改文件写入权限或动态数据的消息角色。
 

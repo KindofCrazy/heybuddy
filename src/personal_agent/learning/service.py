@@ -9,6 +9,7 @@ from time import monotonic
 from personal_agent.core.evidence import redact
 from personal_agent.core.history import HistoryError
 from personal_agent.core.memory import CoreMemoryError
+from personal_agent.core.persona import PERSONA_HEADER, relationship_persona
 from personal_agent.learning.models import (
     ExistingFileDecision,
     FileDecision,
@@ -40,13 +41,18 @@ LEARN_EXTRACT = EXTRACT.replace("temporary state", "one-off ephemeral context") 
     "or real shared experiences. Preserve explicit interaction preferences, including requests "
     "for brief replies, no choice menus or no routine action lists. Do not rewrite character "
     "identity/personality from these preferences."
+    " 相处认识与反思使用 relationship 类别：只总结真实互动、用户明确反馈及有用户证据的共同经历。"
+    "用户自身的姓名、背景和一般偏好仍使用原类别，不把它们重复当作关系反思。"
+    "不得推断亲密程度、依赖或未表达的感情，不把角色原作和模拟心境当作关系事实。"
 )
 LEARNING_BASE = BASE.replace("temporary state", "ephemeral one-off context")
 LEARN_SELECT = LEARNING_BASE + (
     "Group ALL candidate_ids exactly once by one canonical target path. Prefer existing topics; "
     "select related existing files for comparison by reusing their path. Core preferences may "
-    "target human.md. Never target persona.md or an index. A new topic path is allowed only "
-    "under a directory with a .md suffix. Merge related candidates into ONE group per file. "
+    "target human.md. Relationship candidates alone may target persona.md when "
+    "relationship_memory_available is true; never reinterpret a legacy persona identity. "
+    "Never target an index. A new topic must be a .md file under a directory. "
+    "Merge related candidates into ONE group per file. "
     "Preserve chronology and supplied max_files. Return groups [{path,candidate_ids}] and paths: "
     "up to six existing catalogue paths to read for duplicates/conflicts."
 )
@@ -61,7 +67,9 @@ LEARN_CONSOLIDATE = LEARNING_BASE + (
     "update 的 old_text 必须是目标原文中非空、精确且唯一的片段，new_text 只替换该片段；"
     "首次添加核心资料时可以精确替换现有标题并保留标题。不为核心块添加主题元数据。"
     "只有尚不存在的目录下主题文件才能 create，并提供 name/description 元数据。"
-    "不得删除整份文件、修改 persona 或索引；非写入操作的 old_text/new_text 必须为空。"
+    "persona.md 只保存有用户证据的相处认识、共同经历与交流反思，不保存稳定角色设定或模拟情绪；"
+    "整合后必须保留首行 # 相处记忆；旧的空 # Persona 模板首次更新时改用该标题。"
+    "不得删除整份文件、修改角色包或索引；非写入操作的 old_text/new_text 必须为空。"
 )
 
 
@@ -218,13 +226,15 @@ class MemoryLearningService:
         candidates = [
             dict(candidate_id=n, **c.model_dump()) for n, c in enumerate(extraction.candidates, 1)
         ]
+        core = self.memory.read().blocks
         selection = await self.model.ask(
             Targets,
             LEARN_SELECT,
             {
                 "candidates": candidates,
                 "catalogue": catalog,
-                "core": {k: redact(v) for k, v in self.memory.read().blocks.items()},
+                "core": {k: redact(v) for k, v in core.items()},
+                "relationship_memory_available": relationship_persona(core["persona.md"]),
                 "max_files": self.policy.max_files,
             },
         )
@@ -244,12 +254,17 @@ class MemoryLearningService:
         )
         items = []
         for group in selection.groups:
-            if group.path in {"persona.md", "MEMORY.md"} or group.path.endswith("/MEMORY.md"):
+            if group.path == "MEMORY.md" or group.path.endswith("/MEMORY.md"):
                 raise ReflectionError("learning_target_forbidden")
             self.memory.path(group.path)
             if group.path not in comparison and group.path in known:
                 raise ReflectionError("unread_update_target")
             grouped = [extraction.candidates[i - 1] for i in sorted(group.candidate_ids)]
+            if group.path == "persona.md" and (
+                not relationship_persona(comparison["persona.md"])
+                or any(c.category != "relationship" for c in grouped)
+            ):
+                raise ReflectionError("learning_relationship_target_forbidden")
             chronology = {(cid, s.run_id): n for n, (cid, s) in enumerate(records)}
             grouped.sort(
                 key=lambda c: max(chronology[(e.conversation_id, e.run_id)] for e in c.evidence)
@@ -272,16 +287,20 @@ class MemoryLearningService:
             merged = grouped[-1].model_copy(deep=True)
             if any(c.confidence != "confirmed" for c in grouped):
                 merged.confidence = "uncertain"
-            items.append(
-                plan_item(
-                    self.memory,
-                    len(items) + 1,
-                    merged,
-                    result.decision(group.path, len(items) + 1),
-                    comparison,
-                    catalog,
-                )
+            item = plan_item(
+                self.memory,
+                len(items) + 1,
+                merged,
+                result.decision(group.path, len(items) + 1),
+                comparison,
+                catalog,
             )
+            if group.path == "persona.md" and item.decision.action == "update":
+                before = comparison["persona.md"]
+                after = before.replace(item.decision.old_text, item.decision.new_text, 1)
+                if not after.startswith(PERSONA_HEADER):
+                    raise ReflectionError("learning_relationship_header_required")
+            items.append(item)
         return items
 
     def evidence(self, records: list) -> list[dict]:
@@ -511,7 +530,7 @@ class MemoryLearningService:
         for op in operations:
             if deadline is not None and monotonic() >= deadline:
                 break
-            if op["path"] in {"persona.md", "MEMORY.md"} or op["path"].endswith("/MEMORY.md"):
+            if op["path"] == "MEMORY.md" or op["path"].endswith("/MEMORY.md"):
                 op["code"] = "learning_target_forbidden"
                 continue
             try:

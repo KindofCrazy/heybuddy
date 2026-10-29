@@ -46,6 +46,8 @@ EXTRACT = BASE + (
     "Do not turn a one-off hypothetical idea or fictional example into a permanent prohibition. "
     "Omit ephemeral disclaimers unless they correct an actually asserted durable fact. "
     "Keep evidence quotes concise; include only enough to verify the claim."
+    " 真实互动形成的相处认识、共同经历和交流反思使用 relationship 类别，并引用用户证据；"
+    "不把原作背景、模拟心境或未表达的感情当作关系事实。"
 )
 SELECT = BASE + (
     "Select at most six existing relevant file paths from the complete bounded catalogue. "
@@ -57,8 +59,11 @@ CONSOLIDATE = BASE + (
     "no_op/reject/review. Compare existing memories, prefer one home per subject and update "
     "contradictions in place; later explicit corrections take precedence. No-op when already "
     "captured. Reject ephemeral/unconfirmed content; review unresolved conflicts. Core must stay "
-    "lean: stable preferences in human.md, identity in persona.md, detailed projects/knowledge "
-    "in topic files. Update only a supplied file using a nonempty unique exact old_text span; "
+    "lean: user facts/preferences in human.md, evidenced relationship reflections in persona.md "
+    "with first line '# 相处记忆', detailed projects/knowledge "
+    "in topic files. Never reinterpret a nonempty legacy persona identity as relationship memory "
+    "or rewrite character packages. Existing Core blocks require update, even when heading-only. "
+    "Update only a supplied file using a nonempty unique exact old_text span; "
     "new_text replaces only that span. Create a topic under a directory with name/description "
     "frontmatter; indexes are maintained by the host. Do not propose file deletion. "
     "For non-write actions path/old_text/new_text must be empty. Explain reasons and relationships "

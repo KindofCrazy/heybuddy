@@ -4,9 +4,9 @@
 
 QQ 仍使用相同角色、Core 注入、主题/历史检索、会话压缩、Episode/Thread、P2 Learning/Curator 和角色状态；后台任务是否执行取决于共享配置与调度条件，不因 QQ 而全部关闭。
 
-QQAdapter._process() 对所有斜杠管理命令返回本地 CLI 提示，普通消息明确传入空 permissions。因此不提供 memory_read、memory_edit、memory_update、deferred_create、deferred_edit、deferred_index_repair，也不开放 /reflect 审阅批准、索引修复或会话管理。human.md 与 MEMORY.md 仍自动提供，主题读取和 Recall 仍可用；后台 Learning 的写入权限独立，不需要主模型获得 memory.update。
+QQAdapter._process() 对所有斜杠管理命令返回本地 CLI 提示，普通消息明确传入空 permissions。因此不提供 memory_read、memory_edit、memory_update、deferred_create、deferred_edit、deferred_index_repair，也不开放 /reflect 审阅批准、索引修复或会话管理。human.md 与 MEMORY.md 仍自动提供，统一主题检索和 Recall 仍可用；后台 Learning 的写入权限独立，不需要主模型获得 memory.update。
 
-目前没有 QQ 远程管理权限开关。如需开放，应新增受信白名单管理命令解析，逐 Run 授权并保留批准对象绑定，不能把普通消息内容当作权限。当前仍保持原策略。生产入口移除 add_numbers 后，普通 QQ 请求通常提供六个工具，终轮不提供工具。
+目前没有 QQ 远程管理权限开关。如需开放，应新增受信白名单管理命令解析，逐 Run 授权并保留批准对象绑定，不能把普通消息内容当作权限。当前仍保持原策略。生产入口移除 add_numbers 后，普通 QQ 请求通常提供四个工具，终轮不提供工具。
 
 ## 职责与架构组成
 
@@ -61,7 +61,7 @@ schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁�
 
 `uv run personal-agent qq --discover-openid` 单独通过 `config.load_qq_settings()` 加载 QQ 配置，不要求 OpenAI Key、模型或 Context Window；不打开数据库/MemoryFS/Character。只在官方 TLS Gateway 收到第一条有效 C2C 文本时输出 author.user_openid，绝不打印正文/原事件，不回复，随后退出。默认最多等待 120 秒（`AGENT_QQ_DISCOVERY_SECONDS`，最多 600），不自动允许该 OpenID，须用户核对测试账号后写入白名单。
 
-关闭 P2 自动学习可以设置 `AGENT_MEMORY_LEARNING_ENABLED=false`；同时设置 `AGENT_MEMORY_AUTOMATION=off`，避免启动兼容的建议式 Reflection。已有 Core/Deferred/Recall 检索继续可用。P1/P3 的空闲维护仍按宿主现有配置与预算执行；角色开关和来源与 CLI 相同，不修改 persona.md 或 Character Core。
+关闭 P2 自动学习可以设置 `AGENT_MEMORY_LEARNING_ENABLED=false`；同时设置 `AGENT_MEMORY_AUTOMATION=off`，避免启动兼容的建议式 Reflection。已有 Core/Deferred/Recall 检索继续可用。P1/P3 的空闲维护仍按宿主现有配置与预算执行；角色开关和来源与 CLI 相同，关系语义的 persona.md 可由后台 Learner 按真实证据维护，Character Core 仍只读。
 # 同进程 Observatory
 
 `QQGateway.state` 从真实连接过程更新为 not_started/connecting/ready/reconnecting/error/stopped。`run_qq` 将 Gateway 状态与 consumer 是否存活绑定到共享 `ChatService.qq_status`，不返回 Session ID、OpenID 或 token；Web 不增加消息消费或发送任务。

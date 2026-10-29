@@ -63,6 +63,7 @@ class MemoryLookup:
 
     def catalogue(self) -> list[dict]:
         """Follow real root-relative index links; don't scan topic bodies or arbitrary paths."""
+        self.catalogue_limited = False
         pending = ["MEMORY.md"]
         visited = set()
         rows = {}
@@ -89,9 +90,11 @@ class MemoryLookup:
                             "description": redact(link[0]),
                         }
                         if len(rows) >= self.policy.catalogue_limit:
+                            self.catalogue_limited = True
                             return list(rows.values())
                 if used >= self.policy.index_bytes:
                     break
+        self.catalogue_limited = bool(pending)
         return list(rows.values())
 
     def rank(self, catalog: list[dict], query: str) -> list[tuple[int, dict]]:

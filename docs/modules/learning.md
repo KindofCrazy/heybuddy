@@ -1,6 +1,6 @@
 # P2 Memory Learning
 
-P3 的 LEARN_EXTRACT 增加边界：Canon/示例/模拟角色心境不是用户事实，明确的简洁程度、菜单和行动清单偏好可以学习，但不能改写角色身份。目标检查与 Writer 未扩张，仍禁止 persona/index；角色包不在 MemoryFS 根目录，也不在 Learner 可写目标中。真实 P2 写入与角色上下文集成测试见 tests/test_character_relationship.py。
+LEARN_EXTRACT 区分用户资料与 relationship 候选：后者是有用户证据的相处认识、真实共同经历和交流反思，可更新首行为“# 相处记忆”的 persona.md。旧空 # Persona 模板可首次转换，非空旧人格不可自动重新解释。Canon/示例/模拟角色心境不是关系事实，明确的简洁程度等一般偏好仍进入 human.md。角色包和索引不在 Learner 可写目标中。验证见 tests/test_relationship_memory.py 和 tests/test_character_relationship.py。
 
 ## 职责与组成
 
@@ -10,7 +10,7 @@ P3 的 LEARN_EXTRACT 增加边界：Canon/示例/模拟角色心境不是用户�
 
 1. Host 调用 `learn(run_ids=...)` 或 `learn(episode_ids=...)`。`snapshot()` 重新 JOIN Agent/Conversation/Run，拒绝非 completed Run；Episode 必须 finalized。先查询数量/字节预算，再通过原 `read_source()` 加载完整 Run。跨 Conversation 的来源分别携带真实归属、started_at/ended_at，并提供独立处理时间 as_of；按真实来源开始时间排序，相对时间不能按处理日期猜测。摘要只是定位提示。
 2. `create()` 以来源 ID/revision 去重，`_execute()` 先保存 processing。`propose()` 直接 Extraction，允许空列表，不强制 Worthiness。`verify_candidates()` 对每个引用复用 core.evidence 的精确引文校验，confirmed 必须有真实用户消息，不能仅引用 Assistant 或 Tool。
-3. Selection 返回每个目标及 candidate_ids，可另外选有界相关文件进行对照。Host 要求候选完整覆盖、路径唯一、有界；只读真实 catalogue 中的现有路径。拒绝 persona.md 和索引直接写入。
+3. Selection 返回每个目标及 candidate_ids，可另外选有界相关文件进行对照。Host 要求候选完整覆盖、路径唯一、有界；只读真实 catalogue 中的现有路径。persona.md 必须可用且组内全为 relationship 候选，整合后保留关系标题；索引和角色包不允许直接写入。
 
 4. 每个目标一次 Consolidation，按实际来源时间排序所有候选，更新当前认识、替换明确过时状态，重复/不确定结果可 no-op/review。`plan_item()` 校验唯一 old_text、expected_hash、大小、Frontmatter 和主题冲突。所有目标计划完成后才开始写入。
 5. 再次校验原始来源哈希及 Episode revision；写入前保存仅含路径、前后哈希的回执。`write_item()` 同步复用 MemoryFS/index.create/index.edit，短锁、Git 隐私、Agent 路径检查和原子文件发布全部保留。每个目标最多一次写入，目标之间让出事件循环。
@@ -30,7 +30,7 @@ Host 校验结构、真实引文与写入边界，不能数学证明模型的语
 
 ## 双速自动化的实际路径
 
-`runtime.assemble_chat()` 装配一个 Learner 并传给 `OrganizationRuntime`。首次 enabled 时 `activate()` 保存 Run/Episode rowid 水位；旧数据不静默重复学习，水位跨重启保留。`poll()/harvest_priority()` 每次最多扫描 16 个新 Run 的首条用户文本，用保守的记住/偏好/正式决定/明确更正等信号入队，不发分类 LLM。processing/failed/空结果与 completed 分开记录。
+`runtime.assemble_chat()` 装配一个 Learner 并传给 `OrganizationRuntime`。首次 enabled 时 `activate()` 保存 Run/Episode rowid 水位；旧数据不静默重复学习，水位跨重启保留。`poll()/harvest_priority()` 每次最多扫描 16 个新 Run 的首条用户文本，用记住/偏好/正式决定/明确更正及有界姓名自述等信号入队，不发分类 LLM。姓名格式只是优先处理线索，仍需实际提取和证据校验；不会按正则直接生成用户资料。processing/failed/空结果与 completed 分开记录。
 
 `learn_priority()` 尽快在回复之后的后台执行；`learn_batch()` 只在 Idle 处理 finalized Episodes，默认 3 个或最早来源等待 21600 秒。它们最终复用同一 `_execute()`，不复用 Reflection 进度。Priority 完成不会跳过包含其他 Run 的整个 Episode；Batch 再次读取现有 Markdown，由 Consolidation 判定重复 no-op。一次任务失败需要显式 retry，取消在没有文件回执时恢复 pending。
 

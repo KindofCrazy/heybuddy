@@ -29,7 +29,7 @@ async def test_character_view_omits_legacy_persona_preserves_disk_and_host_prece
     memory.initialize()
     memory.edit(
         "persona.md",
-        "# Persona\n",
+        memory.read().blocks["persona.md"],
         "# Persona\nLEGACY_OTHER_IDENTITY\n",
         expected_hash=memory.read().hashes["persona.md"],
     )

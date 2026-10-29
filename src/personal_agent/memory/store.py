@@ -10,6 +10,7 @@ from typing import Self
 from uuid import uuid4
 
 from personal_agent.core.memory import CoreMemoryError
+from personal_agent.core.persona import PERSONA_HEADER
 from personal_agent.file_lock import FileLock, FileLockError
 from personal_agent.memory.models import (
     BLOCKS,
@@ -27,7 +28,7 @@ from personal_agent.memory.models import (
 )
 from personal_agent.memory.privacy import require_private_directory
 
-DEFAULT_BLOCKS = {"persona.md": "# Persona\n", "human.md": "# Human\n", "MEMORY.md": "# Memory\n"}
+DEFAULT_BLOCKS = {"persona.md": PERSONA_HEADER, "human.md": "# Human\n", "MEMORY.md": "# Memory\n"}
 SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
 RESERVED = {
     "con",
