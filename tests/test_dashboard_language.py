@@ -22,7 +22,7 @@ async def test_initial_html_is_chinese_without_waiting_for_javascript(observator
     visible = VisibleText()
     visible.feed(response.text)
     text = " ".join(visible.parts)
-    for label in ("走进智能体", "智能体状态", "活动时间线", "主题线索", "后台任务", "详情查看器"):
+    for label in ("总览", "智能体状态", "活动时间线", "主题线索", "后台任务", "详情查看器"):
         assert label in text
     assert "Agent status" not in text and "English" in text
     assert 'id="language-toggle"' in response.text

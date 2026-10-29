@@ -169,7 +169,7 @@ h3 {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1.15;
 }
@@ -182,16 +182,11 @@ h3 {
   color: var(--canvas);
   background: var(--ink);
   border-radius: 10px;
-  font-size: 28px;
+  font-size: inherit;
   letter-spacing: -0.09em;
 }
-.brand small {
-  display: block;
-  font:
-    9px Consolas,
-    monospace;
-  letter-spacing: 0.15em;
-  margin-top: 5px;
+.brand-name {
+  line-height: 1;
 }
 .masthead nav {
   display: flex;
@@ -242,6 +237,9 @@ h3 {
   gap: 24px;
 }
 .intro h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: clamp(42px, 5.3vw, 76px);
   line-height: 1.08;
   margin: 12px 0 14px;
@@ -249,31 +247,10 @@ h3 {
   letter-spacing: -0.065em;
 }
 
-.intro-copy {
-  font-size: 13px;
-}
-.intro-copy span {
-  padding-left: 12px;
-  opacity: 0.7;
-  font-size: 12px;
-}
-.intro-aside {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-.orbit {
-  font:
-    112px/0.9 Arial,
-    sans-serif;
-}
-.intro-aside .mono {
-  line-height: 1.8;
-}
-.workspace-label {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 14px;
+.intro h1 .ui-icon {
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
 }
 .bento {
   display: grid;
@@ -832,13 +809,6 @@ pre.record {
   .shell {
     padding: 0 24px;
   }
-  .intro-aside .mono {
-    display: none;
-  }
-  .intro-copy span {
-    display: block;
-    padding: 7px 0 0;
-  }
   .tile-status,
   .tile-character {
     grid-column: span 5;
@@ -878,7 +848,8 @@ pre.record {
     text-align: center;
   }
   .brand {
-    font-size: 20px;
+    font-size: 22px;
+    gap: 8px;
   }
   .brand-mark {
     width: 40px;
@@ -889,12 +860,6 @@ pre.record {
   }
   .intro h1 {
     font-size: 44px;
-  }
-  .intro-aside {
-    display: none;
-  }
-  .workspace-label .mono {
-    font-size: 9px;
   }
   .bento {
     grid-template-columns: minmax(0, 1fr);
@@ -990,13 +955,6 @@ body:not(.page-overview) .intro {
 body:not(.page-overview) .intro h1 {
   font-size: clamp(28px, 3.2vw, 44px);
   margin: 5px 0 7px;
-}
-.orbit {
-  font-size: 64px;
-}
-.workspace-label {
-  flex: 0 0 auto;
-  margin-bottom: 10px;
 }
 .bento {
   flex: 1 1 0;
@@ -1121,16 +1079,8 @@ footer:not(.drawer-footer) {
     grid-column: 7 / 13;
     grid-row: 2;
   }
-  .intro-aside {
-    display: none;
-  }
 }
 @media (max-height: 720px) {
-  .intro .eyebrow,
-  .intro-copy,
-  .intro-aside {
-    display: none;
-  }
   .intro,
   body:not(.page-overview) .intro {
     padding: 8px 0;
@@ -1152,15 +1102,12 @@ footer:not(.drawer-footer) {
     padding: 9px 0;
   }
   .brand {
-    font-size: 17px;
+    font-size: 22px;
+    gap: 8px;
   }
   .brand-mark {
     width: 32px;
     height: 32px;
-    font-size: 23px;
-  }
-  .brand small {
-    font-size: 8px;
   }
   .masthead nav a {
     padding: 5px 7px;
@@ -1169,11 +1116,6 @@ footer:not(.drawer-footer) {
   html[lang="zh-CN"] .intro h1,
   body:not(.page-overview) .intro h1 {
     font-size: 28px;
-  }
-  .intro-copy,
-  .intro .eyebrow,
-  .workspace-label {
-    display: none;
   }
   .bento {
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -1238,8 +1180,6 @@ footer:not(.drawer-footer) {
   }
 }
 @media (max-height: 500px) {
-  .intro,
-  .workspace-label,
   footer:not(.drawer-footer) {
     display: none !important;
   }
@@ -1248,6 +1188,46 @@ footer:not(.drawer-footer) {
   }
   .bento {
     margin-top: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .brand {
+    font-size: 20px;
+  }
+  .header-controls {
+    gap: 6px;
+  }
+  .header-controls .language-toggle {
+    min-width: 52px;
+    padding: 5px 6px;
+  }
+}
+
+@media (min-width: 681px) and (max-width: 900px) {
+  .masthead {
+    gap: 10px;
+  }
+  .brand {
+    font-size: 24px;
+    gap: 8px;
+  }
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+  }
+  .masthead nav {
+    gap: 4px;
+  }
+  .masthead nav a {
+    padding: 7px 8px;
+  }
+  .header-controls {
+    gap: 10px;
+  }
+  .header-controls .language-toggle {
+    min-width: 64px;
+    padding: 5px 9px;
   }
 }
 
