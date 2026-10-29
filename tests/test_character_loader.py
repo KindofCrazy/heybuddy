@@ -24,6 +24,21 @@ def test_bbc_package_is_complete_original_and_has_stable_identity():
     assert CharacterLoader().load("sherlock_bbc") == package
 
 
+def test_miru_package_compiles_independently_with_real_production_tool_names():
+    from personal_agent.character.context import CharacterContextCompiler
+
+    package = CharacterLoader().load("miru")
+    compiler = CharacterContextCompiler(package)
+    prompt = compiler.compile("你好")[0].text
+    assert package.character_id == "miru"
+    assert "你是 Miru" in prompt and "Sherlock" not in prompt
+    assert len(package.examples) == 2 and len(package.lore) >= 1
+    assert "archival_memory_search" in prompt and "recall_search" in prompt
+    assert prompt.count("【记忆是什么】") == 1
+    assert compiler.diagnostics()["compiled_bytes"] <= compiler.policy.max_context_bytes
+    assert CharacterLoader().load("sherlock_bbc").fingerprint != package.fingerprint
+
+
 @pytest.mark.parametrize(
     "name",
     [

@@ -29,14 +29,17 @@ from tests.test_qq_transport import config
 __all__ = ["state"]
 
 
-async def test_production_cli_then_qq_restart_share_history_memory_and_character(tmp_path):
+@pytest.mark.parametrize("character_id", ["sherlock_bbc", "miru"])
+async def test_production_cli_then_qq_restart_share_history_memory_and_character(
+    tmp_path, character_id
+):
     path = tmp_path / "shared.db"
     root = tmp_path / "memory"
     settings = Settings(
         api_key="synthetic",
         model="synthetic",
         context_window=131072,
-        character_id="sherlock_bbc",
+        character_id=character_id,
         memory_learning_enabled=False,
         memory_automation="off",
         memory_retrieval_llm_preflight=False,

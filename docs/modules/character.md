@@ -1,10 +1,12 @@
 # 被动角色系统
 
+当前开发角色为内置 miru 包，使用相同 soul.md/lore.md 格式、加载器、编译器、关系记忆和短期状态通路，不增加角色专属 Runtime。开发示例显式选择 miru，库级默认仍关闭；Sherlock 等人格保留供未来完善，见 [开发角色说明](../miru-development-character.md) 与根目录 TODO.md。tests/test_qq_integration.py 对两种角色验证同一生产入口。
+
 本轮按 Miru 逐段重写 Sherlock 的 soul.md，增加可选外貌以及角色自有的行为、交谈、记忆和工具说明。`character/prompt.py::runtime_sections()` 对角色已提供的运行时段落只编译一次，缺失时回退共享默认，不再同时追加两份说明；旧四文件包不受影响。RUNTIME_ORDER 仅组织文字，不授予权限或新增工具。段落对应、单次真实调用及尚未解决的问题见 [逐段改写记录](../holmes-miru-prompt-rewrite.md)。tests/test_character_behavior.py 验证覆盖与回退；不把离线契约测试视作人格收益。
 
 ## 职责与组成
 
-角色定义采用 Miru 式单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。默认 Sherlock 包只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。Miru 的路径、缓存与状态机制见 [Miru 角色系统说明](../miru-character-system.md)。
+角色定义采用 Miru 式单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。当前 Miru 包与保留的 Sherlock 包均只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。原 Miru 项目的路径、缓存与状态机制见 [Miru 角色系统说明](../miru-character-system.md)。
 
 - `character/models.py` 定义 CharacterPackage、Section、字节预算和短期状态。可选 profile 是 soul 解析出的普通字典，不是独立权威存储。
 - `character/loader.py::CharacterLoader.load()` 读取宿主选定的本地角色包，校验路径、编码、章节与大小，并计算内容指纹。

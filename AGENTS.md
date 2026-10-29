@@ -4,6 +4,10 @@
 
 当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复和 loopback 只读 Observatory。SQLite 当前 schema 14，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限、无主动消息和真实付费调用另行授权的边界继续有效。
 
+## 当前开发角色选择
+
+用户明确要求将 Sherlock 等人格完善移至 TODO.md，先用新建的 Miru 角色继续开发。开发配置与示例显式选择 miru，库级默认仍为 none；保留已有 Sherlock 包和评测记录，不新增独立 Runtime、主动消息或工具权限。Miru 关系由实际互动形成，不默认继承原项目的亲密阶段。
+
 ## 关系记忆与统一检索明确授权
 
 2026-10-29 用户明确要求完成 persona.md 的关系记忆语义，并借鉴 archival_memory_search 统一只读入口。persona.md 使用“# 相处记忆”保存有真实用户证据的相处认识、共同经历和交流反思；Learner 可更新此块，仍不得修改角色包或把模拟情绪变成关系事实。旧的非空静态人格文件保留且不自动重新解释；旧空模板可在首次关系学习时转换。Curator 暂不改此块，手动 Reflection 审批和主模型逐 Run 写权限保持原边界。生产主题读取由统一工具提供，旧分立读取工具仅为离线 Harness 兼容保留。该授权优先于下文历史阶段对 persona.md 的自动写入禁令。

@@ -1,5 +1,7 @@
 # 配置与 API 地址校验
 
+当前开发示例显式配置 AGENT_CHARACTER_ID=miru，读取内置 Miru 角色包；Settings 的库级默认仍是 none。既有显式角色配置不被程序自动覆盖，本轮本地开发配置已按用户要求切换。角色修改在下次装配/重启时生效，不修改数据库、历史或记忆路径。完整说明见 [开发角色](../miru-development-character.md)。
+
 P2 Review Fix 的 AGENT_MEMORY_LEARNING_RECOVERY_ATTEMPTS/INTERVAL_SECONDS/SECONDS 默认 3/300/2，映射到 LearningPolicy 的有界检查次数、退避和协作时间预算。核对不调用 LLM，重新规划使用原维护额度；没有文件系统硬超时保证。详见 [Learning](learning.md)。
 
 P3 `Settings.character_policy()/character_state_policy()` 对应 AGENT_CHARACTER_*。ID 默认 none，合法 ID 为小写字母起始、后接字母/数字/下划线，最大 48 字符；ROOT 仅可信本地目录。VARIANT 只接受 E0/E1/E2；State 仅在非 none 且 E2 时启用，可独立关闭。包/上下文字节、示例/Lore 数、Mood/Focus 有效期、维护间隔、输入输出/超时/来源都有界。完整默认值在 .env.example；实际接线见 [Character](character.md)、[State](character-state.md)。
