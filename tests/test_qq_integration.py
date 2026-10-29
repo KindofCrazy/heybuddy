@@ -99,6 +99,15 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             await adapter.accept(event(text="继续我们之前的 HeyBuddy 讨论"))
             await settled(adapter)
             request = provider.requests[0]
+            assert "add_numbers" not in {tool.name for tool in provider.tools[0]}
+            assert {tool.name for tool in provider.tools[0]} == {
+                "get_current_time",
+                "deferred_list",
+                "deferred_read",
+                "deferred_index_check",
+                "recall_search",
+                "recall_get",
+            }
             assert any("这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user")
             assert any("用户的项目是 HeyBuddy" in m.text for m in request if m.role == "user")
             assert any(

@@ -20,7 +20,9 @@ def add_numbers(arguments: AddNumbersArguments) -> dict[str, float]:
     return {"sum": arguments.a + arguments.b}
 
 
-def create_builtin_registry(timeout_seconds: float = 10) -> ToolRegistry:
+def create_builtin_registry(
+    timeout_seconds: float = 10, *, include_add_numbers: bool = True
+) -> ToolRegistry:
     registry = ToolRegistry(timeout_seconds)
     registry.register(
         Tool(
@@ -31,13 +33,15 @@ def create_builtin_registry(timeout_seconds: float = 10) -> ToolRegistry:
             side_effect_free=True,
         )
     )
-    registry.register(
-        Tool(
-            "add_numbers",
-            ("需要核对算术时，将有限数字 a 和 b 相加并返回 sum；不用于非数值问题。"),
-            AddNumbersArguments,
-            add_numbers,
-            side_effect_free=True,
+    # Preserve the small arithmetic fixture for existing offline harness evaluations.
+    if include_add_numbers:
+        registry.register(
+            Tool(
+                "add_numbers",
+                ("需要核对算术时，将有限数字 a 和 b 相加并返回 sum；不用于非数值问题。"),
+                AddNumbersArguments,
+                add_numbers,
+                side_effect_free=True,
+            )
         )
-    )
     return registry

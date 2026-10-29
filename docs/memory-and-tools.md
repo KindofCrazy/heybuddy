@@ -41,12 +41,11 @@ Markdown 是整理后长期知识的权威来源；SQLite 原始消息是历史�
 
 ## 注册了哪些工具
 
-共享 runtime.assemble_chat() 注册 13 个工具。普通 CLI 输入和 QQ 被动消息默认没有写权限，通常提供以下 7 个：
+共享 runtime.assemble_chat() 注册 12 个生产工具。普通 CLI 输入和 QQ 被动消息默认没有写权限，通常提供以下 6 个：
 
 | 工具 | 用途 |
 | --- | --- |
 | get_current_time | 获取当前时间 |
-| add_numbers | 核对两个数字相加 |
 | deferred_list | 分页查看记忆目录元数据 |
 | deferred_read | 分页读取主题或索引 |
 | deferred_index_check | 只读检查索引问题 |
@@ -64,13 +63,13 @@ Markdown 是整理后长期知识的权威来源；SQLite 原始消息是历史�
 | deferred_edit | deferred.update | 局部编辑主题或索引 |
 | deferred_index_repair | deferred.update | 修复允许自动维护的索引条目 |
 
-CLI `/memory read <请求>` 仅在本 Run 增加 memory.read；`/memory edit <请求>` 增加 memory.read、memory.update、deferred.update。下一次普通输入不继承授权。QQ 入口明确传入空权限集合。Reflection、Learner、Curator、Episode/Thread 和角色状态服务是宿主内部流程，不作为主模型工具注册。
+CLI `/memory read <请求>` 仅在本 Run 增加 memory.read，共 7 个工具；`/memory edit <请求>` 增加 memory.read、memory.update、deferred.update，共 12 个。下一次普通输入不继承授权。QQ 入口明确传入空权限集合。Reflection、Learner、Curator、Episode/Thread 和角色状态服务是宿主内部流程，不作为主模型工具注册。add_numbers 只保留在兼容的离线 Harness/评测注册表中，生产装配显式禁用。
 
 ## 哪些信息实际发送给模型
 
 - messages 包含角色系统正文、过滤后的 Core、可选会话摘要、运行时时间、有效角色状态/来源、预算允许的检索结果、近期历史及当前 Run。
 - 工具名称、中文描述和参数 JSON Schema 由 ToolRegistry.definitions(permissions=...) 过滤后，通过 Provider 的独立 tools 字段发送。它们不一定出现在单独导出的系统正文里，但计入总上下文预算。
-- Agent 最后一轮不提供工具定义，要求结束回答；因此“默认 7 个”不表示每个请求都固定有 7 个。
+- Agent 最后一轮不提供工具定义，要求结束回答；因此“默认 6 个”不表示每个请求都固定有 6 个。
 - 模型返回调用后，注册表仍检查未知工具、当前权限和严格参数，随后顺序执行。工具文字不是权限授予机制。
 
 ## 本轮提示词与时间调整

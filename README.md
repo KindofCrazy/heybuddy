@@ -28,6 +28,8 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [当前记忆系统与模型工具](docs/memory-and-tools.md) 说明 persona.md 与 soul.md 的分工、记忆存储/检索/更新路径，以及默认工具和逐 Run 授权。
 
+[Miru 记忆架构](docs/miru-memory-system.md) 对照核心块、主题槽位、后台写入和检索工具；生产入口已移除 add_numbers 演示工具。
+
 [P3 短期状态](docs/modules/character-state.md) 仅在角色 E2 启用后于 Idle 维护，按真实角色 Run 来源保存模拟 Mood/Focus，有独立有效期并共享 P1/P2 预算；不主动发消息。`/character status|run|retry` 查看或调试。
 
 启用时在已有可信配置中设置 `AGENT_CHARACTER_ID=sherlock_bbc`，保持实际模型窗口配置；`none` 恢复普通模式。旧 persona.md 保留但角色启用时不注入；human.md 与 P2 偏好继续使用。`AGENT_CHARACTER_STATE_ENABLED=false` 可关闭状态请求，E0/E1 也不请求状态。角色包是行为模拟，不代表真实人的情绪或经历。

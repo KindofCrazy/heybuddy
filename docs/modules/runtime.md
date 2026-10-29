@@ -1,5 +1,7 @@
 # Shared Chat Runtime
 
+生产工具装配关闭 add_numbers 演示，CLI、QQ 和只读 Observatory 都沿用该装配。离线算术测试使用兼容注册表，不代表生产能力。tests/test_config_cli.py 和 test_qq_integration.py 检查实际装配的模型工具定义中没有该工具。
+
 ## 职责与架构组成
 
 `src/personal_agent/runtime.py` 的 `open_application()` 持有 SQLite 单进程锁、SessionManager、MemoryFS 与 Provider 生命周期。`open_chat()` 管理 SDK 客户端；`assemble_chat()` 复用现有 ContextBuilder、工具注册、Reflection、P1 Organizer、P2 Learning/Curator/Adaptive Retrieval、P3 Character Package/State，返回轻量 `ChatService`。渠道不各自装配学习或角色服务。

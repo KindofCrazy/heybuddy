@@ -199,6 +199,7 @@ def test_run_cli_constructs_sdk_and_runtime_and_closes_client(monkeypatch):
         assert sessions.memory.root == memory_root
         assert sessions.memory.read().blocks["human.md"] == "# Human\n"
         assert {tool.name for tool in agent.tools.definitions()} >= {"recall_search", "recall_get"}
+        assert "add_numbers" not in {tool.name for tool in agent.tools.definitions()}
 
     monkeypatch.setattr(cli, "chat", chat)
     import asyncio

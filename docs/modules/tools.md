@@ -1,5 +1,7 @@
 # 工具注册与执行
 
+生产 runtime.assemble_chat() 使用 create_builtin_registry(..., include_add_numbers=False)，不向主模型注册算术演示。旧 Harness 和离线评测保留兼容注册表，避免改动冻结的工具调用基线。生产 CLI/QQ 默认六个工具、完整记忆授权时十二个。
+
 内置工具的自然语言描述使用中文，API 工具名、参数模型、参数名和执行函数保持不变；描述翻译不参与注册或权限判断。`tests/test_evaluation.py` 将当前主提示词和全部工具说明与中文快照核对，旧英文基线继续保留。
 
 ## 职责与架构组成

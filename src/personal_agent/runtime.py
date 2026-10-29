@@ -100,7 +100,7 @@ def assemble_chat(
         memory=memory,
         memory_policy=settings.memory_retrieval_policy(),
     )
-    tools = create_builtin_registry(settings.tool_timeout_seconds)
+    tools = create_builtin_registry(settings.tool_timeout_seconds, include_add_numbers=False)
     register_memory_tools(tools, memory)
     register_recall_tools(tools, Recall(sessions.store, sessions.agent.id))
     agent = Agent(
