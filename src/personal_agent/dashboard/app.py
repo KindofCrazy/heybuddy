@@ -256,6 +256,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
             {
                 "enabled": True,
                 "character_id": package.character_id,
+                "summary": package.persona.get("简介") if package.persona else None,
                 "portrait_url": "/static/characters/luna.png"
                 if package.character_id == "luna"
                 else None,

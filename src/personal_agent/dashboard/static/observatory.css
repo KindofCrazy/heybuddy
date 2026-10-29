@@ -373,6 +373,21 @@ button.nested:active {
 .character-description {
   min-width: 0;
 }
+.character-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.character-name .badge {
+  text-transform: none;
+}
+.character-bio {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #484637;
+}
 .portrait-button {
   flex: 0 0 auto;
   padding: 0;

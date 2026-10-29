@@ -14,6 +14,7 @@ async def test_luna_portrait_is_local_and_only_associated_with_luna(observatory)
     profile = (await client.get("/api/character")).json()
     assert profile["portrait_url"] == "/static/characters/luna.png"
     assert profile["fingerprint"] == package.fingerprint
+    assert profile["summary"] == package.persona["简介"]
     image = await client.get(profile["portrait_url"])
     assert image.status_code == 200
     assert image.headers["content-type"] == "image/png"
@@ -21,6 +22,8 @@ async def test_luna_portrait_is_local_and_only_associated_with_luna(observatory)
     assert "img-src 'self'" in image.headers["content-security-policy"]
     assert "Cache-Control" in image.headers
     service.sessions.character = CharacterContextCompiler(CharacterLoader().load("miru"))
-    assert (await client.get("/api/character")).json()["portrait_url"] is None
+    other = (await client.get("/api/character")).json()
+    assert other["portrait_url"] is None
+    assert other["summary"] is None
     assert store._connection.total_changes == before
     assert not provider.requests

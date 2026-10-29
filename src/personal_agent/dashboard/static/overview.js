@@ -6,6 +6,7 @@ import {
   errorBox,
   objectCard,
   action,
+  badge,
 } from "./components.js";
 import { openObject } from "./inspectors.js";
 import { cardsPage } from "./details.js";
@@ -70,24 +71,18 @@ async function character() {
         identity.append(button);
       }
       const description = node("div", "character-description");
-      description.append(
+      const name = node("div", "character-name");
+      name.append(
         node(
           "h3",
           "",
           profile.character_id === "luna" ? "Luna" : profile.character_id,
         ),
+        badge(state.active?.mood || "normal"),
       );
-      description.append(
-        node(
-          "p",
-          "notice",
-          ui(
-            state.active
-              ? `Simulated mood: ${state.active.mood}`
-              : "No active short-term state.",
-          ),
-        ),
-      );
+      description.append(name);
+      if (profile.summary)
+        description.append(node("p", "character-bio", profile.summary));
       identity.append(description);
       box.append(identity);
       if (state.active?.current_focus)

@@ -91,4 +91,6 @@ Inspector 删除原“来源数据 / 只读、完整详情”底栏及 full-view
 删除原个人智能体/运行笔记眉题、引导说明、星形装饰、展开你的智能体和只读工作台一行；底部只保留左侧品牌短句，移除仅本机访问/只读/不调用模型说明。查询接口与本机访问约束保持原实现。CSS 清理对应无用规则，小窗口仍显示栏目标题；品牌、导航和语言按钮在窄屏及中等宽度下收紧间距，避免中英文页头溢出，并继续把剩余高度分配给卡片。
 ## Luna 设定图
 
+总览始终显示 `/api/character` 的 summary。它直接取已加载 persona 的“简介”，如 Luna 的钢琴、代码与深夜交谈简介，不重新生成、不写回设定。缺少简介的旧角色包保持留空。名字后用边框标签显示有效短期 mood；没有有效状态时按用户要求显示 normal，仅作为界面默认值，不写入或推断实际状态。前端以普通 textContent 显示简介，不按界面语言翻译来源内容。
+
 Luna 的用户提供设定图保存于 `static/characters/luna.png`，原始 PNG 不改写。`/api/character` 仅对当前 Luna 返回固定同源 portrait_url，其他角色返回空值；总览显示可点击头像，`memory-character.js:character` 展示完整比例图片。展示资源不参与角色包编译、指纹或模型输入。CSP 的 img-src 允许同源图片，仍禁止外部图片与 data URL；Markdown 渲染及前端 prose 标签白名单继续排除 img。资源来源说明见 `static/characters/README.md`，只读和角色关联测试见 `tests/test_dashboard_portrait.py`。
