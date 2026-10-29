@@ -4,6 +4,8 @@
 
 当前开发使用 OpenPersona 的 Luna 预设。`character/packages/luna/persona.json` 是角色设定来源，`soul/behavior-guide.md` 是它引用的本地行为指南；自然语言已整理为中文，来源与适配记录见同目录 SOURCE.md，MIT 声明保存在 LICENSE。角色正文最终接上独立的 `prompts/conversation.md`，不引入 OpenPersona 的生成器、运行时、依赖或自动安装。
 
+Luna 指南在上游四个主题的基础上，吸收用户提供的 Miru 情绪反应与说话习惯，补充稳定接纳、直接表达、具体关心和认可，以及可爱或符合音乐、夜晚、代码兴趣的 emoji。具体反应是表达参考，编译器仍一次性完整注入；没有新增情绪状态任务、工具或发送能力。
+
 `character/persona.py` 只解析 OpenPersona 的 Soul 描述字段；`character/loader.py` 负责固定文件读取、路径保护、大小限制和内容指纹；`character/prompt.py::compile_system()` 将描述编译为自然语言；`character/context.py` 复用现有单一 System、诊断与预算。`runtime.py::assemble_chat()` 将它接到现有 CLI、QQ 和只读 Observatory，不为 JSON 角色创建 CharacterStateService。
 
 ## 实际运行路径
