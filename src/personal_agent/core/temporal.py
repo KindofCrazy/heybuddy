@@ -8,9 +8,8 @@ def temporal_context(previous: datetime | None, timezone: tzinfo | None = None) 
     return {
         "kind": "temporal_context",
         "trust": "host_clock_data",
-        "current_time": current.isoformat(),
-        "timezone": str(current.tzinfo),
-        "previous_interaction_at": previous.astimezone(current.tzinfo).isoformat()
+        "current_time": current.strftime("%Y-%m-%d %H:%M:%S"),
+        "previous_interaction_at": previous.astimezone(current.tzinfo).strftime("%Y-%m-%d %H:%M:%S")
         if previous
         else None,
         "seconds_since_previous_interaction": max(0, int((current - previous).total_seconds()))

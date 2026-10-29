@@ -163,6 +163,9 @@ def test_default_character_instructions_are_chinese_without_changing_machine_ide
     role = request[0]
     assert "【日常交谈】" in role.text
     assert "用户：你好" in role.text
+    assert role.text.count("【记忆是什么】") == 1
+    assert role.text.count("【什么时候检索】") == 1
+    assert "会话摘要用于接续当前交谈，不等于原话" in role.text
     audit = context.character.diagnostics()
     assert audit["character_id"] == "sherlock_bbc"
     assert audit["package_hash"] == context.character.package.fingerprint
