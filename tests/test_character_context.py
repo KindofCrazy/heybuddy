@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -8,7 +9,7 @@ from personal_agent.character.models import CharacterError, CharacterPolicy
 from personal_agent.config import Settings
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextBudget, estimate_request
-from personal_agent.core.context import CHARACTER_HOST_PROMPT, DEFAULT_SYSTEM_PROMPT, ContextBuilder
+from personal_agent.core.context import DEFAULT_SYSTEM_PROMPT, ContextBuilder
 from personal_agent.core.models import ModelResponse, TextMessage
 from personal_agent.memory.store import MemoryFS
 from personal_agent.sessions import SessionManager
@@ -42,9 +43,11 @@ async def test_character_view_omits_legacy_persona_preserves_disk_and_host_prece
     request = provider.requests[0]
     assert request[0].role == "system" and "Sherlock" in request[0].text
     assert sum(m.role == "system" for m in request) == 1
-    assert request[0].text.endswith(CHARACTER_HOST_PROMPT)
+    assert (
+        hashlib.sha256(request[0].text.encode()).hexdigest()
+        == context.character.diagnostics()["system_hash"]
+    )
     assert all(m.role == "user" for m in request[1:])
-    assert "只使用当前提供且获授权的工具" in request[0].text
     assert "helpful personal assistant" not in request[0].text
     core = next(
         json.loads(m.text)
@@ -74,8 +77,8 @@ async def test_identity_persists_through_tool_rounds_without_an_appraisal_call()
     assert len(provider.requests) == 2
     assert all("Sherlock" in request[0].text for request in provider.requests)
     assert all(request[0].role == "system" for request in provider.requests)
-    assert all(request[0].text.count("【真实与诚实】") == 1 for request in provider.requests)
-    assert agent.context.system_prompt == CHARACTER_HOST_PROMPT
+    assert all("【真实与诚实】" not in request[0].text for request in provider.requests)
+    assert agent.context.system_prompt == ""
     assert all(
         estimate_request(request, tools) < 64000
         for request, tools in zip(provider.requests, provider.tools, strict=True)
@@ -144,11 +147,11 @@ def test_character_layout_keeps_host_contract_last_and_preserves_custom_host():
         assert "【说话方式】" in request[0].text
         assert "【情绪反应】" in request[0].text
         assert "【存在方式】" in request[0].text
-        assert "character_identity" in request[0].text
         assert sum(m.role == "system" for m in request) == 1
-        assert request[0].text.endswith(
-            CHARACTER_HOST_PROMPT if host == DEFAULT_SYSTEM_PROMPT else host
-        )
+        if host == DEFAULT_SYSTEM_PROMPT:
+            assert request[0].text == context.character.compile("你好")[0].text
+        else:
+            assert request[0].text.endswith(host)
         assert request[-1].text == "你好"
     ordinary = ContextBuilder()
     assert ordinary.for_request(ordinary.build("你好"))[0].text == DEFAULT_SYSTEM_PROMPT
@@ -158,10 +161,12 @@ def test_default_character_instructions_are_chinese_without_changing_machine_ide
     context = ContextBuilder(character=compiler())
     request = context.for_request(context.build("你好"))
     role = request[0]
-    assert '"character_id": "sherlock_bbc"' in role.text
     assert "【日常交谈】" in role.text
-    assert "用户：你好" in role.text and role.text.count("【真实与诚实】") == 1
-    assert "只有记录明确标记 same_character" in role.text
+    assert "用户：你好" in role.text
+    audit = context.character.diagnostics()
+    assert audit["character_id"] == "sherlock_bbc"
+    assert audit["package_hash"] == context.character.package.fingerprint
+    assert hashlib.sha256(role.text.encode()).hexdigest() == audit["system_hash"]
     for old_label in (
         "CHARACTER LAYER",
         "Situation：",
@@ -171,5 +176,8 @@ def test_default_character_instructions_are_chinese_without_changing_machine_ide
         "【角色与执行边界】",
         "本地角色包",
         "P2 语义记忆",
+        "【真实与诚实】",
+        "character_identity",
+        '"package_hash"',
     ):
         assert old_label not in role.text

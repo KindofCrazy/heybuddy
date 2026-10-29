@@ -101,7 +101,11 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             request = provider.requests[0]
             assert any("这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user")
             assert any("用户的项目是 HeyBuddy" in m.text for m in request if m.role == "user")
-            assert any("character_identity" in m.text for m in request if m.role == "system")
+            assert any(
+                m.text.startswith(sessions.character.package.profile["身份"])
+                for m in request
+                if m.role == "system"
+            )
             assert any("curious" in m.text for m in request if m.role == "user")
             assert len(provider.requests) == 1
             assert len(db.list_runs(conversation_id)) == 2

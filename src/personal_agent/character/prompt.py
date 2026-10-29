@@ -1,6 +1,5 @@
 """Compile local role Markdown into readable system sections, without model calls."""
 
-import json
 import re
 
 from personal_agent.character.loader import sections
@@ -90,14 +89,6 @@ def select_examples(examples: list[Section], user_input: str, count: int) -> lis
 def compile_system(
     package: CharacterPackage, examples: list[Section], *, include_behavior: bool
 ) -> str:
-    metadata = json.dumps(
-        {
-            "kind": "character_identity",
-            "character_id": package.character_id,
-            "package_hash": package.fingerprint,
-        },
-        ensure_ascii=False,
-    )
     if package.profile is not None:
         profile = package.profile
         parts = [profile["身份"]]
@@ -132,12 +123,10 @@ def compile_system(
                 "【最近的状态】\n后续上下文可能提供近期关注和短期模拟状态。"
                 "让它轻微影响语气和注意力，不逐条复述，也不把它当成用户的新消息。"
                 "当前情境可以改变关注，不需要刻意表演某种情绪。",
-                metadata,
             ]
         )
         return "\n\n".join(parts)
     parts = [
-        metadata,
         "【角色设定】\n" + render_sections(package.character, PROFILE_HEADINGS),
     ]
     if include_behavior:

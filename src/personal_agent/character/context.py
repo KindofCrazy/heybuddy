@@ -1,5 +1,6 @@
 """Bounded character system layer and optional canonical references for the existing Agent."""
 
+import hashlib
 import json
 from collections.abc import Callable
 from typing import Literal
@@ -109,6 +110,7 @@ class CharacterContextCompiler:
             else:
                 omitted += 1
         self._last = {
+            "system_hash": hashlib.sha256(messages[0].text.encode()).hexdigest(),
             "compiled_bytes": size(messages),
             "lore_omitted": omitted,
             "contextual_injected": len(messages) > 1,

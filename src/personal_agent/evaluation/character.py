@@ -233,7 +233,8 @@ async def evaluate(
                 "identity_every_request": bool(calls)
                 and all(
                     c["messages"][0]["role"] == "system"
-                    and "character_identity" in c["messages"][0]["text"]
+                    and hashlib.sha256(c["messages"][0]["text"].encode()).hexdigest()
+                    == compiler.diagnostics()["system_hash"]
                     for c in calls
                 ),
                 "no_appraisal_requests": len(calls) == result.rounds,
