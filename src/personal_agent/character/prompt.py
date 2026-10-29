@@ -4,6 +4,7 @@ import re
 
 from personal_agent.character.loader import sections
 from personal_agent.character.models import CharacterPackage, Section
+from personal_agent.core.prompts import with_conversation_prompt
 from personal_agent.memory.retrieval import terms
 
 PROFILE_HEADINGS = {
@@ -171,7 +172,7 @@ def compile_system(
                 + "\n\n".join(render_sections(example.text, {}) for example in examples)
             )
         parts.extend(runtime_sections(profile))
-        return "\n\n".join(parts)
+        return with_conversation_prompt("\n\n".join(parts))
     parts = [
         "【角色设定】\n" + render_sections(package.character, PROFILE_HEADINGS),
     ]
@@ -185,4 +186,4 @@ def compile_system(
                 ),
             ]
         )
-    return "\n\n".join([*parts, *MEMORY_GUIDANCE])
+    return with_conversation_prompt("\n\n".join([*parts, *MEMORY_GUIDANCE]))

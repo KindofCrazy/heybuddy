@@ -1,5 +1,7 @@
 # ContextBuilder 与会话工作上下文
 
+主对话新增独立的 prompts/conversation.md 通用交谈说明：默认普通 System 和原生/兼容角色编译器各自在最终正文中加入一次；角色模式继续使用空默认 Base，因此不重复注入。完整角色 system_hash 和请求预算包含该段。显式自定义的非角色 System 不被擅自改写，后台结构化请求不受影响。文件加载、启动错误、消息分段配合和验证见 [通用提示词](prompts.md)。
+
 宿主回答规则和执行契约现使用中文，普通与角色模式共用事实、检索、权限和部分失败语义。此次语言变更由用户明确要求；历史英文快照不覆盖，当前主提示词和工具说明记录于 `evals/prompts/chinese-main-context.json`。中文化未经真实模型收益验证，不改变动态数据的消息角色或授予权限。
 
 P2 Review Fix 将 retrieve 与可选 preflight 的异常边界分开：确定性成功后先保留结果，Preflight 接收深拷贝，失败不抹除基线。Thread state 去重移到实际预算选择之后，只有被选中的 Memory 覆盖它时才移除重复正文。新增补充超预算仍保留原 Thread 与当前输入；取消仍向外传播。tests/test_preflight_baseline.py 与 test_memory_retrieval.py 验证实际 Provider 请求。

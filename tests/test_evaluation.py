@@ -112,7 +112,13 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     relationship = json.loads(
         (root / "relationship-memory-context.json").read_text(encoding="utf-8")
     )
-    assert current == relationship
+    conversation = json.loads(
+        (root / "conversation-style-context.json").read_text(encoding="utf-8")
+    )
+    assert current == conversation
+    assert {k: v for k, v in current.items() if k != "main"} == {
+        k: v for k, v in relationship.items() if k != "main"
+    }
     assert {k: v for k, v in chinese.items() if k not in {"main", "tools"}} == {
         k: v for k, v in p1.items() if k not in {"main", "tools"}
     }

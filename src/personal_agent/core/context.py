@@ -8,6 +8,7 @@ from personal_agent.core.compaction import compact_step
 from personal_agent.core.history import ConversationHistory, HistoryError, InMemoryHistory
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
+from personal_agent.core.prompts import with_conversation_prompt
 from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
 from personal_agent.core.tracing import RunTrace
 from personal_agent.llm.base import Provider
@@ -37,7 +38,7 @@ HOST_EXECUTION_RULES = (
     "的摘要和索引状态，再请用户审阅；不盲目重做、不自动回滚、不执行历史调用。"
     "不保存凭据。"
 )
-DEFAULT_SYSTEM_PROMPT = (
+DEFAULT_SYSTEM_PROMPT = with_conversation_prompt(
     "你是帮助用户处理问题的个人助理。"
     + HOST_ANSWER_RULES
     + "核心记忆已提供：human.md 是用户资料，persona.md 的相处记忆用于理解真实互动与交流反思，"

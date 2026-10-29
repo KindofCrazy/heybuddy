@@ -265,7 +265,8 @@ async def test_restart_resume_loads_only_summary_and_bounded_tail(tmp_path, monk
         # Any accidental whole-conversation loading in startup/status/build/commit fails.
         monkeypatch.setattr(db, "load_messages", lambda *a, **k: pytest.fail("full journal load"))
         monkeypatch.setattr(db, "list_runs", lambda *a, **k: pytest.fail("full run/result load"))
-        sessions = SessionManager(db, budget=policy())
+        # This case tests restart paging, with room for current packaged chat instructions.
+        sessions = SessionManager(db, budget=policy(context_window=12288))
         assert sessions.current.id == conversation_id
         sessions.resume(conversation_id)
         assert "Runs: 100" in sessions.status()

@@ -385,3 +385,5 @@ uv run python -m personal_agent.evaluation --snapshot .heybuddy/current-prompts.
 本地只读观测面板：`uv run personal-agent qq --dashboard` 将 QQ 与 Dashboard 放在同一个 Shared ChatService 进程；`uv run personal-agent web` 独立查看持久历史（须先退出已有实例）。默认地址为 [http://127.0.0.1:8765](http://127.0.0.1:8765)，可用 `--dashboard-port 8766` 更换端口。固定监听本机，不支持公网绑定。
 
 模块说明见 [Observatory](docs/modules/dashboard.md)，启动、截图、数据源与验收记录见 [交付与验收](docs/observatory.md)。
+
+[通用交谈提示词](src/personal_agent/prompts/conversation.md) 独立于角色卡，统一日常闲聊的默认表达；装配路径、发送配合与边界见 [模块说明](docs/modules/prompts.md)。
