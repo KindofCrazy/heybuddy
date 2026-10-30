@@ -11,7 +11,7 @@ from personal_agent.channels.qq.events import parse_text, split_reply
 from personal_agent.core.agent import Agent
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.history import HistoryError
-from personal_agent.core.models import ModelResponse, TextMessage, ToolCall
+from personal_agent.core.models import ModelResponse, RunResult, TextMessage, ToolCall
 from personal_agent.llm.base import ProviderTimeout
 from personal_agent.runtime import ChatService
 from personal_agent.sessions import SessionManager
@@ -194,6 +194,38 @@ async def test_provider_timeout_is_generic_safe_reply(state):
         assert "synthetic-private-body" not in sender.messages[0][-1]
         assert "未完成" in sender.messages[0][-1]
         assert rows(db)[0]["status"] == "replied"
+    finally:
+        await adapter.close()
+
+
+@pytest.mark.parametrize("status", ["compaction_error", "provider_error", "timeout"])
+async def test_failed_run_sends_one_status_bubble_without_cosmetic_delays(
+    state, status, monkeypatch
+):
+    db, _, _, service, inbox = state
+
+    async def failed_run(*args, **kwargs):
+        return RunResult(status=status, text="private provider text", rounds=1)
+
+    def unexpected_humanize(*args, **kwargs):
+        raise AssertionError("Failure status must bypass natural bubbles and cosmetic delays")
+
+    monkeypatch.setattr(service, "run", failed_run)
+    sender = Sender()
+    adapter = QQAdapter(config(qq_humanize_enabled=True), service, inbox, sender)
+    monkeypatch.setattr(adapter.humanizer, "split", unexpected_humanize)
+    monkeypatch.setattr(adapter.humanizer, "delay", unexpected_humanize)
+    adapter.start()
+    try:
+        await adapter.accept(event())
+        await settled(adapter)
+        assert len(sender.messages) == 1
+        text = sender.messages[0][-1]
+        assert "未完成" in text and "不会自动重试" in text
+        assert ("历史对话整理失败" in text) == (status == "compaction_error")
+        assert "private" not in text
+        assert rows(db)[0]["status"] == "replied"
+        assert rows(db)[0]["sent_parts"] == 1
     finally:
         await adapter.close()
 

@@ -14,6 +14,8 @@ QQAdapter._process() 仅放行明确的 `/remind` 创建、列表、查看和取
 
 ## 职责与架构组成
 
+`QQAdapter._process()` 对 `compaction_error` 返回“历史对话整理失败”的固定提示，不暴露内部异常或摘要。非 completed Run 的失败提示通过 `_reply(humanize=False)` 跳过自然拆句与装饰性等待，整条发送；仍遵守原有字节上限、节流、期限与回执规则。正常回答继续使用 Humanizer。`tests/test_qq_adapter.py::test_failed_run_sends_one_status_bubble_without_cosmetic_delays` 验证压缩失败、Provider 失败和超时的单条提示及无重放行为。
+
 `src/personal_agent/channels/qq/config.py` 定义可选宿主配置和不含原始错误体的 `QQError`。`api.py::QQAPI` 仅连接固定官方 HTTPS 域名，缓存短期 AccessToken，发现 Gateway，发送绑定原消息的纯文本被动回复。`gateway.py::QQGateway` 实现单分片 Gateway，不包含 Agent Loop，也不读取角色或学习状态。
 
 `humanize.py::Humanizer` 仅负责发送计划中的自然拆条和轻量停顿，不调用模型、不改人格或记忆、不执行网络发送。`adapter.py::QQAdapter` 继续统一处理节流、回复期限、取消和回执。模型生成的完整回答仍只按原样保存在 Journal，不将气泡拆成多个模型消息。

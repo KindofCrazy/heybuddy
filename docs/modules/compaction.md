@@ -41,6 +41,12 @@ SQLite messages 保存完整、原始经历，Recall 从它查询历史证据；
 11. 需要多批时重复第 7～10 步，每次独立提交；最多 max_compaction_steps 次。通过预算后才进入正常 Provider 请求超时，摘要调用不消耗 Agent 的正常 round，但自身有次数上限。
 12. 模型/工具输出按原 record() 路径逐条落库。工具结果令当前 Run 变大时，下一次 prepare() 再检查；当前 Run 不可压缩，超限就追加正常停止记录并结束，不删除结果。
 
+## 摘要输出的两种限额
+
+`summary_tokens` 沿用旧配置名，但实际限制是摘要字符串经 JSON 序列化后的 UTF-8 字节数，包含引号与转义；`summary_output_tokens` 才是 Provider 的输出 token 限额，并包含 reasoning。`summary_request()` 将前者和留出四分之一余量的目标值放入 `summary_limits`，`SUMMARY_PROMPT` 明确要求按字节预算重写精简，避免把模型输出上限误当作可保存正文长度。这是宿主输出契约修复，不宣称已验证真实模型的摘要质量收益；旧评测快照保留，新提示单独记录于 `evals/prompts/compaction-byte-budget.json`。
+
+`compact_step()` 在响应后仍独立校验，拒绝理由细分为 `invalid_summary_empty/tool_calls/credentials/too_large/input_usage/output_usage`。日志只记录固定原因、正文与序列化长度和预算/usage 数值，不记录摘要、历史或异常正文。Provider 超时单独返回 `compaction_timeout`。拒绝不截断正文、不提升预算、不自动重试，也不推进检查点；下一条明确输入仍需通过同样校验。`tests/test_compaction.py` 覆盖预算传递、中文与 JSON 转义的边界及各失败原因。
+
 ## SQLite 持久化与恢复
 
 schema 3 追加两个表，不修改旧 messages：

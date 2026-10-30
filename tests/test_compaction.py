@@ -7,7 +7,7 @@ import sqlite3
 import pytest
 
 from personal_agent.core.agent import Agent
-from personal_agent.core.budget import ContextBudget, ContextError, estimate_request
+from personal_agent.core.budget import ContextBudget, ContextError, estimate_request, estimate_value
 from personal_agent.core.compaction import SUMMARY_PROMPT, compact_step
 from personal_agent.core.context import ContextBuilder
 from personal_agent.core.history import HistoryError
@@ -221,6 +221,10 @@ async def test_long_history_compacts_incrementally_without_changing_journal_or_r
             assert tools == [] and limit == policy().summary_output_tokens
             assert estimate_request(request, tools) <= policy().summary_input_limit
             evidence = json.loads(request[1].text)
+            assert evidence["summary_limits"] == {
+                "max_serialized_utf8_bytes": policy().summary_tokens,
+                "target_utf8_bytes": (policy().summary_tokens - 2) * 3 // 4,
+            }
             assert evidence["existing_summary"] == previous
             previous = provider.summary_text
             seen_ids.extend(run["run_id"] for run in evidence["runs"])
@@ -310,28 +314,64 @@ async def test_current_run_growth_stops_without_splitting_or_retrying_tools(stat
 
 
 @pytest.mark.parametrize(
-    "response",
+    "response,code",
     [
-        ProviderTimeout("private timeout"),
-        ProviderError("private API body"),
-        ModelResponse(text=""),
-        ModelResponse(text="x" * 2000),
-        ModelResponse(text="summary", tool_calls=[add_call()]),
-        ModelResponse(text="password: never-save-this"),
-        ModelResponse(text="summary", usage=TokenUsage(input_tokens=9000, output_tokens=3)),
+        (ProviderTimeout("private timeout"), "compaction_timeout"),
+        (ProviderError("private API body"), "compaction_provider_error"),
+        (ModelResponse(text=""), "invalid_summary_empty"),
+        (ModelResponse(text="x" * 2000), "invalid_summary_too_large"),
+        (ModelResponse(text="summary", tool_calls=[add_call()]), "invalid_summary_tool_calls"),
+        (ModelResponse(text="password: never-save-this"), "invalid_summary_credentials"),
+        (
+            ModelResponse(text="summary", usage=TokenUsage(input_tokens=9000, output_tokens=3)),
+            "invalid_summary_input_usage",
+        ),
+        (
+            ModelResponse(text="summary", usage=TokenUsage(input_tokens=3, output_tokens=2000)),
+            "invalid_summary_output_usage",
+        ),
     ],
 )
-async def test_failed_compaction_never_advances_checkpoint_or_leaks_error(state, response, caplog):
+async def test_failed_compaction_never_advances_checkpoint_or_leaks_error(
+    state, response, code, caplog
+):
     db, sessions, source = state
     seed(db, sessions.current.id, 6)
     before = db.load_messages(sessions.current.id)
     provider = FakeProvider(response)
     result = await runtime(provider, source).run("continue")
     assert result.status == "compaction_error"
+    assert code in result.error
     assert source.summary() is None
     assert len(provider.requests) == 1 and provider.tools[0] == []
     assert db.load_messages(sessions.current.id)[: len(before)] == before
     assert "private" not in result.model_dump_json() + caplog.text
+    assert "never-save-this" not in result.model_dump_json() + caplog.text
+
+
+@pytest.mark.parametrize("over_limit", [False, True])
+async def test_summary_limit_counts_serialized_utf8_including_escapes(state, over_limit, caplog):
+    db, sessions, source = state
+    seed(db, sessions.current.id, 1, size=10)
+    # Unicode and JSON escapes occupy different byte counts from Python characters.
+    text = '中"\\\n' * 8 + "末"
+    size = estimate_value(text)
+    budget = policy(summary_tokens=size - int(over_limit))
+    provider = FakeProvider(ModelResponse(text=text))
+    if over_limit:
+        with pytest.raises(ContextError) as error:
+            await compact_step(source, None, 2, budget, provider)
+        assert error.value.code == "invalid_summary_too_large"
+        assert source.summary() is None
+        assert text not in caplog.text
+        assert "summary_limit=" in caplog.text
+    else:
+        saved = await compact_step(source, None, 2, budget, provider)
+        assert saved.text == text.strip()
+        assert source.summary() == saved
+    limits = json.loads(provider.requests[0][1].text)["summary_limits"]
+    assert limits["max_serialized_utf8_bytes"] == budget.summary_tokens
+    assert 0 < limits["target_utf8_bytes"] < budget.summary_tokens
 
 
 async def test_summary_timeout_is_independent_and_does_not_execute_tools(state):

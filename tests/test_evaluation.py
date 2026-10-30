@@ -119,20 +119,26 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     temporal = json.loads(
         (root / "time-aware-conversation-context.json").read_text(encoding="utf-8")
     )
-    assert current == temporal
+    byte_budget = json.loads((root / "compaction-byte-budget.json").read_text(encoding="utf-8"))
+    assert current == byte_budget
+    assert current["summary"] != temporal["summary"]  # Host limit fix, no measured quality gain.
+    assert {k: v for k, v in current.items() if k not in {"main", "summary"}} == {
+        k: v for k, v in temporal.items() if k not in {"main", "summary"}
+    }
+    # Keep all historical, measured prompt versions unchanged below.
     assert {k: v for k, v in temporal.items() if k != "main"} == {
         k: v for k, v in casual.items() if k != "main"
     }
     assert {k: v for k, v in casual.items() if k != "main"} == {
         k: v for k, v in conversation.items() if k != "main"
     }
-    assert {k: v for k, v in current.items() if k != "main"} == {
+    assert {k: v for k, v in temporal.items() if k != "main"} == {
         k: v for k, v in relationship.items() if k != "main"
     }
     assert {k: v for k, v in chinese.items() if k not in {"main", "tools"}} == {
         k: v for k, v in p1.items() if k not in {"main", "tools"}
     }
-    assert current["summary"] == chinese["summary"]
+    assert temporal["summary"] == chinese["summary"]
     assert current["worthiness"] == chinese["worthiness"]
     assert current["tools"] == chinese["tools"]  # Legacy offline tool fixtures stay frozen.
     assert current["reflection"]["BASE"] == chinese["reflection"]["BASE"]

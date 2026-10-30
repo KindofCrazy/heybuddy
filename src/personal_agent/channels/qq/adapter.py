@@ -9,7 +9,7 @@ from typing import Protocol
 
 from personal_agent.channels.qq.completeness import HybridTurn, judge
 from personal_agent.channels.qq.config import QQError, QQSettings
-from personal_agent.channels.qq.events import QQText, parse_text
+from personal_agent.channels.qq.events import QQText, parse_text, split_reply
 from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.core.models import RunResult
@@ -330,23 +330,42 @@ class QQAdapter:
                 if after != before:
                     self.inbox.link_run(row.get("sequences", row["sequence"]), after)
             self.inbox.mark(row.get("sequences", row["sequence"]), "processed")
-            text = (
-                result.text
-                if result.status == "completed"
-                else "这次处理未完成，请稍后发一条新消息。已执行的操作不会自动重试。"
-            )
-        await self._reply(row, text, elapsed=time.monotonic() - started)
+            if result.status == "completed":
+                text = result.text
+            elif result.status == "compaction_error":
+                text = (
+                    "历史对话整理失败，这次处理未完成。原始记录已保留；已执行的操作不会自动重试。"
+                )
+            else:
+                text = "这次处理未完成，请稍后发一条新消息。已执行的操作不会自动重试。"
+        await self._reply(
+            row,
+            text,
+            elapsed=time.monotonic() - started,
+            humanize=result is None or result.status == "completed",
+        )
         return result
 
     def _latest_run(self) -> str | None:
         return self.inbox.latest_run_id(self.conversation_id)
 
-    async def _reply(self, row: dict, text: str, *, elapsed: float = 0) -> None:
+    async def _reply(
+        self, row: dict, text: str, *, elapsed: float = 0, humanize: bool = True
+    ) -> None:
         row["execution_started"] = True
         sent = 0
-        for sequence, part in enumerate(self.humanizer.split(text), 1):
+        parts = (
+            self.humanizer.split(text)
+            if humanize
+            else split_reply(
+                text, self.settings.qq_text_max_bytes, self.settings.qq_reply_max_parts
+            )
+        )
+        for sequence, part in enumerate(parts, 1):
             delay = max(0, self._next_send - time.monotonic())
-            pause = self.humanizer.delay(part, first=sequence == 1, elapsed=elapsed)
+            pause = (
+                self.humanizer.delay(part, first=sequence == 1, elapsed=elapsed) if humanize else 0
+            )
             # Cosmetic pauses overlap rate limiting, and never consume the last send window.
             if self._remaining(row) > max(delay, pause) + self.settings.qq_send_timeout_seconds:
                 delay = max(delay, pause)
