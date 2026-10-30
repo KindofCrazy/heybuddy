@@ -31,6 +31,7 @@ class Aesthetic(PersonaFields):
     emoji: str = ""
     age: str = ""
     vibe: str = ""
+    appearance: str = ""
 
 
 class Character(PersonaFields):
@@ -75,6 +76,7 @@ def parse_persona(text: str) -> dict[str, str]:
         "年龄": soul.aesthetic.age,
         "氛围": soul.aesthetic.vibe,
         "表情": soul.aesthetic.emoji,
+        "外貌": soul.aesthetic.appearance,
         "性格": soul.character.personality,
         "说话方式": soul.character.speakingStyle,
         "背景": soul.character.background,

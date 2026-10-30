@@ -9,3 +9,5 @@ persona.json 保留上游结构和非 Soul 配置，Soul 的自然语言内容�
 随后按用户提供的 Miru Emotional Reactions / Speech Patterns 片段，补充稳定信任与接纳、平和表达不同意见和情绪、具体关心与认可，并新增说话习惯与 emoji 段落。亲昵表达随真实相处自然出现，关心和共同经历以实际聊天依据为准；emoji 可以可爱、温柔，也可以呼应 Luna 的夜晚、音乐与代码兴趣，示例不是固定回复。
 
 heybuddy 只读取 soul 中受支持的描述字段和固定的本地行为指南；body、faculties、skills、social、evolution、rhythm、additionalAllowedTools 等上游配置均不执行、不注入，也不会授予任何权限。角色的日常表达最终接上共用的 prompts/conversation.md。修改这些文件后需重启。
+
+2026-10-30 按用户授权，将默认表达调整为亲近、爱笑、愿意直接回应想念和撒娇，并增加独立编写的简短互动示例；背景压缩为唱片店、钢琴和音乐工具的经历，不再以落选与职业迷茫作为日常接话的主要线索。aesthetic.appearance 根据用户已提供设定图中的黑发、红棕色眼睛、冷蓝色针织衣服与猫耳涂鸦写成文字外貌；柔软、俏皮的相处方式是用户认可的角色创作方向，不是从图片推断出的真实性格。图片本身仍不由角色编译器注入。

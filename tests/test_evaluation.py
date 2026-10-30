@@ -115,7 +115,11 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     conversation = json.loads(
         (root / "conversation-style-context.json").read_text(encoding="utf-8")
     )
-    assert current == conversation
+    casual = json.loads((root / "casual-reaction-context.json").read_text(encoding="utf-8"))
+    assert current == casual
+    assert {k: v for k, v in casual.items() if k != "main"} == {
+        k: v for k, v in conversation.items() if k != "main"
+    }
     assert {k: v for k, v in current.items() if k != "main"} == {
         k: v for k, v in relationship.items() if k != "main"
     }

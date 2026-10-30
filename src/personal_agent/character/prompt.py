@@ -156,6 +156,8 @@ def compile_system(
         parts = [identity, persona["简介"]]
         if persona["类型"] and persona["角色"] and persona["角色"] != persona["类型"]:
             parts.append(f"你以{persona['角色']}的身份与用户交谈。")
+        if persona.get("外貌"):
+            parts.append(f"【外貌】\n{persona['外貌']}")
         if persona["背景"]:
             parts.append(persona["背景"])
         parts.append(f"【性格与表达】\n{style}")

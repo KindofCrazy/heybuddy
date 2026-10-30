@@ -6,6 +6,8 @@
 
 Luna 指南在上游四个主题的基础上，吸收用户提供的 Miru 情绪反应与说话习惯，补充稳定接纳、直接表达、具体关心和认可，以及可爱或符合音乐、夜晚、代码兴趣的 emoji。具体反应是表达参考，编译器仍一次性完整注入；没有新增情绪状态任务、工具或发送能力。
 
+当前默认交谈更亲近、爱笑，愿意直接回应想念和撒娇，指南提供短回复示例。背景已缩短；可选 soul.aesthetic.appearance 存放用户认可的文字外貌，在身份之后编译为【外貌】。这份文字不读取或发送头像图片，不改变渠道的图片能力。
+
 `character/persona.py` 只解析 OpenPersona 的 Soul 描述字段；`character/loader.py` 负责固定文件读取、路径保护、大小限制和内容指纹；`character/prompt.py::compile_system()` 将描述编译为自然语言；`character/context.py` 复用现有单一 System、诊断与预算。`runtime.py::assemble_chat()` 将它接到现有 CLI、QQ 和只读 Observatory，不为 JSON 角色创建 CharacterStateService。
 
 ## 实际运行路径
@@ -13,7 +15,7 @@ Luna 指南在上游四个主题的基础上，吸收用户提供的 Miru 情绪
 1. `config.load_settings()` 从可信配置取得 AGENT_CHARACTER_ID。开发示例为 luna，Settings 的库级默认仍是 none；ROOT 可以指向可信本地角色目录。
 2. `runtime.assemble_chat()` → `CharacterLoader.load()` 校验 ID 和目录，优先检查 persona.json；只要该文件存在，损坏时就报错，不回退为同目录的旧 soul.md。
 3. Loader 有界读取 UTF-8 文件，默认每个文件最多 16384 字节，拒绝空白、非法编码、NUL、Symlink/Junction/reparse point。
-4. `persona.parse_persona()` 使用标准库 JSON 和 Pydantic 验证 Soul。最低要求是 identity 的 personaName、slug、bio 与 character 的 personality、speakingStyle；这些字段必须是非空字符串。角色、年龄、氛围、表情、背景、边界和行为指南为可选描述。不要求固定 Markdown 章节、对话示例或 Lore。
+4. `persona.parse_persona()` 使用标准库 JSON 和 Pydantic 验证 Soul。最低要求是 identity 的 personaName、slug、bio 与 character 的 personality、speakingStyle；这些字段必须是非空字符串。角色、年龄、氛围、表情、外貌、背景、边界和行为指南为可选描述。不要求固定 Markdown 章节、对话示例或 Lore。
 5. behaviorGuide 可以是直接的文本；文件引用仅支持上游预设使用的 `file:soul/behavior-guide.md`。Loader 读取并校验这一固定本地文件，不按任意路径或 URL 追踪内容。指纹包括实际读取的 JSON 与指南正文。
 6. CharacterPackage.persona 保存白名单字段的内存解析结果，没有另一份持久角色库。character/behavior 仅为兼容数据接口派生，examples/lore 为空。
 7. `SessionManager.context()` → `ContextBuilder.prepare()/for_request()` → `CharacterContextCompiler.compile()` → `compile_system()`：先以“你是 Luna”建立身份，年龄与类型并入这一句，再提供简介、相处定位和背景；性格、说话方式、氛围与表情合并为一段表达说明；边界与完整行为指南随后编入一次。最后提供现有记忆的用途与检索工具，并追加一份通用交谈提示词。没有逐项的年龄、类型、表情等属性标题，指南中的具体情境与例子不再被概括掉。上游组装方式及适配理由见 [对照说明](../openpersona-prompt-assembly.md)。

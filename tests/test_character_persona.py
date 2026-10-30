@@ -90,11 +90,24 @@ def test_full_guide_is_inlined_once_and_chat_style_remains_the_final_default():
     prompt = CharacterContextCompiler(package).compile("你好")[0].text
     assert prompt.startswith("你是 Luna，一位22岁的AI 女友。")
     assert "陪伴者" in prompt and "💕" in prompt
+    assert package.persona["外貌"] in prompt and "【外貌】" in prompt
     assert package.persona["背景"] in prompt
     assert prompt.count(package.persona["行为指南"]) == 1
     assert prompt.endswith(CONVERSATION_PROMPT)
     for heading in ("【年龄】", "【类型】", "【角色】", "【表情】", "【氛围】"):
         assert heading not in prompt
+
+
+def test_optional_appearance_is_description_only_and_not_an_image_request(tmp_path):
+    document = minimal_persona()
+    document["soul"]["aesthetic"] = {"appearance": "黑发，喜欢猫耳涂鸦"}
+    save_persona(tmp_path, document)
+    package = CharacterLoader(tmp_path).load("luna")
+    messages = CharacterContextCompiler(package).compile("你好")
+    assert package.persona["外貌"] == "黑发，喜欢猫耳涂鸦"
+    assert len(messages) == 1 and messages[0].role == "system"
+    assert "黑发，喜欢猫耳涂鸦" in messages[0].text
+    assert not getattr(messages[0], "images", [])
 
 
 @pytest.mark.parametrize(
