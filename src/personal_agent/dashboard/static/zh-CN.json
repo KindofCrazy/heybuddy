@@ -3,7 +3,7 @@
   "Simulation attempts": "模拟投递记录",
   "COMPOSER / OUTBOX": "生成 / 待投递记录",
   "LOCAL SIMULATION": "仅本地模拟",
-  "Observes opportunities and decisions; sends no messages or tasks.": "只观察机会与判断，不发送消息或执行任务。",
+  "Observes opportunities and decisions; sends no messages or tasks.": "观察机会与判断，不发送消息或执行任务。",
   "Proactive": "主动机会",
   "Shadow status": "观察状态",
   "Shadow Mode": "仅观察",
@@ -206,7 +206,7 @@
   "last active at": "最近活动时间",
   "updated at": "更新时间",
   "outcome": "结果",
-  "rounds": "轮数",
+  "rounds": "模型轮次",
   "path": "路径",
   "hash": "内容 Hash",
   "character id": "角色 ID",
@@ -255,7 +255,6 @@
   "Browse the core files or topic folders on the left. Learning records appear when available.": "可以从左侧浏览基础文件或主题目录；学习记录会在实际产生后显示。",
   "Messages": "对话消息",
   "Bounded preview": "有界预览",
-  "rounds": "模型轮次",
   "Model rounds": "模型轮次",
   "Back to run ↗": "返回运行详情 ↗",
   "Input prompt & tool definitions": "输入 Prompt 与工具定义",
@@ -275,5 +274,11 @@
   "output tokens": "输出 Token",
   "reasoning tokens": "推理 Token（已计入输出）",
   "requesting": "等待模型返回",
-  "responded": "已返回"
+  "responded": "已返回",
+  "Archival Memory": "归档记忆",
+  "Search archival memory": "搜索归档记忆",
+  "Search": "搜索",
+  "Search results": "搜索结果",
+  "No matching topic memories": "没有找到匹配的主题记忆",
+  "Search scope is limited; browse folders for more memories.": "搜索范围有限，可继续浏览目录查找更多记忆。"
 }

@@ -18,6 +18,7 @@ from personal_agent.memory.retrieval import MemoryRetrievalPolicy
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.proactive.models import ProactivePolicy
 from personal_agent.reflection.models import ReflectionPolicy
+from personal_agent.scheduler.models import SchedulerPolicy
 
 
 class Settings(ContextBudget, QQSettings, NapCatSettings):
@@ -36,6 +37,12 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     memory_root: Path | None = None
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
     character_id: str = "none"
+    scheduler_enabled: bool = True
+    scheduler_check_seconds: float = Field(default=30, gt=0, le=300)
+    scheduler_batch_size: int = Field(default=16, ge=1, le=64)
+    scheduler_grace_seconds: int = Field(default=86400, ge=1, le=604800)
+    scheduler_max_future_seconds: int = Field(default=31622400, ge=60, le=31622400)
+    scheduler_timeout_seconds: float = Field(default=10, gt=0, le=60)
     proactive_enabled: bool = True
     proactive_compose_enabled: bool = True
     proactive_input_tokens: int = Field(default=16384, ge=4096, le=65536)
@@ -152,6 +159,11 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
             **{name: getattr(self, "proactive_" + name) for name in ProactivePolicy.model_fields}
         )
 
+    def scheduler_policy(self) -> SchedulerPolicy:
+        return SchedulerPolicy(
+            **{name: getattr(self, "scheduler_" + name) for name in SchedulerPolicy.model_fields}
+        )
+
     @field_validator("character_id")
     @classmethod
     def valid_character_id(cls, value: str) -> str:
@@ -264,6 +276,11 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
 
 
 ENV_FIELDS = {
+    **{
+        "AGENT_" + name.upper(): name
+        for name in Settings.model_fields
+        if name.startswith("scheduler_")
+    },
     **{"AGENT_" + name.upper(): name for name in NapCatSettings.model_fields},
     **{
         "AGENT_" + name.upper(): name

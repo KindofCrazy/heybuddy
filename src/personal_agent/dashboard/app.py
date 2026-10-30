@@ -19,6 +19,7 @@ from personal_agent.dashboard.layout import PAGES
 from personal_agent.dashboard.memory import MemoryView, markdown
 from personal_agent.dashboard.privacy import safe
 from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
+from personal_agent.memory.search import search_topics
 from personal_agent.runtime import ChatService
 from personal_agent.storage.outbox import OutboxRepository
 from personal_agent.storage.proactive import ProactiveRepository
@@ -249,6 +250,12 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
         cursor: str = Query("", max_length=128),
     ):
         return output(await asyncio.to_thread(memory.listing, directory, limit, cursor))
+
+    @app.get("/api/memory/search")
+    async def memory_search(query: str = Query(..., min_length=1, max_length=256)):
+        if not query.strip():
+            return JSONResponse({"error": "invalid_request"}, status_code=422)
+        return output(await asyncio.to_thread(search_topics, memory.memory, query, max_results=5))
 
     @app.get("/api/memory/file")
     async def memory_file(

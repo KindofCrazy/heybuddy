@@ -58,3 +58,7 @@ OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占
 独立 Web 的 `open_application(observer_only=True)` 使用 `SQLiteStore(read_only=True)`，通过 SQLite `mode=ro` 和 `query_only` 拒绝数据库写入。`initialize()` 此时只验证 schema 17，不执行迁移；`SessionManager` 只加载已有 Agent 和已选 Conversation，不创建身份、不更新 client_state。数据库缺失、版本不符或尚无会话时返回 HistoryError，需先由普通 CLI 初始化。占用锁仍按单实例规则取得，不支持旁路访问正在运行的应用。
 
 可信 CLI 的 `/new`、`/resume` 调用 `ChatService.select_conversation()`，同时更新 SessionManager 和 Agent.context；前台运行中和 observer 模式拒绝切换。Context 的时间回调绑定创建时的 Conversation ID。验证：`tests/test_review_refactoring.py` 的完整 observer 启动覆盖缺失、旧 schema 和已有数据；会话切换沿 `tests/test_config_cli.py` 验证。
+
+# P4.4.1 明确提醒生命周期
+
+`assemble_chat()` 增加绑定当前 Agent 的 `SchedulerRuntime`，保存于 ChatService.scheduler；observer_only 只读装配不恢复或启动。`open_chat()` 在 yield 前 start()，独立有界 timer 不受 foreground/Idle/Attention 门控；ChatService.close() 先取消并等待提醒定时器和在途模拟，再 finally 关闭原维护 Runtime。没有真实渠道 Sender 接线。创建、取消、恢复状态、异常和待执行验证详见 [scheduler.md](scheduler.md)；本轮按用户要求未运行测试。

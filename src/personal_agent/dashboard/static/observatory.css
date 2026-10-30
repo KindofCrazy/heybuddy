@@ -1490,5 +1490,112 @@ footer:not(.drawer-footer) {
   grid-template-columns: minmax(0, 1fr);
 }
 /* Proactive audit lists remain user-paginated and read-only. */
-.page-proactive .card { grid-column: 1 / -1; }
-.page-proactive pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.page-proactive .bento {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.page-proactive .card {
+  grid-column: 1 / -1;
+}
+.page-proactive .card[hidden] {
+  display: none;
+}
+.page-proactive .tile-proactive-status {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+}
+.page-proactive .tile-proactive-status .card-header {
+  margin: 0;
+}
+.page-proactive .tile-proactive-status .card-icon {
+  display: none;
+}
+.page-proactive #content-proactive-status {
+  flex: 1;
+  overflow: visible;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.page-proactive #content-proactive-status > p:last-child {
+  flex-basis: 100%;
+}
+@media (max-height: 500px) {
+  .page-proactive .tile-proactive-status {
+    padding: 8px 12px;
+  }
+  .page-proactive #content-proactive-status > p:last-child {
+    display: none;
+  }
+}
+.proactive-tabs {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px;
+}
+.proactive-tabs button {
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  padding: 8px 16px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+.proactive-tabs button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+.page-proactive .object-card {
+  border: var(--border-nested);
+  border-radius: 8px;
+  padding: 16px;
+}
+.page-proactive .object-card p {
+  margin: 8px 0;
+}
+.page-proactive .object-card pre {
+  max-height: 320px;
+  overflow: auto;
+  font-size: 12px;
+}
+.archival-search {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+.archival-search input {
+  width: 100%;
+  min-width: 0;
+  border: var(--border-nested);
+  border-radius: 6px;
+  padding: 6px;
+  background: var(--surface);
+}
+.archival-search button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.archival-results > .nested {
+  margin-top: 12px;
+}
+@media (max-width: 680px) {
+  .page-proactive .tile-proactive-status {
+    gap: 10px;
+  }
+  .page-proactive .tile-proactive-status .eyebrow {
+    display: none;
+  }
+  .page-proactive .tile-proactive-status h2 {
+    font-size: 16px;
+  }
+  .proactive-tabs button {
+    padding: 7px 10px;
+  }
+}
+.page-proactive pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

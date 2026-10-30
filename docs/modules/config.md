@@ -130,3 +130,7 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 ## 策略定义依赖
 
 `CuratorPolicy` 定义在 `learning/models.py`，Settings 仅从模型模块导入，不再为配置校验加载 Curator/Reflection 服务实现；curator 模块保留该导入供已有调用兼容。环境变量、默认值和验证约束不变。验证：`tests/test_config_cli.py`、`tests/test_curator.py`。
+
+# 明确提醒配置
+
+`Settings.scheduler_policy()` 将 AGENT_SCHEDULER_* 转为 SchedulerPolicy，控制本地 timer、每批上限、宽限窗口、未来时间范围和模拟超时。默认 enabled 只表示检查持久提醒，不授予真实发送或模型创建权限；observer_only 始终禁止写入。配置由原 ENV_FIELDS 加载，路径/凭证规则保持。完整字段、调用顺序和未运行的验证清单见 [scheduler.md](scheduler.md)。

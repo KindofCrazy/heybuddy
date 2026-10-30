@@ -1,4 +1,4 @@
-import { ui } from "./i18n.js";
+import { ui, translate } from "./i18n.js";
 import { node, get, action, empty, errorBox } from "./components.js";
 import { icon } from "./icons.js";
 import { memoryFile } from "./memory-character.js";
@@ -54,9 +54,63 @@ export async function memoryWorkspace(target, open) {
         directory = path;
         navigation.replaceChildren();
         const toolbar = node("div", "memory-nav-toolbar");
-        toolbar.append(icon("folder"), node("strong", "", ui("Memory files")));
+        toolbar.append(
+          icon("folder"),
+          node("strong", "", ui("Archival Memory")),
+        );
+        const form = node("form", "archival-search");
+        const input = node("input");
+        input.type = "search";
+        input.maxLength = 256;
+        input.required = true;
+        input.setAttribute("aria-label", translate("Search archival memory"));
+        const submit = node("button", "action-button", ui("Search"));
+        submit.type = "submit";
+        form.append(input, submit);
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const query = input.value.trim();
+          if (!query) return;
+          const version = ++generation;
+          submit.disabled = true;
+          try {
+            const data = await get(
+              `/api/memory/search?query=${encodeURIComponent(query)}`,
+            );
+            if (version !== generation) return;
+            const results = node("div", "archival-results");
+            results.append(node("h3", "", ui("Search results")));
+            for (const item of data.results) {
+              const result = node("article", "nested");
+              result.append(
+                action(item.path, () => read(item.path)),
+                node("p", "prose", item.content),
+              );
+              results.append(result);
+            }
+            if (!data.results.length)
+              results.append(empty("No matching topic memories"));
+            if (data.scope_limited)
+              results.append(
+                node(
+                  "p",
+                  "muted",
+                  ui(
+                    "Search scope is limited; browse folders for more memories.",
+                  ),
+                ),
+              );
+            reader.replaceChildren(results);
+          } catch (error) {
+            if (version === generation)
+              reader.replaceChildren(errorBox(error.message));
+          } finally {
+            submit.disabled = false;
+          }
+        });
         navigation.append(
           toolbar,
+          form,
           node(
             "p",
             "muted",

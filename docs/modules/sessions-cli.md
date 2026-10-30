@@ -103,3 +103,7 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 `main._chat()` 的 /new 与 /resume 统一调用 `ChatService.select_conversation()`，由共享 Runtime 同步切换 SessionManager 和 Agent.context。SessionManager.context 的时间查询绑定该 Context 的 Conversation ID，不跟随后续 SessionManager.current 变化。只读 SessionManager 仅加载已有会话，禁止 new，resume 不写 client_state；错误沿原 CLI HistoryError 路径展示。验证：`tests/test_config_cli.py`、`tests/test_review_refactoring.py`。
 
 会话命令解析由 `cli_commands.session_command()` 负责，`main._chat()` 仅分派；该函数调用共享 Runtime 并沿用原安全错误展示。
+
+# P4.4.1 明确提醒入口
+
+`main._chat()` 在 Agent.run 前将 `/remind` 交给 `scheduler/cli.py::command()`，仅接受明确的带时区 at 或相对 in，以及 status/list/show/events/cancel/simulate。命令不会写用户 Run 或通过模型授予权限。目标 Conversation 在创建时固定，不随 SessionManager 当前会话变更；取消仍按当前 Host 的 Agent Scope 校验，模拟使用记录原会话的本地许可。没有真实发送保证，详细解析、状态和待执行用例见 [scheduler.md](scheduler.md)。

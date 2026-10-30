@@ -30,6 +30,7 @@ from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
 from personal_agent.reflection.service import ReflectionService
 from personal_agent.retrieval import ContextRetriever
+from personal_agent.scheduler.runtime import SchedulerRuntime
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.images import SQLiteImages
@@ -37,6 +38,7 @@ from personal_agent.storage.learning import LearningRepository
 from personal_agent.storage.outbox import OutboundContext, OutboxRepository
 from personal_agent.storage.proactive import ProactiveRepository
 from personal_agent.storage.reflection import ReflectionRepository
+from personal_agent.storage.reminders import ReminderRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.storage.threads import ThreadRepository
 from personal_agent.tools.builtin import create_builtin_registry
@@ -54,6 +56,7 @@ class ChatService:
     foreground_active: bool = False
     qq_status: Callable[[], dict] | None = None
     observer_only: bool = False
+    scheduler: SchedulerRuntime | None = None
 
     def note_input(self) -> None:
         if self.organization is not None and self.organization.proactive is not None:
@@ -102,8 +105,12 @@ class ChatService:
             )
 
     async def close(self) -> None:
-        if self.organization is not None:
-            await self.organization.close()
+        try:
+            if self.scheduler is not None:
+                await self.scheduler.close()
+        finally:
+            if self.organization is not None:
+                await self.organization.close()
 
 
 def assemble_chat(
@@ -241,7 +248,17 @@ def assemble_chat(
         initialize=not observer_only,
     )
     return ChatService(
-        agent, sessions, reflection, automation, organization, observer_only=observer_only
+        agent,
+        sessions,
+        reflection,
+        automation,
+        organization,
+        observer_only=observer_only,
+        scheduler=SchedulerRuntime(
+            ReminderRepository(sessions.store, sessions.agent.id),
+            settings.scheduler_policy(),
+            read_only=observer_only,
+        ),
     )
 
 
@@ -264,6 +281,8 @@ async def open_chat(
             observer_only=observer_only,
         )
         try:
+            if service.scheduler is not None:
+                service.scheduler.start()
             if (
                 not observer_only
                 and service.organization is not None

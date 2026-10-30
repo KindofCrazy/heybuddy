@@ -27,6 +27,8 @@ from personal_agent.reflection.cli import command as reflection_command
 from personal_agent.reflection.models import ReflectionError
 from personal_agent.reflection.service import ReflectionService
 from personal_agent.runtime import ChatService, open_application, open_chat
+from personal_agent.scheduler.cli import command as reminder_command
+from personal_agent.scheduler.models import ReminderError
 from personal_agent.sessions import SessionManager
 
 
@@ -95,6 +97,22 @@ async def _chat(
         if not user_input:
             continue
         permissions: frozenset[str] = frozenset()
+        if user_input.split(maxsplit=1)[0] == "/remind":
+            if service.scheduler is None or sessions is None:
+                write("Reminder > 当前入口未配置提醒。")
+                continue
+            try:
+                report = await reminder_command(
+                    service.scheduler,
+                    sessions.current.id,
+                    user_input.removeprefix("/remind").strip(),
+                )
+                write(json.dumps(report, ensure_ascii=False))
+            except ReminderError as error:
+                write("Reminder > " + error.code)
+            except HistoryError:
+                write("Reminder > 存储失败；未确认投递，不自动重发。")
+            continue
         if user_input.split(maxsplit=1)[0] == "/proactive":
             if commands is None:
                 write("Proactive > 当前入口未配置后台维护。")

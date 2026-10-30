@@ -100,8 +100,12 @@ schema 16 新增 `/proactive` 页面和 `/api/proactive/status|proposals|decisio
 
 # 草稿与模拟尝试
 
+`proactive.js:proactivePage` 将观察状态作为顶部摘要，四类记录以按钮切换，只显示一张列表卡片。`.page-proactive .bento` 为摘要、标签和当前列表分配高度，矮窗口隐藏重复的状态说明，保留模式和 gate。各列表仍使用原接口及游标分页，不提供生成、发送或写入操作。
+
 `/api/proactive/outbox|attempts` 通过 OutboxRepository.listing() 绑定当前 Agent，以至多 20 条 rowid 游标返回草稿和模拟尝试；`/proactive` 增加对应卡片与模式标记。HTTP 没有生成、发送或重试端点；复用原 Host/Origin、隐私、响应限制和只读策略，详情仅通过 DOM 文本展示。完整执行路径与 API 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`。
 
 ## 独立 Web 的数据库只读边界
+
+记忆页导航标明“归档记忆”，支持目录浏览和关键词搜索。`/api/memory/search` 复用 `memory/search.py:search_topics`，与 `archival_memory_search(query=...)` 的主题搜索使用相同索引发现、路径校验和有界扫描；在工作线程只读访问 MemoryFS，不调用模型或写数据库。query 限 256 字符，最多返回 5 条结果；显示 scope_limited 提示。`memory-workspace.js` 搜索结果通过 textContent 显示，点击后沿原文件阅读和来源接口打开正文，并用 generation 丢弃过期结果。归档主题仍是普通 Markdown，不新增第二份事实库；Core 文件继续可在目录中浏览。测试见 `tests/test_dashboard_archival.py`。
 
 `run_web()` → `open_application(observer_only=True)` 使用 SQLite mode=ro/query_only，schema 校验和 SessionManager 恢复均只读。缺失、旧版、尚无 Agent 或选中 Conversation 的数据库不自动初始化或迁移，沿启动 HistoryError 退出；先通过普通 CLI 初始化。保持同一数据库单实例锁规则。`tests/test_review_refactoring.py` 验证完整入口的数据库字节不变、total_changes 为零，并检查误入写接口仍被 SQLite 拒绝。

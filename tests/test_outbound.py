@@ -473,5 +473,7 @@ def test_schema_16_to_17_atomic_migration_and_rollback(tmp_path, monkeypatch):
             )
     with SQLiteStore(path) as store:
         store.initialize()
-        assert store._connection.execute("PRAGMA user_version").fetchone()[0] == 17
+        assert (
+            store._connection.execute("PRAGMA user_version").fetchone()[0] == storage.SCHEMA_VERSION
+        )
         assert len(store.list_runs(sessions.current.id)) == 1
