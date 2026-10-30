@@ -26,3 +26,7 @@
 ## 阅读与验证
 
 离线最小示例运行 `uv run pytest tests/test_model_rounds.py -q`。测试通过 SessionManager、Agent、FakeProvider 和原生工具执行一次两轮加法，逐轮比较快照与 FakeProvider 实际收到的内部消息/工具定义，并验证末轮工具为空、tool call_id、token 用量、正文分页、失败/取消、写库失败阻止请求、跨 Agent 隔离、超限和 schema 13→14 原子迁移。页面入口为运行详情的“模型轮次”，支持完整宽度、刷新、返回与中英文切换，无真实模型调用。
+
+## 图片引用审计
+
+图片 user 消息的 images 字段随内部消息投影进入 model_rounds，保留摘要和尺寸等引用信息；真正的图片正文由 Provider 在请求时从原 SQLite 附件表读取。审计不保存签名下载 URL 或 wire Base64，不提供新图片下载端点。详情见[图片输入](images.md)。

@@ -6,6 +6,7 @@ from personal_agent.core.budget import ContextBudget, ContextError, estimate_req
 from personal_agent.core.character import CharacterContext, RunCharacter, without_legacy_persona
 from personal_agent.core.compaction import compact_step
 from personal_agent.core.history import ConversationHistory, HistoryError, InMemoryHistory
+from personal_agent.core.images import ImageRef
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
 from personal_agent.core.prompts import with_conversation_prompt
@@ -292,11 +293,11 @@ class ContextBuilder:
         )
         self._diagnostics["retrieved_items"] = len(selected_markers)
 
-    def begin(self, user_input: str) -> list[Message]:
+    def begin(self, user_input: str, *, images: list[ImageRef] | None = None) -> list[Message]:
         """Create Run/user atomically; prepare history inside the failure-handled loop."""
         if self._active:
             raise HistoryError("Context already has an active run.")
-        user = TextMessage(role="user", text=user_input)
+        user = TextMessage(role="user", text=user_input, images=images or [])
         self._run_id = self._store.begin(user)
         self._active = True
         self._pending = [user]

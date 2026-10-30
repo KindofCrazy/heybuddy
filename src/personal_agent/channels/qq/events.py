@@ -8,6 +8,12 @@ from personal_agent.channels.qq.config import QQSettings
 
 
 @dataclass(frozen=True)
+class QQAttachment:
+    url: str
+    kind: str = "image"
+
+
+@dataclass(frozen=True)
 class QQText:
     message_id: str
     event_id: str
@@ -16,6 +22,7 @@ class QQText:
     platform_at: datetime
     received_at: datetime
     text: str
+    attachments: tuple[QQAttachment, ...] = ()
 
 
 def parse_text(payload: dict, settings: QQSettings) -> QQText | None:
@@ -31,13 +38,43 @@ def parse_text(payload: dict, settings: QQSettings) -> QQText | None:
     if not isinstance(openid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", openid):
         return None
     message_type = data.get("message_type", 0)
-    if type(message_type) is not int or message_type != 0:
+    if type(message_type) is not int or message_type not in {0, 3}:
         return None
-    if any(data.get(key) for key in ("attachments", "ark_data", "msg_elements")):
+    if data.get("msg_elements"):
         return None
+    raw_attachments = data.get("attachments") or []
+    card = data.get("ark_data")
+    if card or message_type == 3:
+        if not isinstance(card, dict) or card.get("ark_type") != "picture":
+            return None
+        fields = card.get("fields")
+        if not isinstance(fields, dict) or not isinstance(fields.get("preview"), str):
+            return None
+        # Only the documented picture preview is projected; no other card fields or URLs.
+        raw_attachments = [{"content_type": "image", "url": fields["preview"]}]
+    if not isinstance(raw_attachments, list):
+        return None
+    attachments = []
+    if len(raw_attachments) > settings.qq_image_max_count:
+        attachments = [QQAttachment("", "unsupported")]
+    else:
+        for item in raw_attachments:
+            if not isinstance(item, dict) or not isinstance(item.get("content_type"), str):
+                return None
+            kind = item["content_type"].split(";", 1)[0].lower().strip()
+            if kind not in {"image", "image/jpeg", "image/png", "image/gif", "image/webp"}:
+                attachments.append(QQAttachment("", "unsupported"))
+                continue
+            url = item.get("url")
+            if not isinstance(url, str) or not 1 <= len(url) <= 8192:
+                attachments.append(QQAttachment("", "unsupported"))
+            else:
+                attachments.append(QQAttachment(url))
     text, message_id = data.get("content"), data.get("id")
     event_id = payload.get("id", "")
-    if not isinstance(text, str) or not text.strip():
+    if text is None and attachments:
+        text = ""
+    if not isinstance(text, str) or (not text.strip() and not attachments):
         return None
     try:
         if len(text.encode("utf-8")) > settings.qq_input_max_bytes:
@@ -66,7 +103,7 @@ def parse_text(payload: dict, settings: QQSettings) -> QQText | None:
             if isinstance(item, str) and item.startswith("msg_idx=") and len(item) <= 512:
                 index = item.removeprefix("msg_idx=")
                 break
-    return QQText(message_id, event_id, index, openid, stamp, now, text.strip())
+    return QQText(message_id, event_id, index, openid, stamp, now, text.strip(), tuple(attachments))
 
 
 def split_reply(text: str, max_bytes: int, max_parts: int) -> list[str]:

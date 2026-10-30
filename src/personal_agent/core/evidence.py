@@ -48,6 +48,8 @@ def projection(turn: HistoryTurn) -> dict:
             )
         else:
             item = {"role": message.role, "text": redact(message.text)}
+            if isinstance(message, TextMessage) and message.images:
+                item["image_evidence"] = "omitted; visual content is not a disclosed user quote"
             if isinstance(message, AssistantMessage):
                 item["tool_calls"] = [
                     {

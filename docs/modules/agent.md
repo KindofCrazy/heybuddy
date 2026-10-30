@@ -43,3 +43,7 @@
 ## 工具批量数量边界
 
 Agent 接收宿主 max_tool_calls_per_response（默认 64）和 max_tool_calls_per_run（默认 256）。每次 Provider 响应先核对当前批量与累计请求数，超限整批返回 invalid_response，既不保存未接受调用，也不执行其中任何工具；更早批次的完整调用/结果保留。新 Run 重置计数。它限定当前 Run 重放与校验增长，不削弱 SQLite 写前完整验证。tests/test_agent.py 验证单批拒绝、跨轮累计及下一 Run 正常使用。
+
+## 图片输入参数
+
+`Agent.run(..., images=...)` 允许只带图片的空 caption，仍通过同一锁、ContextBuilder、Journal、Provider、工具权限和停止路径；不创建额外 Agent Loop 或图像工具授权。普通文本调用不变，图片引用在工具后的下一次请求继续保留。接口、存储及跨重启测试见[图片输入](images.md)。

@@ -11,6 +11,7 @@ from personal_agent.character.state import CharacterStateService
 from personal_agent.character.storage import CharacterStateRepository
 from personal_agent.config import Settings, memory_root_for
 from personal_agent.core.agent import Agent
+from personal_agent.core.images import ImageRef
 from personal_agent.core.models import RunResult
 from personal_agent.learning.curator import MemoryCurator
 from personal_agent.learning.service import MemoryLearningService
@@ -29,6 +30,7 @@ from personal_agent.reflection.service import ReflectionService
 from personal_agent.retrieval import ContextRetriever
 from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
+from personal_agent.storage.images import SQLiteImages
 from personal_agent.storage.learning import LearningRepository
 from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
@@ -53,12 +55,20 @@ class ChatService:
         if self.organization is not None:
             await self.organization.foreground()
 
-    async def run(self, text: str, *, permissions: frozenset[str] = frozenset()) -> RunResult:
+    async def run(
+        self,
+        text: str,
+        *,
+        permissions: frozenset[str] = frozenset(),
+        images: list[ImageRef] | None = None,
+    ) -> RunResult:
         if self.observer_only:
             raise RuntimeError("Observer-only service cannot start a Run")
         self.foreground_active = True
         try:
             await self.foreground()
+            if images:
+                return await self.agent.run(text, permissions=permissions, images=images)
             return await self.agent.run(text, permissions=permissions)
         finally:
             self.foreground_active = False
@@ -200,7 +210,7 @@ async def open_chat(
             settings,
             sessions,
             memory,
-            OpenAIProvider(client, settings.model),
+            OpenAIProvider(client, settings.model, SQLiteImages(sessions.store, sessions.agent.id)),
             observer_only=observer_only,
         )
         try:

@@ -2,7 +2,9 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+
+from personal_agent.core.images import ImageRef
 
 
 class Model(BaseModel):
@@ -38,6 +40,13 @@ class ToolResult(Model):
 class TextMessage(Model):
     role: Literal["system", "user"]
     text: str
+    images: list[ImageRef] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def user_images_only(self):
+        if self.images and self.role != "user":
+            raise ValueError("Images are only allowed in user messages")
+        return self
 
 
 class AssistantMessage(Model):

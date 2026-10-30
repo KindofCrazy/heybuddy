@@ -4,7 +4,7 @@ import json
 
 from pydantic import Field, model_validator
 
-from personal_agent.core.models import Message, Model, ToolDefinition
+from personal_agent.core.models import Message, Model, TextMessage, ToolDefinition
 
 
 class ContextError(Exception):
@@ -62,6 +62,11 @@ def estimate_value(value: object) -> int:
 def estimate_request(messages: list[Message], tools: list[ToolDefinition]) -> int:
     return (
         256
-        + sum(estimate_value(m.model_dump()) + 16 for m in messages)
+        + sum(
+            estimate_value(m.model_dump())
+            + 16
+            + (4096 * len(m.images) if isinstance(m, TextMessage) else 0)
+            for m in messages
+        )
         + estimate_value([tool.model_dump() for tool in tools])
     )

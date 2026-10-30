@@ -5,6 +5,7 @@ from time import perf_counter
 from personal_agent.core.budget import ContextError
 from personal_agent.core.context import ContextBuilder
 from personal_agent.core.history import HistoryError
+from personal_agent.core.images import ImageRef
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import (
     AssistantMessage,
@@ -51,19 +52,29 @@ class Agent:
         self.request_timeout_seconds = request_timeout_seconds
         self._lock = asyncio.Lock()
 
-    async def run(self, user_input: str, *, permissions: frozenset[str] = frozenset()) -> RunResult:
+    async def run(
+        self,
+        user_input: str,
+        *,
+        permissions: frozenset[str] = frozenset(),
+        images: list[ImageRef] | None = None,
+    ) -> RunResult:
         """
         External Lifecycle
         """
 
-        if not user_input.strip():
+        if not user_input.strip() and not images:
             raise ValueError("User input cannot be empty")
         permissions = frozenset(permissions)
         # Serialize turns on this session to prevent interleaved history.
         async with self._lock:
             self._round_number = 0
             try:
-                messages = self.context.begin(user_input)
+                messages = (
+                    self.context.begin(user_input, images=images)
+                    if images
+                    else self.context.begin(user_input)
+                )
                 return await self._run(messages, permissions=permissions)
             except HistoryError:
                 self._abort_context()

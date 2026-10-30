@@ -33,3 +33,7 @@ TokenUsage.reasoning_tokens 可为空，兼容端点缺失 output_tokens_details
 正常 Agent 和 Compaction 继续使用原 Provider。回答后自动检查由 automation/meter.py::MeteredProvider 记录额外 calls/usage/耗时，复用同一接口，不把 SDK 对象引入 Core。独立 evaluation/runner.py::TraceProvider 用阶段 Prompt 标识 main/compaction/worthiness/extract/select/consolidate，调用前保守预留额度，返回后记录真实 usage；reasoning 是 output 子集。没有新增模型适配器或 SDK 自动重试。
 
 真实评测必须显式 --live，只有固定合成数据，保存正常响应 trace 不导出原始推理；pytest 仍 Fake/MockTransport 无 API。匿名汇总的价格由显式 input/output 参数估算，不是账单。入口、失败与预算见 [Evaluation](evaluation.md)。
+
+## 图片输入
+
+`OpenAIProvider` 可接收 `ImageReader`。`_input()` 对携带 images 的 user 消息生成 input_text/input_image 内容块，先按 Host 全请求上限检查引用，再读取并校验 Agent 隔离的图片，在 wire 请求中编码为 JPEG data URL；纯文本格式不变。数据缺失/损坏或超限停止请求，不自动外网补图。`runtime.open_chat()` 装配原 SQLite 的读取器；工具/Provider 数据重放继续复用原路径。结构、预算、失败和测试见[图片输入](images.md)。

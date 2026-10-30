@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import asdict
 from typing import TYPE_CHECKING
 
 from personal_agent.channels.qq.config import QQError
@@ -41,7 +43,7 @@ class QQInbox:
         # A crash after claiming might have run tools or sent a reply: never replay it.
         with self.store._transaction() as db:
             db.execute(
-                """UPDATE qq_receipts SET status='uncertain', content=NULL,
+                """UPDATE qq_receipts SET status='uncertain', content=NULL, attachments='[]',
                     error_code='qq_process_interrupted' WHERE agent_id=? AND app_id=?
                     AND status IN ('processing','processed','sending')""",
                 (self.agent_id, self.app_id),
@@ -67,8 +69,8 @@ class QQInbox:
                 raise QQError("qq_queue_full")
             db.execute(
                 """INSERT INTO qq_receipts (agent_id, app_id, openid, message_id, event_id,
-                    message_index, conversation_id, platform_at, received_at, status, content)
-                    VALUES (?,?,?,?,?,?,?,?,?,'received',?)""",
+                    message_index, conversation_id, platform_at, received_at, status, content,
+                    attachments) VALUES (?,?,?,?,?,?,?,?,?,'received',?,?)""",
                 (
                     *self.scope,
                     message.message_id,
@@ -78,6 +80,7 @@ class QQInbox:
                     message.platform_at.isoformat(),
                     message.received_at.isoformat(),
                     message.text,
+                    json.dumps([asdict(item) for item in message.attachments]),
                 ),
             )
             return True
@@ -86,7 +89,7 @@ class QQInbox:
         with self.store._transaction() as db:
             # Local CLI can change selection between launches; never reroute queued text.
             db.execute(
-                """UPDATE qq_receipts SET status='failed', content=NULL,
+                """UPDATE qq_receipts SET status='failed', content=NULL, attachments='[]',
                     error_code='qq_conversation_changed' WHERE agent_id=? AND app_id=?
                     AND openid=? AND status='received' AND conversation_id != ?""",
                 (*self.scope, conversation_id),
@@ -99,7 +102,8 @@ class QQInbox:
             if row is None:
                 return None
             db.execute(
-                "UPDATE qq_receipts SET status='processing', content=NULL WHERE sequence=?",
+                "UPDATE qq_receipts SET status='processing', content=NULL, attachments='[]' "
+                "WHERE sequence=?",
                 (row["sequence"],),
             )
             return dict(row)
@@ -115,7 +119,8 @@ class QQInbox:
     ) -> None:
         with self.store._transaction() as db:
             db.execute(
-                """UPDATE qq_receipts SET status=?, content=NULL, sent_parts=?, error_code=?,
+                """UPDATE qq_receipts SET status=?, content=NULL, attachments='[]',
+                    sent_parts=?, error_code=?,
                     run_id=coalesce(?,run_id) WHERE sequence=? AND agent_id=? AND app_id=?
                     AND openid=?""",
                 (status, sent_parts, error_code, run_id, sequence, *self.scope),

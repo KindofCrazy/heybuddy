@@ -39,3 +39,7 @@ Agent 的失败继续返回 `RunResult`；初始化失败沿原 CLI 安全错误
 ## 渠道无关生命周期
 
 OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占用终端线程。channels/lifecycle.py::stop_on_termination 供 QQ 与 Web 共用，Web 不再从 QQ runner 导入通用信号处理。生产 CLI 使用原 ChatService，不重新包裹而丢失宿主标记；维护与 Provider 的关闭 owner 为 open_chat。最小运行入口与测试仍为 run_cli、run_qq、run_web 和 tests/test_qq_integration.py/test_dashboard_lifecycle.py。
+
+## 共享图片输入
+
+`ChatService.run(..., images=...)` 将不可变图片引用传给同一 Agent。`open_chat()` 为 OpenAIProvider 注入绑定当前 Agent 的 SQLiteImages 读取器，不在 QQ Adapter 新建视觉模型/人格/学习器；包加载与维护配置不变。全路径及验证见[图片输入](images.md)。

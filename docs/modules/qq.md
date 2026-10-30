@@ -68,7 +68,7 @@ SDK 审查：腾讯 [botpy gateway.py](https://github.com/tencent-connect/botpy/
 
 ## Adapter 与收件回执执行路径
 
-`events.parse_text()` 只投影 C2C、非机器人、无附件/卡片/引用元素的纯文本；字段大小、UTF-8、时区时间戳和未来偏移有界。只使用 author.user_openid；不从昵称/union_openid/内容推断授权。`QQAdapter.accept()` 在白名单检查后调用 `storage.qq.QQInbox.receive()`，事务提交后通知单消费者，随后 Gateway 才推进 sequence。接收路径不等待 LLM。
+`events.parse_text()` 投影 C2C 非机器人用户的文本与图片附件，保留图文组合并允许纯图片；图片卡片只取受限 preview，不展开引用或其他卡片。字段大小、UTF-8、时区时间戳和未来偏移有界。只使用 author.user_openid；不从昵称/union_openid/内容推断授权。`QQAdapter.accept()` 在白名单检查后调用 `storage.qq.QQInbox.receive()`，事务提交后通知单消费者，随后 Gateway 才推进 sequence。接收路径不下载图片或等待 LLM。图片下载、校验、持久化和模型输入的完整路径见 [图片输入](images.md)。
 
 schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁。回执仅保留平台标识、时间、状态、Conversation/Run 关联和段数；仅 received 阶段暂存输入文本，领取时删除这份队列文本。原始完整历史仍只保存在 messages；不创建 QQ 历史或事实数据库。
 

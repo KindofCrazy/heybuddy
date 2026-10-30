@@ -11,8 +11,10 @@ from personal_agent.channels.qq.api import QQAPI
 from personal_agent.channels.qq.config import QQError, QQSettings
 from personal_agent.channels.qq.events import parse_text
 from personal_agent.channels.qq.gateway import QQGateway
+from personal_agent.channels.qq.images import QQImages
 from personal_agent.config import Settings
 from personal_agent.runtime import open_application
+from personal_agent.storage.images import SQLiteImages
 from personal_agent.storage.qq import QQInbox
 
 
@@ -38,7 +40,13 @@ async def run_qq(
                     settings.qq_app_id,
                     settings.qq_allowed_openids[0],
                 )
-                adapter = QQAdapter(settings, service, inbox, QQAPI(settings, client))
+                adapter = QQAdapter(
+                    settings,
+                    service,
+                    inbox,
+                    QQAPI(settings, client),
+                    QQImages(settings, client, SQLiteImages(sessions.store, sessions.agent.id)),
+                )
                 gateway = QQGateway(settings, adapter.sender)
                 service.qq_status = lambda: {
                     "gateway": gateway.state,
@@ -51,7 +59,7 @@ async def run_qq(
                 adapter.start()
                 receiving = asyncio.create_task(gateway.run(adapter.accept), name="qq-gateway")
                 stopping = asyncio.create_task(stop.wait(), name="qq-stop")
-                print("QQ > 正在连接官方 Gateway；仅接受授权用户的 C2C 纯文本。Ctrl+C 退出。")
+                print("QQ > 正在连接官方 Gateway；接受授权用户的 C2C 文本与图片。Ctrl+C 退出。")
                 try:
                     done, _ = await asyncio.wait(
                         {receiving, adapter.worker, stopping}, return_when=asyncio.FIRST_COMPLETED

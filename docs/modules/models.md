@@ -1,5 +1,7 @@
 # 内部数据模型
 
+`TextMessage.images` 保存最多四个 `core.images.ImageRef`，缺省为空，仅 user 消息可携带。引用包含不可变摘要、JPEG 类型、字节数、尺寸和首帧编号，不包含 QQ URL、Base64 或 SDK 对象。`ImageReader` 是 Host 绑定的只读 Protocol；Core 保持独立。使用、校验、存储与离线验证见[图片输入](images.md)。
+
 P3 `character/models.py` 定义 CharacterPackage/Section/CharacterPolicy，以及有界 StatePolicy/StateProposal/CharacterState。State 只有 Mood、Focus、Stance、可观察事件 reason 与 Host 来源/版本/时间；没有好感度、认知轨迹或用户心理档案。Provider 专有对象仍不进入 Core。JSON 解析、角色隔离与发布校验见 [State](character-state.md)。
 
 P2 复用 Candidate/Evidence/Decision，增加 ongoing_goal/current_state 类别，仍以精确 Run 引文验证用户事实。learning/models.py 的 Target/Targets/FileDecision 约束按目标聚合；CuratorChange/Curation 限制三个操作。PlanItem.candidate 可为 None，仅用于 Host Curator 的结构性文件计划，不伪造 Run 引文；手动 Reflection 和 Learner 的事实候选仍有 Candidate/Evidence。SQLite 不持久化这些 P2 候选或知识正文，只有来源与文件回执。MemoryRetrievalPolicy/RetrievalChoice、扩展 RetrievalResult 提供有界候选和安全数值计量。

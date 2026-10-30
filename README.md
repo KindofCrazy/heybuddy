@@ -215,7 +215,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → runtime.open_application → SQLiteStore.initialize(schema 14) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → runtime.open_application → SQLiteStore.initialize(schema 15) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -229,7 +229,7 @@ main → runtime.open_application → SQLiteStore.initialize(schema 14) / recove
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前使用 schema 14；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照；旧迁移定义不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 15；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加 Agent 隔离的图片正文与 QQ 待处理附件字段；旧迁移定义不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -389,3 +389,5 @@ uv run python -m personal_agent.evaluation --snapshot .heybuddy/current-prompts.
 模块说明见 [Observatory](docs/modules/dashboard.md)，启动、截图、数据源与验收记录见 [交付与验收](docs/observatory.md)。
 
 [通用交谈提示词](src/personal_agent/prompts/conversation.md) 独立于角色卡，统一日常闲聊的默认表达；装配路径、发送配合与边界见 [模块说明](docs/modules/prompts.md)。
+
+QQ 现支持图片、图文和 JPEG/PNG/GIF/WebP 表情包输入；动图只读取首帧，回复仍是文本。下载有官方 CDN、大小、像素和总超时限制，使用现有 Agent/角色/记忆与 SQLite 附件存储。接口、上下文预算、失败和验证见[图片输入](docs/modules/images.md)。

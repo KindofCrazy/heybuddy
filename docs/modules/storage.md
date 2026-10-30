@@ -22,7 +22,7 @@ P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running R
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 14 与发行包版本 0.7.2 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 15 与发行包版本 0.7.2 是不同概念。
 
 ## 表字段与一致性约束
 
@@ -115,3 +115,7 @@ schema 14 通过 `storage/tracing.py:SCHEMA` 原子追加 model_rounds，保存�
 ## 查询所有权
 
 LearningRepository 提供 Curator schedule、最近 Job 和写入路径查询；ScheduleRepository 提供只读 state/observe；WorkingContextRepository 提供 Agent 绑定的完整历史选择。QQInbox.latest_run_id 在同一 Agent 范围查找实际 Run，Adapter 不自行读 messages。Episode/Thread 的连接内 read_* 方法供同一快照复用；发布/CAS/迁移继续使用原事务，方法内不 await。没有新增表或移动旧迁移。
+
+## 图片附件（schema 15）
+
+`storage.images.SCHEMA` 原子追加 Agent/SHA256 隔离的 image_attachments BLOB 和 qq_receipts.attachments。`SQLiteImages.save_image()` 只插入归一化图片，`read_image()` 复核所属 Agent、元数据、长度和摘要。messages 保存完整逻辑图片引用，原 Journal 仍是消息权威源；临时源 URL 在领取时清除。不重新下载过期 URL，不自动清理孤立 BLOB，不覆盖历史。边界与 schema 14→15 回滚/重启测试见[图片输入](images.md)。

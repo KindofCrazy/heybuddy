@@ -33,6 +33,10 @@ class QQSettings(BaseModel):
     # Conservative local UTF-8 cap; not a claim about QQ's character counter.
     qq_text_max_bytes: int = Field(default=1500, ge=128, le=1500)
     qq_input_max_bytes: int = Field(default=16384, ge=128, le=65536)
+    qq_images_enabled: bool = True
+    qq_image_max_count: int = Field(default=4, ge=1, le=4)
+    qq_image_download_bytes: int = Field(default=8388608, ge=1024, le=8388608)
+    qq_image_download_seconds: float = Field(default=15, gt=0, le=30)
     qq_send_interval_seconds: float = Field(default=1, ge=0.1, le=10)
     qq_humanize_enabled: bool = True
     qq_humanize_ms_per_char: float = Field(default=25, ge=0, le=150)

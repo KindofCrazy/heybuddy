@@ -1,6 +1,7 @@
 """Durable bounded inbox and one consumer around the existing ChatService."""
 
 import asyncio
+import json
 import logging
 import time
 from datetime import UTC, datetime
@@ -9,6 +10,7 @@ from typing import Protocol
 from personal_agent.channels.qq.config import QQError, QQSettings
 from personal_agent.channels.qq.events import parse_text
 from personal_agent.channels.qq.humanize import Humanizer
+from personal_agent.channels.qq.images import QQImages
 from personal_agent.core.models import RunResult
 from personal_agent.runtime import ChatService
 from personal_agent.storage.qq import QQInbox
@@ -22,12 +24,18 @@ class TextSender(Protocol):
 
 class QQAdapter:
     def __init__(
-        self, settings: QQSettings, service: ChatService, inbox: QQInbox, sender: TextSender
+        self,
+        settings: QQSettings,
+        service: ChatService,
+        inbox: QQInbox,
+        sender: TextSender,
+        images: QQImages | None = None,
     ) -> None:
         self.settings = settings
         self.service = service
         self.inbox = inbox
         self.sender = sender
+        self.images = images
         self.humanizer = Humanizer(settings)
         if service.sessions is None:
             raise QQError("qq_sessions_required", fatal=True)
@@ -121,7 +129,25 @@ class QQAdapter:
                 async with asyncio.timeout(
                     self._remaining(row) - self.settings.qq_send_timeout_seconds
                 ):
-                    result = await self.service.run(row["content"], permissions=frozenset())
+                    attachments = json.loads(row.get("attachments", "[]"))
+                    refs = []
+                    if attachments:
+                        if self.images is None:
+                            raise QQError("qq_image_unsupported")
+                        refs = await self.images.prepare(attachments)
+                    if refs:
+                        result = await self.service.run(
+                            row["content"], permissions=frozenset(), images=refs
+                        )
+                    else:
+                        result = await self.service.run(row["content"], permissions=frozenset())
+            except QQError:
+                await self._reply(
+                    row,
+                    "这次附件没有成功读取。支持图片和图片表情包（动图仅看首帧）；请换一张较小的图片重发。",
+                    elapsed=time.monotonic() - started,
+                )
+                return None
             except TimeoutError:
                 self.inbox.mark(row["sequence"], "failed", error_code="qq_reply_expired")
                 return None

@@ -1,11 +1,13 @@
 """Responses API mapping is entirely contained in this adapter."""
 
+import base64
 from typing import cast
 
 from openai import APIConnectionError, APIStatusError, APITimeoutError, AsyncOpenAI
 from openai.types.responses import ResponseInputParam, ToolParam
 from pydantic import ValidationError
 
+from personal_agent.core.images import ImageReader
 from personal_agent.core.models import (
     AssistantMessage,
     Message,
@@ -21,16 +23,37 @@ from personal_agent.llm.base import ProviderError, ProviderTimeout
 
 
 class OpenAIProvider:
-    def __init__(self, client: AsyncOpenAI, model: str) -> None:
+    def __init__(self, client: AsyncOpenAI, model: str, images: ImageReader | None = None) -> None:
         self.client = client
         self.model = model
+        self.images = images
 
     @staticmethod
-    def _input(messages: list[Message]) -> list[dict]:
+    def _input(messages: list[Message], images: ImageReader | None = None) -> list[dict]:
+        references = [ref for m in messages if isinstance(m, TextMessage) for ref in m.images]
+        if len(references) > 128 or sum(ref.size_bytes for ref in references) > 33554432:
+            raise ProviderError("Image request exceeds Host limits.", code="image_limit")
         items: list[dict] = []
         for message in messages:
             if isinstance(message, TextMessage):
-                items.append({"role": message.role, "content": message.text})
+                if message.images:
+                    if images is None:
+                        raise ProviderError(
+                            "Image input is not configured.", code="image_unavailable"
+                        )
+                    content = [{"type": "input_text", "text": message.text}] if message.text else []
+                    for ref in message.images:
+                        encoded = base64.b64encode(images.read_image(ref)).decode("ascii")
+                        content.append(
+                            {
+                                "type": "input_image",
+                                "image_url": "data:image/jpeg;base64," + encoded,
+                                "detail": "high",
+                            }
+                        )
+                    items.append({"role": message.role, "content": content})
+                else:
+                    items.append({"role": message.role, "content": message.text})
             elif isinstance(message, ToolMessage):
                 items.append(
                     {
@@ -81,7 +104,7 @@ class OpenAIProvider:
         try:
             response = await self.client.responses.create(
                 model=self.model,
-                input=cast(ResponseInputParam, self._input(messages)),
+                input=cast(ResponseInputParam, self._input(messages, self.images)),
                 tools=cast(list[ToolParam], definitions),
                 store=False,
                 include=["reasoning.encrypted_content"],
