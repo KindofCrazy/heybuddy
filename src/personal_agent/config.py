@@ -246,6 +246,8 @@ class Settings(ContextBudget, QQSettings):
 
 
 ENV_FIELDS = {
+    "QQ_MESSAGE_IDLE_SECONDS": "qq_message_idle_seconds",
+    "QQ_MESSAGE_MAX_WAIT_SECONDS": "qq_message_max_wait_seconds",
     **{"AGENT_" + name.upper(): name for name in QQSettings.model_fields},
     **{
         "AGENT_" + name.upper(): name
@@ -323,7 +325,7 @@ def load_settings(env_file: Path | None = None) -> Settings:
 
 def load_qq_settings(env_file: Path | None = None) -> QQSettings:
     # Discovery has no Provider, Agent, database or paid-model configuration.
-    fields = {"AGENT_" + name.upper(): name for name in QQSettings.model_fields}
+    fields = {key: value for key, value in ENV_FIELDS.items() if value in QQSettings.model_fields}
     return QQSettings.model_validate(_environment_values(fields, env_file))
 
 

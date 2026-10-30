@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from personal_agent.channels.qq.config import QQError
+from personal_agent.channels.qq.config import QQError, QQSettings
+from personal_agent.channels.qq.turns import MAX_TURN_MESSAGES, plan_turn
 
 if TYPE_CHECKING:
     from personal_agent.channels.qq.events import QQText
@@ -86,6 +88,13 @@ class QQInbox:
             return True
 
     def claim(self, conversation_id: str) -> dict | None:
+        row, _ = self.claim_turn(conversation_id)
+        return row
+
+    def claim_turn(
+        self, conversation_id: str, settings: QQSettings | None = None, *, now: float | None = None
+    ) -> tuple[dict | None, float]:
+        """Plan and claim atomically; a positive delay leaves every receipt untouched."""
         with self.store._transaction() as db:
             # Local CLI can change selection between launches; never reroute queued text.
             db.execute(
@@ -94,23 +103,48 @@ class QQInbox:
                     AND openid=? AND status='received' AND conversation_id != ?""",
                 (*self.scope, conversation_id),
             )
-            row = db.execute(
+            rows = db.execute(
                 """SELECT * FROM qq_receipts WHERE agent_id=? AND app_id=? AND openid=?
-                    AND status='received' ORDER BY sequence LIMIT 1""",
-                self.scope,
-            ).fetchone()
-            if row is None:
-                return None
-            db.execute(
-                "UPDATE qq_receipts SET status='processing', content=NULL, attachments='[]' "
-                "WHERE sequence=?",
-                (row["sequence"],),
+                    AND status='received' ORDER BY sequence LIMIT ?""",
+                (*self.scope, MAX_TURN_MESSAGES + 1 if settings else 1),
+            ).fetchall()
+            if not rows:
+                return None, 0
+            if settings is None:
+                row = dict(rows[0])
+                sequences = (row["sequence"],)
+            else:
+                turn = plan_turn([dict(item) for item in rows], settings)
+                current = datetime.now(UTC).timestamp() if now is None else now
+                delay = turn.deadline - current
+                if delay > 0:
+                    return None, delay
+                row = turn.input_row()
+                sequences = row["sequences"]
+            for sequence in sequences:
+                db.execute(
+                    "UPDATE qq_receipts SET status='processing', content=NULL, attachments='[]' "
+                    "WHERE sequence=? AND status='received'",
+                    (sequence,),
+                )
+            return row, 0
+
+    def release(self, receipts: tuple[dict, ...]) -> None:
+        """Normal cancellation before Run/send: restore the unexecuted input atomically."""
+        with self.store._transaction() as db:
+            db.executemany(
+                "UPDATE qq_receipts SET status='received', content=?, attachments=? "
+                "WHERE sequence=? AND agent_id=? AND app_id=? AND openid=? "
+                "AND status='processing'",
+                [
+                    (row["content"], row["attachments"], row["sequence"], *self.scope)
+                    for row in receipts
+                ],
             )
-            return dict(row)
 
     def mark(
         self,
-        sequence: int,
+        sequence: int | tuple[int, ...],
         status: str,
         *,
         sent_parts: int = 0,
@@ -118,12 +152,27 @@ class QQInbox:
         run_id: str | None = None,
     ) -> None:
         with self.store._transaction() as db:
-            db.execute(
+            db.executemany(
                 """UPDATE qq_receipts SET status=?, content=NULL, attachments='[]',
                     sent_parts=?, error_code=?,
                     run_id=coalesce(?,run_id) WHERE sequence=? AND agent_id=? AND app_id=?
                     AND openid=?""",
-                (status, sent_parts, error_code, run_id, sequence, *self.scope),
+                [
+                    (status, sent_parts, error_code, run_id, item, *self.scope)
+                    for item in ((sequence,) if isinstance(sequence, int) else sequence)
+                ],
+            )
+
+    def link_run(self, sequence: int | tuple[int, ...], run_id: str) -> None:
+        """Link all receipts even if a Run timed out or was cancelled; preserve status."""
+        with self.store._transaction() as db:
+            db.executemany(
+                "UPDATE qq_receipts SET run_id=? WHERE sequence=? AND agent_id=? "
+                "AND app_id=? AND openid=?",
+                [
+                    (run_id, item, *self.scope)
+                    for item in ((sequence,) if isinstance(sequence, int) else sequence)
+                ],
             )
 
     def latest_run_id(self, conversation_id: str) -> str | None:

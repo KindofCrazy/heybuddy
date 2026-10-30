@@ -158,8 +158,8 @@ async def test_consecutive_messages_queue_without_interrupting_current_run(state
         assert [row["status"] for row in rows(db)] == ["processing", "received", "received"]
         release.set()
         await settled(adapter)
-        assert calls == ["第一条", "第二条", "第三条"]
-        assert [message[1] for message in sender.messages] == ["1", "2", "3"]
+        assert calls == ["第一条", "第二条\n第三条"]
+        assert [message[1] for message in sender.messages] == ["1", "3"]
     finally:
         await adapter.close()
 
@@ -364,7 +364,7 @@ async def test_journal_failure_halts_worker_before_queued_next_run(state, monkey
     monkeypatch.setattr(inbox, "mark", fail_processed)
     try:
         await adapter.accept(event("1"))
-        await adapter.accept(event("2"))
+        await adapter.accept(event("2", "/new"))
         with pytest.raises(QQError, match="qq_processing_error"):
             await asyncio.wait_for(adapter.worker, 1)
         assert len(provider.requests) == 1 and not sender.messages

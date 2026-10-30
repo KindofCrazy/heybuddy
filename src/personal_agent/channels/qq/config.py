@@ -22,6 +22,8 @@ class QQSettings(BaseModel):
     qq_allowed_openids: tuple[str, ...] = ()
     qq_sandbox: bool = False
     qq_queue_size: int = Field(default=16, ge=1, le=100)
+    qq_message_idle_seconds: float = Field(default=2.5, gt=0, le=30)
+    qq_message_max_wait_seconds: float = Field(default=8.0, gt=0, le=60)
     qq_send_timeout_seconds: float = Field(default=10, gt=0, le=60)
     qq_connect_timeout_seconds: float = Field(default=20, gt=0, le=60)
     qq_reconnect_attempts: int = Field(default=8, ge=0, le=20)
@@ -57,6 +59,8 @@ class QQSettings(BaseModel):
 
     @model_validator(mode="after")
     def valid_qq_bounds(self):
+        if self.qq_message_max_wait_seconds < self.qq_message_idle_seconds:
+            raise ValueError("QQ message maximum wait must cover the idle interval")
         if self.qq_reconnect_max_seconds < self.qq_reconnect_base_seconds:
             raise ValueError("QQ reconnect maximum must cover the base interval")
         return self

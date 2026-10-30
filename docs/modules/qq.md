@@ -1,5 +1,7 @@
 # QQ 官方单人 C2C 渠道
 
+连续消息默认按静默 2.5 秒、首条起最多 8 秒聚合。聚合期间回执保持 received，到期才原子领取整组，以组内最后一条为回复引用，统一关联 Run 和发送状态。命令、条数、字节和图片限制形成分组边界；完整调用路径、关闭恢复与测试见 [QQ 消息聚合](qq-turns.md)。下文单条处理状态同样适用于整组，正常关闭时尚未进入 Run/回复路径的已领取组可恢复 received；硬崩溃仍保守 uncertain。
+
 ## 与本地 CLI 的能力差异
 
 QQ 仍使用相同角色、Core 注入、主题/历史检索、会话压缩、Episode/Thread、P2 Learning/Curator 和角色状态；后台任务是否执行取决于共享配置与调度条件，不因 QQ 而全部关闭。
@@ -72,11 +74,11 @@ SDK 审查：腾讯 [botpy gateway.py](https://github.com/tencent-connect/botpy/
 
 schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁。回执仅保留平台标识、时间、状态、Conversation/Run 关联和段数；仅 received 阶段暂存输入文本，领取时删除这份队列文本。原始完整历史仍只保存在 messages；不创建 QQ 历史或事实数据库。
 
-`_consume()` 按收件 sequence 领取，再调用共享 `foreground()`。普通文本 → `ChatService.run(..., permissions=frozenset())` → 原 Agent/ContextBuilder/Journal；以 `/` 开头的输入返回固定不支持提示，不调用任何 CLI 管理分支。排队不会取消正常 Run；消费者空闲时才调用 `after_reply()` 复用现有维护策略，不强制逐条切 Episode。
+`_consume()` 先调用共享 `foreground()` 抢占维护，再按收件 sequence 原子领取到期的连续消息组；`_process()` 继续复核前台状态。普通文本 → `ChatService.run(..., permissions=frozenset())` → 原 Agent/ContextBuilder/Journal；以 `/` 开头的输入返回固定不支持提示，不调用任何 CLI 管理分支。排队不会取消正常 Run；消费者空闲时才调用 `after_reply()` 复用现有维护策略，不强制逐条切 Episode。
 
 领取前提交 processing，回答后提交 processed，再于每段外部发送前提交 sending。发送成功更新 sent_parts，全部完成才记 replied。失败不会重跑 Agent；发送超时、失联、平台审核等无法确认结果时记 uncertain，不重发剩余段。部分已发送的文字无法回滚。发送节流跨不同输入保持串行；每段检查原始时间及本地接收时间，不能延长被动窗口。
 
-去重键为 `(agent_id, app_id, message_id)`，非空 event_id 另有唯一索引；msg_idx 仅作为 metadata。刻意保守按 message_id 拒绝重复，即使重复投递缺少或改变 msg_idx 也不会重复运行。极少数共享同一 msg_id、不同 msg_idx 的独立输入可能被抑制；本版不支持平台并行/引用消息。去重墓碑不自动删除，因此收件回执随消息数增长；队列待处理数默认 16（另有最多一个已领取），不能无限积压。队列满抛出受控错误，不推进当前事件游标，断线后有限 Resume；不承诺平台会无限保留/补发事件。
+去重键为 `(agent_id, app_id, message_id)`，非空 event_id 另有唯一索引；msg_idx 仅作为 metadata。刻意保守按 message_id 拒绝重复，即使重复投递缺少或改变 msg_idx 也不会重复运行。极少数共享同一 msg_id、不同 msg_idx 的独立输入可能被抑制；本版不支持平台并行/引用消息。去重墓碑不自动删除，因此收件回执随消息数增长；队列待处理数默认 16（另有最多一个已领取组，每组至多 16 条），不能无限积压。队列满抛出受控错误，不推进当前事件游标，断线后有限 Resume；不承诺平台会无限保留/补发事件。
 
 重启 `QQInbox.recover()` 将 processing/processed/sending 改为 uncertain；已领取但尚未开始 Run 的崩溃窗口也保守放弃。只有 received 可恢复；配置白名单变化不读取旧用户队列，Conversation 被本地切换时旧 received 标记 failed，不重定向到新会话。退出停止接收并取消消费者，正在执行的 Agent 使用既有 cancelled 审计；received 留待下次安全处理。SQLite 失败停止消费，不推进接收游标。数据库与 QQ API 之间没有共同事务，不提供 Exactly-once。
 

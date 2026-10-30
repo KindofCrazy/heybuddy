@@ -105,6 +105,8 @@ schema 5 追加 storage/automation.py 的 automation_batches 与范围/活动唯
 # QQ 收件回执（schema 13）
 
 `storage/qq.py` 原子追加 `qq_receipts` 及去重/待处理索引，不改变原始 Journal、Recall、Learning 或角色表。`QQInbox` 仅保存最小平台回执与有界待处理文本；领取后删除暂存正文，完整对话继续由 `SQLiteStore.begin_run()` 等原路径维护。处理/发送中的遗留回执只改为 uncertain，不重跑工具；received 的恢复绑定同一 Agent、AppID、OpenID 和 Conversation。执行路径、外部发送提交窗口及测试见 [qq.md](qq.md)。
+
+`QQInbox.claim_turn()` 在同一事务内规划并领取连续消息组；等待未到期时不修改 received。`mark()` 支持整组 sequence，在一个事务内同步状态；`link_run()` 保留原状态并关联所有组员；`release()` 仅用于正常取消时恢复尚未进入 Run/回复路径的原输入。没有新增 schema，旧 `claim()` 单条接口继续兼容离线调用。硬崩溃不尝试 release，仍按 uncertain 处理。详见 [qq-turns.md](qq-turns.md)。
 # Observatory 读取
 
 schema 14 通过 `storage/tracing.py:SCHEMA` 原子追加 model_rounds，保存主 Agent 每次请求的内部输入/返回投影与元数据。`SQLiteRunTrace` 使用同一 Store 的短事务，不改变 messages、Recall 或 Summary；旧 Run 不回填。观测端仍只读查询，详细流程与失败测试见[模型调用审计](tracing.md)。

@@ -323,6 +323,8 @@ uv build
 
 QQ 官方协议、Transport 与离线测试见 [QQ 渠道](docs/modules/qq.md)。
 
+QQ 连续消息按静默 2.5 秒、首条起最多 8 秒聚合为一次输入；原子领取、图片限制、重启语义与手工验证见 [QQ 消息聚合](docs/modules/qq-turns.md)。
+
 QQ 默认将普通聊天自然拆成最多四个气泡，并使用计入生成耗时的轻量条间停顿；代码、列表与链接等结构化内容保留原字节分段策略。可通过 `AGENT_QQ_HUMANIZE_ENABLED=false` 关闭，配置与体验方法见 [聊天气泡与停顿](docs/qq-setup.md#聊天气泡与停顿)。完整回答仍保留在原 Journal，不增加模型调用。
 
 P4-MVP 增加官方 QQ 单人 C2C 文本入口：`uv run personal-agent qq`。先用 `uv run personal-agent qq --discover-openid` 取得并人工核对测试账号的 OpenID，再配置单用户白名单。诊断不调用模型；普通 QQ 对话复用原有会话、Memory 和 Character。完整平台准备、配置、Smoke Test 与限制见 [QQ 接入指南](docs/qq-setup.md)。CLI 与 QQ 不能以两个进程同时使用相同数据库。

@@ -17,6 +17,8 @@ from personal_agent.config import Settings, load_settings
 
 def config(**kwargs):
     kwargs.setdefault("qq_humanize_enabled", False)
+    kwargs.setdefault("qq_message_idle_seconds", 0.01)
+    kwargs.setdefault("qq_message_max_wait_seconds", 0.03)
     return QQSettings(
         qq_enabled=True,
         qq_app_id="12345",

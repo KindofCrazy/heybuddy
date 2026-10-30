@@ -85,7 +85,17 @@ class QQAdapter:
         result: RunResult | None = None
         while not self.closing:
             self.wake.clear()
-            row = self.inbox.claim(self.conversation_id)
+            # Preempt maintenance while receipts are still safely recoverable.
+            if self.inbox.pending():
+                await self.service.foreground()
+            row, delay = self.inbox.claim_turn(self.conversation_id, self.settings)
+            if delay > 0:
+                try:
+                    async with asyncio.timeout(delay):
+                        await self.wake.wait()
+                except TimeoutError:
+                    pass
+                continue
             if row is None:
                 self.service.after_reply(result)
                 result = None
@@ -94,8 +104,11 @@ class QQAdapter:
             try:
                 result = await self._process(row)
             except asyncio.CancelledError:
+                if not row.get("execution_started"):
+                    self.inbox.release(row["receipts"])
+                    raise
                 self.inbox.mark(
-                    row["sequence"],
+                    row.get("sequences", row["sequence"]),
                     "uncertain",
                     sent_parts=row.get("sent_parts", 0),
                     error_code="qq_shutdown",
@@ -104,7 +117,7 @@ class QQAdapter:
             except Exception:
                 # Do not print private exception bodies or continue after storage failure.
                 self.inbox.mark(
-                    row["sequence"],
+                    row.get("sequences", row["sequence"]),
                     "uncertain",
                     sent_parts=row.get("sent_parts", 0),
                     error_code="qq_processing_error",
@@ -118,7 +131,9 @@ class QQAdapter:
         )
         await self.service.foreground()
         if self._remaining(row) <= self.settings.qq_send_timeout_seconds:
-            self.inbox.mark(row["sequence"], "failed", error_code="qq_reply_expired")
+            self.inbox.mark(
+                row.get("sequences", row["sequence"]), "failed", error_code="qq_reply_expired"
+            )
             return None
         result = None
         if row["content"].lstrip().startswith("/"):
@@ -135,6 +150,7 @@ class QQAdapter:
                         if self.images is None:
                             raise QQError("qq_image_unsupported")
                         refs = await self.images.prepare(attachments)
+                    row["execution_started"] = True
                     if refs:
                         result = await self.service.run(
                             row["content"], permissions=frozenset(), images=refs
@@ -149,10 +165,15 @@ class QQAdapter:
                 )
                 return None
             except TimeoutError:
-                self.inbox.mark(row["sequence"], "failed", error_code="qq_reply_expired")
+                self.inbox.mark(
+                    row.get("sequences", row["sequence"]), "failed", error_code="qq_reply_expired"
+                )
                 return None
-            after = self._latest_run()
-            self.inbox.mark(row["sequence"], "processed", run_id=after if after != before else None)
+            finally:
+                after = self._latest_run()
+                if after != before:
+                    self.inbox.link_run(row.get("sequences", row["sequence"]), after)
+            self.inbox.mark(row.get("sequences", row["sequence"]), "processed")
             text = (
                 result.text
                 if result.status == "completed"
@@ -165,6 +186,7 @@ class QQAdapter:
         return self.inbox.latest_run_id(self.conversation_id)
 
     async def _reply(self, row: dict, text: str, *, elapsed: float = 0) -> None:
+        row["execution_started"] = True
         sent = 0
         for sequence, part in enumerate(self.humanizer.split(text), 1):
             delay = max(0, self._next_send - time.monotonic())
@@ -174,7 +196,10 @@ class QQAdapter:
                 delay = max(delay, pause)
             if self._remaining(row) <= delay + self.settings.qq_send_timeout_seconds:
                 self.inbox.mark(
-                    row["sequence"], "failed", sent_parts=sent, error_code="qq_reply_expired"
+                    row.get("sequences", row["sequence"]),
+                    "failed",
+                    sent_parts=sent,
+                    error_code="qq_reply_expired",
                 )
                 return
             if delay:
@@ -182,17 +207,20 @@ class QQAdapter:
             # Scheduling or wall-clock movement may have consumed the window during sleep.
             if self._remaining(row) <= self.settings.qq_send_timeout_seconds:
                 self.inbox.mark(
-                    row["sequence"], "failed", sent_parts=sent, error_code="qq_reply_expired"
+                    row.get("sequences", row["sequence"]),
+                    "failed",
+                    sent_parts=sent,
+                    error_code="qq_reply_expired",
                 )
                 return
-            self.inbox.mark(row["sequence"], "sending", sent_parts=sent)
+            self.inbox.mark(row.get("sequences", row["sequence"]), "sending", sent_parts=sent)
             try:
                 async with asyncio.timeout(self.settings.qq_send_timeout_seconds):
                     await self.sender.send_text(row["openid"], row["message_id"], sequence, part)
             except (QQError, TimeoutError) as exc:
                 uncertain = isinstance(exc, TimeoutError) or exc.uncertain
                 self.inbox.mark(
-                    row["sequence"],
+                    row.get("sequences", row["sequence"]),
                     "uncertain" if uncertain else "failed",
                     sent_parts=sent,
                     error_code="qq_send_uncertain" if uncertain else "qq_send_failed",
@@ -203,9 +231,9 @@ class QQAdapter:
                 return
             sent += 1
             row["sent_parts"] = sent
-            self.inbox.mark(row["sequence"], "processed", sent_parts=sent)
+            self.inbox.mark(row.get("sequences", row["sequence"]), "processed", sent_parts=sent)
             self._next_send = time.monotonic() + self.settings.qq_send_interval_seconds
-        self.inbox.mark(row["sequence"], "replied", sent_parts=sent)
+        self.inbox.mark(row.get("sequences", row["sequence"]), "replied", sent_parts=sent)
         logger.info("qq_replied parts=%d", sent)
 
     async def close(self) -> None:
