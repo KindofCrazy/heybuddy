@@ -64,7 +64,7 @@ CSS 使 `.shell` 占据 `100dvh`，以 flex 给页头、精简标题和页脚预
 
 总览模板在 `for` 循环中限制四个允许卡片 ID，CSS 同时隐藏旧上下文中的 Thread/Memory/Run 卡片，兼容旧 Runtime 的七卡 context 与热更新模板/资源混用；最新 PAGES 仍仅提供四卡。阅读测试模拟旧 CARDS context，验证 HTML 不产生多余卡片。标题删除原白底黑边句点装饰，避免看起来像未知控件。
 
-`static/memory-workspace.js:memoryWorkspace` 在 Memory 栏目创建受限文件导航与内联阅读区。首次仅请求根目录的一页合法条目，默认读取 MEMORY.md，导航目录时维持有界分页；文件选择调用原 `memory-character.js:memoryFile`，展示正文、Hash、修改时间与已有学习记录，完整详情仍打开原 Inspector。只读取已选文件，不递归扫描、不做写入、修复或虚构统计。并发文件读取用 generation 检查丢弃旧响应。基础文件附有用途标签；无正文或无学习记录显示明确空态。`MemoryView.file` 只在 HTML 展示中规范化 CRLF 并移除完整 Frontmatter，原 content、Hash 与 Markdown 字节不变。
+`static/memory-workspace.js:memoryWorkspace` 在 Memory 栏目创建受限文件导航与内联阅读区。首次仅请求根目录的一页合法条目，默认读取 MEMORY.md，目录以原生 details/summary 文件夹树显示，基础文件与归档主题分组；展开文件夹时才请求该目录的一页条目，收起后保留子树和选中项，重复展开不重复请求。每个目录维持独立游标分页和失败重试；文件选择调用原 `memory-character.js:memoryFile`，展示正文、Hash、修改时间与已有学习记录，完整详情仍打开原 Inspector。只读取已选文件，不递归扫描、不做写入、修复或虚构统计。并发文件读取用 generation 检查丢弃旧响应。搜索入口固定在文件树顶部，不随目录展开重建；阅读区在文件名下显示相对路径，帮助辨别不同目录中的同名文件。基础文件附有用途标签；无正文或无学习记录显示明确空态。`MemoryView.file` 只在 HTML 展示中规范化 CRLF 并移除完整 Frontmatter，原 content、Hash 与 Markdown 字节不变。
 
 导航、卡片、活动和文件使用本地 [Lucide](https://lucide.dev/) SVG 子集。`templates/components/icons.svg` 包含固定 symbol，模板宏和 `static/icons.js:icon` 只引用允许名称，不渲染用户提供 SVG。无需放宽 CSP，无远程字体、图片或脚本。原始 ISC/MIT 版权与许可保存在 `static/ICONS-LICENSE.txt`，随 Python 包分发，来源见 [官方许可证](https://lucide.dev/license)。不依赖 Flaticon 账号或在线资源。
 

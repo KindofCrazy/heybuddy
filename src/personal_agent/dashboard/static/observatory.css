@@ -1363,27 +1363,83 @@ footer:not(.drawer-footer) {
   margin-bottom: 8px;
   font-size: 14px;
 }
-.memory-path {
+.memory-tree-group {
+  margin-top: 18px;
+}
+.memory-tree-group h4 {
+  margin-bottom: 8px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+.memory-tree-children {
+  min-width: 0;
+  padding: 4px;
+}
+.memory-folder > summary {
   display: flex;
   align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  margin: 12px 0;
+  gap: 8px;
+  padding: 10px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+.memory-folder > summary::-webkit-details-marker {
+  display: none;
+}
+.memory-folder > summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+.memory-folder[open] > summary::before {
+  transform: rotate(45deg);
+}
+.memory-folder > summary:hover {
+  background: var(--surface-warm);
+}
+.memory-folder[open] > summary > .ui-icon {
+  color: #796000;
+  fill: var(--surface-warm);
+}
+.memory-folder-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 700;
+}
+.memory-folder > .memory-tree-children {
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 1px solid #1113;
+}
+.memory-folder-empty {
+  padding: 8px 0;
+  font-size: 11px;
 }
 .memory-file {
-  padding: 12px;
-  gap: 10px;
-  border: 1px solid #1113;
+  padding: 9px 8px;
+  gap: 8px;
+  border: 2px solid transparent;
+  background: transparent;
+}
+.memory-file + .memory-file {
+  margin-top: 3px;
 }
 .memory-file.selected {
   background: var(--memory);
   border: var(--border-nested);
   box-shadow: 2px 2px var(--ink);
 }
-.memory-file > .ui-icon:last-child {
-  width: 13px;
-  height: 13px;
-  opacity: 0.6;
+.memory-file > .ui-icon,
+.memory-folder > summary > .ui-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
 }
 .memory-file-label {
   display: flex;
@@ -1416,6 +1472,11 @@ footer:not(.drawer-footer) {
 .memory-reader-heading > .ui-icon {
   width: 24px;
   height: 24px;
+}
+.memory-reader-path {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+  opacity: 0.6;
 }
 .memory-reader .metadata {
   margin: 14px 0;
