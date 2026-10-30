@@ -29,6 +29,8 @@ Outbox 不写 Run、不伪造 user 消息，不进入 Recall 派生索引、Epis
 
 ## 入口、配置与异常边界
 
+Review Fix：Proposal.revision 表示影响证据、事项状态及执行资格的语义修订；仅补齐 thread_id 时记录 linked_thread/metadata_only 审计，不递增它。因此正常后台关联不会使 notify 决策或 prepared 草稿无故失效。新用户更正、取消、完成和到期仍递增修订并阻止旧草稿。已 accepted/uncertain 的条目仍不能重发；历史上已经 cancelled 的草稿也不因本次修复自动恢复。新增回归位于 `tests/test_proactive_review_fixes.py`。
+
 Shadow 与 Composer 预览默认开启，`AGENT_PROACTIVE_ENABLED=false` 关闭整个流水线，`AGENT_PROACTIVE_COMPOSE_ENABLED=false` 仅关闭草稿生成。Composer 消耗原维护额度，真实调用可能计费；本次验证全部 Fake Provider，不进行真实模型或 QQ/NapCat 登录。没有真实发送开关。
 
 CLI 可读 `/proactive outbox`、`/proactive attempts`，原 run 一次只执行一个有界单元；retry-compose 也受同一 MaintenanceBudget 约束。simulate 只调用本地 FakeSender，不请求模型。Observatory `/proactive` 增加消息草稿和模拟尝试，`/api/proactive/outbox|attempts` 继续仅 GET/HEAD、Agent 隔离、有界游标分页、隐私过滤与响应上限。

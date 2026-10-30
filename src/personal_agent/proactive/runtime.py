@@ -85,6 +85,9 @@ class ProactiveRuntime:
             snapshot = self.repository.snapshot(self.policy)
             if snapshot is None:
                 return dict(outcome="no_proactive_work")
+            if snapshot["lane"] == "run_cursor" and snapshot["skip"] == "source_budget":
+                self.repository.fail("source_budget", at)
+                return dict(outcome="blocked", error_code="source_budget")
             try:
                 result = (
                     await self.scout.extract(snapshot, self.repository.candidates(), stamp(at))

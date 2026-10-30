@@ -125,29 +125,31 @@ class ProactiveRepository:
         users, used = [], 0
         for row in rows:
             meta = db.execute(
-                "SELECT COUNT(*),COALESCE(SUM(length(CAST(payload AS BLOB))),0) "
-                "FROM messages WHERE run_id=?",
+                "SELECT COUNT(*),COALESCE(SUM(length(CAST("
+                "json_extract(payload,'$.text') AS BLOB))),0) "
+                "FROM messages WHERE run_id=? AND json_extract(payload,'$.role')='user' "
+                "AND json_type(payload,'$.text')='text'",
                 (row["id"],),
             ).fetchone()
-            if meta[0] > 64 or used + meta[1] > policy.source_bytes:
+            if len(users) + meta[0] > 64 or used + meta[1] > policy.source_bytes:
                 return [], "source_budget"
             used += meta[1]
             for message in db.execute(
-                "SELECT sequence,payload FROM messages WHERE run_id=? ORDER BY sequence",
+                "SELECT sequence,json_extract(payload,'$.text') AS text FROM messages "
+                "WHERE run_id=? AND json_extract(payload,'$.role')='user' "
+                "AND json_type(payload,'$.text')='text' ORDER BY sequence",
                 (row["id"],),
             ):
-                payload = json.loads(message["payload"])
-                if payload.get("role") == "user" and isinstance(payload.get("text"), str):
-                    users.append(
-                        UserSource(
-                            conversation_id=row["conversation_id"],
-                            run_id=row["id"],
-                            sequence=message["sequence"],
-                            text=redact(payload["text"]),
-                            position=row["position"],
-                            ended_at=row["ended_at"],
-                        )
+                users.append(
+                    UserSource(
+                        conversation_id=row["conversation_id"],
+                        run_id=row["id"],
+                        sequence=message["sequence"],
+                        text=redact(message["text"]),
+                        position=row["position"],
+                        ended_at=row["ended_at"],
                     )
+                )
         return users, ""
 
     def snapshot(self, policy: ProactivePolicy) -> dict | None:
@@ -248,6 +250,8 @@ class ProactiveRepository:
     def publish(
         self, snapshot: dict, result: ScoutResult, policy: ProactivePolicy, at: datetime
     ) -> None:
+        if snapshot["lane"] == "run_cursor" and snapshot["skip"] == "source_budget":
+            raise HistoryError("Unreviewed user source exceeds budget.")
         users = {(s.conversation_id, s.run_id, s.sequence): s for s in snapshot["users"]}
         with self.store._transaction() as db:
             current = db.execute(
@@ -283,9 +287,18 @@ class ProactiveRepository:
                 if previous and position <= previous["source_position"]:
                     if snapshot["thread_id"] and previous["thread_id"] is None:
                         db.execute(
-                            "UPDATE proactive_proposals SET thread_id=?,revision=revision+1 "
-                            "WHERE id=?",
+                            "UPDATE proactive_proposals SET thread_id=? WHERE id=?",
                             (snapshot["thread_id"], previous["id"]),
+                        )
+                        self._event(
+                            db,
+                            at,
+                            "linked_thread",
+                            "metadata_only",
+                            dict(
+                                proposal_id=previous["id"],
+                                thread_id=snapshot["thread_id"],
+                            ),
                         )
                     continue
                 count = db.execute(

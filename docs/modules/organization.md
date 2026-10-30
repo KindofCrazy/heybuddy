@@ -70,3 +70,5 @@ OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维�
 # P4.3 草稿生成
 
 ProactiveRuntime 发现已提交 notify 且尚无 Outbox 时，在下一有界维护单元调用 OutboundRuntime.compose()；Composer 复用已经由 cycle_providers 包装的同一个 model。不会在 Attention 内额外串联请求，也不由维护循环自动调用 Fake Sender。默认 `AGENT_PROACTIVE_COMPOSE_ENABLED=true`，仍接受原 Idle、冷却、前台取消和维护额度。异常、领取与取消路径见 [outbox.md](outbox.md) 及 `tests/test_outbound.py`。
+
+Review Fix：Proactive 只在一个尚未领取其他维护单元的周期入口运行。若 learning_first（包含 Dirty Repair 的让出标记）生效，Learning 有待处理工作且其完整 requests/tokens 预留适合本轮配置，则 Proactive 让出周期，沿原调度顺序处理 Learning。周期结束继续使用原 learning_first 翻转，因此持续 Proactive 积压不会抢掉 Learning 所需的默认四次整批额度，也不会在 Learning 已消耗额度后再领取 Composer。若 Learning 配置本身无法容纳完整流水线，仍保留 learning_budget_config，且不阻止可执行的 Proactive。验证见 `tests/test_proactive_review_fixes.py`。

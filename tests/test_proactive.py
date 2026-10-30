@@ -196,7 +196,7 @@ async def test_uncompleted_runs_are_skipped_with_audit(state, status):
     assert service.repository.listing("decisions")["items"][0]["reason"] == "run_not_completed"
 
 
-async def test_running_run_is_barrier_and_oversized_source_is_explicit_skip(state):
+async def test_running_run_is_barrier_and_oversized_user_source_blocks(state):
     store, stream, _ = state
     service = proactive(store, source_bytes=1024)
     rid = seed(store, stream, "running", status="running")
@@ -205,7 +205,9 @@ async def test_running_run_is_barrier_and_oversized_source_is_explicit_skip(stat
     store.interrupt_run(rid)
     await service.run()
     seed(store, stream, "长内容" * 1000)
-    await service.run()
+    assert (await service.run())["outcome"] == "blocked"
+    assert service.repository.state()["error_code"] == "source_budget"
+    assert not service.ready()
     assert service.repository.listing("decisions")["items"][0]["reason"] == "source_budget"
     assert not service.model.provider.requests
 

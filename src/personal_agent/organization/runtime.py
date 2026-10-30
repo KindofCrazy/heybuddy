@@ -206,7 +206,21 @@ class OrganizationRuntime:
                         if budget.clock.monotonic() - budget.started >= policy.maintenance_seconds:
                             budget.exhausted = True
                             break
-                        if idle and self.proactive and not proactive_ran and self.proactive.ready():
+                        # Proactive claims a fresh cycle only. A waiting Learning pipeline
+                        # gets its whole reservation on Learning-first cycles.
+                        if (
+                            idle
+                            and self.proactive
+                            and not proactive_ran
+                            and not attempts
+                            and self.proactive.ready()
+                            and not (
+                                learning_first
+                                and learning_capacity
+                                and self.learning
+                                and self.learning.ready(idle=idle)
+                            )
+                        ):
                             proactive_ran = True
                             attempts += 1
                             if not observe(
