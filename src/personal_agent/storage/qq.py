@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from personal_agent.channels.qq.config import QQError, QQSettings
-from personal_agent.channels.qq.turns import MAX_TURN_MESSAGES, plan_turn
+from personal_agent.channels.qq.turns import MAX_TURN_MESSAGES, QQTurn, plan_turn
 
 if TYPE_CHECKING:
     from personal_agent.channels.qq.events import QQText
@@ -91,8 +91,31 @@ class QQInbox:
         row, _ = self.claim_turn(conversation_id)
         return row
 
+    def preview_turn(
+        self,
+        conversation_id: str,
+        settings: QQSettings,
+        *,
+        hold_after: frozenset[int] = frozenset(),
+    ) -> QQTurn | None:
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT * FROM qq_receipts WHERE agent_id=? AND app_id=? AND openid=? "
+                "AND status='received' ORDER BY sequence LIMIT ?",
+                (*self.scope, MAX_TURN_MESSAGES + 1),
+            ).fetchall()
+        if not rows or rows[0]["conversation_id"] != conversation_id:
+            return None
+        return plan_turn([dict(row) for row in rows], settings, hold_after=hold_after)
+
     def claim_turn(
-        self, conversation_id: str, settings: QQSettings | None = None, *, now: float | None = None
+        self,
+        conversation_id: str,
+        settings: QQSettings | None = None,
+        *,
+        now: float | None = None,
+        hold_after: frozenset[int] = frozenset(),
+        ready: tuple[int, ...] = (),
     ) -> tuple[dict | None, float]:
         """Plan and claim atomically; a positive delay leaves every receipt untouched."""
         with self.store._transaction() as db:
@@ -114,10 +137,10 @@ class QQInbox:
                 row = dict(rows[0])
                 sequences = (row["sequence"],)
             else:
-                turn = plan_turn([dict(item) for item in rows], settings)
+                turn = plan_turn([dict(item) for item in rows], settings, hold_after=hold_after)
                 current = datetime.now(UTC).timestamp() if now is None else now
                 delay = turn.deadline - current
-                if delay > 0:
+                if delay > 0 and tuple(item["sequence"] for item in turn.messages) != ready:
                     return None, delay
                 row = turn.input_row()
                 sequences = row["sequences"]

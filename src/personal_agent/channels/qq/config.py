@@ -1,6 +1,7 @@
 """QQ options do not require credentials until the QQ entry point is used."""
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
@@ -24,6 +25,10 @@ class QQSettings(BaseModel):
     qq_queue_size: int = Field(default=16, ge=1, le=100)
     qq_message_idle_seconds: float = Field(default=2.5, gt=0, le=30)
     qq_message_max_wait_seconds: float = Field(default=8.0, gt=0, le=60)
+    qq_message_mode: Literal["time", "hybrid"] = "time"
+    qq_message_judge_idle_seconds: float = Field(default=0.8, gt=0, le=30)
+    qq_message_judge_budget_seconds: float = Field(default=1.0, gt=0, le=5)
+    qq_message_judge_max_calls: int = Field(default=2, ge=1, le=3)
     qq_send_timeout_seconds: float = Field(default=10, gt=0, le=60)
     qq_connect_timeout_seconds: float = Field(default=20, gt=0, le=60)
     qq_reconnect_attempts: int = Field(default=8, ge=0, le=20)
@@ -59,6 +64,11 @@ class QQSettings(BaseModel):
 
     @model_validator(mode="after")
     def valid_qq_bounds(self):
+        if (
+            self.qq_message_mode == "hybrid"
+            and self.qq_message_judge_idle_seconds >= self.qq_message_idle_seconds
+        ):
+            raise ValueError("QQ judge idle interval must be shorter than message idle")
         if self.qq_message_max_wait_seconds < self.qq_message_idle_seconds:
             raise ValueError("QQ message maximum wait must cover the idle interval")
         if self.qq_reconnect_max_seconds < self.qq_reconnect_base_seconds:

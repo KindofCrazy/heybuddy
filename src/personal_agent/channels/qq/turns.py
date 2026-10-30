@@ -34,13 +34,17 @@ class QQTurn:
         return row
 
 
-def plan_turn(rows: list[dict], settings: QQSettings) -> QQTurn:
+def plan_turn(
+    rows: list[dict], settings: QQSettings, *, hold_after: frozenset[int] = frozenset()
+) -> QQTurn:
     """Choose only a contiguous prefix, including historical idle/max-wait boundaries."""
     first = rows[0]
     selected = [first]
     first_at = datetime.fromisoformat(first["received_at"]).timestamp()
     deadline = first_at + settings.qq_message_idle_seconds
     maximum = first_at + settings.qq_message_max_wait_seconds
+    if first["sequence"] in hold_after:
+        deadline = maximum
     command = (first["content"] or "").lstrip().startswith("/")
     if command:
         return QQTurn(tuple(selected), first_at)
@@ -62,6 +66,8 @@ def plan_turn(rows: list[dict], settings: QQSettings) -> QQTurn:
             datetime.fromisoformat(row["received_at"]).timestamp()
             + settings.qq_message_idle_seconds
         )
+        if row["sequence"] in hold_after:
+            deadline = maximum
     if len(selected) >= MAX_TURN_MESSAGES:
         return QQTurn(tuple(selected), first_at)
     return QQTurn(tuple(selected), min(deadline, maximum))

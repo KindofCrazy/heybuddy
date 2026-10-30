@@ -33,6 +33,18 @@ deadline 使用持久 UTC 接收时间以支持重启，等待使用 asyncio tim
 
 ## 阅读与验证
 
+### 可选 LLM 完整性判断
+
+默认 `AGENT_QQ_MESSAGE_MODE=time`，保持纯时间聚合、不增加模型请求。显式设置为 `hybrid` 后，`adapter.py::_check_turn()` 在静默 `AGENT_QQ_MESSAGE_JUDGE_IDLE_SECONDS=0.8` 秒时，通过 `completeness.py::judge()` 复用 `service.agent.provider`（同一已配置模型）额外发起完整性判断。每组最多 `AGENT_QQ_MESSAGE_JUDGE_MAX_CALLS=2` 次，累计判断耗时预算 `AGENT_QQ_MESSAGE_JUDGE_BUDGET_SECONDS=1.0` 秒；短静默必须小于普通 idle，次数限 1～3，预算必须大于零且不超过 5 秒。这里只限制等待耗时和请求次数，不宣称限制服务商最终计费。
+
+请求仅包含固定 system 和当前组文本的 user JSON，无历史、Memory、人格、图片 URL 或工具。输入 JSON 至多 8192 UTF-8 字节，输出 tokens 上限 64（包含模型推理消耗）；仅接受 `ready` / `wait` / `uncertain` 单词。工具调用、非法或过长输出、Provider 失败和超时均按 uncertain 回退，不执行返回的工具、不打印正文或异常体、不自动重试。图片消息（包括混合图文）、命令、已形成硬边界或已到期输入跳过判断。小输出预算可能不足以支持某些推理模型，届时安全回退；离线测试不证明真实完整性识别质量。
+
+`ready` 绑定整组 sequence，仅在 `claim_turn()` 事务重算结果仍精确匹配时允许提前领取。`wait` 将当前末条之后的 idle 边界延长到首条 max_wait；后续消息在该边界内可加入，加入后按新末条重算 idle，仍受硬容量、命令和最大等待约束。uncertain 不延长当前末条等待；先前有效 wait 形成的连接仍保留。每个快照只判断一次，次数或耗时用尽后不再判断，沿用已有时间边界。
+
+`accept()` 仅在真正接收新消息后增加版本；判断 await 期间版本变化，结果即丢弃。判断耗时仍计入当次预算，原有有效 wait 不因旧结果被替换。下一轮消费者重新读取持久 Inbox；判断期间和 timeout/cancel 时都不领取消息，正常关闭/重启无需恢复模型任务。提示和预算是瞬时状态，不持久化，重启重新采用时间策略并重新计数；不能把跨反复重启的调用次数视为持久预算。判断失败不会创建 Agent Run；正式回答才走原 Run/工具/学习路径。费用 usage 不计入正式 Run 的 Journal，当前没有新增判断请求的持久审计或计费汇总。
+
+专项测试 `tests/test_qq_completeness.py` 覆盖枚举与工具拒绝、提前提交、wait 跨 idle、max_wait、快照过期、数据库领取复核、调用上限、超时/关闭恢复和时间回退；仅用 Fake Provider，不产生真实费用。启用后在 QQ 对“我最近在考虑”与明确完整问题分别体验等待和提前回复；准确性与延迟需用户另行真实验证。可以随时恢复 `time` 模式。
+
 离线运行 `uv run pytest tests/test_qq_turns.py tests/test_qq_adapter.py tests/test_qq_images.py tests/test_qq_integration.py tests/test_qq_transport.py`。`test_qq_turns.py` 用固定接收时间和 claim 的 now 参数验证 idle 重置、max_wait、恰好截止、积压边界、条数/字节/图片拆分和回执原子状态；异步测试验证共享 Run、一次回复、after_reply、取消恢复、发送期间到达、失败和 uncertain。原 QQ/CLI 回归继续使用 Fake Provider / MockTransport，网络禁用保护保持不变。
 
 手工验证使用现有已授权 QQ 配置运行 `uv run personal-agent qq`（会使用正常模型调用，请自行决定何时运行）：

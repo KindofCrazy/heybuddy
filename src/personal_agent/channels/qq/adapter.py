@@ -7,6 +7,7 @@ import time
 from datetime import UTC, datetime
 from typing import Protocol
 
+from personal_agent.channels.qq.completeness import HybridTurn, judge
 from personal_agent.channels.qq.config import QQError, QQSettings
 from personal_agent.channels.qq.events import parse_text
 from personal_agent.channels.qq.humanize import Humanizer
@@ -51,6 +52,8 @@ class QQAdapter:
         self.worker: asyncio.Task | None = None
         self.closing = False
         self._next_send = 0.0
+        self._receipt_version = 0
+        self._hybrid = HybridTurn()
 
     def start(self) -> None:
         if self.worker is not None:
@@ -66,6 +69,7 @@ class QQAdapter:
             return
         # No await between durable receipt and notification; Gateway cursor follows.
         if self.inbox.receive(message, self.conversation_id, self.settings.qq_queue_size):
+            self._receipt_version += 1
             self.wake.set()
             logger.info("qq_received")
 
@@ -88,13 +92,21 @@ class QQAdapter:
             # Preempt maintenance while receipts are still safely recoverable.
             if self.inbox.pending():
                 await self.service.foreground()
-            row, delay = self.inbox.claim_turn(self.conversation_id, self.settings)
+            if self.settings.qq_message_mode == "hybrid":
+                delay = await self._check_turn()
+                if delay is None:
+                    continue  # Receipt snapshot changed while the judge was awaiting.
+                if delay > 0:
+                    await self._wait_for_input(delay)
+                    continue
+            row, delay = self.inbox.claim_turn(
+                self.conversation_id,
+                self.settings,
+                hold_after=self._hybrid.hold_after,
+                ready=self._hybrid.ready,
+            )
             if delay > 0:
-                try:
-                    async with asyncio.timeout(delay):
-                        await self.wake.wait()
-                except TimeoutError:
-                    pass
+                await self._wait_for_input(delay)
                 continue
             if row is None:
                 self.service.after_reply(result)
@@ -123,6 +135,55 @@ class QQAdapter:
                     error_code="qq_processing_error",
                 )
                 raise QQError("qq_processing_error", fatal=True) from None
+
+    async def _wait_for_input(self, delay: float) -> None:
+        try:
+            async with asyncio.timeout(delay):
+                await self.wake.wait()
+        except TimeoutError:
+            pass
+
+    async def _check_turn(self) -> float | None:
+        state = self._hybrid
+        turn = self.inbox.preview_turn(
+            self.conversation_id, self.settings, hold_after=state.hold_after
+        )
+        if turn is None:
+            return 0
+        state.reset_for(turn)
+        now = datetime.now(UTC).timestamp()
+        sequences = tuple(row["sequence"] for row in turn.messages)
+        # Commands, hard boundaries, images and over-budget input retain time-only behavior.
+        if (
+            turn.deadline <= now
+            or any(json.loads(row["attachments"]) for row in turn.messages)
+            or sequences in state.attempted
+            or len(state.attempted) >= self.settings.qq_message_judge_max_calls
+            or state.elapsed >= self.settings.qq_message_judge_budget_seconds
+        ):
+            return 0
+        delay = state.last_received(turn) + self.settings.qq_message_judge_idle_seconds - now
+        if delay > 0:
+            return min(delay, turn.deadline - now)
+        timeout = min(
+            self.settings.qq_message_judge_budget_seconds - state.elapsed,
+            turn.deadline - now,
+            self._remaining(turn.messages[-1]) - self.settings.qq_send_timeout_seconds,
+        )
+        if timeout <= 0:
+            return 0
+        version = self._receipt_version
+        state.attempted.add(sequences)
+        started = time.monotonic()
+        decision = await judge(self.service.agent.provider, turn, timeout)
+        state.elapsed += time.monotonic() - started
+        if version != self._receipt_version:
+            return None
+        if decision == "ready":
+            state.ready = sequences
+        elif decision == "wait":
+            state.hold_after = state.hold_after | {sequences[-1]}
+        return 0
 
     async def _process(self, row: dict) -> RunResult | None:
         started = time.monotonic()
