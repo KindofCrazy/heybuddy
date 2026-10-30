@@ -45,3 +45,9 @@ Windows 双击入口为根目录 `start-heybuddy.cmd` → `scripts/start-qq.ps1`
 `runner` 向共享消费者注入 `Humanizer(policy, length_based_gaps=True)`。该选项使每个后续气泡的 base 取固定 gap 与本条字符数 × ms_per_char 的较大值，然后使用既有 jitter/限幅；首条仍抵扣模型生成耗时。官方渠道不启用该选项，继续使用既有固定间隔。发送回执、失败/取消、串行和节流逻辑不变。
 
 离线验证：`tests/test_napcat_input_status.py` 覆盖外国账号、过期和非法状态、无消息、命令、跨静默聚合、停止、未收到停止、最大等待、hybrid 和提示不入证据；`tests/test_napcat_humanize.py` 覆盖超过四段、长内容容量、独立配置、逐条字数停顿和官方策略兼容。没有对外发送输入状态的 API 或后台提示任务。
+
+## Windows 重启入口
+
+`restart-heybuddy.cmd` 复用 `scripts/start-qq.ps1 -Restart` 的项目命名 Mutex。脚本先用 PID 文件和 `.venv` Python 路径确认进程，查找命令匹配 `-m personal_agent.main napcat` 的直接子进程，再以隐藏的独立 Python 运行 `scripts/request-stop.py`。该标准库 helper 附着目标控制台，核对全部成员仅在显式允许的服务 PID 集合和 helper 自身内，临时忽略自身 Ctrl+C 后调用 GenerateConsoleCtrlEvent。服务继续由原 `asyncio.run()`、runner 和 adapter 路径处理取消、关闭与数据库退出。
+
+发送失败或控制台中包含未核对的进程就拒绝信号。PS 等待全部已核对进程退出，30 秒未完成则停止重启，不 force-kill；成功后进入原启动和就绪检查。该入口只属于可信本地 Host，不注册为模型工具，不增加 Observatory 写接口。`tests/test_windows_restart.py` 使用独立隐藏控制台的合成 asyncio 服务，验证 Ctrl+C 能执行 finally 清理；测试不登录 QQ 或调用模型。

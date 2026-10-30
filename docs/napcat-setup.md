@@ -61,6 +61,18 @@ NapCat 的发送和 humanize 使用独立的 `AGENT_NAPCAT_*` 配置，不再受
 
 队列、入站聚合、图片、网络超时和重连继续复用 `AGENT_QQ_*`。默认静默 2.5 秒、首条起最多 8 秒；`time` 模式没有模型判断，`hybrid` 仍沿用既有有界判断。设置在下次启动时加载；后台 Learning 等仍按原配置运行并可能使用模型额度。
 
+## 双击重启
+
+修改代码或本地配置后，双击项目根目录的 `restart-heybuddy.cmd`。它调用同一个 `scripts/start-qq.ps1 -Restart`：校验保存的 PID 和项目 Python 路径，确定服务子进程，再用隔离的 `scripts/request-stop.py` 向该服务控制台发送 Ctrl+C；最多等待 30 秒旧实例退出，随后启动并等待渠道就绪。重启使用当前 NapCat 登录会话。
+
+无法核对进程/控制台归属或退出超时时会显示错误，不强杀、不启动重复实例。正在处理的 Run 会按既有取消规则保留审计，不自动重试模型工具或未确认发送；通常在回复完成后重启更合适。无需重载代码时，继续双击 `start-heybuddy.cmd`，它只确保服务已运行。自动启动快捷方式保持普通启动行为。
+
+## 从 PowerToys 搜索
+
+在当前用户开始菜单的 `Programs/HeyBuddy` 文件夹注册两个快捷方式：`HeyBuddy` 指向项目的 `start-heybuddy.cmd`，`HeyBuddy Restart` 指向 `restart-heybuddy.cmd`，工作目录均为项目根目录。随后在 PowerToys 中搜索 `heybuddy`，选择启动或重启项。快捷方式属于本机配置，不含账号或 Token，也不提交到仓库；移动项目目录后需更新目标路径。
+
+PowerToys Run 的 Program 插件会扫描开始菜单快捷方式，见 [Microsoft 说明](https://learn.microsoft.com/windows/powertoys/run)。命令面板会在启动时重建应用索引，见 [Microsoft AppCache 实现](https://github.com/microsoft/PowerToys/blob/main/src/modules/cmdpal/ext/Microsoft.CmdPal.Ext.Apps/AppCache.cs)。新快捷方式若在开始菜单可见但命令面板搜不到，完整退出并重新启动命令面板后再搜；仅关闭搜索窗口通常只是隐藏它，不会重新索引。也可以进入 Apps/应用中核对搜索结果。
+
 ## 手工检查
 
 1. 用主号给小号发送“你好”，确认收到 Luna 的文本回复，Observatory 出现同一个 Agent 的 Run。

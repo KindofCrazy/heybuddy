@@ -1,4 +1,4 @@
-param([switch]$NoBrowser)
+param([switch]$NoBrowser, [switch]$Restart)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -61,6 +61,35 @@ try {
     }
     if (-not (Test-Path -LiteralPath $nodePath)) {
         Stop-Startup 'NapCat is not installed in .heybuddy\napcat\runtime. See docs\napcat-setup.md.'
+    }
+    if ($Restart) {
+        $oldService = Get-RunningProcess (Join-Path $dataRoot 'heybuddy.pid') $pythonPath
+        if ($oldService) {
+            $children = @(Get-CimInstance Win32_Process -Filter (
+                'ParentProcessId=' + $oldService.Id
+            ) | Where-Object {
+                $_.CommandLine -match '-m\s+personal_agent\.main\s+napcat' -and
+                $_.ExecutablePath.StartsWith($projectRoot + '\', [StringComparison]::OrdinalIgnoreCase)
+            })
+            $targetIds = @([string]$oldService.Id) + @($children | ForEach-Object { [string]$_.ProcessId })
+            $stopHelper = Join-Path $PSScriptRoot 'request-stop.py'
+            Write-Host 'Requesting normal HeyBuddy shutdown...'
+            $helper = Start-Process -FilePath $pythonPath -ArgumentList (
+                @(('"' + $stopHelper + '"')) + $targetIds
+            ) -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru -Wait
+            if ($helper.ExitCode -ne 0) {
+                Stop-Startup 'Unable to safely signal this service. No process was force-killed.'
+            }
+            $stopDeadline = [DateTime]::UtcNow.AddSeconds(30)
+            while (@($targetIds | Where-Object {
+                Get-Process -Id ([int]$_) -ErrorAction SilentlyContinue
+            }).Count -gt 0) {
+                if ([DateTime]::UtcNow -ge $stopDeadline) {
+                    Stop-Startup 'Shutdown is still pending. No duplicate instance was started.'
+                }
+                Start-Sleep -Milliseconds 200
+            }
+        }
     }
     # Validate configuration through the existing Host loader; never print private inputs.
     $configCode = @'
