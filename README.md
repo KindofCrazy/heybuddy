@@ -331,6 +331,8 @@ QQ 官方协议、Transport 与离线测试见 [QQ 渠道](docs/modules/qq.md)�
 
 专用 QQ 小号的一对一聊天：`uv run personal-agent napcat --dashboard`，通过本机 NapCat OneBot 正向 WS 接入原 Runtime，只接受配置主号的好友私聊，支持文本和图片输入、文本回复。配置、登录及手工检查见 [NapCat 接入指南](docs/napcat-setup.md)，实际调用路径与离线测试见 [NapCat 模块](docs/modules/napcat.md)。不需要官方 AppID/OpenID；主动消息仍保持 Shadow。
 
+Windows 已安装配置完成后，双击根目录 `start-heybuddy.cmd` 即可启动小号聊天并打开观测面板，重复点击复用已有服务。
+
 QQ 连续消息按静默 2.5 秒、首条起最多 8 秒聚合为一次输入；原子领取、图片限制、重启语义与手工验证见 [QQ 消息聚合](docs/modules/qq-turns.md)。
 
 QQ 默认将普通聊天自然拆成最多四个气泡，并使用计入生成耗时的轻量条间停顿；代码、列表与链接等结构化内容保留原字节分段策略。可通过 `AGENT_QQ_HUMANIZE_ENABLED=false` 关闭，配置与体验方法见 [聊天气泡与停顿](docs/qq-setup.md#聊天气泡与停顿)。完整回答仍保留在原 Journal，不增加模型调用。

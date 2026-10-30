@@ -12,6 +12,12 @@
 
 ## 配置 HeyBuddy
 
+已按本项目默认目录安装 NapCat 并配置完成的 Windows 用户，可以直接双击项目根目录的 `start-heybuddy.cmd`。它调用 `scripts/start-qq.ps1`，使用已安装的 `.venv` 启动 NapCat 和 HeyBuddy，等待渠道就绪后自动打开 Observatory，不需要每次输入 uv 命令。重复点击会根据本地 PID 和可执行文件路径复用已有服务；启动失败会保留窗口显示提示。脚本从原配置加载账号，不内置 QQ 号码或 Token。
+
+登录状态失效时，脚本会打开本机 NapCat 登录页面，最多等待三分钟让用户扫码确认。HeyBuddy 的运行日志保存在已忽略的 `.heybuddy/napcat/heybuddy.stdout.log` 和 `heybuddy.stderr.log`。关闭启动窗口或浏览器后，已启动的两个服务继续在后台运行；此入口不安装 Windows 服务或开机启动项。首次初始化仍需 `uv sync`、安装 NapCat 并完成下列配置。
+
+需要登录 Windows 后自动启动时，可以在当前用户的 Windows「启动」文件夹创建快捷方式，目标为 `powershell.exe`，参数为 `-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "<项目绝对路径>\scripts\start-qq.ps1" -NoBrowser`，工作目录为项目根目录。它复用同一个启动脚本，不额外创建 Agent 或任务循环；`-NoBrowser` 关闭自动打开浏览器，QQ 登录失效时仍需手动双击启动入口进行扫码。用 `Win+R` 打开 `shell:startup`，删除对应的 `HeyBuddy.lnk` 即可取消自启。该设置仅在当前用户登录后运行，不是登录前的系统服务；移动项目目录后需要更新快捷方式。
+
 在项目根目录已忽略的 `.env` 中保留原模型、窗口、数据库、记忆配置，并设置下列字段。尖括号内容需要替换为本机实际值，不能直接照抄。
 
 ```dotenv

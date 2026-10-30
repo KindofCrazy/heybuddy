@@ -8,6 +8,10 @@
 
 ## 代码实际运行路径
 
+Windows 双击入口为根目录 `start-heybuddy.cmd` → `scripts/start-qq.ps1`。脚本先通过现有 `load_settings()/require_napcat()` 校验配置，只向脚本返回账号与本机端口；PID 与可执行路径匹配时复用原进程，否则隐藏启动独立 NapCat。OneBot 端口就绪前可打开已配置的本机 WebUI 登录页，最多等待三分钟；随后调用虚拟环境 Python 执行 `-m personal_agent.main napcat --dashboard`，最多等待 30 秒，通过只读 `/api/status` 验证 gateway=ready、consumer=running，再打开浏览器。进程和日志仅在已忽略的 `.heybuddy/napcat` 下记录，不改变 Host 权限或增加模型验证调用。脚本面向默认本机 IPv4 安装布局；其他部署仍使用 CLI。
+
+启动脚本用项目路径派生的 Windows 命名 Mutex 防止同时双击创建重复进程，`-NoBrowser` 供登录自启时静默使用。异常仅显示脚本自身标记的固定诊断，其余异常返回通用提示。Windows 入口已通过 PowerShell 语法检查及本机启动、重复启动的进程复用核对；自启快捷方式校验目标和参数，不将该检查宣称为完整 Windows 重启测试。
+
 1. `main.main()` 选择 `napcat`，`config.load_settings()` 读取当前目录 `.env` 和环境变量。`run_napcat()` 先调用 `require_napcat()`，缺少启用、Token 或两个不同 QQ 号码时先于 Provider/数据库打开失败。库级角色仍默认 none，示例显式选择 luna。
 2. `NapCatSettings.delivery_settings()` 从共享 `AGENT_QQ_*` 策略构建有界收件/发送设置，覆盖账号绑定，不使用官方凭据。`runtime.open_application()` 打开原数据库锁、SessionManager、MemoryFS、角色和唯一 ChatService。可选 Observatory 进入同一个 `AsyncExitStack`。
 3. `NapCatTransport.run()` 通过 `LocalConnect` 连接固定本机正向 WS，拒绝 HTTP 重定向，使用 Authorization Bearer Header，禁用环境代理及 wire logger，限制 frame 为 262144 字节、接收队列为 4，使用协议 Ping/Pong 检测断线。
