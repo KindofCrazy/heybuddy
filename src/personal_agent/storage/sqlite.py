@@ -10,7 +10,6 @@ from uuid import uuid4
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from personal_agent.character import storage as character_storage
 from personal_agent.core.history import (
     ConversationSummary,
     HistoryError,
@@ -25,6 +24,7 @@ from personal_agent.core.models import (
 )
 from personal_agent.storage import (
     automation,
+    character_schema,
     context,
     episodes,
     images,
@@ -78,7 +78,7 @@ MIGRATIONS = {
     9: maintenance.SCHEDULE_SCHEMA,
     10: maintenance.RETRY_SCHEMA,
     11: learning.SCHEMA,
-    12: character_storage.SCHEMA,
+    12: character_schema.SCHEMA,
     13: qq.SCHEMA,
     14: tracing.SCHEMA,
     15: images.SCHEMA,
@@ -99,14 +99,23 @@ def decode_record[Record: BaseModel](kind: type[Record], row: sqlite3.Row) -> Re
 
 
 class SQLiteStore:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, read_only: bool = False) -> None:
         self.path = path.resolve()
+        self.read_only = read_only
+        if read_only and not self.path.is_file():
+            raise HistoryError("Observer requires an existing initialized database.")
         self._lock = DatabaseLock(Path(str(self.path) + ".lock"))
         try:
-            self._connection = sqlite3.connect(self.path, timeout=2)
+            self._connection = sqlite3.connect(
+                self.path.as_uri() + "?mode=ro" if read_only else self.path,
+                timeout=2,
+                uri=read_only,
+            )
             self._connection.row_factory = sqlite3.Row
             self._connection.execute("PRAGMA foreign_keys=ON")
             self._connection.execute("PRAGMA synchronous=FULL")
+            if read_only:
+                self._connection.execute("PRAGMA query_only=ON")
         except sqlite3.Error:
             if hasattr(self, "_connection"):
                 self._connection.close()
@@ -140,6 +149,10 @@ class SQLiteStore:
 
     @contextmanager
     def _transaction(self) -> Iterator[sqlite3.Connection]:
+        if self.read_only:
+            with self.reading() as db:
+                yield db
+            return
         try:
             self._connection.execute("BEGIN IMMEDIATE")
             yield self._connection
@@ -155,6 +168,14 @@ class SQLiteStore:
 
     def initialize(self) -> None:
         """Explicit, atomic version migration; refuse unknown or newer databases."""
+        if self.read_only:
+            with self.reading() as db:
+                version = db.execute("PRAGMA user_version").fetchone()[0]
+            if version != SCHEMA_VERSION:
+                raise HistoryError(
+                    "Observer requires the current schema; initialize with CLI first."
+                )
+            return
         with self._transaction() as db:
             version = db.execute("PRAGMA user_version").fetchone()[0]
             if version > SCHEMA_VERSION:

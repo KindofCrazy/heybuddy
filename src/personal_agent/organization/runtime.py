@@ -17,6 +17,7 @@ from personal_agent.learning.curator import MemoryCurator
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.organization.budget import MaintenanceBudget, cycle_providers
 from personal_agent.organization.clock import Clock, SystemClock
+from personal_agent.organization.cycle import CycleProgress, WorkResult
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationError
 from personal_agent.organization.threads import ThreadOrganizer
@@ -162,259 +163,33 @@ class OrganizationRuntime:
         if self.proactive and self.proactive.policy.enabled:
             models.append(self.proactive.model)
         with cycle_providers(models, budget):
-            batches = attempts = 0
-            successes = set()
-            error = ""
-            time_limited = False
-            learning_ran = False
-            curator_ran = False
-            character_ran = False
-            recovery_ran = False
-            proactive_ran = False
-            learning_first = self._learning_first or self._dirty_yield_to_learning
-            learning_capacity = bool(
-                self.learning
-                and 2 + self.learning.policy.max_files <= policy.maintenance_requests
-                and (2 + self.learning.policy.max_files)
-                * (self.learning.model.input_limit + self.learning.policy.output_tokens)
-                <= policy.maintenance_tokens
+            cycle = CycleProgress(
+                learning_first=self._learning_first or self._dirty_yield_to_learning,
+                learning_capacity=self._learning_capacity(),
             )
-
-            def observe(stage: str, report: dict) -> bool:
-                nonlocal batches, error
-                self.last_report[stage] = report
-                if report["outcome"] == "budget_exhausted":
-                    return False
-                if report["outcome"] in {"no_dirty_work", "no_history", "blocked", "no_episodes"}:
-                    return False
-                batches += 1
-                if report["outcome"] == "failed":
-                    error = report.get("error_code", "organization_failed")
-                else:
-                    successes.add(stage)
-                return True
-
             try:
                 async with asyncio.timeout(policy.maintenance_seconds):
                     for _ in range(policy.maintenance_batches):
-                        # Every unit yields; input cancellation runs before another batch.
-                        await asyncio.sleep(0)
-                        current = self.schedule_repository.state(stream_id)
-                        if self._foreground or current["run_active"]:
-                            break
-                        now = self.clock.now()
-                        if budget.clock.monotonic() - budget.started >= policy.maintenance_seconds:
-                            budget.exhausted = True
-                            break
-                        # Proactive claims a fresh cycle only. A waiting Learning pipeline
-                        # gets its whole reservation on Learning-first cycles.
-                        if (
-                            idle
-                            and self.proactive
-                            and not proactive_ran
-                            and not attempts
-                            and self.proactive.ready()
-                            and not (
-                                learning_first
-                                and learning_capacity
-                                and self.learning
-                                and self.learning.ready(idle=idle)
-                            )
-                        ):
-                            proactive_ran = True
-                            attempts += 1
-                            if not observe(
-                                "proactive", await self._execute("proactive", self.proactive.run())
-                            ):
-                                break
-                            continue
-                        if (
-                            idle
-                            and self.learning
-                            and not recovery_ran
-                            and self.learning.recovery_ready()
-                        ):
-                            recovery_ran = True
-                            attempts += 1
-                            observe(
-                                "memory_recovery",
-                                await self._execute(
-                                    "memory_recovery", self.learning.recover_background()
-                                ),
-                            )
-                            continue
-                        if (
-                            idle
-                            and policy.enabled
-                            and self.threads
-                            and not (
-                                self._dirty_yield_to_learning
-                                and learning_capacity
-                                and self.learning
-                                and self.learning.ready(idle=idle)
-                            )
-                            and self.threads.repairs.pending(
-                                at=now, max_failures=self.threads.policy.repair_max_failures
-                            )
-                            is not None
-                        ):
-                            attempts += 1
-                            self._dirty_yield_to_learning = True
-                            if not observe(
-                                "repair",
-                                await self._execute(
-                                    "repair", self.threads.repair(retry=False, at=now)
-                                ),
-                            ):
-                                break
-                            continue
-                        if (
-                            self.learning
-                            and not learning_ran
-                            and self.learning.ready(idle=idle)
-                            and (learning_first or attempts > 0)
-                        ):
-                            # Reserve room for the complete in-memory pipeline before paying
-                            # for Extraction; no repeated partial pipelines across budget stops.
-                            needed = 2 + self.learning.policy.max_files
-                            tokens = needed * (
-                                self.learning.model.input_limit + self.learning.policy.output_tokens
-                            )
-                            if (
-                                needed > policy.maintenance_requests
-                                or tokens > policy.maintenance_tokens
-                            ):
-                                self.last_report["learning"] = {
-                                    "outcome": "blocked",
-                                    "error_code": "learning_budget_config",
-                                    "required_requests": needed,
-                                    "reserved_tokens_required": tokens,
-                                }
-                            if (
-                                budget.requests + needed <= policy.maintenance_requests
-                                and budget.reserved_tokens + tokens <= policy.maintenance_tokens
-                            ):
-                                learning_ran = True
-                                self._dirty_yield_to_learning = False
-                                attempts += 1
-                                report = await self._execute(
-                                    "learning",
-                                    self.learning.learn_priority()
-                                    if self.learning.priority_pending()
-                                    else self.learning.learn_batch(),
-                                )
-                                if not observe("learning", report):
-                                    break
-                                continue
-                        if (
-                            idle
-                            and self.curator
-                            and not curator_ran
-                            and self.curator.poll()
-                            and (
-                                not learning_first
-                                or attempts > 0
-                                or not (self.learning and self.learning.ready(idle=idle))
-                            )
-                            and budget.requests < policy.maintenance_requests
-                        ):
-                            curator_ran = True
-                            attempts += 1
-                            report = await self._execute("curator", self.curator.run())
-                            if not observe("curator", report):
-                                break
-                            continue
-                        if (
-                            idle
-                            and self.character_state
-                            and not character_ran
-                            and self.character_state.ready()
-                            and budget.requests < policy.maintenance_requests
-                            and (
-                                not learning_first
-                                or not (self.learning and self.learning.ready(idle=idle))
-                            )
-                        ):
-                            character_ran = True
-                            attempts += 1
-                            if not observe(
-                                "character_state",
-                                await self._execute("character_state", self.character_state.run()),
-                            ):
-                                break
-                            continue
-                        if not policy.enabled:
-                            break
-                        if self.threads:
-                            status = self.threads.repository.status()
-                            due = self._thread_remaining(current) <= 0
-                            if not status["pending_episodes_capped"] and due:
-                                self.schedule_repository.thread_check(
-                                    now, policy.thread_interval_seconds
-                                )
-                            elif (
-                                idle
-                                and status["state"] not in {"failed", "running"}
-                                and (
-                                    due
-                                    or status["pending_episodes_capped"] >= policy.thread_threshold
-                                )
-                            ):
-                                attempts += 1
-                                report = await self._execute(
-                                    "thread", self.threads.organize(retry=False)
-                                )
-                                if not observe("thread", report):
-                                    break
-                                if report["outcome"] == "completed":
-                                    self.schedule_repository.thread_check(
-                                        self.clock.now(),
-                                        policy.thread_interval_seconds,
-                                        success=True,
-                                    )
-                                continue
-                        # Finalization is time driven even if an unrelated/broken
-                        # pending batch needs explicit retry; it never asks the LLM.
-                        if idle and self.episodes.repository.finalize(stream_id, policy, at=now):
-                            batches += 1
-                            attempts += 1
-                            successes.add("episode")
-                            continue
-                        episode = self.episodes.repository.status(stream_id)
-                        if (
-                            episode["pending_runs_capped"]
-                            and episode["state"] not in {"failed", "running"}
-                            and (idle or episode["pending_runs_capped"] >= policy.run_threshold)
-                        ):
-                            attempts += 1
-                            if not observe(
-                                "episode",
-                                await self._execute(
-                                    "episode",
-                                    self.episodes.organize(stream_id, retry=False, at=now),
-                                ),
-                            ):
-                                break
-                        else:
+                        if not await self._step(stream_id, idle, budget, cycle):
                             break
             except TimeoutError:
-                budget.exhausted = time_limited = True
+                budget.exhausted = cycle.time_limited = True
             finally:
                 self.last_report["cycle"] = {
                     **budget.report(),
-                    "attempted_batches": attempts,
-                    "committed_or_failed_batches": batches,
-                    "time_limited": time_limited,
+                    "attempted_batches": cycle.attempts,
+                    "committed_or_failed_batches": cycle.batches,
+                    "time_limited": cycle.time_limited,
                 }
-                if attempts:
-                    self._learning_first = not learning_first
+                if cycle.attempts:
+                    self._learning_first = not cycle.learning_first
                     finished_at = self.clock.now()
                     self.schedule_repository.cycle(
                         finished_at,
-                        batches,
+                        cycle.batches,
                         budget.requests,
-                        error,
-                        frozenset(successes),
+                        cycle.error,
+                        frozenset(cycle.successes),
                         policy.cooldown_seconds,
                         self.last_report["cycle"],
                     )
@@ -424,7 +199,214 @@ class OrganizationRuntime:
                     self._cooldown_deadline = self.clock.monotonic() + policy.cooldown_seconds
                 else:
                     self._learning_first = True
-            return bool(attempts)
+            return bool(cycle.attempts)
+
+    def _learning_capacity(self) -> bool:
+        policy = self.episodes.policy
+        return bool(
+            self.learning
+            and 2 + self.learning.policy.max_files <= policy.maintenance_requests
+            and (2 + self.learning.policy.max_files)
+            * (self.learning.model.input_limit + self.learning.policy.output_tokens)
+            <= policy.maintenance_tokens
+        )
+
+    def _observe_cycle(self, cycle: CycleProgress, stage: str, report: dict) -> bool:
+        self.last_report[stage] = report
+        return cycle.observe(stage, WorkResult.from_report(report))
+
+    async def _step(
+        self, stream_id: str, idle: bool, budget: MaintenanceBudget, cycle: CycleProgress
+    ) -> bool:
+        policy = self.episodes.policy
+        # Every unit yields; input cancellation runs before another batch.
+        await asyncio.sleep(0)
+        current = self.schedule_repository.state(stream_id)
+        if self._foreground or current["run_active"]:
+            return False
+        now = self.clock.now()
+        if budget.clock.monotonic() - budget.started >= policy.maintenance_seconds:
+            budget.exhausted = True
+            return False
+        # Proactive claims a fresh cycle only. A waiting Learning pipeline
+        # gets its whole reservation on Learning-first cycles.
+        if (
+            idle
+            and self.proactive
+            and not cycle.proactive_ran
+            and not cycle.attempts
+            and self.proactive.ready()
+            and not (
+                cycle.learning_first
+                and cycle.learning_capacity
+                and self.learning
+                and self.learning.ready(idle=idle)
+            )
+        ):
+            cycle.proactive_ran = True
+            cycle.attempts += 1
+            if not self._observe_cycle(
+                cycle, "proactive", await self._execute("proactive", self.proactive.run())
+            ):
+                return False
+            return True
+        if idle and self.learning and not cycle.recovery_ran and self.learning.recovery_ready():
+            cycle.recovery_ran = True
+            cycle.attempts += 1
+            self._observe_cycle(
+                cycle,
+                "memory_recovery",
+                await self._execute("memory_recovery", self.learning.recover_background()),
+            )
+            return True
+        if (
+            idle
+            and policy.enabled
+            and self.threads
+            and not (
+                self._dirty_yield_to_learning
+                and cycle.learning_capacity
+                and self.learning
+                and self.learning.ready(idle=idle)
+            )
+            and self.threads.repairs.pending(
+                at=now, max_failures=self.threads.policy.repair_max_failures
+            )
+            is not None
+        ):
+            cycle.attempts += 1
+            self._dirty_yield_to_learning = True
+            if not self._observe_cycle(
+                cycle,
+                "repair",
+                await self._execute("repair", self.threads.repair(retry=False, at=now)),
+            ):
+                return False
+            return True
+        if (
+            self.learning
+            and not cycle.learning_ran
+            and self.learning.ready(idle=idle)
+            and (cycle.learning_first or cycle.attempts > 0)
+        ):
+            # Reserve room for the complete in-memory pipeline before paying
+            # for Extraction; no repeated partial pipelines across budget stops.
+            needed = 2 + self.learning.policy.max_files
+            tokens = needed * (self.learning.model.input_limit + self.learning.policy.output_tokens)
+            if needed > policy.maintenance_requests or tokens > policy.maintenance_tokens:
+                self.last_report["learning"] = {
+                    "outcome": "blocked",
+                    "error_code": "learning_budget_config",
+                    "required_requests": needed,
+                    "reserved_tokens_required": tokens,
+                }
+            if (
+                budget.requests + needed <= policy.maintenance_requests
+                and budget.reserved_tokens + tokens <= policy.maintenance_tokens
+            ):
+                cycle.learning_ran = True
+                self._dirty_yield_to_learning = False
+                cycle.attempts += 1
+                report = await self._execute(
+                    "learning",
+                    self.learning.learn_priority()
+                    if self.learning.priority_pending()
+                    else self.learning.learn_batch(),
+                )
+                if not self._observe_cycle(cycle, "learning", report):
+                    return False
+                return True
+        if (
+            idle
+            and self.curator
+            and not cycle.curator_ran
+            and self.curator.poll()
+            and (
+                not cycle.learning_first
+                or cycle.attempts > 0
+                or not (self.learning and self.learning.ready(idle=idle))
+            )
+            and budget.requests < policy.maintenance_requests
+        ):
+            cycle.curator_ran = True
+            cycle.attempts += 1
+            report = await self._execute("curator", self.curator.run())
+            if not self._observe_cycle(cycle, "curator", report):
+                return False
+            return True
+        if (
+            idle
+            and self.character_state
+            and not cycle.character_ran
+            and self.character_state.ready()
+            and budget.requests < policy.maintenance_requests
+            and (not cycle.learning_first or not (self.learning and self.learning.ready(idle=idle)))
+        ):
+            cycle.character_ran = True
+            cycle.attempts += 1
+            if not self._observe_cycle(
+                cycle,
+                "character_state",
+                await self._execute("character_state", self.character_state.run()),
+            ):
+                return False
+            return True
+        return await self._organization_step(stream_id, current, idle, cycle)
+
+    async def _organization_step(
+        self, stream_id: str, current: dict, idle: bool, cycle: CycleProgress
+    ) -> bool:
+        policy = self.episodes.policy
+        now = self.clock.now()
+        if not policy.enabled:
+            return False
+        if self.threads:
+            status = self.threads.repository.status()
+            due = self._thread_remaining(current) <= 0
+            if not status["pending_episodes_capped"] and due:
+                self.schedule_repository.thread_check(now, policy.thread_interval_seconds)
+            elif (
+                idle
+                and status["state"] not in {"failed", "running"}
+                and (due or status["pending_episodes_capped"] >= policy.thread_threshold)
+            ):
+                cycle.attempts += 1
+                report = await self._execute("thread", self.threads.organize(retry=False))
+                if not self._observe_cycle(cycle, "thread", report):
+                    return False
+                if report["outcome"] == "completed":
+                    self.schedule_repository.thread_check(
+                        self.clock.now(),
+                        policy.thread_interval_seconds,
+                        success=True,
+                    )
+                return True
+        # Finalization is time driven even if an unrelated/broken
+        # pending batch needs explicit retry; it never asks the LLM.
+        if idle and self.episodes.repository.finalize(stream_id, policy, at=now):
+            cycle.batches += 1
+            cycle.attempts += 1
+            cycle.successes.add("episode")
+            return True
+        episode = self.episodes.repository.status(stream_id)
+        if (
+            episode["pending_runs_capped"]
+            and episode["state"] not in {"failed", "running"}
+            and (idle or episode["pending_runs_capped"] >= policy.run_threshold)
+        ):
+            cycle.attempts += 1
+            if not self._observe_cycle(
+                cycle,
+                "episode",
+                await self._execute(
+                    "episode",
+                    self.episodes.organize(stream_id, retry=False, at=now),
+                ),
+            ):
+                return False
+        else:
+            return False
+        return True
 
     async def _background(self, stream_id: str, after_answer: bool) -> None:
         try:

@@ -4,7 +4,7 @@ P2 Review Fix：恢复后的 pending Curator 读取原 sources.memory 与已核�
 
 ## 职责与组成
 
-`learning/curator.py::MemoryCurator` 在一小组 Markdown 上执行去重、证据支持的状态核对和有限组织。`CuratorPolicy` 默认 86400 秒检查、累计 12 次文件更新或选中文件超过 12000 字节才请求模型，最多三个文件、65536 输入字节。它使用 Learner 的 publication() 作用域、`ReflectionModel.ask()`、`plan_item()`、`write_item()`、哈希回执和 reconcile，不维护另一个文件操作系统或事实数据库。
+`learning/curator.py::MemoryCurator` 在一小组 Markdown 上执行去重、证据支持的状态核对和有限组织。`learning/models.py::CuratorPolicy` 默认 86400 秒检查、累计 12 次文件更新或选中文件超过 12000 字节才请求模型，最多三个文件、65536 输入字节。它使用 Learner 的 publication() 作用域、`ReflectionModel.ask()`、`plan_item()`、`write_item()`、哈希回执和 reconcile，不维护另一个文件操作系统或事实数据库。
 
 ## 实际运行路径
 

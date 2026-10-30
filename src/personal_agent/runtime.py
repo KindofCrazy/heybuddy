@@ -82,6 +82,16 @@ class ChatService:
         finally:
             self.foreground_active = False
 
+    def select_conversation(self, conversation_id: str | None = None) -> None:
+        """Trusted, between-turn selection; keep Agent context and session identity together."""
+        if self.observer_only or self.sessions is None or self.foreground_active:
+            raise RuntimeError("Conversation selection is unavailable")
+        if conversation_id is None:
+            self.sessions.new()
+        else:
+            self.sessions.resume(conversation_id)
+        self.agent.context = self.sessions.context()
+
     def after_reply(self, result: RunResult | None = None) -> None:
         if self.observer_only:
             return
@@ -270,7 +280,7 @@ async def open_chat(
 async def open_application(
     settings: Settings, *, observer_only: bool = False
 ) -> AsyncIterator[ChatService]:
-    with SQLiteStore(settings.database_path) as store:
+    with SQLiteStore(settings.database_path, read_only=observer_only) as store:
         store.initialize()
         if not observer_only:
             store.recover_incomplete_runs()

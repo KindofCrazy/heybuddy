@@ -51,3 +51,7 @@ P2 enabled 时旧 MemoryAutomation 不再自动消费新 Run，旧计划、审�
 ## 发布作用域
 
 MemoryLearningService.publication() 持有同一 asyncio 锁，向 Curator 提供仅在作用域内使用的发布回调；实际回执/取消/恢复仍由原 _execute() 管理。Learner 的 model 现在是独立 ReflectionModel，只负责无工具结构化请求，不携带手动计划 Repository 或审批入口。恢复核对使用真实 PlanItem，不再用 SimpleNamespace 模拟 writer 参数，持久回执字典及 schema 不变。
+
+## 提示词与策略依赖
+
+`learning/service.py` 从 `reflection/prompts.py` 导入公共证据约束和抽取规则，明确传入本流程对短期状态的保留策略，不依赖 Reflection 提示词的具体措辞替换。`learning/models.py` 同时定义 LearningPolicy 与 CuratorPolicy，供配置和服务共同读取。实际提示词文本、写入权限和证据校验保持不变；验证见 `tests/test_learning.py`、`tests/test_curator.py`。

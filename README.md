@@ -403,3 +403,5 @@ uv run python -m personal_agent.evaluation --snapshot .heybuddy/current-prompts.
 [通用交谈提示词](src/personal_agent/prompts/conversation.md) 独立于角色卡，统一日常闲聊的默认表达；装配路径、发送配合与边界见 [模块说明](docs/modules/prompts.md)。
 
 QQ 现支持图片、图文和 JPEG/PNG/GIF/WebP 表情包输入；动图只读取首帧，回复仍是文本。下载有官方 CDN、大小、像素和总超时限制，使用现有 Agent/角色/记忆与 SQLite 附件存储。接口、上下文预算、失败和验证见[图片输入](docs/modules/images.md)。
+
+维护周期的步骤与结果分类见 [Organization](docs/modules/organization.md)，只读数据库启动及共享会话切换见 [Runtime](docs/modules/runtime.md)，存储迁移定义见 [Storage](docs/modules/storage.md)。

@@ -52,3 +52,9 @@ OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占
 # Composer 与离线投递装配
 
 `assemble_chat()` 为当前 Agent 建立 OutboxRepository，在 Agent.context 构造前设置 SessionManager.notice_factory，并将 OutboundRuntime 接入 ProactiveRuntime.outbound。角色 callback 只读编译当前 Character，Composer 复用相同 model/维护预算。非 observer 装配执行 recover() 冻结未完成草稿/投递，不调用 Sender；默认上下文排除 Fake 回执。真实渠道 Adapter 仍无主动发送接线。完整调用路径、状态和验证见 [outbox.md](outbox.md)。
+
+## Review 修复后的只读启动与会话切换
+
+独立 Web 的 `open_application(observer_only=True)` 使用 `SQLiteStore(read_only=True)`，通过 SQLite `mode=ro` 和 `query_only` 拒绝数据库写入。`initialize()` 此时只验证 schema 17，不执行迁移；`SessionManager` 只加载已有 Agent 和已选 Conversation，不创建身份、不更新 client_state。数据库缺失、版本不符或尚无会话时返回 HistoryError，需先由普通 CLI 初始化。占用锁仍按单实例规则取得，不支持旁路访问正在运行的应用。
+
+可信 CLI 的 `/new`、`/resume` 调用 `ChatService.select_conversation()`，同时更新 SessionManager 和 Agent.context；前台运行中和 observer 模式拒绝切换。Context 的时间回调绑定创建时的 Conversation ID。验证：`tests/test_review_refactoring.py` 的完整 observer 启动覆盖缺失、旧 schema 和已有数据；会话切换沿 `tests/test_config_cli.py` 验证。

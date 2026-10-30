@@ -97,3 +97,9 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 # P4.3 离线 Outbox 命令
 
 原 `/proactive` 分派增加 outbox/attempts 只读分页、`simulate <id>` 和 `retry-compose <id>`。simulate 明确创建本地 FakeSender 和当前会话的模拟许可，不调用模型或真实 QQ/NapCat；retry-compose 在原维护预算内复核现有来源后重新生成，不能重发 uncertain 或 accepted。命令不写用户 Run。SessionManager.notice_factory 构造当前 Conversation 的只读 notices Protocol，默认排除模拟记录；测试 Harness 可显式开启并验证“还没做完”的接续。符号、错误与验证见 [outbox.md](outbox.md)。
+
+## 共享会话切换
+
+`main._chat()` 的 /new 与 /resume 统一调用 `ChatService.select_conversation()`，由共享 Runtime 同步切换 SessionManager 和 Agent.context。SessionManager.context 的时间查询绑定该 Context 的 Conversation ID，不跟随后续 SessionManager.current 变化。只读 SessionManager 仅加载已有会话，禁止 new，resume 不写 client_state；错误沿原 CLI HistoryError 路径展示。验证：`tests/test_config_cli.py`、`tests/test_review_refactoring.py`。
+
+会话命令解析由 `cli_commands.session_command()` 负责，`main._chat()` 仅分派；该函数调用共享 Runtime 并沿用原安全错误展示。

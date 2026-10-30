@@ -26,6 +26,7 @@ class SessionManager:
         optional_history_tokens: int = 12288,
         character: CharacterContext | None = None,
     ) -> None:
+        self.read_only = store.read_only
         self.budget = budget
         self.optional_history_tokens = optional_history_tokens
         self.store = store
@@ -34,27 +35,34 @@ class SessionManager:
         self.retriever: ContextRetrieval | None = None
         self.notices: ConversationNotices | None = None
         self.notice_factory: Callable[[str], ConversationNotices] | None = None
-        self.agent = store.get_agent("heybuddy") or store.create_agent(
-            "HeyBuddy", DEFAULT_SYSTEM_PROMPT, agent_id="heybuddy"
-        )
+        self.agent = store.get_agent("heybuddy")
+        if self.agent is None:
+            if self.read_only:
+                raise HistoryError("Observer requires an existing Agent.")
+            self.agent = store.create_agent("HeyBuddy", DEFAULT_SYSTEM_PROMPT, agent_id="heybuddy")
         previous = store.last_conversation(self.agent.id)
+        if self.read_only and not previous:
+            raise HistoryError("Observer requires an existing selected Conversation.")
         self.current = self.resume(previous) if previous else self.new()
 
     def context(self) -> ContextBuilder:
+        conversation_id = self.current.id
         return ContextBuilder(
             DEFAULT_SYSTEM_PROMPT,
-            history_store=SQLiteConversationHistory(self.store, self.current.id),
+            history_store=SQLiteConversationHistory(self.store, conversation_id),
             memory=self.memory,
             budget=self.budget,
-            temporal=lambda: temporal_context(self.store.last_interaction(self.current.id)),
+            temporal=lambda: temporal_context(self.store.last_interaction(conversation_id)),
             retriever=self.retriever,
             optional_history_tokens=self.optional_history_tokens,
             character=self.character,
             trace=SQLiteRunTrace(self.store),
-            notices=self.notice_factory(self.current.id) if self.notice_factory else self.notices,
+            notices=self.notice_factory(conversation_id) if self.notice_factory else self.notices,
         )
 
     def new(self) -> ConversationRecord:
+        if self.read_only:
+            raise HistoryError("Observer cannot create a Conversation.")
         self.current = self.store.create_conversation(self.agent.id, activate=True)
         return self.current
 
@@ -65,7 +73,8 @@ class SessionManager:
         # Validate the checkpoint, not every historic payload. Pages are checked
         # before model use; ordinary writes already validate complete Runs.
         self.store.context_summary(conversation_id)
-        self.store.select_conversation(self.agent.id, conversation.id)
+        if not self.read_only:
+            self.store.select_conversation(self.agent.id, conversation.id)
         self.current = conversation
         return conversation
 

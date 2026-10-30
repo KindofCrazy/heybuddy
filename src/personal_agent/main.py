@@ -12,7 +12,7 @@ from personal_agent.channels.napcat.runner import run_napcat
 from personal_agent.channels.qq.config import QQError
 from personal_agent.channels.qq.runner import discover_openid, run_qq
 from personal_agent.character.models import CharacterError
-from personal_agent.cli_commands import MaintenanceCommands
+from personal_agent.cli_commands import MaintenanceCommands, session_command
 from personal_agent.config import Settings, load_qq_settings, load_settings
 from personal_agent.console import AsyncInput
 from personal_agent.core.agent import Agent
@@ -225,29 +225,7 @@ async def _chat(
             if sessions is None:
                 write("错误 > 当前入口未配置持久化会话。")
                 continue
-            try:
-                parts = user_input.split()
-                if parts == ["/new"]:
-                    sessions.new()
-                    agent.context = sessions.context()
-                    write(sessions.status())
-                elif parts == ["/sessions"]:
-                    for conversation in sessions.list():
-                        marker = "*" if conversation.id == sessions.current.id else " "
-                        write(
-                            f"{marker} {conversation.id} | {conversation.title} | "
-                            f"{conversation.updated_at.isoformat()}"
-                        )
-                elif len(parts) == 2 and parts[0] == "/resume":
-                    sessions.resume(parts[1])
-                    agent.context = sessions.context()
-                    write(sessions.status())
-                elif parts == ["/status"]:
-                    write(sessions.status())
-                else:
-                    write("命令用法：/new | /sessions | /resume <conversation_id> | /status")
-            except HistoryError:
-                write("会话错误 > 无法读取或切换会话，请检查 ID 和数据库状态。")
+            session_command(service, user_input, write)
             continue
         result = await service.run(user_input, permissions=permissions)
         if result.status == "completed":

@@ -124,3 +124,7 @@ reflection/provider.py 的 ReflectionModel 持有请求预算、Provider 与 usa
 # 主动内容与用户证据
 
 Outbox/Context notices 不进入 Reflection 或 P2 的原始 Run 来源，不得将助手主动发言、草稿或模拟回执当作用户兴趣/关系事实。既有 ReflectionService.EXTRACT、P2 提示词、精确引文和 confirmed 用户证据校验保持，冻结评测基线不改；原始用户内容仍具有正常证据资格。隔离路径和 Journal/Recall/Scout 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`；模糊回复的语义判断仍需要真实审阅。
+
+## 明确组合提示词
+
+公共证据规则由 `reflection/prompts.py::memory_rules(excluded_state)` 与 EXTRACTION_RULES 提供。Reflection 明确排除 temporary state；Learning 明确传入 one-off ephemeral context / ephemeral one-off context，不再通过替换 Reflection 文本推导规则。有效提示词保持原文，审批与自动学习权限不变。验证：`tests/test_reflection.py`、`tests/test_learning.py`。

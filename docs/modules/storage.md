@@ -4,7 +4,7 @@ related_sources(paths) 用参数化 JSON_EACH 对完成 Learning Job 的 applied
 
 P2 Review Fix 不增加迁移，仍为 schema 12。LearningRepository 在原 metrics.recovery 保存有界检查次数、deadline 与已发布回执，save() 保留这部分元数据不被模型计量覆盖；recovery_job() 查询一个当前 Agent 到期未决任务，running() 防止与该 Agent 前台 Run 交叠。Status attention 显示检查次数/下次检查，来源预留关系不重置，completed 记账仍是原 CAS 短事务。详见 [Learning](learning.md)。
 
-P3 当前 schema 12 追加 `character/storage.py::SCHEMA`：character_runs 保存 Host 角色参与标签，character_states 保存一个当前短期模拟状态与版本，character_state_sources 保存去重/失败/取消进度。原迁移 1–11 不改，无旧 Run 自动归属，也不复制人格或长期事实。初始化、CAS、时间和事务窗口见 [State](character-state.md)，迁移/回滚测试见 tests/test_character_storage.py。
+P3 当前 schema 12 追加 `storage/character_schema.py::SCHEMA`：character_runs 保存 Host 角色参与标签，character_states 保存一个当前短期模拟状态与版本，character_state_sources 保存去重/失败/取消进度。原迁移 1–11 不改，无旧 Run 自动归属，也不复制人格或长期事实。初始化、CAS、时间和事务窗口见 [State](character-state.md)，迁移/回滚测试见 tests/test_character_storage.py。
 
 schema 11 曾追加 `storage/learning.py::LearningRepository` 的 memory_learning_jobs、memory_learning_sources、memory_learning_state；原迁移 1–10 定义不变。只保存任务状态、来源 ID/hash、文件发布回执、计量和首次启用水位，不保存长期知识正文或新事实数据库。Run/Message/Episode/Thread/Reflection 原位保留，initialize() 顺序原子升级。snapshot() 复核 Agent 与真实来源，save() 做状态/更新时间 CAS。跨文件/SQLite 无共同事务，processing 在重启分为 pending 或 requires_reconciliation，行为及原子迁移测试见 [Learning](learning.md)、[P2 交付](../p2-delivery.md)。
 
@@ -129,3 +129,7 @@ LearningRepository 提供 Curator schedule、最近 Job 和写入路径查询；
 # 离线 Outbox（schema 17）
 
 `storage/outbox.py::SCHEMA` 追加 Agent/Decision 唯一的 proactive_outbox 和每条 Outbox 最多一次的 proactive_attempts；会话使用复合外键隔离。begin()/prepare()/claim()/finish() 分别原子提交生成领取、草稿、投递领取和回执；发送只能在 claim 提交后开始，文件/外部效果不能和 SQLite 一起回滚。recover() 只把 composing/sending/prepared 冻结为需显式处理状态，不重试 Sender。原 Journal、Recall 和 MemoryFS 保留各自权威边界；新记录不进入用户证据。schema 16→17 原子迁移、失败回滚、领取失败与发送后回执失败验证见 [outbox.md](outbox.md) 和 `tests/test_outbound.py`。
+
+## 只读连接与 schema 定义
+
+`SQLiteStore(..., read_only=True)` 要求数据库已存在，以 URI mode=ro 打开并启用 query_only；initialize 仅核对当前版本。兼容仓库读取所用的 `_transaction()` 在只读模式转入 reading，不申请 BEGIN IMMEDIATE；写 SQL 被 SQLite 拒绝并转换为 HistoryError。普通实例继续使用短写事务和顺序原子迁移。schema 12 SQL 移到 `storage/character_schema.py`，迁移字句保持不变，SQLite 初始化不再为获取 schema 而导入角色存储实现。最小验证：`tests/test_review_refactoring.py`、`tests/test_character_storage.py`。

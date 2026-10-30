@@ -13,8 +13,7 @@ from personal_agent.character.loader import IDENTIFIER
 from personal_agent.character.models import CharacterPolicy, StatePolicy
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.retrieval import RetrievalPolicy
-from personal_agent.learning.curator import CuratorPolicy
-from personal_agent.learning.models import LearningPolicy
+from personal_agent.learning.models import CuratorPolicy, LearningPolicy
 from personal_agent.memory.retrieval import MemoryRetrievalPolicy
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.proactive.models import ProactivePolicy

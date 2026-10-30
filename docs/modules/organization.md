@@ -72,3 +72,9 @@ OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维�
 ProactiveRuntime 发现已提交 notify 且尚无 Outbox 时，在下一有界维护单元调用 OutboundRuntime.compose()；Composer 复用已经由 cycle_providers 包装的同一个 model。不会在 Attention 内额外串联请求，也不由维护循环自动调用 Fake Sender。默认 `AGENT_PROACTIVE_COMPOSE_ENABLED=true`，仍接受原 Idle、冷却、前台取消和维护额度。异常、领取与取消路径见 [outbox.md](outbox.md) 及 `tests/test_outbound.py`。
 
 Review Fix：Proactive 只在一个尚未领取其他维护单元的周期入口运行。若 learning_first（包含 Dirty Repair 的让出标记）生效，Learning 有待处理工作且其完整 requests/tokens 预留适合本轮配置，则 Proactive 让出周期，沿原调度顺序处理 Learning。周期结束继续使用原 learning_first 翻转，因此持续 Proactive 积压不会抢掉 Learning 所需的默认四次整批额度，也不会在 Learning 已消耗额度后再领取 Composer。若 Learning 配置本身无法容纳完整流水线，仍保留 learning_budget_config，且不阻止可执行的 Proactive。验证见 `tests/test_proactive_review_fixes.py`。
+
+## 维护周期职责拆分
+
+`OrganizationRuntime._cycle()` 只建立共享 Provider 预算、循环有界步骤、处理超时并提交周期统计；`_step()` 每步先异步让出控制并检查前台抢占，再选择 Proactive、回执恢复、Learning、Curator 或角色工作；`_organization_step()` 处理 Thread、Episode 与无模型 Finalization。`_learning_capacity()` 明确检查完整 Learning 管线能否容纳，保留 Learning-first 与脏线程让行及 Proactive 仅使用新周期的顺序。
+
+`organization/cycle.py` 的 `CycleProgress` 保存单周期状态；`WorkResult.from_report()` 在服务边界把已有报告映射到完成、失败、停止、预算耗尽。只有 completed/finalized/repaired/repair_page 进入成功集合，待核对发布计为失败，空任务、stale、pending 和未知状态不再误记成功。模型与文件提交边界不变。验证：`tests/test_review_refactoring.py`、`tests/test_proactive.py`、`tests/test_organization_schedule.py`。

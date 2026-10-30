@@ -3,10 +3,43 @@
 import asyncio
 import json
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
+from personal_agent.core.history import HistoryError
 from personal_agent.organization.budget import MaintenanceBudget, cycle_providers
 from personal_agent.organization.runtime import OrganizationRuntime
 from personal_agent.proactive.delivery import DeliveryGrant, FakeSender
+
+if TYPE_CHECKING:
+    from personal_agent.runtime import ChatService
+
+
+def session_command(service: "ChatService", text: str, write: Callable[[str], None]) -> None:
+    """Parse trusted session commands; the service owns context rebinding."""
+    sessions = service.sessions
+    if sessions is None:
+        raise HistoryError("Session commands require persistent sessions.")
+    try:
+        parts = text.split()
+        if parts == ["/new"]:
+            service.select_conversation()
+            write(sessions.status())
+        elif parts == ["/sessions"]:
+            for conversation in sessions.list():
+                marker = "*" if conversation.id == sessions.current.id else " "
+                write(
+                    f"{marker} {conversation.id} | {conversation.title} | "
+                    f"{conversation.updated_at.isoformat()}"
+                )
+        elif len(parts) == 2 and parts[0] == "/resume":
+            service.select_conversation(parts[1])
+            write(sessions.status())
+        elif parts == ["/status"]:
+            write(sessions.status())
+        else:
+            write("命令用法：/new | /sessions | /resume <conversation_id> | /status")
+    except HistoryError:
+        write("会话错误 > 无法读取或切换会话，请检查 ID 和数据库状态。")
 
 
 class MaintenanceCommands:

@@ -52,3 +52,12 @@ class ExistingFileDecision(FileDecision):
     """Existing blocks/topics can only be edited, including heading-only Core files."""
 
     action: Literal["update", "no_op", "reject", "review"]
+
+
+class CuratorPolicy(Model):
+    enabled: bool = True
+    interval_seconds: float = Field(default=86400, gt=0, le=2592000)
+    update_threshold: int = Field(default=12, ge=1, le=1000)
+    long_file_bytes: int = Field(default=12000, ge=1024, le=32768)
+    max_files: int = Field(default=3, ge=1, le=3)
+    max_bytes: int = Field(default=65536, ge=4096, le=131072)
