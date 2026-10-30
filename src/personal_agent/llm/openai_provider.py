@@ -19,7 +19,7 @@ from personal_agent.core.models import (
     ToolDefinition,
     ToolMessage,
 )
-from personal_agent.llm.base import ProviderError, ProviderTimeout
+from personal_agent.llm.base import ProviderError, ProviderTimeout, ReasoningEffort
 
 
 class OpenAIProvider:
@@ -87,6 +87,7 @@ class OpenAIProvider:
         tools: list[ToolDefinition],
         *,
         max_output_tokens: int | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> ModelResponse:
         definitions = [
             {
@@ -100,7 +101,11 @@ class OpenAIProvider:
         ]
         # strict=False preserves Pydantic defaults/optional fields without rewriting
         # arbitrary schemas. ToolRegistry always validates locally before execution.
-        options = {"max_output_tokens": max_output_tokens} if max_output_tokens is not None else {}
+        options: dict = (
+            {"max_output_tokens": max_output_tokens} if max_output_tokens is not None else {}
+        )
+        if reasoning_effort is not None:
+            options["reasoning"] = {"effort": reasoning_effort}
         try:
             response = await self.client.responses.create(
                 model=self.model,

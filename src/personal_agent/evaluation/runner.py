@@ -21,7 +21,7 @@ from personal_agent.core.models import (
 from personal_agent.evaluation.cases import Case
 from personal_agent.evaluation.prompts import install, tool_variant
 from personal_agent.evaluation.scoring import score
-from personal_agent.llm.base import Provider, ProviderError
+from personal_agent.llm.base import Provider, ProviderError, ReasoningEffort
 from personal_agent.memory import index
 from personal_agent.memory.store import MemoryFS
 from personal_agent.memory.tools import register_memory_tools
@@ -129,7 +129,14 @@ class TraceProvider:
         self.calls = []
         self.old_history_visible = False
 
-    async def generate(self, messages, tools, *, max_output_tokens=None):
+    async def generate(
+        self,
+        messages,
+        tools,
+        *,
+        max_output_tokens=None,
+        reasoning_effort: ReasoningEffort | None = None,
+    ):
         self.budget.reserve(messages, tools, max_output_tokens)
         prompt = messages[0].text
         stage = "main"
@@ -148,7 +155,10 @@ class TraceProvider:
         usage = None
         try:
             response = await self.provider.generate(
-                messages, tools, max_output_tokens=max_output_tokens
+                messages,
+                tools,
+                max_output_tokens=max_output_tokens,
+                **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
             )
             usage = response.usage
             record.update(

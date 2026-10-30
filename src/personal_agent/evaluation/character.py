@@ -24,7 +24,7 @@ from personal_agent.core.models import (
 from personal_agent.core.retrieval import RetrievalItem, RetrievalResult
 from personal_agent.evaluation.character_cases import CASES, RUBRIC
 from personal_agent.evaluation.runner import Budget, EvaluationLimit
-from personal_agent.llm.base import Provider, ProviderError
+from personal_agent.llm.base import Provider, ProviderError, ReasoningEffort
 from personal_agent.memory.privacy import require_private_directory
 from personal_agent.tools.builtin import create_builtin_registry
 
@@ -90,7 +90,14 @@ class FixedRetrieval:
 class OfflineProvider:
     """Mechanical script only. Its text must never receive a semantic character score."""
 
-    async def generate(self, messages, tools, *, max_output_tokens=None):
+    async def generate(
+        self,
+        messages,
+        tools,
+        *,
+        max_output_tokens=None,
+        reasoning_effort: ReasoningEffort | None = None,
+    ):
         user = next(
             m.text for m in reversed(messages) if isinstance(m, TextMessage) and m.role == "user"
         )
@@ -108,7 +115,14 @@ class Trace:
         self.provider, self.budget = provider, budget
         self.calls = []
 
-    async def generate(self, messages, tools, *, max_output_tokens=None):
+    async def generate(
+        self,
+        messages,
+        tools,
+        *,
+        max_output_tokens=None,
+        reasoning_effort: ReasoningEffort | None = None,
+    ):
         self.budget.reserve(messages, tools, max_output_tokens)
         row = {
             "input_estimated": estimate_request(messages, tools),
@@ -123,7 +137,10 @@ class Trace:
         usage = None
         try:
             response = await self.provider.generate(
-                messages, tools, max_output_tokens=max_output_tokens
+                messages,
+                tools,
+                max_output_tokens=max_output_tokens,
+                **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
             )
             usage = response.usage
             row.update(

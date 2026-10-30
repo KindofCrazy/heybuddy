@@ -1,6 +1,8 @@
-from typing import Protocol
+from typing import Literal, Protocol
 
 from personal_agent.core.models import Message, ModelResponse, ProviderDiagnostics, ToolDefinition
+
+ReasoningEffort = Literal["none", "minimal", "low"]
 
 
 class ProviderError(Exception):
@@ -31,6 +33,7 @@ class Provider(Protocol):
         tools: list[ToolDefinition],
         *,
         max_output_tokens: int | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> ModelResponse:
         """Return plain text and/or tool calls; raise sanitized ProviderError on failure."""
         ...

@@ -5,7 +5,7 @@ from time import perf_counter
 from personal_agent.automation.models import AutomationError
 from personal_agent.core.budget import estimate_request
 from personal_agent.core.models import Message, ModelResponse, ToolDefinition
-from personal_agent.llm.base import Provider, ProviderError
+from personal_agent.llm.base import Provider, ProviderError, ReasoningEffort
 
 
 class MeteredProvider:
@@ -36,6 +36,7 @@ class MeteredProvider:
         tools: list[ToolDefinition],
         *,
         max_output_tokens: int | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> ModelResponse:
         reserve = estimate_request(messages, tools) + (max_output_tokens or 0)
         if (
@@ -50,7 +51,10 @@ class MeteredProvider:
         usage = None
         try:
             response = await self.provider.generate(
-                messages, tools, max_output_tokens=max_output_tokens
+                messages,
+                tools,
+                max_output_tokens=max_output_tokens,
+                **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
             )
             usage = response.usage
             return response

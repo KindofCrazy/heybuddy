@@ -6,7 +6,7 @@ from typing import Protocol
 
 from personal_agent.core.budget import estimate_request
 from personal_agent.core.models import Message, ModelResponse, TokenUsage, ToolDefinition
-from personal_agent.llm.base import Provider, ProviderError
+from personal_agent.llm.base import Provider, ProviderError, ReasoningEffort
 from personal_agent.organization.clock import Clock
 from personal_agent.organization.models import OrganizationError, OrganizationPolicy
 
@@ -69,12 +69,16 @@ class CycleProvider:
         tools: list[ToolDefinition],
         *,
         max_output_tokens: int | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> ModelResponse:
         self.budget.reserve(messages, tools, max_output_tokens)
         usage = None
         try:
             response = await self.provider.generate(
-                messages, tools, max_output_tokens=max_output_tokens
+                messages,
+                tools,
+                max_output_tokens=max_output_tokens,
+                **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
             )
             usage = response.usage
             return response

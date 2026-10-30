@@ -69,6 +69,7 @@ class QQAdapter:
             return
         # No await between durable receipt and notification; Gateway cursor follows.
         if self.inbox.receive(message, self.conversation_id, self.settings.qq_queue_size):
+            self.service.note_input()
             self._receipt_version += 1
             self.wake.set()
             logger.info("qq_received")
@@ -175,7 +176,13 @@ class QQAdapter:
         version = self._receipt_version
         state.attempted.add(sequences)
         started = time.monotonic()
-        decision = await judge(self.service.agent.provider, turn, timeout)
+        effort = self.settings.qq_message_judge_reasoning_effort
+        decision = await judge(
+            self.service.agent.provider,
+            turn,
+            timeout,
+            reasoning_effort=None if effort == "default" else effort,
+        )
         state.elapsed += time.monotonic() - started
         if version != self._receipt_version:
             return None

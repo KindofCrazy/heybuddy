@@ -29,6 +29,7 @@ class QQSettings(BaseModel):
     qq_message_judge_idle_seconds: float = Field(default=0.8, gt=0, le=30)
     qq_message_judge_budget_seconds: float = Field(default=1.0, gt=0, le=5)
     qq_message_judge_max_calls: int = Field(default=2, ge=1, le=3)
+    qq_message_judge_reasoning_effort: Literal["none", "minimal", "low", "default"] = "none"
     qq_send_timeout_seconds: float = Field(default=10, gt=0, le=60)
     qq_connect_timeout_seconds: float = Field(default=20, gt=0, le=60)
     qq_reconnect_attempts: int = Field(default=8, ge=0, le=20)

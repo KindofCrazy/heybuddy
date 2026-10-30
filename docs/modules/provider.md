@@ -4,6 +4,8 @@
 
 `llm/base.py::Provider` 是接受内部消息和 ToolDefinition、返回 ModelResponse 的 Protocol。 `llm/openai_provider.py::OpenAIProvider` 是唯一具体适配器，使用官方 AsyncOpenAI Responses API。 SQLite、MemoryFS、CLI 和会话选择都不进入 Provider；Agent 也不使用 SDK 响应对象。
 
+`generate()` 可选关键字 `reasoning_effort` 接受 `none` / `minimal` / `low`，默认 Python None 表示完全不发送该字段。OpenAIProvider 仅对该次请求映射为 `reasoning={"effort": value}`，不修改实例或主对话默认设置；Automation、维护预算和评测 Provider 包装器按需透传，未指定时保持旧请求形状。QQ 完整性判断默认显式请求 none，可配置 minimal / low 或 default（不传参数）；它与普通主对话和 Compaction 独立。支持档位依模型/端点而定，不按名称猜测，也不在错误后重试其他档位；不支持时返回 ProviderError，由判断器回退时间聚合。[官方 reasoning 文档](https://developers.openai.com/api/docs/guides/reasoning)说明各模型支持范围不同，低 effort 不等于关闭推理。`include=reasoning.encrypted_content` 是返回数据选择，并非推理开关。MockTransport 验证位于 `tests/test_provider.py`。
+
 ## 实际运行路径
 
 1. Agent 经 ContextBuilder.prepare/for_request 构造预算内的 Core、Summary 和完整 Run 窗口，连同本轮授权的工具定义传给 generate()。

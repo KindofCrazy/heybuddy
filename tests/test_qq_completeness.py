@@ -55,6 +55,7 @@ async def test_judge_has_no_tools_and_accepts_only_bounded_enum(state, response,
     provider = FakeProvider(response)
     assert await judge(provider, plan_turn(rows(db), hybrid()), 1) == decision
     assert provider.tools == [[]] and provider.output_limits == [64]
+    assert provider.reasoning_efforts == ["none"]
     assert len(provider.requests[0]) == 2
     assert "test-openid" not in str(provider.requests)
 
@@ -71,6 +72,7 @@ async def test_ready_claims_early_once_and_runs_normally(state):
         await settled(adapter)
         assert len(provider.requests) == 2 and len(sender.messages) == 1
         assert provider.tools[0] == [] and provider.output_limits[0] == 64
+        assert provider.reasoning_efforts == ["none", None]
         assert rows(db)[0]["status"] == "replied"
     finally:
         await adapter.close()
@@ -177,6 +179,7 @@ def test_hybrid_config_and_default():
     assert QQSettings().qq_message_mode == "time"
     for values in (
         {"qq_message_mode": "other"},
+        {"qq_message_judge_reasoning_effort": "high"},
         {"qq_message_judge_max_calls": 0},
         {"qq_message_judge_budget_seconds": 0},
         {"qq_message_mode": "hybrid", "qq_message_judge_idle_seconds": 2.5},

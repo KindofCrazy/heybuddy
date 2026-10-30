@@ -11,6 +11,54 @@ from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.tools.builtin import create_builtin_registry
 
 
+@pytest.mark.parametrize("effort", ["none", "minimal", "low", "default"])
+async def test_qq_judge_reasoning_is_request_scoped_and_main_request_unchanged(effort):
+    from personal_agent.channels.qq.completeness import judge
+    from personal_agent.channels.qq.turns import QQTurn
+
+    requests = []
+
+    def handle(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(200, json=response_body([text_item("ready")]))
+
+    turn = QQTurn(({"content": "现在可以回答吗？"},), 0)
+    async with make_client(handle) as client:
+        provider = OpenAIProvider(client, "test-model")
+        assert (
+            await judge(
+                provider, turn, 10, reasoning_effort=None if effort == "default" else effort
+            )
+            == "ready"
+        )
+        await provider.generate([TextMessage(role="user", text="正常主对话")], [])
+    if effort == "default":
+        assert "reasoning" not in requests[0]
+    else:
+        assert requests[0]["reasoning"] == {"effort": effort}
+    assert requests[0]["max_output_tokens"] == 64
+    assert requests[0]["tools"] == []
+    assert "reasoning" not in requests[1]
+
+
+async def test_unsupported_judge_reasoning_falls_back_without_retry():
+    from personal_agent.channels.qq.completeness import judge
+    from personal_agent.channels.qq.turns import QQTurn
+
+    requests = []
+
+    def handle(request):
+        requests.append(json.loads(request.content))
+        return httpx.Response(400, json={"error": {"message": "private unsupported effort"}})
+
+    async with make_client(handle) as client:
+        assert (
+            await judge(OpenAIProvider(client, "test-model"), QQTurn(({"content": "你好"},), 0), 10)
+            == "uncertain"
+        )
+    assert len(requests) == 1
+
+
 def response_body(output, *, status="completed"):
     return {
         "id": "resp_test",

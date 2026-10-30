@@ -24,7 +24,7 @@ from personal_agent.core.models import (
     ToolDefinition,
 )
 from personal_agent.evaluation.runner import Budget
-from personal_agent.llm.base import Provider, ProviderError
+from personal_agent.llm.base import Provider, ProviderError, ReasoningEffort
 from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory.privacy import require_private_directory
 from personal_agent.memory.store import MemoryFS
@@ -61,6 +61,7 @@ class SmokeProvider:
         tools: list[ToolDefinition],
         *,
         max_output_tokens: int | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> ModelResponse:
         self.budget.reserve(messages, tools, max_output_tokens)
         stage = {
@@ -74,7 +75,10 @@ class SmokeProvider:
         usage = None
         try:
             response = await self.provider.generate(
-                messages, tools, max_output_tokens=max_output_tokens
+                messages,
+                tools,
+                max_output_tokens=max_output_tokens,
+                **({"reasoning_effort": reasoning_effort} if reasoning_effort is not None else {}),
             )
             usage = response.usage
             # Private file only, for human semantic review. Never include raw reasoning.

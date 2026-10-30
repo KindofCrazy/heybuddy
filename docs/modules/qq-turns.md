@@ -35,6 +35,8 @@ deadline 使用持久 UTC 接收时间以支持重启，等待使用 asyncio tim
 
 ### 可选 LLM 完整性判断
 
+判断器默认使用 `AGENT_QQ_MESSAGE_JUDGE_REASONING_EFFORT=none`，以请求级参数要求关闭推理；可选 `minimal` / `low`，或 `default`（完全不传 reasoning 参数，沿用端点默认值）。这不会改变主对话模型的设置。各模型与兼容端点支持的档位不同，需按服务文档选择；不支持 none 时可以手动改为该模型支持的低档位。不自动探测、不自动换档或重试；Provider 拒绝参数时回退时间聚合。Prompt 同时明确“只判断表达是否结束，不分析或求解用户的问题”，但 Prompt 不能替代 API 的推理控制。参数映射及离线 wire 测试见 [provider.md](provider.md)。
+
 默认 `AGENT_QQ_MESSAGE_MODE=time`，保持纯时间聚合、不增加模型请求。显式设置为 `hybrid` 后，`adapter.py::_check_turn()` 在静默 `AGENT_QQ_MESSAGE_JUDGE_IDLE_SECONDS=0.8` 秒时，通过 `completeness.py::judge()` 复用 `service.agent.provider`（同一已配置模型）额外发起完整性判断。每组最多 `AGENT_QQ_MESSAGE_JUDGE_MAX_CALLS=2` 次，累计判断耗时预算 `AGENT_QQ_MESSAGE_JUDGE_BUDGET_SECONDS=1.0` 秒；短静默必须小于普通 idle，次数限 1～3，预算必须大于零且不超过 5 秒。这里只限制等待耗时和请求次数，不宣称限制服务商最终计费。
 
 请求仅包含固定 system 和当前组文本的 user JSON，无历史、Memory、人格、图片 URL 或工具。输入 JSON 至多 8192 UTF-8 字节，输出 tokens 上限 64（包含模型推理消耗）；仅接受 `ready` / `wait` / `uncertain` 单词。工具调用、非法或过长输出、Provider 失败和超时均按 uncertain 回退，不执行返回的工具、不打印正文或异常体、不自动重试。图片消息（包括混合图文）、命令、已形成硬边界或已到期输入跳过判断。小输出预算可能不足以支持某些推理模型，届时安全回退；离线测试不证明真实完整性识别质量。

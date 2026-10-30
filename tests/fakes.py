@@ -1,4 +1,5 @@
 from personal_agent.core.models import Message, ModelResponse, ToolCall, ToolDefinition
+from personal_agent.llm.base import ReasoningEffort
 
 
 class FakeProvider:
@@ -7,6 +8,7 @@ class FakeProvider:
         self.requests: list[list[Message]] = []
         self.tools: list[list[ToolDefinition]] = []
         self.output_limits: list[int | None] = []
+        self.reasoning_efforts: list[ReasoningEffort | None] = []
 
     async def generate(
         self,
@@ -14,10 +16,12 @@ class FakeProvider:
         tools: list[ToolDefinition],
         *,
         max_output_tokens: int | None = None,
+        reasoning_effort: ReasoningEffort | None = None,
     ) -> ModelResponse:
         self.requests.append([message.model_copy(deep=True) for message in messages])
         self.tools.append(tools)
         self.output_limits.append(max_output_tokens)
+        self.reasoning_efforts.append(reasoning_effort)
         if not self.responses:
             raise AssertionError("Unexpected extra model request")
         response = self.responses.pop(0)
