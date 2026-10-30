@@ -1,5 +1,7 @@
 # QQ 官方单人 C2C 渠道
 
+`QQAdapter.accept()` 仍只解析官方事件，再转交 `accept_message()`；后者允许 Host 已验证的 NapCat 投影复用相同消费者。NapCat 通过独立 `scope_id` 绑定回执命名空间，使用自己的传输和白名单解析，不连接本页官方 Gateway/API；详见 [NapCat](napcat.md)。
+
 连续消息默认按静默 2.5 秒、首条起最多 8 秒聚合。聚合期间回执保持 received，到期才原子领取整组，以组内最后一条为回复引用，统一关联 Run 和发送状态。命令、条数、字节和图片限制形成分组边界；完整调用路径、关闭恢复与测试见 [QQ 消息聚合](qq-turns.md)。下文单条处理状态同样适用于整组，正常关闭时尚未进入 Run/回复路径的已领取组可恢复 received；硬崩溃仍保守 uncertain。
 
 ## 与本地 CLI 的能力差异

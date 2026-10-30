@@ -9,7 +9,7 @@ from typing import Protocol
 
 from personal_agent.channels.qq.completeness import HybridTurn, judge
 from personal_agent.channels.qq.config import QQError, QQSettings
-from personal_agent.channels.qq.events import parse_text
+from personal_agent.channels.qq.events import QQText, parse_text
 from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.core.models import RunResult
@@ -31,6 +31,8 @@ class QQAdapter:
         inbox: QQInbox,
         sender: TextSender,
         images: QQImages | None = None,
+        *,
+        scope_id: str | None = None,
     ) -> None:
         self.settings = settings
         self.service = service
@@ -43,7 +45,7 @@ class QQAdapter:
         if (
             inbox.store is not service.sessions.store
             or inbox.agent_id != service.sessions.agent.id
-            or inbox.app_id != settings.qq_app_id
+            or inbox.app_id != (scope_id or settings.qq_app_id)
             or settings.qq_allowed_openids != (inbox.openid,)
         ):
             raise QQError("qq_scope_mismatch", fatal=True)
@@ -62,9 +64,12 @@ class QQAdapter:
         self.worker = asyncio.create_task(self._consume(), name="qq-consumer")
 
     async def accept(self, payload: dict) -> None:
+        await self.accept_message(parse_text(payload, self.settings))
+
+    async def accept_message(self, message: QQText | None) -> None:
+        """Accept a channel-validated projection; never reinterpret raw wire data."""
         if self.closing:
             raise QQError("qq_stopping")
-        message = parse_text(payload, self.settings)
         if message is None or message.openid not in self.settings.qq_allowed_openids:
             return
         # No await between durable receipt and notification; Gateway cursor follows.

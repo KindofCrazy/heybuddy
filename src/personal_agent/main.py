@@ -8,6 +8,7 @@ from collections.abc import Callable
 from pydantic import ValidationError
 
 from personal_agent.automation.service import MemoryAutomation
+from personal_agent.channels.napcat.runner import run_napcat
 from personal_agent.channels.qq.config import QQError
 from personal_agent.channels.qq.runner import discover_openid, run_qq
 from personal_agent.character.models import CharacterError
@@ -286,10 +287,12 @@ async def _run_session(settings: Settings, sessions: SessionManager, memory: Mem
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Personal Agent / HeyBuddy CLI and official QQ C2C"
+        description="Personal Agent / HeyBuddy CLI, official QQ C2C and local NapCat"
     )
-    parser.add_argument("channel", nargs="?", choices=("chat", "qq", "web"), default="chat")
-    parser.add_argument("--dashboard", action="store_true", help="QQ: enable local Observatory")
+    parser.add_argument(
+        "channel", nargs="?", choices=("chat", "qq", "napcat", "web"), default="chat"
+    )
+    parser.add_argument("--dashboard", action="store_true", help="QQ/NapCat: local Observatory")
     parser.add_argument("--dashboard-port", type=int, default=8765, help="Loopback HTTP port")
     parser.add_argument(
         "--discover-openid",
@@ -299,8 +302,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.discover_openid and args.channel != "qq":
         parser.error("--discover-openid requires qq")
-    if args.dashboard and (args.channel != "qq" or args.discover_openid):
-        parser.error("--dashboard requires qq without --discover-openid")
+    if args.dashboard and (args.channel not in {"qq", "napcat"} or args.discover_openid):
+        parser.error("--dashboard requires qq or napcat without --discover-openid")
     if not 1024 <= args.dashboard_port <= 65535:
         parser.error("--dashboard-port must be between 1024 and 65535")
     try:
@@ -331,6 +334,10 @@ def main() -> int:
     try:
         if args.discover_openid:
             asyncio.run(discover_openid(settings))
+        elif args.channel == "napcat":
+            asyncio.run(
+                run_napcat(settings, dashboard=args.dashboard, dashboard_port=args.dashboard_port)
+            )
         elif args.channel == "qq":
             if args.dashboard:
                 asyncio.run(run_qq(settings, dashboard=True, dashboard_port=args.dashboard_port))
@@ -345,6 +352,13 @@ def main() -> int:
     except (KeyboardInterrupt, EOFError):
         print("\n再见。")
     except QQError as exc:
+        if exc.code.startswith("napcat_"):
+            print(
+                f"NapCat 错误 [{exc.code}]：检查本机 OneBot WS、鉴权和大小号绑定；"
+                "不重发不确定消息。",
+                file=sys.stderr,
+            )
+            return 2 if exc.code == "napcat_configuration" else 1
         print(
             f"QQ 错误 [{exc.code}]：检查本地 QQ 配置、平台权限、出口 IP 和网络；"
             "不会重跑已领取的消息或不确定发送。",
