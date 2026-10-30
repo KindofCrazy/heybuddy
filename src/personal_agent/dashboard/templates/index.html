@@ -38,7 +38,7 @@ import base_card with context %}
             aria-current="{{ 'page' if key == page else 'false' }}"
             >{{ icon({"overview":"layout-dashboard",
             "threads":"messages-square", "memory":"book-open",
-            "runs":"terminal"}[key]) }}<span data-i18n="{{ info[1] }}"
+            "runs":"terminal", "proactive":"activity"}[key]) }}<span data-i18n="{{ info[1] }}"
               >{{ ui(info[1]) }}</span
             ></a
           >
@@ -67,7 +67,7 @@ import base_card with context %}
       <section class="intro" aria-labelledby="page-title">
         <h1 id="page-title">
           {{ icon({"overview":"layout-dashboard", "threads":"messages-square",
-          "memory":"book-open", "runs":"terminal"}[page]) }}
+          "memory":"book-open", "runs":"terminal", "proactive":"activity"}[page]) }}
           <span data-i18n="{{ pages[page][1] }}">{{ ui(pages[page][1]) }}</span>
         </h1>
       </section>

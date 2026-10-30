@@ -94,6 +94,18 @@ async def _chat(
         if not user_input:
             continue
         permissions: frozenset[str] = frozenset()
+        if user_input.split(maxsplit=1)[0] == "/proactive":
+            if commands is None:
+                write("Proactive > 当前入口未配置后台维护。")
+                continue
+            try:
+                report = await commands.proactive_command(
+                    user_input.removeprefix("/proactive").strip()
+                )
+                write(json.dumps(report, ensure_ascii=False))
+            except (HistoryError, OrganizationError):
+                write("Proactive > 检查失败；未发送消息，原始证据保留。")
+            continue
         if user_input.split(maxsplit=1)[0] == "/character":
             if organization is None or organization.character_state is None:
                 write("Character > 当前未启用角色状态。")

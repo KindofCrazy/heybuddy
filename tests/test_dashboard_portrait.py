@@ -21,7 +21,7 @@ async def test_luna_portrait_is_local_and_only_associated_with_luna(observatory)
     assert image.content.startswith(b"\x89PNG\r\n\x1a\n")
     assert "img-src 'self'" in image.headers["content-security-policy"]
     assert "Cache-Control" in image.headers
-    service.sessions.character = CharacterContextCompiler(CharacterLoader().load("miru"))
+    service.sessions.character = CharacterContextCompiler(CharacterLoader().load("sherlock_bbc"))
     other = (await client.get("/api/character")).json()
     assert other["portrait_url"] is None
     assert other["summary"] is None

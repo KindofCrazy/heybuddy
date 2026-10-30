@@ -117,3 +117,6 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 `load_settings()` 在下次启动时读取配置，环境变量优先于本地文件。超时、可见 JSON 字节上限和失败显式重试规则保持独立；增大 tokens 不会自动恢复 failed 批次。离线端到端验证见 `tests/test_episodes.py::test_million_token_configuration_reaches_single_bounded_request`。
 
 例如 [DeepSeek Chat API 文档](https://api-docs.deepseek.com/api/create-chat-completion/)目前规定 deepseek-flash 最大输出为 393216 tokens，1M 上下文不等于 1M 输出；使用此模型时应将上述 OUTPUT_TOKENS 改为 393216。宿主保留 1,000,000 的可配置上界，端点能力仍需分别核对。
+# Proactive Shadow 配置
+
+`Settings.proactive_policy()` 将 `AGENT_PROACTIVE_*` 可信配置转为 `ProactivePolicy`。默认开启 Shadow，没有主动发送模式；字段通过 `ENV_FIELDS` 加载，仍不搜索其他凭证路径。预算、安静窗口、时区偏移、候选上限及执行路径见 [proactive.md](proactive.md)。

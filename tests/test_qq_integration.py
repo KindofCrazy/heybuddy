@@ -29,7 +29,7 @@ from tests.test_qq_transport import config
 __all__ = ["state"]
 
 
-@pytest.mark.parametrize("character_id", ["sherlock_bbc", "miru", "luna"])
+@pytest.mark.parametrize("character_id", ["sherlock_bbc", "luna"])
 async def test_production_cli_then_qq_restart_share_history_memory_and_character(
     tmp_path, character_id
 ):

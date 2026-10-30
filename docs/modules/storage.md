@@ -22,7 +22,9 @@ P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running R
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 15 与发行包版本 0.7.2 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 16 与发行包版本 0.7.2 是不同概念。
+
+schema 16 通过 `storage/proactive.py::SCHEMA` 追加 Agent 隔离的增量水位、候选事项和 Shadow 决策审计；`ProactiveRepository.publish()` 在同一短事务提交候选/进度/审计，复核来源和修订。派生状态不替代 Run Journal 或 MemoryFS，不创建发送记录。schema 15→16 迁移与故障回滚、发布回滚在 `tests/test_proactive.py` 验证，完整调用路径见 [Proactive](proactive.md)。
 
 ## 表字段与一致性约束
 

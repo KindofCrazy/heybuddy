@@ -16,6 +16,7 @@ from personal_agent.learning.curator import CuratorPolicy
 from personal_agent.learning.models import LearningPolicy
 from personal_agent.memory.retrieval import MemoryRetrievalPolicy
 from personal_agent.organization.models import OrganizationPolicy
+from personal_agent.proactive.models import ProactivePolicy
 from personal_agent.reflection.models import ReflectionPolicy
 
 
@@ -35,6 +36,17 @@ class Settings(ContextBudget, QQSettings):
     memory_root: Path | None = None
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
     character_id: str = "none"
+    proactive_enabled: bool = True
+    proactive_input_tokens: int = Field(default=16384, ge=4096, le=65536)
+    proactive_output_tokens: int = Field(default=4096, ge=256, le=16384)
+    proactive_timeout_seconds: float = Field(default=30, gt=0, le=120)
+    proactive_source_bytes: int = Field(default=32768, ge=1024, le=65536)
+    proactive_review_seconds: int = Field(default=21600, ge=60, le=604800)
+    proactive_lifetime_seconds: int = Field(default=604800, ge=3600, le=2592000)
+    proactive_quiet_start_hour: int = Field(default=23, ge=0, le=23)
+    proactive_quiet_end_hour: int = Field(default=8, ge=0, le=23)
+    proactive_utc_offset_minutes: int = Field(default=480, ge=-720, le=840)
+    proactive_candidate_limit: int = Field(default=3, ge=1, le=4)
     character_root: Path | None = None
     character_max_file_bytes: int = Field(default=16384, ge=1024, le=65536)
     character_max_context_bytes: int = Field(default=24576, ge=1024, le=65536)
@@ -132,6 +144,11 @@ class Settings(ContextBudget, QQSettings):
                 for name in OrganizationPolicy.model_fields
                 if hasattr(self, "organization_" + name)
             }
+        )
+
+    def proactive_policy(self) -> ProactivePolicy:
+        return ProactivePolicy(
+            **{name: getattr(self, "proactive_" + name) for name in ProactivePolicy.model_fields}
         )
 
     @field_validator("character_id")
@@ -246,6 +263,11 @@ class Settings(ContextBudget, QQSettings):
 
 
 ENV_FIELDS = {
+    **{
+        "AGENT_" + name.upper(): name
+        for name in Settings.model_fields
+        if name.startswith("proactive_")
+    },
     "QQ_MESSAGE_IDLE_SECONDS": "qq_message_idle_seconds",
     "QQ_MESSAGE_MAX_WAIT_SECONDS": "qq_message_max_wait_seconds",
     **{"AGENT_" + name.upper(): name for name in QQSettings.model_fields},

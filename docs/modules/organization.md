@@ -63,3 +63,6 @@ OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维�
 `organization/episodes.py::EPISODE_PROMPT` 要求标题、摘要及 Highlight 内容跟随来源对话的主要语言，中文讨论使用简体中文；混合语言按主要讨论判断，不因简短英文问候或技术名词改用英文，来源精确引文保持原文。`organization/threads.py::THREAD_PROMPT` 对标题和 current_state 使用同一原则，以所提供 Episode 代表的讨论为依据，不继承英文提示词或旧 Thread 文本的语言。`REPAIR_PROMPT` 同样约束根据当前关联 Episode 重建的 current_state。
 
 规则由 `OrganizerModel.ask()` 随 system 提示发送，面板仍原样显示已保存内容；修改提示词不会自动翻译已存 Episode/Thread，也不触发重算或真实 API 调用。语言选择属于模型语义行为，现有离线流程测试验证分段、关联及修复契约，不代表语言质量的真实模型评测。验证路径见 `tests/test_episodes.py`、`tests/test_threads.py` 与 `tests/test_thread_repair.py`。
+# P4 Shadow 维护单元
+
+`OrganizationRuntime` 接受可选 `proactive` 服务；`_cycle()` 将其模型加入同一 `cycle_providers()`，Idle 时每轮最多运行一个 Proactive 单元，消耗原有 MaintenanceBudget。具体提取/判断/持久化均留在 proactive 子包，不由 Organizer 负责发送。`_background()` 将 Wake 的持久截止时间纳入等待，其他维护全关闭时 Shadow 仍可检查；前台抢占和退出保持同一 task.cancel()/await 路径。验证与边界见 [proactive.md](proactive.md) 和 `tests/test_proactive.py`。

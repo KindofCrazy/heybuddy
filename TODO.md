@@ -4,7 +4,14 @@
 
 - 使用 OpenPersona Luna 的 persona.json 配合通用交谈提示词，继续开发聊天、关系记忆、后台学习和统一只读检索；角色系统保持简单。
 - 保留现有 Runtime、工具权限、手动 Reflection 审批和被动回复边界。
-- Miru/Sherlock 等人格及旧短期状态系统暂缓完善，已有包和评测记录保留供后续对照；当前 JSON 角色不启动旧状态学习。
+- Miru 角色卡已删除；Sherlock 包及历史评测记录保留供后续对照，当前 Luna JSON 角色不启动旧状态学习。
+
+## Proactive 后续阶段
+
+- [ ] P4.3：独立 Composer、经过验证的主动发送渠道、Outbox/回执与不确定状态、明确许可后的 Social Window。
+- [ ] 主动输出进入后续对话上下文时标记来源，用户回复可接续，Learning 不把主动输出当成用户兴趣证据。
+- [ ] P4.4：明确提醒的确定性 Scheduler，独立于 Attention；自主工具任务另行定义权限、副作用与取消契约。
+- [ ] 审阅 Shadow 候选重复率、过期率、判断成本与明确反馈，完善跨同义 topic_key 的合并质量。
 
 ## 人格设定与表达评测
 

@@ -20,6 +20,7 @@ from personal_agent.dashboard.memory import MemoryView, markdown
 from personal_agent.dashboard.privacy import safe
 from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
 from personal_agent.runtime import ChatService
+from personal_agent.storage.proactive import ProactiveRepository
 
 ASSETS = Path(__file__).parent
 CHINESE = json.loads((ASSETS / "static" / "zh-CN.json").read_text(encoding="utf-8"))
@@ -94,6 +95,7 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
     @app.get("/threads")
     @app.get("/memory")
     @app.get("/runs")
+    @app.get("/proactive")
     async def home(request: Request):
         page = next(key for key, value in PAGES.items() if value[0] == request.url.path)
         _, _, heading, cards = PAGES[page]
@@ -147,6 +149,21 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
             return output(activity(repository, service, limit, cursor))
         except ValueError:
             return JSONResponse({"error": "invalid_cursor"}, status_code=422)
+
+    @app.get("/api/proactive/status")
+    async def proactive_status():
+        runtime = service.organization.proactive if service.organization else None
+        return output(runtime.status() if runtime else dict(enabled=False, mode="shadow"))
+
+    @app.get("/api/proactive/{kind}")
+    async def proactive_listing(
+        kind: Literal["proposals", "decisions"],
+        limit: int = Query(12, ge=1, le=20),
+        cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
+    ):
+        return output(
+            ProactiveRepository(sessions.store, sessions.agent.id).listing(kind, limit, cursor)
+        )
 
     # Async handlers keep SQLite on its owning event-loop thread.
     @app.get("/api/runs")

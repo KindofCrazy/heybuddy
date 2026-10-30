@@ -13,11 +13,13 @@ import { cardsPage } from "./details.js";
 import { memoryWorkspace } from "./memory-workspace.js";
 import { characterPortrait } from "./memory-character.js";
 import { status, timeline, replace } from "./monitor.js";
+import { proactivePage } from "./proactive.js";
 
 const content = (id) => document.getElementById(`content-${id}`);
 const open = (kind, id) => openObject(kind, id, true);
 let profile = null;
 const page = document.body.dataset.page || "overview";
+if (page === 'proactive') await proactivePage();
 
 async function collection(id, kind, limit, className) {
   const target = content(id);

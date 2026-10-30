@@ -94,3 +94,6 @@ Inspector 删除原“来源数据 / 只读、完整详情”底栏及 full-view
 总览始终显示 `/api/character` 的 summary。它直接取已加载 persona 的“简介”，如 Luna 的钢琴、代码与深夜交谈简介，不重新生成、不写回设定。缺少简介的旧角色包保持留空。名字后用边框标签显示有效短期 mood；没有有效状态时按用户要求显示 normal，仅作为界面默认值，不写入或推断实际状态。前端以普通 textContent 显示简介，不按界面语言翻译来源内容。
 
 Luna 的用户提供设定图保存于 `static/characters/luna.png`，原始 PNG 不改写。`/api/character` 仅对当前 Luna 返回固定同源 portrait_url，其他角色返回空值；总览显示可点击头像，`memory-character.js:character` 展示完整比例图片。展示资源不参与角色包编译、指纹或模型输入。CSP 的 img-src 允许同源图片，仍禁止外部图片与 data URL；Markdown 渲染及前端 prose 标签白名单继续排除 img。资源来源说明见 `static/characters/README.md`，只读和角色关联测试见 `tests/test_dashboard_portrait.py`。
+# Proactive 只读观测
+
+schema 16 新增 `/proactive` 页面和 `/api/proactive/status|proposals|decisions`。app 的异步 handler 复用当前 SQLiteStore/Agent，`ProactiveRepository.listing()` 采用有界 rowid 游标查询；状态只读 gate/wake 元数据，不初始化水位或启动模型。`static/proactive.js` 用 DOM textContent 展示来源和判断，用户点击才读取下一页；沿用 Host/Origin、隐私、CSP、响应大小和 GET/HEAD 限制。完整流程及测试见 [proactive.md](proactive.md) 与 `tests/test_proactive.py`。

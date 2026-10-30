@@ -1,12 +1,12 @@
 # 被动角色系统
 
-当前开发改用 OpenPersona 的 Luna persona.json，加上独立的通用交谈提示词，不运行角色状态学习。简单 JSON 角色的组成、完整执行路径、异常与验证见 [简化角色设定](persona.md)。开发示例显式选择 luna，库级默认仍关闭；Miru/Sherlock 包保留只读兼容，tests/test_qq_integration.py 对三种角色验证同一生产入口。
+当前开发使用 OpenPersona 的 Luna persona.json，加上独立的通用交谈提示词，不运行角色状态学习。简单 JSON 角色的组成、完整执行路径、异常与验证见 [简化角色设定](persona.md)。开发示例显式选择 luna，库级默认仍关闭；Miru 角色卡已删除，Sherlock 包保留兼容，tests/test_qq_integration.py 对 Luna/Sherlock 验证同一生产入口。
 
 以下描述旧 Markdown 角色的兼容实现；persona.json 存在时优先使用新的简单路径。旧 Sherlock 的逐段改写与真实调用记录见 [历史记录](../holmes-miru-prompt-rewrite.md)，不作为当前 Luna 的效果结论。
 
 ## 职责与组成
 
-角色定义采用 Miru 式单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。当前 Miru 包与保留的 Sherlock 包均只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。原 Miru 项目的路径、缓存与状态机制见 [Miru 角色系统说明](../miru-character-system.md)。
+旧 Markdown 角色采用单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。保留的 Sherlock 包只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。原 Miru 项目的路径、缓存与状态机制仅作历史参考，见 [Miru 角色系统说明](../miru-character-system.md)。
 
 - `character/models.py` 定义 CharacterPackage、Section、字节预算和短期状态。可选 profile 是 soul 解析出的普通字典，不是独立权威存储。
 - `character/loader.py::CharacterLoader.load()` 读取宿主选定的本地角色包，校验路径、编码、章节与大小，并计算内容指纹。

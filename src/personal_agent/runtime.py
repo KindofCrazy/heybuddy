@@ -24,6 +24,7 @@ from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.organization.provider import OrganizerModel
 from personal_agent.organization.runtime import OrganizationRuntime
 from personal_agent.organization.threads import ThreadOrganizer
+from personal_agent.proactive.runtime import ProactiveRuntime
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
 from personal_agent.reflection.service import ReflectionService
@@ -32,6 +33,7 @@ from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.images import SQLiteImages
 from personal_agent.storage.learning import LearningRepository
+from personal_agent.storage.proactive import ProactiveRepository
 from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.storage.threads import ThreadRepository
@@ -51,6 +53,10 @@ class ChatService:
     qq_status: Callable[[], dict] | None = None
     observer_only: bool = False
 
+    def note_input(self) -> None:
+        if self.organization is not None and self.organization.proactive is not None:
+            self.organization.proactive.activity_epoch += 1
+
     async def foreground(self) -> None:
         if self.organization is not None:
             await self.organization.foreground()
@@ -65,6 +71,7 @@ class ChatService:
         if self.observer_only:
             raise RuntimeError("Observer-only service cannot start a Run")
         self.foreground_active = True
+        self.note_input()
         try:
             await self.foreground()
             if images:
@@ -189,6 +196,20 @@ def assemble_chat(
                 agent.provider, settings.context_budget(), settings.organization_policy()
             ),
         ),
+        proactive=ProactiveRuntime(
+            ProactiveRepository(sessions.store, sessions.agent.id),
+            OrganizerModel(
+                agent.provider,
+                settings.context_budget(),
+                OrganizationPolicy(
+                    input_tokens=settings.proactive_input_tokens,
+                    output_tokens=settings.proactive_output_tokens,
+                    timeout_seconds=settings.proactive_timeout_seconds,
+                ),
+            ),
+            settings.proactive_policy(),
+            initialize=not observer_only,
+        ),
     )
     return ChatService(
         agent, sessions, reflection, automation, organization, observer_only=observer_only
@@ -214,6 +235,13 @@ async def open_chat(
             observer_only=observer_only,
         )
         try:
+            if (
+                not observer_only
+                and service.organization is not None
+                and service.organization.proactive is not None
+                and service.organization.proactive.policy.enabled
+            ):
+                service.organization.schedule(sessions.current.id)
             yield service
         finally:
             await service.close()

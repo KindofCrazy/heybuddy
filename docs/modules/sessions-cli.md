@@ -88,3 +88,6 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 ## CLI 资源与命令
 
 生产 run_cli() 和兼容 _run_session() 都将 open_chat 装配的同一个 ChatService 交给 chat(service)。CLI 拥有 console.AsyncInput，只在存在异步维护时创建 daemon 输入桥，并在退出 finally 关闭；open_chat 最终关闭维护资源。chat 仍接受分开的 Agent/服务参数供离线嵌入，此时它负责关闭自己组装的轻量 Service。cli_commands.MaintenanceCommands 处理 Episode/Thread/Learning/Curator/Character 命令与共享预算；Core Agent 不理解命令。测试见 test_p2_cli.py 的同实例/关闭归属和 test_organization_runtime.py 的 EOF/抢占。
+# Proactive 可信命令
+
+`main._chat()` 在普通 Agent.run 之前分派 `/proactive`，先沿用 foreground() 抢占维护；`MaintenanceCommands.proactive_command()` 提供 status/proposals/decisions 只读查询、显式 retry，以及受 MaintenanceBudget 约束的一次 run。命令不进入模型用户消息，不授予工具权限，也不进行发送；完整语法、执行路径、错误和离线验证见 [proactive.md](proactive.md)。

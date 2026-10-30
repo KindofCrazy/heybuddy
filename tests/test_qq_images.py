@@ -323,7 +323,7 @@ async def test_images_remain_in_same_character_pipeline(state, tmp_path):
         api_key="synthetic",
         model="synthetic",
         context_window=131072,
-        character_id="miru",
+        character_id="luna",
         memory_learning_enabled=False,
         memory_automation="off",
         memory_retrieval_llm_preflight=False,

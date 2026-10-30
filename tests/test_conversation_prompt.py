@@ -11,7 +11,7 @@ from personal_agent.core.prompts import CONVERSATION_PROMPT
 from personal_agent.reflection import service as reflection
 
 
-@pytest.mark.parametrize("character_id", [None, "luna", "miru", "sherlock_bbc"])
+@pytest.mark.parametrize("character_id", [None, "luna", "sherlock_bbc"])
 def test_shared_style_is_in_single_system_once_for_default_and_character_chat(character_id):
     character = (
         CharacterContextCompiler(CharacterLoader().load(character_id)) if character_id else None

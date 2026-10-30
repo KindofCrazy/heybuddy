@@ -12,6 +12,26 @@ class MaintenanceCommands:
     def __init__(self, runtime: OrganizationRuntime) -> None:
         self.runtime = runtime
 
+    async def proactive_command(self, text: str) -> dict:
+        service = self.runtime.proactive
+        if service is None:
+            return {"enabled": False}
+        if text == "status":
+            return service.status()
+        if text in {"proposals", "decisions"}:
+            return service.repository.listing(text)
+        if text == "retry":
+            return service.retry()
+        if text != "run":
+            return {"usage": "/proactive status|proposals|decisions|run|retry"}
+        budget = MaintenanceBudget(self.runtime.episodes.policy, self.runtime.clock)
+        with cycle_providers([service.model], budget):
+            try:
+                async with asyncio.timeout(self.runtime.episodes.policy.maintenance_seconds):
+                    return {**await service.run(), "budget": budget.report()}
+            except TimeoutError:
+                return {"outcome": "budget_exhausted", "error_code": "maintenance_timeout"}
+
     async def command(self, stream_id: str, text: str, write: Callable[[str], None]) -> None:
         parts = text.split()
         if parts and parts[0] == "/thread":

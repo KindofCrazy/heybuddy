@@ -20,6 +20,7 @@ from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.episodes import EpisodeOrganizer
 from personal_agent.organization.models import OrganizationError
 from personal_agent.organization.threads import ThreadOrganizer
+from personal_agent.proactive.runtime import ProactiveRuntime
 from personal_agent.storage.schedule import ScheduleRepository
 
 
@@ -33,6 +34,7 @@ class OrganizationRuntime:
         learning: MemoryLearningService | None = None,
         curator: MemoryCurator | None = None,
         character_state: CharacterStateService | None = None,
+        proactive: ProactiveRuntime | None = None,
     ) -> None:
         self.episodes = episodes
         self.automation = automation
@@ -41,6 +43,9 @@ class OrganizationRuntime:
         self.learning = learning
         self.curator = curator
         self.character_state = character_state
+        self.proactive = proactive
+        if proactive is not None:
+            proactive.clock = self.clock
         self._learning_first = True
         self._dirty_yield_to_learning = False
         self.schedule_repository = ScheduleRepository(episodes.repository)
@@ -154,6 +159,8 @@ class OrganizationRuntime:
             models.append(self.learning.model)
         if self.character_state and self.character_state.policy.enabled:
             models.append(self.character_state.model)
+        if self.proactive and self.proactive.policy.enabled:
+            models.append(self.proactive.model)
         with cycle_providers(models, budget):
             batches = attempts = 0
             successes = set()
@@ -163,6 +170,7 @@ class OrganizationRuntime:
             curator_ran = False
             character_ran = False
             recovery_ran = False
+            proactive_ran = False
             learning_first = self._learning_first or self._dirty_yield_to_learning
             learning_capacity = bool(
                 self.learning
@@ -198,6 +206,14 @@ class OrganizationRuntime:
                         if budget.clock.monotonic() - budget.started >= policy.maintenance_seconds:
                             budget.exhausted = True
                             break
+                        if idle and self.proactive and not proactive_ran and self.proactive.ready():
+                            proactive_ran = True
+                            attempts += 1
+                            if not observe(
+                                "proactive", await self._execute("proactive", self.proactive.run())
+                            ):
+                                break
+                            continue
                         if (
                             idle
                             and self.learning
@@ -405,7 +421,8 @@ class OrganizationRuntime:
                 )
             policy = self.episodes.policy
             p3 = bool(self.character_state and self.character_state.policy.enabled)
-            if not policy.enabled and not p2 and not p3:
+            p4 = bool(self.proactive and self.proactive.policy.enabled)
+            if not policy.enabled and not p2 and not p3 and not p4:
                 return
             while not self._foreground:
                 if p2:
@@ -418,6 +435,8 @@ class OrganizationRuntime:
                         await self.clock.sleep(policy.cooldown_seconds)
                         continue
                 delays = [policy.check_seconds]
+                if p4:
+                    delays.append(self.proactive.wake.delay(self.clock.now()))
                 if remaining > 0:
                     delays.append(remaining)
                 if cooldown:

@@ -1489,3 +1489,6 @@ footer:not(.drawer-footer) {
 .page-memory .tile-jobs .nested-grid {
   grid-template-columns: minmax(0, 1fr);
 }
+/* Proactive audit lists remain user-paginated and read-only. */
+.page-proactive .card { grid-column: 1 / -1; }
+.page-proactive pre { white-space: pre-wrap; overflow-wrap: anywhere; }

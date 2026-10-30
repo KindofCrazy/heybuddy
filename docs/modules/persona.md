@@ -31,7 +31,7 @@ Luna 指南在上游四个主题的基础上，吸收用户提供的 Miru 情绪
 
 静态提示词超过角色预算直接报错，不静默截断。完整请求仍经过 ContextBudget。文件只在装配时读取，修改后重启生效。Luna 背景是虚构角色设定，不作为用户关系事实；行为指南已将上游“刚听过歌曲、工作中发生的事情”等表述适配为有证据才陈述的现实活动。关系认识仍由 persona.md 与既有证据校验机制维护。
 
-旧 Miru/Sherlock Markdown 包和其状态模块保留兼容，详见 [Character](character.md)。这次不改模型的 reasoning 参数，不通过离线测试宣称自然度已改善。
+旧 Sherlock Markdown 包和其状态模块保留兼容，Miru 角色卡已移除，详见 [Character](character.md)。角色卡移除不修改模型的 reasoning 参数，不通过离线测试宣称自然度已改善。
 
 ## 阅读与验证
 

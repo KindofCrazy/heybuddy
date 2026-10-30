@@ -28,7 +28,9 @@ P1 默认自动恢复上次选中的内部 Conversation Stream，直接输入即
 
 [当前记忆系统与模型工具](docs/memory-and-tools.md) 说明 persona.md 与 soul.md 的分工、记忆存储/检索/更新路径，以及默认工具和逐 Run 授权。
 
-当前开发使用 [Luna persona.json](src/personal_agent/character/packages/luna/persona.json)，配置示例为 `AGENT_CHARACTER_ID=luna`。设定来自 [OpenPersona 的 ai-girlfriend 预设](https://github.com/acnlabs/OpenPersona/blob/main/presets/ai-girlfriend/persona.json)，已整理为中文并保留 MIT 声明，详见 [来源与适配](src/personal_agent/character/packages/luna/SOURCE.md)。原文件中的语音、自拍、主动联系和工具授权不随角色启用，实际能力继续由 heybuddy 提供。Miru/Sherlock 的完善与评测暂列入 [TODO](TODO.md)。
+当前开发使用 [Luna persona.json](src/personal_agent/character/packages/luna/persona.json)，配置示例为 `AGENT_CHARACTER_ID=luna`。设定来自 [OpenPersona 的 ai-girlfriend 预设](https://github.com/acnlabs/OpenPersona/blob/main/presets/ai-girlfriend/persona.json)，已整理为中文并保留 MIT 声明，详见 [来源与适配](src/personal_agent/character/packages/luna/SOURCE.md)。Miru 角色卡已移除，旧对照文档仅作历史记录；Sherlock 包和评测保留。原文件中的语音、自拍、主动联系和工具授权不随角色启用。
+
+[Proactive Shadow](docs/modules/proactive.md) 实现 P4.1/P4.2：从新 Run/Thread 发现有证据的候选，维护取消、完成和失效，并在有界后台进行 Wake/Attention 判断。默认开启，可用 `/proactive status|proposals|decisions|run|retry` 查看或检查；`AGENT_PROACTIVE_ENABLED=false` 可关闭。Observatory 新增 `/proactive` 只读页面。当前只记录建议，不发送主动消息或执行任务，首次开启不补学旧历史。
 
 [OpenPersona 组装对照](docs/openpersona-prompt-assembly.md) 解释 injection.md 与 SKILL.md 的区别、完整 behavior-guide.md 怎样参与编译，以及当前身份/背景、表达、指南和通用聊天规则的顺序。
 
@@ -215,7 +217,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → runtime.open_application → SQLiteStore.initialize(schema 15) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → runtime.open_application → SQLiteStore.initialize(schema 16) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -229,7 +231,7 @@ main → runtime.open_application → SQLiteStore.initialize(schema 15) / recove
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前使用 schema 15；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加 Agent 隔离的图片正文与 QQ 待处理附件字段；旧迁移定义不改；旧 Journal/Summary/Reflection 原位保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 16；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加图片正文与 QQ 附件字段，16 追加 Proactive Shadow 水位、候选和判断审计；旧迁移定义不改，原 Journal/Summary/Reflection 保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 

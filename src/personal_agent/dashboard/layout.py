@@ -20,4 +20,14 @@ PAGES = {
     ),
     "memory": ("/memory", "Memory", "Memory", (CARDS[4], CARDS[5])),
     "runs": ("/runs", "Runs", "Runs", (("runs", "Runs", "FROM THE SOURCE"),)),
+    "proactive": (
+        "/proactive",
+        "Proactive",
+        "Proactive",
+        (
+            ("proactive-status", "Shadow status", "SHADOW MODE"),
+            ("proposals", "Opportunities", "EVIDENCE / LIFECYCLE"),
+            ("decisions", "Decisions", "WAKE / ATTENTION"),
+        ),
+    ),
 }

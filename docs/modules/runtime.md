@@ -43,3 +43,6 @@ OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占
 ## 共享图片输入
 
 `ChatService.run(..., images=...)` 将不可变图片引用传给同一 Agent。`open_chat()` 为 OpenAIProvider 注入绑定当前 Agent 的 SQLiteImages 读取器，不在 QQ Adapter 新建视觉模型/人格/学习器；包加载与维护配置不变。全路径及验证见[图片输入](images.md)。
+# Proactive Shadow 接线（schema 16）
+
+`assemble_chat()` 增加 `ProactiveRuntime`，复用 Provider/ContextBudget；启用时初始化增量水位，只读装配不写。`open_chat()` 在 Shadow 开启时启动现有维护任务，不创建独立模型循环。`ChatService.note_input()` 以及 QQ 收件后同步调用使等待中的 Attention 建议失效；`run()` 继续优先 await foreground() 抢占维护。`close()` 沿用维护任务退出，不产生主动投递。完整路径、配置和离线验证见 [proactive.md](proactive.md)。
