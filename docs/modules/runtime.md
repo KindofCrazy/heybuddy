@@ -48,3 +48,7 @@ OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占
 # Proactive Shadow 接线（schema 16）
 
 `assemble_chat()` 增加 `ProactiveRuntime`，复用 Provider/ContextBudget；启用时初始化增量水位，只读装配不写。`open_chat()` 在 Shadow 开启时启动现有维护任务，不创建独立模型循环。`ChatService.note_input()` 以及 QQ 收件后同步调用使等待中的 Attention 建议失效；`run()` 继续优先 await foreground() 抢占维护。`close()` 沿用维护任务退出，不产生主动投递。完整路径、配置和离线验证见 [proactive.md](proactive.md)。
+
+# Composer 与离线投递装配
+
+`assemble_chat()` 为当前 Agent 建立 OutboxRepository，在 Agent.context 构造前设置 SessionManager.notice_factory，并将 OutboundRuntime 接入 ProactiveRuntime.outbound。角色 callback 只读编译当前 Character，Composer 复用相同 model/维护预算。非 observer 装配执行 recover() 冻结未完成草稿/投递，不调用 Sender；默认上下文排除 Fake 回执。真实渠道 Adapter 仍无主动发送接线。完整调用路径、状态和验证见 [outbox.md](outbox.md)。

@@ -10,6 +10,7 @@ from personal_agent.core.models import Model
 
 class ProactivePolicy(Model):
     enabled: bool = True
+    compose_enabled: bool = True
     input_tokens: int = Field(default=16384, ge=4096, le=65536)
     output_tokens: int = Field(default=4096, ge=256, le=16384)
     timeout_seconds: float = Field(default=30, gt=0, le=120, allow_inf_nan=False)

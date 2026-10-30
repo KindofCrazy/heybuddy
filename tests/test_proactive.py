@@ -361,7 +361,9 @@ def test_atomic_migration_15_to_16_and_progress_cas(tmp_path, monkeypatch):
             seed(store, sessions.current.id, "历史保留")
     with SQLiteStore(path) as store:
         store.initialize()
-        assert store._connection.execute("PRAGMA user_version").fetchone()[0] == 16
+        assert (
+            store._connection.execute("PRAGMA user_version").fetchone()[0] == storage.SCHEMA_VERSION
+        )
         assert len(store.list_runs(sessions.current.id)) == 1
         service = proactive(store)
         seed(store, sessions.current.id, "明天测试 HeyBuddy")

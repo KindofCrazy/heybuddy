@@ -97,3 +97,7 @@ Luna 的用户提供设定图保存于 `static/characters/luna.png`，原始 PNG
 # Proactive 只读观测
 
 schema 16 新增 `/proactive` 页面和 `/api/proactive/status|proposals|decisions`。app 的异步 handler 复用当前 SQLiteStore/Agent，`ProactiveRepository.listing()` 采用有界 rowid 游标查询；状态只读 gate/wake 元数据，不初始化水位或启动模型。`static/proactive.js` 用 DOM textContent 展示来源和判断，用户点击才读取下一页；沿用 Host/Origin、隐私、CSP、响应大小和 GET/HEAD 限制。完整流程及测试见 [proactive.md](proactive.md) 与 `tests/test_proactive.py`。
+
+# 草稿与模拟尝试
+
+`/api/proactive/outbox|attempts` 通过 OutboxRepository.listing() 绑定当前 Agent，以至多 20 条 rowid 游标返回草稿和模拟尝试；`/proactive` 增加对应卡片与模式标记。HTTP 没有生成、发送或重试端点；复用原 Host/Origin、隐私、响应限制和只读策略，详情仅通过 DOM 文本展示。完整执行路径与 API 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`。

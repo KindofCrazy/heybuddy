@@ -20,6 +20,7 @@ from personal_agent.dashboard.memory import MemoryView, markdown
 from personal_agent.dashboard.privacy import safe
 from personal_agent.dashboard.repository import NotFound, ObservatoryRepository
 from personal_agent.runtime import ChatService
+from personal_agent.storage.outbox import OutboxRepository
 from personal_agent.storage.proactive import ProactiveRepository
 
 ASSETS = Path(__file__).parent
@@ -157,12 +158,15 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
 
     @app.get("/api/proactive/{kind}")
     async def proactive_listing(
-        kind: Literal["proposals", "decisions"],
+        kind: Literal["proposals", "decisions", "outbox", "attempts"],
         limit: int = Query(12, ge=1, le=20),
         cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
     ):
+        repository_type = (
+            OutboxRepository if kind in {"outbox", "attempts"} else ProactiveRepository
+        )
         return output(
-            ProactiveRepository(sessions.store, sessions.agent.id).listing(kind, limit, cursor)
+            repository_type(sessions.store, sessions.agent.id).listing(kind, limit, cursor)
         )
 
     # Async handlers keep SQLite on its owning event-loop thread.

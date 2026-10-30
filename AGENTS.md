@@ -2,7 +2,7 @@
 
 ## 当前实现范围与历史阶段说明
 
-当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 16，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
+当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 17，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
 
 ## NapCat 一对一渠道明确授权
 
@@ -13,6 +13,8 @@
 2026-10-30 用户明确当前开发角色为 Luna，并要求删除 Miru 角色卡。开发配置与示例显式选择 luna，库级默认仍为 none；保留已有 Sherlock 包和历史评测记录。Luna 关系由实际互动形成，不默认继承其他角色的关系阶段。
 
 ## P4 Shadow 明确授权
+
+2026-10-30 用户同意继续 P4.3 离线完整链路：Composer、Outbox、Fake Sender、发送前复核、主动消息来源隔离与对话接续。允许默认生成 Shadow 草稿和可信 CLI 显式本地模拟，schema 17 保存草稿/尝试；真实渠道发送仍关闭，模拟回执不得冒充真实投递或用户兴趣。真实模型验证仍须另行授权。
 
 2026-10-30 用户要求实现 Proactive 设计，并明确默认开启 Shadow。本次实现 P4.1/P4.2 Shadow：有界增量 Opportunity Scout、SQLite Proposal 生命周期、Wake/Attention、只读 Observatory 与可信 CLI 检查，复用现有维护预算和前台抢占。默认不开启历史补学；主动内容不得作为用户证据。Shadow 不发送消息、不执行后台工具、不创建 Scheduler，不改变 MemoryFS 权限或手动审批。真实渠道发送和付费验证不在本次交付范围。
 

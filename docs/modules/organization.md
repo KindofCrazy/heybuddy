@@ -66,3 +66,7 @@ OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维�
 # P4 Shadow 维护单元
 
 `OrganizationRuntime` 接受可选 `proactive` 服务；`_cycle()` 将其模型加入同一 `cycle_providers()`，Idle 时每轮最多运行一个 Proactive 单元，消耗原有 MaintenanceBudget。具体提取/判断/持久化均留在 proactive 子包，不由 Organizer 负责发送。`_background()` 将 Wake 的持久截止时间纳入等待，其他维护全关闭时 Shadow 仍可检查；前台抢占和退出保持同一 task.cancel()/await 路径。验证与边界见 [proactive.md](proactive.md) 和 `tests/test_proactive.py`。
+
+# P4.3 草稿生成
+
+ProactiveRuntime 发现已提交 notify 且尚无 Outbox 时，在下一有界维护单元调用 OutboundRuntime.compose()；Composer 复用已经由 cycle_providers 包装的同一个 model。不会在 Attention 内额外串联请求，也不由维护循环自动调用 Fake Sender。默认 `AGENT_PROACTIVE_COMPOSE_ENABLED=true`，仍接受原 Idle、冷却、前台取消和维护额度。异常、领取与取消路径见 [outbox.md](outbox.md) 及 `tests/test_outbound.py`。

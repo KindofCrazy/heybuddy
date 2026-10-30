@@ -11,7 +11,7 @@ export async function proactivePage() {
       node("p", "", "Observes opportunities and decisions; sends no messages or tasks."),
     );
   } catch { status.replaceChildren(errorBox()); }
-  for (const kind of ["proposals", "decisions"]) {
+  for (const kind of ["proposals", "decisions", "outbox", "attempts"]) {
     const target = document.getElementById(`content-${kind}`);
     const list = node("div", "stack");
     target.replaceChildren(list);
@@ -22,16 +22,17 @@ export async function proactivePage() {
         for (const item of data.items) {
           const entry = node("article", "object-card");
           entry.append(
-            node("h3", "", item.title || ui(item.action)),
+            node("h3", "", item.title || ui(item.action || item.status)),
             badge(item.status || item.action),
-            node("p", "", item.context || item.reason),
+            node("p", "", item.context || item.reason || item.text || item.error_code || ""),
+            node("p", "muted", item.mode || ""),
             node("p", "muted", time(item.updated_at || item.created_at)),
           );
           if (item.next_review_at)
             entry.append(node("p", "muted", `${ui("Next review")}: ${time(item.next_review_at)}`));
           const detail = node("details");
           detail.append(node("summary", "", ui("Evidence and decision")),
-            node("pre", "", JSON.stringify(item.sources || item.payload, null, 2)));
+            node("pre", "", JSON.stringify(item.sources || item.payload || item, null, 2)));
           entry.append(detail);
           list.append(entry);
         }

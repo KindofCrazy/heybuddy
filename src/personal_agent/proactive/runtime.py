@@ -1,5 +1,7 @@
 """Bounded proactive units in the Host's serial, preemptible maintenance lane."""
 
+from typing import TYPE_CHECKING
+
 from personal_agent.core.history import HistoryError
 from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError
@@ -9,6 +11,9 @@ from personal_agent.proactive.models import AttentionDecision, ProactivePolicy, 
 from personal_agent.proactive.scout import OpportunityScout
 from personal_agent.proactive.wake import WakeCoordinator
 from personal_agent.storage.proactive import ProactiveRepository, stamp
+
+if TYPE_CHECKING:
+    from personal_agent.proactive.outbound import OutboundRuntime
 
 
 class ProactiveRuntime:
@@ -24,6 +29,7 @@ class ProactiveRuntime:
         self.repository, self.model, self.policy = repository, model, policy
         self.clock = clock or SystemClock()
         self.activity_epoch = 0
+        self.outbound: OutboundRuntime | None = None
         self.scout = OpportunityScout(model)
         self.attention = AttentionEngine(model)
         self.wake = WakeCoordinator(repository, policy)
@@ -54,7 +60,9 @@ class ProactiveRuntime:
         gate = self.gate()
         if gate == "unprocessed_evidence":
             return True
-        return gate == "eligible" and bool(self.repository.due(self.clock.now(), 1))
+        return gate == "eligible" and bool(
+            self.repository.due(self.clock.now(), 1) or (self.outbound and self.outbound.ready())
+        )
 
     def status(self) -> dict:
         return dict(
@@ -64,6 +72,7 @@ class ProactiveRuntime:
             state=self.repository.state(),
             next_check_seconds=self.wake.delay(self.clock.now()),
             outbound_enabled=False,
+            compose_enabled=self.policy.compose_enabled,
         )
 
     async def run(self) -> dict:
@@ -97,6 +106,8 @@ class ProactiveRuntime:
             return dict(outcome="completed", stage="expiry", expired=expired)
         if gate != "eligible":
             return dict(outcome="no_proactive_work", gate=gate)
+        if self.outbound is not None and self.outbound.ready():
+            return await self.outbound.compose()
         proposals = self.repository.due(at, self.policy.candidate_limit)
         if not proposals:
             return dict(outcome="no_proactive_work")

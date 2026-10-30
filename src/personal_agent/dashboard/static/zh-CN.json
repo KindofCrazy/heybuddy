@@ -1,4 +1,8 @@
 {
+  "Message drafts": "消息草稿",
+  "Simulation attempts": "模拟投递记录",
+  "COMPOSER / OUTBOX": "生成 / 待投递记录",
+  "LOCAL SIMULATION": "仅本地模拟",
   "Observes opportunities and decisions; sends no messages or tasks.": "只观察机会与判断，不发送消息或执行任务。",
   "Proactive": "主动机会",
   "Shadow status": "观察状态",

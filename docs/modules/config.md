@@ -122,3 +122,7 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 # Proactive Shadow 配置
 
 `Settings.proactive_policy()` 将 `AGENT_PROACTIVE_*` 可信配置转为 `ProactivePolicy`。默认开启 Shadow，没有主动发送模式；字段通过 `ENV_FIELDS` 加载，仍不搜索其他凭证路径。预算、安静窗口、时区偏移、候选上限及执行路径见 [proactive.md](proactive.md)。
+
+# Composer 预览开关
+
+`AGENT_PROACTIVE_COMPOSE_ENABLED` 默认 true，由 Settings.proactive_policy() 传入 ProactivePolicy.compose_enabled，控制已提交 notify 后的草稿生成。它不授予投递权限，当前没有真实 Sender 配置；`AGENT_PROACTIVE_ENABLED=false` 仍关闭整个流水线。离线模拟只能通过可信 CLI 显式命令或 Harness 许可，详见 [outbox.md](outbox.md)。

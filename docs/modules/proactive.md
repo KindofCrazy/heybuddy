@@ -4,7 +4,7 @@
 
 P4.1/P4.2 为现有应用增加未来关注事项，不增加长期事实存储、模型工具权限或外部发送能力。`proactive/models.py` 定义 Host 策略、真实用户来源、候选变更和 Attention 建议；`scout.py::OpportunityScout` 提取机会；`attention.py::AttentionEngine` 判断沉默、稍后检查、建议交流或建议任务。`wake.py::WakeCoordinator` 从持久截止时间计算检查间隔和安静窗口。`proactive/runtime.py::ProactiveRuntime` 编排一次有界检查，`storage/proactive.py::ProactiveRepository` 绑定 Agent，保存进度、Proposal 和审计。
 
-当前只生成 follow_up 候选。外部事件、Social Window、Composer、Outbox/Delivery、明确提醒和自主工具任务留给后续阶段；没有后台发送接口。notify 和 propose_task 都只是 Shadow 建议，不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
+当前只生成 follow_up 候选。notify 可在下一有界维护单元生成角色口吻草稿；[Composer 与离线 Outbox](outbox.md) 提供明确标记的 Fake Sender 和接续 Harness。外部事件、Social Window、真实投递、明确提醒和自主工具任务留给后续阶段。notify 和 propose_task 不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
 
 SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
 

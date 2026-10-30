@@ -120,3 +120,7 @@ BASE/EXTRACT/SELECT/CONSOLIDATE 经过固定开发集对照后保留原版。候
 ## 共用机制与审批职责
 
 reflection/provider.py 的 ReflectionModel 持有请求预算、Provider 与 usage，structured_request() 保持原 JSON 封装和各阶段错误码。ReflectionService 负责手动计划和审批，只组合 model.ask、memory_evidence 与 verify_candidates；不再把私有方法作为 P2/P3 复用入口。Character State 直接依赖 Provider 与 core.evidence，不构造长期记忆 Candidate。证据规则见 [evidence.md](evidence.md)，原手动审批与跨存储部分发布测试继续位于 tests/test_reflection.py。
+
+# 主动内容与用户证据
+
+Outbox/Context notices 不进入 Reflection 或 P2 的原始 Run 来源，不得将助手主动发言、草稿或模拟回执当作用户兴趣/关系事实。既有 ReflectionService.EXTRACT、P2 提示词、精确引文和 confirmed 用户证据校验保持，冻结评测基线不改；原始用户内容仍具有正常证据资格。隔离路径和 Journal/Recall/Scout 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`；模糊回复的语义判断仍需要真实审阅。

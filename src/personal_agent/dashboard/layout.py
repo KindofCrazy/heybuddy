@@ -28,6 +28,8 @@ PAGES = {
             ("proactive-status", "Shadow status", "SHADOW MODE"),
             ("proposals", "Opportunities", "EVIDENCE / LIFECYCLE"),
             ("decisions", "Decisions", "WAKE / ATTENTION"),
+            ("outbox", "Message drafts", "COMPOSER / OUTBOX"),
+            ("attempts", "Simulation attempts", "LOCAL SIMULATION"),
         ),
     ),
 }

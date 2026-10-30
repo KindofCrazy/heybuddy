@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 from personal_agent.organization.budget import MaintenanceBudget, cycle_providers
 from personal_agent.organization.runtime import OrganizationRuntime
+from personal_agent.proactive.delivery import DeliveryGrant, FakeSender
 
 
 class MaintenanceCommands:
@@ -20,15 +21,36 @@ class MaintenanceCommands:
             return service.status()
         if text in {"proposals", "decisions"}:
             return service.repository.listing(text)
+        if text in {"outbox", "attempts"} and service.outbound is not None:
+            return service.outbound.repository.listing(text)
+        parts = text.split()
+        if len(parts) == 2 and parts[0] == "simulate" and service.outbound is not None:
+            conversation_id = service.outbound.conversation()
+            grant = DeliveryGrant(
+                enabled=True,
+                conversation_id=conversation_id,
+                recipient="simulation:" + conversation_id,
+            )
+            return await service.outbound.simulate(parts[1], FakeSender(), lambda: grant)
         if text == "retry":
             return service.retry()
-        if text != "run":
-            return {"usage": "/proactive status|proposals|decisions|run|retry"}
+        retry_compose = len(parts) == 2 and parts[0] == "retry-compose"
+        if text != "run" and not retry_compose:
+            return {
+                "usage": "/proactive status|proposals|decisions|outbox|attempts|run|retry"
+                " | simulate <outbox_id> (local simulation only)"
+                " | retry-compose <outbox_id>"
+            }
         budget = MaintenanceBudget(self.runtime.episodes.policy, self.runtime.clock)
         with cycle_providers([service.model], budget):
             try:
                 async with asyncio.timeout(self.runtime.episodes.policy.maintenance_seconds):
-                    return {**await service.run(), "budget": budget.report()}
+                    report = (
+                        await service.outbound.compose(parts[1])
+                        if retry_compose and service.outbound is not None
+                        else await service.run()
+                    )
+                    return {**report, "budget": budget.report()}
             except TimeoutError:
                 return {"outcome": "budget_exhausted", "error_code": "maintenance_timeout"}
 

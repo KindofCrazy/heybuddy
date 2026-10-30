@@ -9,6 +9,7 @@ from personal_agent.core.history import ConversationHistory, HistoryError, InMem
 from personal_agent.core.images import ImageRef
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
+from personal_agent.core.outbound import ConversationNotices
 from personal_agent.core.prompts import with_conversation_prompt
 from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
 from personal_agent.core.tracing import RunTrace
@@ -62,6 +63,7 @@ class ContextBuilder:
         optional_history_tokens: int = 12288,
         character: CharacterContext | None = None,
         trace: RunTrace | None = None,
+        notices: ConversationNotices | None = None,
     ) -> None:
         self.system_prompt = (
             ""
@@ -75,6 +77,7 @@ class ContextBuilder:
         self.retriever = retriever
         self.character = character
         self.trace = trace
+        self.notices = notices
         if not 512 <= optional_history_tokens <= 32768:
             raise ValueError("Invalid optional history budget")
         self.optional_history_tokens = optional_history_tokens
@@ -174,6 +177,12 @@ class ContextBuilder:
             )
         if self.temporal is not None:
             injected.append(TextMessage(role="user", text=json.dumps(self.temporal())))
+        if self.notices is not None:
+            notices = self.notices.context()
+            if notices is not None:
+                injected.append(
+                    TextMessage(role="user", text=json.dumps(notices, ensure_ascii=False))
+                )
         role_system = [m.text for m in character_messages if m.role == "system"]
         system = (
             TextMessage(

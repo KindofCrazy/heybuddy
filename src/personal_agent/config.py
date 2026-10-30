@@ -38,6 +38,7 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     memory_max_bytes: int = Field(default=8192, ge=512, le=1_048_576)
     character_id: str = "none"
     proactive_enabled: bool = True
+    proactive_compose_enabled: bool = True
     proactive_input_tokens: int = Field(default=16384, ge=4096, le=65536)
     proactive_output_tokens: int = Field(default=4096, ge=256, le=16384)
     proactive_timeout_seconds: float = Field(default=30, gt=0, le=120)

@@ -93,3 +93,7 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 # Proactive 可信命令
 
 `main._chat()` 在普通 Agent.run 之前分派 `/proactive`，先沿用 foreground() 抢占维护；`MaintenanceCommands.proactive_command()` 提供 status/proposals/decisions 只读查询、显式 retry，以及受 MaintenanceBudget 约束的一次 run。命令不进入模型用户消息，不授予工具权限，也不进行发送；完整语法、执行路径、错误和离线验证见 [proactive.md](proactive.md)。
+
+# P4.3 离线 Outbox 命令
+
+原 `/proactive` 分派增加 outbox/attempts 只读分页、`simulate <id>` 和 `retry-compose <id>`。simulate 明确创建本地 FakeSender 和当前会话的模拟许可，不调用模型或真实 QQ/NapCat；retry-compose 在原维护预算内复核现有来源后重新生成，不能重发 uncertain 或 accepted。命令不写用户 Run。SessionManager.notice_factory 构造当前 Conversation 的只读 notices Protocol，默认排除模拟记录；测试 Harness 可显式开启并验证“还没做完”的接续。符号、错误与验证见 [outbox.md](outbox.md)。

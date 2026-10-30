@@ -24,6 +24,7 @@ from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.organization.provider import OrganizerModel
 from personal_agent.organization.runtime import OrganizationRuntime
 from personal_agent.organization.threads import ThreadOrganizer
+from personal_agent.proactive.outbound import OutboundRuntime
 from personal_agent.proactive.runtime import ProactiveRuntime
 from personal_agent.recall.service import Recall
 from personal_agent.recall.tools import register_recall_tools
@@ -33,6 +34,7 @@ from personal_agent.sessions import SessionManager
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.images import SQLiteImages
 from personal_agent.storage.learning import LearningRepository
+from personal_agent.storage.outbox import OutboundContext, OutboxRepository
 from personal_agent.storage.proactive import ProactiveRepository
 from personal_agent.storage.reflection import ReflectionRepository
 from personal_agent.storage.sqlite import SQLiteStore
@@ -110,6 +112,8 @@ def assemble_chat(
         )
     else:
         sessions.character = None
+    outbox = OutboxRepository(sessions.store, sessions.agent.id)
+    sessions.notice_factory = lambda conversation_id: OutboundContext(outbox, conversation_id)
     thread_repository = ThreadRepository(sessions.store, sessions.agent.id)
     sessions.retriever = ContextRetriever(
         thread_repository,
@@ -210,6 +214,21 @@ def assemble_chat(
             settings.proactive_policy(),
             initialize=not observer_only,
         ),
+    )
+
+    def persona_style() -> tuple[str, list[dict]]:
+        if sessions.character is None:
+            return "none", []
+        return sessions.character.package.fingerprint, [
+            dict(role=message.role, text=message.text) for message in sessions.character.compile("")
+        ]
+
+    organization.proactive.outbound = OutboundRuntime(
+        organization.proactive,
+        outbox,
+        lambda: sessions.current.id,
+        persona_style,
+        initialize=not observer_only,
     )
     return ChatService(
         agent, sessions, reflection, automation, organization, observer_only=observer_only

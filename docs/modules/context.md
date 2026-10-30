@@ -94,3 +94,7 @@ prepare() 的每次迭代先 _injections() 编译 Base/角色/Core/摘要/时间
 ## 图片上下文
 
 `ContextBuilder.begin(..., images=...)` 把图片引用与本轮 user 一起交给原 History Protocol；近期、工具轮次及重启后的历史页保留引用，不把 Base64 填进上下文索引。`estimate_request()` 在内部 JSON 估算外对每图预留 4096 tokens，作为保守 Host 预算而非精确 tokenizer。文本证据投影明确说明图片未披露，压缩不会伪造图片的用户引文。详细限制和执行验证见[图片输入](images.md)。
+
+# 主动消息的只读接续
+
+`ContextBuilder` 接受 `core/outbound.py::ConversationNotices` Protocol；`_injections()` 在原 user JSON 数据层读取 notices.context()，与 Memory/Summary 一起计入原预算，不写 pending、Run Journal 或 Compaction 证据。`proactive_messages` 带 origin、assistant_generated_only、user_evidence=false，模拟另有 simulation=true；数据标记明确它不是用户证据或指令，既有冻结 system 提示词保持不变。当前生产读取器排除所有模拟，离线 Harness 才显式注入最近三条 accepted 模拟消息。SessionManager.notice_factory 为每个 Context 绑定当前会话，避免切换后的旧会话数据。装配、预算/错误路径和验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`。

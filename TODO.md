@@ -8,8 +8,8 @@
 
 ## Proactive 后续阶段
 
-- [ ] P4.3：独立 Composer、经过验证的主动发送渠道、Outbox/回执与不确定状态、明确许可后的 Social Window。
-- [ ] 主动输出进入后续对话上下文时标记来源，用户回复可接续，Learning 不把主动输出当成用户兴趣证据。
+- [x] P4.3 离线链路：独立 Composer、Outbox/回执/不确定状态、显式 Fake Sender、来源隔离与有界上下文接续 Harness。
+- [ ] P4.3 真实渠道能力验证、明确许可后的实际投递和 Social Window；模拟回执不能自动升级成真实投递。
 - [ ] P4.4：明确提醒的确定性 Scheduler，独立于 Attention；自主工具任务另行定义权限、副作用与取消契约。
 - [ ] 审阅 Shadow 候选重复率、过期率、判断成本与明确反馈，完善跨同义 topic_key 的合并质量。
 
