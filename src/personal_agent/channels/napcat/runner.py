@@ -6,9 +6,10 @@ from contextlib import AsyncExitStack
 import httpx
 
 from personal_agent.channels.lifecycle import stop_on_termination
-from personal_agent.channels.napcat.events import parse_message
+from personal_agent.channels.napcat.events import parse_input_status, parse_message
 from personal_agent.channels.napcat.transport import NapCatTransport
 from personal_agent.channels.qq.adapter import QQAdapter
+from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.config import Settings
 from personal_agent.runtime import open_application
@@ -47,6 +48,7 @@ async def run_napcat(
                     transport,
                     QQImages(policy, client, SQLiteImages(sessions.store, sessions.agent.id)),
                     scope_id=settings.napcat_scope,
+                    humanizer=Humanizer(policy, length_based_gaps=True),
                 )
                 service.qq_status = lambda: {
                     "gateway": transport.state,
@@ -63,7 +65,17 @@ async def run_napcat(
                         adapter.start()
                         started.set()
 
+                last_status_stamp = 0
+
                 async def receive(payload: dict) -> None:
+                    nonlocal last_status_stamp
+                    status = parse_input_status(payload, settings)
+                    if status is not None:
+                        stamp, until = status
+                        if stamp >= last_status_stamp:
+                            last_status_stamp = stamp
+                            adapter.note_typing(until)
+                        return
                     await adapter.accept_message(parse_message(payload, settings, policy))
 
                 receiving = asyncio.create_task(transport.run(receive, ready), name="napcat-socket")

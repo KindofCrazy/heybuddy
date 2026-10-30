@@ -15,6 +15,38 @@ def numeric_id(value: object) -> str | None:
     return text if re.fullmatch(r"-?[0-9]{1,20}", text) else None
 
 
+def parse_input_status(payload: dict, account: NapCatSettings) -> tuple[int, float | None] | None:
+    """Presence is a scheduling hint, never journal text or user evidence."""
+    if (
+        not account.napcat_input_typing_enabled
+        or payload.get("post_type") != "notice"
+        or payload.get("notice_type") != "notify"
+        or payload.get("sub_type") != "input_status"
+        or numeric_id(payload.get("self_id")) != account.napcat_self_id
+        or numeric_id(payload.get("user_id")) != account.napcat_peer_id
+        or numeric_id(payload.get("group_id", 0)) != "0"
+    ):
+        return None
+    stamp, event_type, text = (
+        payload.get("time"),
+        payload.get("event_type"),
+        payload.get("status_text"),
+    )
+    if type(stamp) is not int or type(event_type) is not int or not 0 <= event_type <= 32:
+        return None
+    if not isinstance(text, str):
+        return None
+    try:
+        if len(text.encode("utf-8")) > 256:
+            return None
+        age = datetime.now(UTC).timestamp() - stamp
+        if not -1 <= age <= account.napcat_input_typing_ttl_seconds:
+            return None
+    except (UnicodeError, OverflowError):
+        return None
+    return stamp, stamp + account.napcat_input_typing_ttl_seconds if text.strip() else None
+
+
 def parse_message(payload: dict, account: NapCatSettings, policy: QQSettings) -> QQText | None:
     if (
         payload.get("post_type") != "message"

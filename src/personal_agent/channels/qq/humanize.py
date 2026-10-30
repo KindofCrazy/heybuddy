@@ -16,8 +16,9 @@ _BREAK = re.compile(r"""[。！？!?]+[”’」』）)\]"]*[ \t]*|\.(?=\s)|\r?\
 
 
 class Humanizer:
-    def __init__(self, settings: QQSettings) -> None:
+    def __init__(self, settings: QQSettings, *, length_based_gaps: bool = False) -> None:
         self.settings = settings
+        self.length_based_gaps = length_based_gaps
 
     def split(self, text: str) -> list[str]:
         """Never spend natural breaks at the expense of byte-bound content capacity."""
@@ -67,6 +68,8 @@ class Humanizer:
             if first
             else settings.qq_humanize_gap_seconds
         )
+        if not first and self.length_based_gaps:
+            base = max(base, len(text) * settings.qq_humanize_ms_per_char / 1000)
         factor = random.uniform(1 - settings.qq_humanize_jitter, 1 + settings.qq_humanize_jitter)
         delay = min(settings.qq_humanize_max_delay_seconds, base * factor)
         return max(0.0, delay - max(0.0, elapsed)) if first else delay

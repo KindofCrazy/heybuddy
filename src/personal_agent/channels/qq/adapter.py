@@ -33,13 +33,14 @@ class QQAdapter:
         images: QQImages | None = None,
         *,
         scope_id: str | None = None,
+        humanizer: Humanizer | None = None,
     ) -> None:
         self.settings = settings
         self.service = service
         self.inbox = inbox
         self.sender = sender
         self.images = images
-        self.humanizer = Humanizer(settings)
+        self.humanizer = humanizer or Humanizer(settings)
         if service.sessions is None:
             raise QQError("qq_sessions_required", fatal=True)
         if (
@@ -56,6 +57,32 @@ class QQAdapter:
         self._next_send = 0.0
         self._receipt_version = 0
         self._hybrid = HybridTurn()
+        self._turn_extensions: dict[int, float] = {}
+
+    def note_typing(self, until: float | None) -> None:
+        """Host-validated incoming presence can delay only an already queued turn."""
+        if self.closing:
+            return
+        turn = self.inbox.preview_turn(
+            self.conversation_id, self.settings, extend_after=self._turn_extensions
+        )
+        if turn is None or (turn.messages[0]["content"] or "").lstrip().startswith("/"):
+            return
+        sequence = turn.messages[-1]["sequence"]
+        now = time.time()
+        previous = self._turn_extensions.get(sequence, 0)
+        if until is None:
+            if not previous:
+                return
+            end = min(previous, now + self.settings.qq_message_idle_seconds)
+        else:
+            end = max(previous, until)
+        if end == previous:
+            return
+        self._turn_extensions[sequence] = end
+        self._hybrid.ready = ()
+        self._receipt_version += 1
+        self.wake.set()
 
     def start(self) -> None:
         if self.worker is not None:
@@ -98,6 +125,20 @@ class QQAdapter:
             # Preempt maintenance while receipts are still safely recoverable.
             if self.inbox.pending():
                 await self.service.foreground()
+            turn = (
+                self.inbox.preview_turn(
+                    self.conversation_id, self.settings, extend_after=self._turn_extensions
+                )
+                if self._turn_extensions
+                else None
+            )
+            if (
+                turn
+                and turn.deadline > time.time()
+                and self._turn_extensions.get(turn.messages[-1]["sequence"], 0) > time.time()
+            ):
+                await self._wait_for_input(turn.deadline - time.time())
+                continue
             if self.settings.qq_message_mode == "hybrid":
                 delay = await self._check_turn()
                 if delay is None:
@@ -110,6 +151,7 @@ class QQAdapter:
                 self.settings,
                 hold_after=self._hybrid.hold_after,
                 ready=self._hybrid.ready,
+                extend_after=self._turn_extensions,
             )
             if delay > 0:
                 await self._wait_for_input(delay)
@@ -120,6 +162,8 @@ class QQAdapter:
                 await self.wake.wait()
                 continue
             try:
+                for sequence in row.get("sequences", (row["sequence"],)):
+                    self._turn_extensions.pop(sequence, None)
                 result = await self._process(row)
             except asyncio.CancelledError:
                 if not row.get("execution_started"):
@@ -152,7 +196,10 @@ class QQAdapter:
     async def _check_turn(self) -> float | None:
         state = self._hybrid
         turn = self.inbox.preview_turn(
-            self.conversation_id, self.settings, hold_after=state.hold_after
+            self.conversation_id,
+            self.settings,
+            hold_after=state.hold_after,
+            extend_after=self._turn_extensions,
         )
         if turn is None:
             return 0

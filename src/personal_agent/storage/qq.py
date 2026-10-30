@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
@@ -97,6 +98,7 @@ class QQInbox:
         settings: QQSettings,
         *,
         hold_after: frozenset[int] = frozenset(),
+        extend_after: Mapping[int, float] | None = None,
     ) -> QQTurn | None:
         with self.store.reading() as db:
             rows = db.execute(
@@ -106,7 +108,9 @@ class QQInbox:
             ).fetchall()
         if not rows or rows[0]["conversation_id"] != conversation_id:
             return None
-        return plan_turn([dict(row) for row in rows], settings, hold_after=hold_after)
+        return plan_turn(
+            [dict(row) for row in rows], settings, hold_after=hold_after, extend_after=extend_after
+        )
 
     def claim_turn(
         self,
@@ -116,6 +120,7 @@ class QQInbox:
         now: float | None = None,
         hold_after: frozenset[int] = frozenset(),
         ready: tuple[int, ...] = (),
+        extend_after: Mapping[int, float] | None = None,
     ) -> tuple[dict | None, float]:
         """Plan and claim atomically; a positive delay leaves every receipt untouched."""
         with self.store._transaction() as db:
@@ -137,7 +142,12 @@ class QQInbox:
                 row = dict(rows[0])
                 sequences = (row["sequence"],)
             else:
-                turn = plan_turn([dict(item) for item in rows], settings, hold_after=hold_after)
+                turn = plan_turn(
+                    [dict(item) for item in rows],
+                    settings,
+                    hold_after=hold_after,
+                    extend_after=extend_after,
+                )
                 current = datetime.now(UTC).timestamp() if now is None else now
                 delay = turn.deadline - current
                 if delay > 0 and tuple(item["sequence"] for item in turn.messages) != ready:

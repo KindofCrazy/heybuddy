@@ -39,7 +39,27 @@ uv run personal-agent napcat --dashboard
 
 不需要 Observatory 时省略 `--dashboard`；面板默认地址为 [本机 Observatory](http://127.0.0.1:8765)，可用 `--dashboard-port 8766` 更换。启动后程序调用 `get_login_info` 核对小号，再开始消费收件；身份不符直接停止。
 
-NapCat 复用 `AGENT_QQ_*` 的队列、聚合、图片、拆条、超时、发送间隔和重连设置。默认静默 2.5 秒、首条起最多 8 秒聚合；普通回答最多四段，每段最多 1500 UTF-8 字节。默认 240 秒是本地待处理/回复新鲜度上限，不代表 NapCat 有官方机器人的被动回复窗口；超时不会改成主动消息或自动重跑。默认 `time` 聚合不增加判断请求，若已有 `AGENT_QQ_MESSAGE_MODE=hybrid` 则会沿用有界判断请求。后台 Learning 等仍按原配置运行并可能使用模型额度。
+NapCat 的发送和 humanize 使用独立的 `AGENT_NAPCAT_*` 配置，不再受官方机器人的四段、1500 字节和 240 秒约束。自然拆条默认最多 32 段，每段最多 8000 UTF-8 字节；这是防刷屏和内存占用的本地保护上限，不是平台配额。超出保护容量才会附截断提示，完整模型回答仍保存在 Journal。代码、列表等结构化回答不额外按句拆条。普通待处理/回复新鲜度默认为 900 秒。
+
+每条气泡发送前按该条字符数估算间隔：默认每字符 25ms，后续气泡最低 0.4 秒、最多 3 秒，再加入 ±20% 波动后限幅；首条扣除已用生成时间。无波动时，10 字约 0.4 秒、40 字约 1 秒、100 字约 2.5 秒、长消息最多 3 秒。必需节流默认为 0.3 秒，与装饰性等待取较大值；暂停受回复剩余时间约束，不额外调用模型。设置 `AGENT_NAPCAT_HUMANIZE_ENABLED=false` 可关闭额外拆条与装饰性暂停，基础发送节流仍保留。
+
+主号的“对方正在输入”由 OneBot `notice/notify/input_status` 直接接收，不解析 NapCat 日志，也不向主号发送输入提示。只有正确 self_id、主号 user_id、group_id=0 且时间新鲜的事件有效。非空 status_text 作为输入活动提示，最多延长当前待处理消息的聚合到该事件之后 30 秒；连续新提示可续等，但绝不突破首条消息起 `QQ_MESSAGE_MAX_WAIT_SECONDS`（默认 8 秒）的硬上限。空状态返回通常的静默等待；没收到结束事件也会自然过期。没有待处理文字/图片时提示不创建 Run，已经进入模型的 Run 不会因此取消或重跑。状态不写 Journal、Memory 或用户证据，也不会调用 LLM 判断；hybrid 模式不能提前越过有效输入提示。
+
+| 配置 | 默认值 | 含义 |
+| --- | --- | --- |
+| AGENT_NAPCAT_REPLY_MAX_PARTS | 32 | 本地发送段数保护，1～64 |
+| AGENT_NAPCAT_TEXT_MAX_BYTES | 8000 | 单段 UTF-8 字节上限，128～16384 |
+| AGENT_NAPCAT_REPLY_WINDOW_SECONDS | 900 | 本地新鲜度，最多 3600 秒 |
+| AGENT_NAPCAT_SEND_INTERVAL_SECONDS | 0.3 | 基础节流 |
+| AGENT_NAPCAT_HUMANIZE_ENABLED | true | 自然拆条及装饰性停顿 |
+| AGENT_NAPCAT_HUMANIZE_MS_PER_CHAR | 25 | 每条按字符计算停顿 |
+| AGENT_NAPCAT_HUMANIZE_GAP_SECONDS | 0.4 | 后续气泡最低停顿 |
+| AGENT_NAPCAT_HUMANIZE_MAX_DELAY_SECONDS | 3 | 单次装饰性暂停上限 |
+| AGENT_NAPCAT_HUMANIZE_JITTER | 0.2 | 轻量波动 |
+| AGENT_NAPCAT_INPUT_TYPING_ENABLED | true | 主号输入状态参与聚合 |
+| AGENT_NAPCAT_INPUT_TYPING_TTL_SECONDS | 30 | 每个新状态最多有效 1～30 秒，仍受整轮硬上限约束 |
+
+队列、入站聚合、图片、网络超时和重连继续复用 `AGENT_QQ_*`。默认静默 2.5 秒、首条起最多 8 秒；`time` 模式没有模型判断，`hybrid` 仍沿用既有有界判断。设置在下次启动时加载；后台 Learning 等仍按原配置运行并可能使用模型额度。
 
 ## 手工检查
 

@@ -99,3 +99,5 @@ schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁�
 
 `run_qq(settings, dashboard=True, dashboard_port=8765)` 在原应用作用域内启动 `dashboard_server`，不新增 Agent 或数据库 Owner。`AsyncExitStack` 在 adapter 关闭后回收 HTTP，再退出原 `open_application()`；HTTP 查询失败由 Dashboard 自行转换为安全错误，不影响 QQ 消费。入口为 `personal-agent qq --dashboard`。说明与验证见 [dashboard.md](dashboard.md)、`tests/test_dashboard.py`。
 
+
+NapCat 通过 Host 显式注入独立 Humanizer 与经校验的收件输入状态；官方入口不注入这些选项，保持官方段数、字节和固定条间停顿。共享实现的逐条字数停顿、内存聚合扩展和验证见 [NapCat](napcat.md)、[聚合](qq-turns.md)。

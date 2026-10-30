@@ -71,6 +71,7 @@ def settings(**kwargs):
             "proactive_enabled": False,
             "qq_message_idle_seconds": 0.001,
             "qq_humanize_enabled": False,
+            "napcat_humanize_enabled": False,
             "qq_reconnect_attempts": 0,
             **account().model_dump(),
             **kwargs,

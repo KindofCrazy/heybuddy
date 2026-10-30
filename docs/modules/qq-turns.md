@@ -58,3 +58,7 @@ deadline 使用持久 UTC 接收时间以支持重启，等待使用 asyncio tim
 5. 开始聚合后立即 Ctrl+C，再启动，应恢复未执行输入；回答生成或发送期间退出后再启动，不应自动重跑该组。正在生成回复时再发两条，应作为后续输入。
 
 共享渠道协议及整体生命周期见 [qq.md](qq.md)，SQLite 事务与源数据边界见 [storage.md](storage.md)。
+
+## NapCat 主号输入状态
+
+仅 NapCat 的 `runner.receive()` 将已校验 input_status 交给 `QQAdapter.note_typing()`。内存 `extend_after` 以 receipt sequence 标记该条之后的延长截止，传入 `QQInbox.preview_turn()/claim_turn()` 和 `plan_turn()`，从而允许后续消息跨过原静默窗口合并；最大等待与所有硬边界保持有效。消费者在有效提示期间不采用 hybrid 提前 ready，状态变化会使正在等待的模型判断失效；结束提示缩短扩展到通常静默间隔。提示不创建消息/Run、不落库，不取消已领取的 Run。验证见 `tests/test_napcat_input_status.py`，配置见 [NapCat](napcat.md)。

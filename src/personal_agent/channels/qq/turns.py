@@ -1,6 +1,7 @@
 """Bounded receipt-prefix planning. Waiting never changes durable receipt state."""
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -35,13 +36,20 @@ class QQTurn:
 
 
 def plan_turn(
-    rows: list[dict], settings: QQSettings, *, hold_after: frozenset[int] = frozenset()
+    rows: list[dict],
+    settings: QQSettings,
+    *,
+    hold_after: frozenset[int] = frozenset(),
+    extend_after: Mapping[int, float] | None = None,
 ) -> QQTurn:
     """Choose only a contiguous prefix, including historical idle/max-wait boundaries."""
     first = rows[0]
     selected = [first]
     first_at = datetime.fromisoformat(first["received_at"]).timestamp()
-    deadline = first_at + settings.qq_message_idle_seconds
+    extensions = extend_after or {}
+    deadline = max(
+        first_at + settings.qq_message_idle_seconds, extensions.get(first["sequence"], 0)
+    )
     maximum = first_at + settings.qq_message_max_wait_seconds
     if first["sequence"] in hold_after:
         deadline = maximum
@@ -62,9 +70,10 @@ def plan_turn(
             # A boundary already exists: no need to keep waiting for more messages.
             return QQTurn(tuple(selected), first_at)
         selected.append(row)
-        deadline = (
+        deadline = max(
             datetime.fromisoformat(row["received_at"]).timestamp()
-            + settings.qq_message_idle_seconds
+            + settings.qq_message_idle_seconds,
+            extensions.get(row["sequence"], 0),
         )
         if row["sequence"] in hold_after:
             deadline = maximum
