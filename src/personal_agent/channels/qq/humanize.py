@@ -12,7 +12,7 @@ _STRUCTURED = re.compile(
     r"|^[ \t]*(?:#{1,6}\s|[-+*]\s|\d+[.)、]\s|[>|]| {4}\S)",
     re.MULTILINE,
 )
-_BREAK = re.compile(r"""[。！？!?]+[”’」』）)\]"]*[ \t]*|\.(?=\s)|\n+""")
+_BREAK = re.compile(r"""[。！？!?]+[”’」』）)\]"]*[ \t]*|\.(?=\s)|\r?\n(?:[ \t]*\r?\n)*""")
 
 
 class Humanizer:
@@ -30,16 +30,22 @@ class Humanizer:
         for chunk in bounded:
             fragments = []
             start = 0
+            paragraph_boundary = False
             for match in _BREAK.finditer(chunk):
                 fragment = chunk[start : match.end()]
-                if fragments and len(fragments[-1].strip()) < 6:
+                if fragments and (
+                    not fragment.strip()
+                    or (not paragraph_boundary and len(fragments[-1].strip()) < 6)
+                ):
                     fragments[-1] += fragment
                 else:
                     fragments.append(fragment)
+                # Blank lines explicitly separate bubbles, even after a short greeting.
+                paragraph_boundary = match.group().count("\n") >= 2
                 start = match.end()
             if start < len(chunk):
                 tail = chunk[start:]
-                if fragments and len(fragments[-1].strip()) < 6:
+                if fragments and not paragraph_boundary and len(fragments[-1].strip()) < 6:
                     fragments[-1] += tail
                 else:
                     fragments.append(tail)

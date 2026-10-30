@@ -24,6 +24,25 @@ def test_natural_bubbles_keep_short_fragments_and_overflow_together():
     ]
 
 
+@pytest.mark.parametrize("separator", ["\n\n", "\r\n\r\n", "\n \t\n\n"])
+@pytest.mark.parametrize("greeting", ["在呀", "在呀。", "嗯。好。"])
+def test_blank_lines_preserve_short_bubbles(separator, greeting):
+    text = greeting + separator + "怎么，睡不着吗"
+    assert Humanizer(QQSettings()).split(text) == [greeting, "怎么，睡不着吗"]
+
+
+def test_paragraph_bubbles_keep_overflow_and_respect_disabled_delivery():
+    text = "在呀\n\n嗯\n\n怎么了\n\n睡不着吗\n\n聊聊吧"
+    assert Humanizer(QQSettings()).split(text) == [
+        "在呀",
+        "嗯",
+        "怎么了",
+        "睡不着吗\n\n聊聊吧",
+    ]
+    assert Humanizer(QQSettings(qq_reply_max_parts=1)).split(text) == [text]
+    assert Humanizer(QQSettings(qq_humanize_enabled=False)).split(text) == [text]
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -52,6 +71,7 @@ def test_structured_answers_receive_no_additional_splits(text):
     [
         "",
         "你好🙂",
+        "在呀。\r\n \t\r\n怎么，睡不着吗\n\n" * 50,
         "汉字🙂。\n\n" * 1000,
         "a" * 10000,
         "第一句讲得稍微长一些。 第二句也讲得稍微长一些！\n" * 8,
