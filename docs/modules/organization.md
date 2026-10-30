@@ -24,7 +24,7 @@ Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移
 4. organize() → batch() 读取至多 page_runs 条元数据，以 SQLite rowid 插入顺序维护 cursor。running 停住；failed/cancelled/interrupted 不读取正文，作为屏障跳过并记 episode_skips。completed 先核对消息字节/数量，超 source_bytes 显式记录 oversized，不伪造经历。
 5. 最近 provisional 仅在时间、数量和字节窗口内参与追加/重分段，首段复用 ID，新增拆分段生成新 ID；旧 finalized 不自动重写。不参与修订的尾部在发布事务 finalize。
 6. 宿主按相邻 Run 的 started_at 差标注 continuous/weak/strong/required，默认 15/90/180 分钟，超过 3 小时及中断屏障强制拆分；午夜无特殊含义，开始时间倒序拒绝。候选同时给 start_gap_seconds 和 previous_duration_seconds，长工具执行不会伪造短输入间隔。最近 provisional 追加也用最后来源 Run 的 started_at 判断，而非整段 Episode 的最初时间或结束时间。投影保留结束时刻、Conversation/Run/sequence，不发送 Provider reasoning。
-7. ask() → 严格 Segmentation；validate() 要求提供的 Run 恰好一次、同序覆盖、不跨屏障合并。Highlight 引文必须精确匹配所属原消息；confirmed 和 decision/correction 至少含用户证据。宿主证明引用存在，语义是否明确确认仍受模型质量限制。
+7. ask() → 严格 Segmentation；validate() 要求提供的 Run 恰好一次、同序覆盖、不跨屏障合并。Highlight 引文必须精确匹配所属原消息；user_confirmed 和 decision/correction 至少含用户证据，open_loop 无论 attribution 都至少含真实用户证据。仅引用助手或工具消息的 open_loop 以 unconfirmed_highlight 拒绝整批发布，不推进 cursor，也不自动重试。宿主证明引用存在及其角色，语义是否明确确认、是否值得跟进仍受模型质量限制。
 8. publish() 短事务重新核对本批、provisional 修订和来源 hash，原子更新 Episode、归一化 episode_runs、追加 episode_versions、skip 和 cursor。失败回滚，原 Journal 不改。修订标记旧关联 Thread 待更新。
 9. 无新历史仅检查 finalize。达到修订时长、容量、后续边界或排除 Run 时稳定归档；最后的小段可 provisional。退出/输入取消等待中的模型调用，不影响普通 Run。
 
@@ -32,7 +32,7 @@ Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移
 
 稳定 Finalize 只改变 status/revision 时沿用 thread_dirty，避免语义内容未变却把 Thread state 标过期；重新分段、追加或摘要改变仍标记待更新。EvidenceRef 是组织器自己的小模型，允许单字精确引文，不继承 Reflection 的候选/审批语义。Thread status 只统计有界 ID，不反序列化私人摘要。
 
-来源读取还验证完整 Run 的 sequence 连续性，避免用 first_sequence+index 假造不存在的引用。ToolResult 引文只能匹配模型实际看到的脱敏、至多 1024 字符投影；它不计作用户确认，decision/correction 仍必须有真实用户证据。对应测试在 tests/test_episodes.py。
+来源读取还验证完整 Run 的 sequence 连续性，避免用 first_sequence+index 假造不存在的引用。ToolResult 引文只能匹配模型实际看到的脱敏、至多 1024 字符投影；它不计作用户证据，decision/correction/open_loop 仍必须有真实用户证据。有来源的工具结果仍可作为非 user_confirmed 的 event 保留。对应测试在 tests/test_episodes.py。
 
 migration 6 追加 episodes、episode_runs、episode_versions、episode_organizer_progress、episode_skips 和索引；同批创建空 topic_threads，以允许真实外键，行为由独立 Thread 服务承担。迁移不修改 1–5，不搬移旧 Run、Summary、Reflection 或消息。
 
@@ -63,6 +63,17 @@ OrganizationRuntime 只管理现有后台 task、门控/公平性/定时、维�
 `organization/episodes.py::EPISODE_PROMPT` 要求标题、摘要及 Highlight 内容跟随来源对话的主要语言，中文讨论使用简体中文；混合语言按主要讨论判断，不因简短英文问候或技术名词改用英文，来源精确引文保持原文。`organization/threads.py::THREAD_PROMPT` 对标题和 current_state 使用同一原则，以所提供 Episode 代表的讨论为依据，不继承英文提示词或旧 Thread 文本的语言。`REPAIR_PROMPT` 同样约束根据当前关联 Episode 重建的 current_state。
 
 规则由 `OrganizerModel.ask()` 随 system 提示发送，面板仍原样显示已保存内容；修改提示词不会自动翻译已存 Episode/Thread，也不触发重算或真实 API 调用。语言选择属于模型语义行为，现有离线流程测试验证分段、关联及修复契约，不代表语言质量的真实模型评测。验证路径见 `tests/test_episodes.py`、`tests/test_threads.py` 与 `tests/test_thread_repair.py`。
+
+## 摘要与重要内容的语义
+
+`EPISODE_PROMPT` 将 Episode summary 定义为本次互动的简短回顾，通常 1～3 句，保留主题和实际结果，省略重复问候、表情流水账及无关助手评论。表情或简短应答不能证明用户理解、同意或某种情绪。理解对话确有必要时可概括助手自述，但应明确是角色自述，不能作为已核实的现实经历或用户事实。没有持续价值的普通讲解、闲聊优先返回空 highlights。
+
+重要内容按后续接续的具体价值选择；open_loop 仅限仍值得跟进、由实际用户证据支持的未解决目标、问题、计划或承诺，已经回答的问题不再算未解决。助手单方建议不生成待办；角色设定、虚构工作、模拟个人经历与心境不作为任何类别的 highlight。单纯愿望或情感表达不自动升级为任务或安排。用户明确的交流反馈仍可成为 event/correction，不因内容涉及助手而排除。`validate()` 的用户来源门槛是结构保障，不能识别所有语义误判：夹带无关用户引文也不代表内容真实或重要。
+
+`THREAD_PROMPT` 与 `REPAIR_PROMPT` 共用 `CURRENT_STATE_RULES`：current_state 是当前话题的接续快照，通常 1～3 个短句，只保留仍有关联的用户目标、最新进展或决定、约束和具体未决问题。每次更新重写去重，替换过时状态，省略已解决过程，不累计拼接 Episode。已有状态与 Episode 都是可能出错的导航数据，不因旧摘要出现某条背景就永久保留。角色自述不得升级为现实项目进度或用户待办；当话题确实讨论该角色时可简短保留并标明归属。助手建议仅在接续必需时保留，未经用户确认不能成为用户计划。
+
+这些语义约束随 `OrganizerModel.ask()` 的 system 提示进入普通整理和修复请求，不新增模型请求或角色包依赖。原有 summary/current_state 的 2000 字符校验上限保留兼容；1～3 句是生成指导，不是截断规则。旧 finalized Episode 与已保存 Thread 不自动重写，本次修改不迁移数据库或调用真实模型。`tests/test_episodes.py::test_assistant_only_open_loop_never_publishes_or_advances` 覆盖角色自述被错误提取的拒绝、进度不变和原消息保留；`test_user_plans_and_interaction_feedback_remain_valid_highlights` 覆盖真实计划、未决问题和交流反馈。FakeProvider 验证来源契约，不代表真实模型摘要简洁性已得到验证。
+
 # P4 Shadow 维护单元
 
 `OrganizationRuntime` 接受可选 `proactive` 服务；`_cycle()` 将其模型加入同一 `cycle_providers()`，Idle 时每轮最多运行一个 Proactive 单元，消耗原有 MaintenanceBudget。具体提取/判断/持久化均留在 proactive 子包，不由 Organizer 负责发送。`_background()` 将 Wake 的持久截止时间纳入等待，其他维护全关闭时 Shadow 仍可检查；前台抢占和退出保持同一 task.cancel()/await 路径。验证与边界见 [proactive.md](proactive.md) 和 `tests/test_proactive.py`。

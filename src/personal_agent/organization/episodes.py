@@ -27,8 +27,25 @@ EPISODE_PROMPT = (
     "never combine a topic across intervening unrelated interaction. Required boundaries and "
     "excluded-run barriers MUST split; weak/strong boundaries are hints. Midnight is not a "
     "boundary. Short gaps may still split when topics change. Ordinary chat can be a short "
-    "Episode with no highlights. Summarize actual outcomes, not requested or failed actions as "
-    "success. Highlights are events, decisions, open_loops, corrections only. Cite exact supplied "
+    "Episode with no highlights. Write a concise account of what this interaction was about "
+    "and its actual outcome, usually 1-3 sentences, rather than a turn-by-turn transcript. "
+    "Omit repetitive greetings, emoji exchanges and incidental assistant commentary unless "
+    "they change the meaning. Do not infer understanding, agreement or emotion from an emoji "
+    "or acknowledgement. Attribute assistant biographical or off-screen personal claims "
+    "explicitly as self-report (character self-report in roleplay); include them only when "
+    "needed to understand the interaction, never as verified real-world experiences or user "
+    "facts. Preserve actual tool-evidenced outcomes. Summarize actual outcomes, not requested "
+    "or failed actions as success. Highlights are events, decisions, open_loops, corrections "
+    "only, selected for concrete value when continuing the conversation, not merely because "
+    "something was mentioned. Prefer zero highlights for ordinary explanations or small talk. "
+    "An open_loop requires actual user evidence of a concrete unresolved goal, question, "
+    "plan or commitment that remains worth following up after this Episode. A question "
+    "answered in this Episode is not open. Assistant-only suggestions do not create "
+    "open_loops. Character background, fictional work and simulated personal experiences "
+    "or moods are not highlights of any kind. "
+    "A wish or emotional expression alone is not a pending task or arrangement. Explicit "
+    "user feedback about the interaction can be a valuable event or correction; do not "
+    "exclude it merely because it concerns the assistant. Cite exact supplied "
     "conversation_id/run_id/sequence/quote. Distinguish user_confirmed from assistant_suggestion "
     "and uncertain. A decision/correction requires explicit user confirmation; suggestions, "
     "hypotheticals, examples and guesses are not confirmed decisions. Prefer no highlight when "
@@ -83,7 +100,9 @@ def validate(
                     raise OrganizationError("invalid_evidence")
                 user_evidence |= isinstance(message, TextMessage) and message.role == "user"
             if (
-                highlight.attribution == "user_confirmed"
+                highlight.kind == "open_loop"
+                and not user_evidence
+                or highlight.attribution == "user_confirmed"
                 and not user_evidence
                 or highlight.kind in {"decision", "correction"}
                 and (not user_evidence or highlight.attribution != "user_confirmed")

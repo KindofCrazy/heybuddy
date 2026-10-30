@@ -221,6 +221,79 @@ async def test_verified_highlight_retains_user_and_source_time(state):
     assert episode.started_at.tzinfo is not None
 
 
+@pytest.mark.parametrize("attribution", ["uncertain", "assistant_suggestion", "user_confirmed"])
+async def test_assistant_only_open_loop_never_publishes_or_advances(state, attribution):
+    db, stream, repo = state
+    run_id = db.begin_run(stream, TextMessage(role="user", text="节拍是什么？"))
+    db.append_message(run_id, AssistantMessage(text="我写的鼓点识别程序总是差一点。"))
+    db.finish_run(run_id, RunResult(status="completed", rounds=1))
+
+    def mutate(output, data):
+        source = data["runs"][0]
+        message = source["messages"][1]
+        output["episodes"][0]["highlights"] = [
+            {
+                "kind": "open_loop",
+                "content": "助手的鼓点识别程序尚未修复。",
+                "attribution": attribution,
+                "sources": [
+                    {
+                        "conversation_id": stream,
+                        "run_id": run_id,
+                        "sequence": message["sequence"],
+                        "quote": message["text"],
+                    }
+                ],
+            }
+        ]
+
+    provider = SegmentProvider(mutate=mutate)
+    report = await organizer(repo, provider).organize(stream)
+    assert report["outcome"] == "failed" and report["error_code"] == "unconfirmed_highlight"
+    assert repo.status(stream)["position"] == 0 and repo.list(stream) == []
+    assert len(provider.requests) == 1
+    assert db.load_messages(stream)[-1].content.text == "我写的鼓点识别程序总是差一点。"
+
+
+@pytest.mark.parametrize(
+    "kind,attribution,text",
+    [
+        ("open_loop", "uncertain", "我还没想好明天投哪家实习。"),
+        ("open_loop", "user_confirmed", "明天准备修改简历，还没开始。"),
+        ("event", "user_confirmed", "你刚才的回复太长，让我不舒服。"),
+    ],
+)
+async def test_user_plans_and_interaction_feedback_remain_valid_highlights(
+    state, kind, attribution, text
+):
+    db, stream, repo = state
+    run_id = seed(db, stream, text=text)
+
+    def mutate(output, data):
+        source = data["runs"][0]
+        output["episodes"][0]["highlights"] = [
+            {
+                "kind": kind,
+                "content": text,
+                "attribution": attribution,
+                "sources": [
+                    {
+                        "conversation_id": stream,
+                        "run_id": run_id,
+                        "sequence": source["first_sequence"],
+                        "quote": text,
+                    }
+                ],
+            }
+        ]
+
+    report = await organizer(repo, SegmentProvider(mutate=mutate)).organize(stream)
+    assert report["outcome"] == "completed"
+    highlight = repo.list(stream)[0].highlights[0]
+    assert highlight.kind == kind and highlight.attribution == attribution
+    assert highlight.sources[0].quote == text
+
+
 async def test_provisional_append_split_revision_finalize_and_idempotence(state):
     db, stream, repo = state
     first = seed(db, stream)

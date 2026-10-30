@@ -9,7 +9,7 @@
 1. `/thread repair` → OrganizationRuntime.command() → ThreadOrganizer.repair()；pending() 查询当前 Agent 的一个 dirty owner，无需新增 Episode。
 2. window() 比较 Thread 状态 revision/source_revision 和已有 job。首次或关联变化时清空本次重建工作摘要及 scratch 来源，从当前关联的最早 Episode 开始，绝不把旧 current_state 当作重建起点。
 3. `_page()` 按 ended_at/id 查询至多 page_runs+1 条当前仍关联的 Episode 元数据，先检查来源字节，再读取有界正文。返回 working_state、cursor、来源数、完整 Episode revision 和 has_more；等待模型时不持有事务。
-4. 有来源时 OrganizerModel.ask(ThreadRepair, REPAIR_PROMPT) 仅接收当前页与本轮重建的前页工作摘要。已移走的 Episode 和旧 Thread state 不进入输入。无来源时不调用模型，由宿主记录“当前没有关联的 Episode。”并 closed。
+4. 有来源时 OrganizerModel.ask(ThreadRepair, REPAIR_PROMPT) 仅接收当前页与本轮重建的前页工作摘要。已移走的 Episode 和旧 Thread state 不进入输入。REPAIR_PROMPT 与普通关联整理共用 CURRENT_STATE_RULES，要求每页重写、去重并更新当前状态，省略已解决过程和无关角色自述，不把 checkpoint 当作必须逐项累加的历史。无来源时不调用模型，由宿主记录“当前没有关联的 Episode。”并 closed。
 5. publish() 在短事务复读 Thread/source_revision、cursor、当前来源页，冲突拒绝。中间页只保存有界工作摘要和 thread_repair_sources，Thread 保持 dirty，不发布半成品。最后一页原子更新 Thread revision/state/dirty、thread_versions、完整的归一化 thread_state_sources 和 completed job。
 6. 普通 ThreadRepository.publish() 原子改变关联，触发器失效受影响 owner。已知 dirty 或同批失去成员的 Thread 不能仅凭关联模型输出恢复 clean；新 Thread/仅安全追加的已有 Thread可沿用有效状态。移动后原 Thread 即使没有 Pending Episode，也仍有独立 dirty 维护工作。
 
