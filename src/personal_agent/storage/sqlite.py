@@ -42,7 +42,7 @@ from personal_agent.storage import (
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -86,6 +86,7 @@ MIGRATIONS = {
     16: proactive.SCHEMA,
     17: outbox.SCHEMA,
     18: reminders.SCHEMA,
+    19: reminders.CHAT_SCHEMA,
 }
 
 

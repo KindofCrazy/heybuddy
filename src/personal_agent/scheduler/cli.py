@@ -17,7 +17,15 @@ USAGE = (
 DURATION = re.compile(r"([1-9][0-9]{0,5})(s|m|h|d)\Z")
 
 
-async def command(runtime: SchedulerRuntime, conversation_id: str, text: str) -> dict:
+async def command(
+    runtime: SchedulerRuntime,
+    conversation_id: str,
+    text: str,
+    *,
+    request_id: str | None = None,
+    reference_at: datetime | None = None,
+    source_scope: str = "local",
+) -> dict:
     parts = text.split(maxsplit=2)
     if parts == ["status"]:
         return runtime.status()
@@ -52,9 +60,13 @@ async def command(runtime: SchedulerRuntime, conversation_id: str, text: str) ->
             if duration is None:
                 raise ReminderError("reminder_invalid_duration")
             seconds = int(duration[1]) * {"s": 1, "m": 60, "h": 3600, "d": 86400}[duration[2]]
-            due_at = runtime.clock.now() + timedelta(seconds=seconds)
+            due_at = (reference_at or runtime.clock.now()) + timedelta(seconds=seconds)
         request = ReminderRequest(
-            request_id=str(uuid4()), conversation_id=conversation_id, due_at=due_at, text=parts[2]
+            request_id=request_id or str(uuid4()),
+            conversation_id=conversation_id,
+            due_at=due_at,
+            text=parts[2],
+            source_scope=source_scope,
         )
         return runtime.create(request)
     except (ValueError, OverflowError, ValidationError):

@@ -23,6 +23,7 @@ class SchedulerPolicy(Model):
 class ReminderRequest(Model):
     request_id: str = Field(min_length=1, max_length=128)
     conversation_id: str = Field(min_length=1, max_length=128)
+    source_scope: str = Field(default="local", min_length=1, max_length=128)
     due_at: AwareDatetime
     text: str = Field(min_length=1, max_length=1200)
 

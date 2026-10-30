@@ -219,7 +219,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → runtime.open_application → SQLiteStore.initialize(schema 18) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → runtime.open_application → SQLiteStore.initialize(schema 19) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -233,7 +233,7 @@ main → runtime.open_application → SQLiteStore.initialize(schema 18) / recove
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前使用 schema 18；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加图片正文与 QQ 附件字段，16 追加 Proactive Shadow 水位、候选和判断审计，17 追加草稿与模拟投递尝试，18 追加明确提醒、投递尝试与事件；旧迁移定义不改，原 Journal/Summary/Reflection 保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 19；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加图片正文与 QQ 附件字段，16 追加 Proactive Shadow 水位、候选和判断审计，17 追加草稿与模拟投递尝试，18 追加明确提醒、投递尝试与事件，19 追加提醒聊天来源隔离；旧迁移定义不改，原 Journal/Summary/Reflection 保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -407,4 +407,4 @@ QQ 现支持图片、图文和 JPEG/PNG/GIF/WebP 表情包输入；动图只读�
 
 维护周期的步骤与结果分类见 [Organization](docs/modules/organization.md)，只读数据库启动及共享会话切换见 [Runtime](docs/modules/runtime.md)，存储迁移定义见 [Storage](docs/modules/storage.md)。
 
-[P4.4.1 明确提醒](docs/modules/scheduler.md) 提供 `/remind in 10m 喝水`、带时区的 at、查看和取消。到期处理独立于 Attention/Idle；当前没有真实投递渠道，保存记录不代表保证通知。pytest、启动和投递测试按本轮要求延后，待执行用例已编写。
+[P4.4.1 明确提醒](docs/modules/scheduler.md) 提供 `/remind in 10m 喝水`、带时区的 at、查看和取消。已验证的 QQ/NapCat 私聊也可使用这些明确命令，以及 `/remind list`、`/remind show <id>`、`/remind cancel <id>`；只管理当前来源与会话的记录，重复收件不重复创建。普通未来计划和自然语言提醒尚不自动解析。到期处理独立于 Attention/Idle；当前没有真实投递渠道，保存记录不代表保证通知。pytest、启动和投递测试按本轮要求延后，待执行用例已编写。

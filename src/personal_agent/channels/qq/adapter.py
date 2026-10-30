@@ -14,6 +14,9 @@ from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.core.models import RunResult
 from personal_agent.runtime import ChatService
+from personal_agent.scheduler.chat import reply as reminder_reply
+from personal_agent.scheduler.chat import source_scope as reminder_scope
+from personal_agent.scheduler.models import ReminderError
 from personal_agent.storage.qq import QQInbox
 
 logger = logging.getLogger(__name__)
@@ -48,6 +51,11 @@ class QQAdapter:
             or inbox.agent_id != service.sessions.agent.id
             or inbox.app_id != (scope_id or settings.qq_app_id)
             or settings.qq_allowed_openids != (inbox.openid,)
+        ):
+            raise QQError("qq_scope_mismatch", fatal=True)
+        if service.scheduler is not None and (
+            service.scheduler.repository.store is not inbox.store
+            or service.scheduler.repository.agent_id != inbox.agent_id
         ):
             raise QQError("qq_scope_mismatch", fatal=True)
         self.conversation_id = service.sessions.current.id
@@ -209,6 +217,7 @@ class QQAdapter:
         # Commands, hard boundaries, images and over-budget input retain time-only behavior.
         if (
             turn.deadline <= now
+            or (turn.messages[0]["content"] or "").lstrip().startswith("/")
             or any(json.loads(row["attachments"]) for row in turn.messages)
             or sequences in state.attempted
             or len(state.attempted) >= self.settings.qq_message_judge_max_calls
@@ -256,7 +265,34 @@ class QQAdapter:
             )
             return None
         result = None
-        if row["content"].lstrip().startswith("/"):
+        if row["content"].lstrip().split(maxsplit=1)[:1] == ["/remind"]:
+            # Commit a reminder before the passive acknowledgement; never replay on send failure.
+            row["execution_started"] = True
+            if self.service.scheduler is None:
+                text = "当前入口尚未配置提醒。"
+            else:
+                try:
+                    text = await reminder_reply(
+                        self.service.scheduler,
+                        self.conversation_id,
+                        row["content"],
+                        scope=reminder_scope(self.inbox.scope),
+                        message_id=row["message_id"],
+                        received_at=datetime.fromisoformat(row["received_at"]),
+                        has_attachments=bool(json.loads(row.get("attachments", "[]"))),
+                    )
+                except ReminderError as error:
+                    text = {
+                        "reminder_not_found": "当前聊天中没有找到这条提醒。",
+                        "reminder_time_out_of_range": "提醒时间需在未来一年内，请重新指定。",
+                        "reminder_sensitive_content": "提醒内容可能包含凭据，请移除后重发。",
+                        "scheduler_unavailable": "提醒服务当前不可用，尚未确认设置成功。",
+                    }.get(
+                        error.code,
+                        "提醒参数无效，请使用 /remind in 10m 喝水，或带时区的 /remind at。",
+                    )
+            self.inbox.mark(row.get("sequences", row["sequence"]), "processed")
+        elif row["content"].lstrip().startswith("/"):
             text = "QQ 暂不支持管理命令，请在本地 CLI 操作。"
         else:
             before = self._latest_run()

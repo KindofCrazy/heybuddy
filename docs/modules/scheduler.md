@@ -2,15 +2,15 @@
 
 ## 职责与架构组成
 
-`scheduler/models.py` 定义 SchedulerPolicy、ReminderRequest、不可变 ReminderGrant 和固定错误码 ReminderError。`scheduler/cli.py::command()` 仅解析可信 CLI 的明确命令；不使用模型解释自然语言，不从对话计划自动生成任务。`scheduler/runtime.py::SchedulerRuntime` 拥有一个有界 asyncio 定时任务，独立于 Attention、Idle、角色状态和后台 Learning。`storage/reminders.py::ReminderRepository` 绑定 Agent，保存提醒、一次性投递尝试及审计事件。
+`scheduler/models.py` 定义 SchedulerPolicy、ReminderRequest、不可变 ReminderGrant 和固定错误码 ReminderError。`scheduler/cli.py::command()` 解析明确命令，`scheduler/chat.py::reply()` 为已通过渠道校验的私聊提供受限入口；不使用模型解释自然语言，不从对话计划自动生成任务。`scheduler/runtime.py::SchedulerRuntime` 拥有一个有界 asyncio 定时任务，独立于 Attention、Idle、角色状态和后台 Learning。`storage/reminders.py::ReminderRepository` 绑定 Agent，保存提醒、一次性投递尝试及审计事件。
 
-schema 18 追加 scheduled_reminders、reminder_attempts、reminder_events；旧迁移不改。scheduled_reminders 同时是单次提醒记录和持久待投递队列，不借用依赖 Proposal/Decision 的主动 Outbox。提醒是 Host 明确指令，不是长期事实；不写 MemoryFS、Run、Recall 或 Reflection 来源。单个 request_id 在 Agent 内唯一，重复相同请求返回原记录，内容不一致则拒绝；取消和终态都不会因重复请求重新开启。
+schema 18 追加 scheduled_reminders、reminder_attempts、reminder_events；schema 19 追加 source_scope 与聊天来源索引，旧记录标为 local；旧迁移不改。scheduled_reminders 同时是单次提醒记录和持久待投递队列，不借用依赖 Proposal/Decision 的主动 Outbox。提醒是 Host 明确指令，不是长期事实；不写 MemoryFS、Run、Recall 或 Reflection 来源。单个 request_id 在 Agent 内唯一，重复相同请求返回原记录，内容、来源或会话不一致则拒绝；取消和终态都不会因重复请求重新开启。
 
 当前没有真实 Sender。默认启用的定时任务只更新到期状态；真实 QQ/NapCat 发送、循环提醒、cron、外部事件、后台工具任务和自然语言创建不在此阶段。FakeSender/SendReceipt/DeliveryError 复用现有受限投递契约，仅在明确本地模拟命令中使用；不经过 Opportunity Scout、Attention 或 Composer。
 
 ## 代码实际运行路径
 
-1. `runtime.open_application()` 沿原初始化路径原子迁移到 schema 18；`assemble_chat()` 为当前 Agent 创建 ReminderRepository/SchedulerRuntime，附在 ChatService.scheduler。只读装配传 read_only=True，不恢复、不启动定时器。
+1. `runtime.open_application()` 沿原初始化路径原子迁移到 schema 19；`assemble_chat()` 为当前 Agent 创建 ReminderRepository/SchedulerRuntime，附在 ChatService.scheduler。只读装配传 read_only=True，不恢复、不启动定时器。
 2. `runtime.open_chat()` 在 yield 前调用 scheduler.start()。启动一个应用级定时 task，没有每项提醒独立 task；真实用户聊天继续走原 Agent，不需要开启 Organization/P2/Proactive，也不等待空闲 25 分钟。普通 foreground() 不取消明确提醒的元数据检查。
 3. `main._chat()` 在 Agent.run() 前分派 `/remind` 到 command()。at 接受带时区 ISO8601，in 接受正整数 s/m/h/d。ReminderRequest 严格校验正文和 aware datetime，Repository 再检查 Agent/Conversation、时间范围、凭证模式及幂等性；然后在同一事务保存 scheduled 与 created 事件。模型、历史、记忆和 HTTP 都没有创建或取消入口。
 4. create() 保存记录后唤醒定时器，返回 outcome=recorded、delivery_available=false，并明确说明没有真实渠道，不能保证到期通知。所有数据库时间规范化为 UTC，原 due_at 不因重启或冷却改写。会话绑定在创建时固定，之后切换 Conversation 不改投递目标。
@@ -35,7 +35,17 @@ schema 18 追加 scheduled_reminders、reminder_attempts、reminder_events；旧
 /remind simulate <id>
 ```
 
-创建、取消和模拟不会写成用户 Run。list 每页默认 12、最多 20，事件每页最多 20；Agent 隔离在查询和写入时复核。无时区、过去时间、空正文、无效时长和超出未来范围会返回固定安全错误码，不打印 Pydantic 输入或异常体。普通 QQ/NapCat 消息中的 `/remind` 尚未接入可信管理分派，不能据此声称提醒已设置。Observatory 暂无提醒页面，当前通过 CLI/Host API 查看。
+创建、取消和模拟不会写成用户 Run。CLI list 每页默认 12、最多 20，事件每页最多 20；Agent 隔离在查询和写入时复核。无时区、过去时间、空正文、无效时长和超出未来范围会返回固定安全错误码，不打印 Pydantic 输入或异常体。Observatory 暂无提醒页面，当前通过 CLI/Host API 或受限聊天命令查看。
+
+## QQ/NapCat 聊天接入
+
+1. `QQAdapter.accept()/accept_message()` 沿原渠道身份、私聊白名单和收件去重路径接收输入。`plan_turn()` 将命令作为独立消息边界，`_check_turn()` 跳过完整性模型判断；不会与前后普通文本拼接执行。
+2. `_process()` 在 Agent.run 前仅将首个词为 `/remind` 的消息分派到 `scheduler/chat.py::reply()`。仅允许 help、at、in、list、show、cancel；其他管理命令和 simulate/events/status 不开放。含附件的提醒命令直接提示改用纯文本，不下载附件或调用模型。
+3. `source_scope()` 从 Inbox 绑定的 Agent、渠道应用与对方身份生成摘要；`request_key()` 再绑定原 message_id。相对 in 使用持久 received_at，重复处理不会把到期时间顺延。shared command() 接受 Host 提供的 request_id、reference_at 与 source_scope，使用原校验与 create() 事务；模型与历史均不能调用这个入口。
+4. list 每页五条，只返回当前来源和 Conversation；show/cancel 同时复核二者，不暴露本地 CLI、其他渠道或其他会话记录。旧 schema 18 提醒保持 local，不能通过私聊管理。分页游标限制在 SQLite 正整数范围内。
+5. 数据提交后通过原 `_reply()` 发送被动确认，回复包含提醒 ID、时间、真实记录状态和无到期发送保证的提示。执行开始后标记不可重放；被动确认失败不撤销提醒、不重新排期，沿原收件状态处理 uncertain。收到不确定回执时可发 `/remind list` 查看。
+
+QQ/NapCat 可以直接发送上方 in/at 示例，再用 `/remind list` 或 `/remind cancel <id>` 管理。“我明天准备做……”是后续聊天可跟进的线索；“明天九点提醒我……”也尚无自然语言解析器，均不会自动创建 schedule。只读服务拒绝聊天提醒入口，普通对话仍使用空 Memory 写权限。
 
 | 配置 | 默认值 | 含义 |
 | --- | --- | --- |
@@ -54,4 +64,4 @@ schema 18 追加 scheduled_reminders、reminder_attempts、reminder_events；旧
 
 ## 阅读与验证状态
 
-`tests/test_scheduler.py` 已编写待执行的离线场景，包括到期/宽限过期、幂等和取消不复活、一次模拟和重启 uncertain、跨 Agent、只读观察器、非法时间及 schema 17→18 失败回滚。最小后续验证命令为 `uv run pytest tests/test_scheduler.py`，完整回归仍应执行项目 pytest、打包及启动检查。本次按用户要求暂不运行 pytest、应用启动或投递测试，静态检查不等于运行验证通过。
+`tests/test_scheduler.py` 已编写待执行的离线场景，包括到期/宽限过期、幂等和取消不复活、一次模拟和重启 uncertain、跨 Agent、只读观察器、非法时间及 schema 17→18 失败回滚。`tests/test_reminder_chat.py` 增加聊天创建/取消、零模型调用、消息去重、来源隔离、附件与远程管理拒绝、游标范围、被动确认失败及 schema 18→19 回滚场景。最小后续验证命令为 `uv run pytest tests/test_scheduler.py tests/test_reminder_chat.py`，完整回归仍应执行项目 pytest、打包及启动检查。本次按用户要求暂不运行 pytest、应用启动或投递测试，静态检查不等于运行验证通过。

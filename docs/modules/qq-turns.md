@@ -16,7 +16,7 @@
 2. Gateway 调用 `QQAdapter.accept()`；`parse_text()` 投影白名单 C2C 文本/图片，`QQInbox.receive()` 提交原回执并按 message_id / 非空 event_id 去重。提交与 `wake.set()` 之间无 await；回调返回后 Gateway 才推进游标。重复消息不会延长 idle。
 3. `_consume()` 清除通知，发现待处理输入时先 `await service.foreground()` 抢占维护任务，此时消息仍为 received。`claim_turn()` 在短事务内重新读取并规划，不依赖内存队列。尚未到期时消费者在事务外等待 Event 或 timeout，每次醒来都重新核对持久回执。
 4. 到期的连续组在同一事务内全部变为 processing，并清除暂存正文/附件 URL，原始回执 ID、事件 ID、sequence、时间戳仍各自保留。`QQTurn.input_row()` 以换行组合文本、按原顺序组合图片；多消息含图片时增加编号提示以对应各条文字。组内最后一条提供回复引用和平台期限。单消费者保证 claim 返回到开始处理之间没有新消息进入该组。
-5. `_process()` 沿用图片准备、安全下载、权限和超时规则，只调用一次 `ChatService.run()`。命令仍只回复 CLI 提示，不调用 Agent。Journal 保存合并后的正常用户输入，不增加 Episode/Thread 或会话机制。
+5. `_process()` 沿用图片准备、安全下载、权限和超时规则，普通输入只调用一次 `ChatService.run()`。独立 `/remind` 命令交给受限提醒入口，其他管理命令只回复 CLI 提示；命令跳过 hybrid 判断、不调用 Agent。Journal 保存合并后的正常用户输入，不增加 Episode/Thread 或会话机制。提醒提交后不因被动回复失败而恢复 received，详见 [scheduler.md](scheduler.md)。
 6. Run 返回、超时或正常取消时，`QQInbox.link_run()` 将同一 Run ID 关联到所有组员。`mark()` 的 tuple 输入在一个事务内更新整组状态。组不是 Run：命令、图片失败、过期等可能没有 Run。
 7. `_reply()` 仅生成一份发送计划，沿用 Humanizer、跨输入节流、递增 msg_seq 和最多四段。所有段均使用最后一条原始 message_id；不会按回执数量重复回复。每段前核对该引用的平台时间、本地接收时间和 monotonic 处理期限，预留 send timeout。排队和聚合时间不延长平台被动回复期限。
 8. 队列清空后 `_consume()` 才调用一次 `after_reply(result)`，继续原维护调度；聚合等待期间不启动新的 after_reply。执行或发送期间收到的消息仍写入 Inbox，待当前组结束后另行规划。

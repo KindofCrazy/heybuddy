@@ -48,6 +48,12 @@ SCHEMA = (
     "CREATE INDEX reminder_event_order ON reminder_events(agent_id,reminder_id,id)",
 )
 
+CHAT_SCHEMA = (
+    "ALTER TABLE scheduled_reminders ADD COLUMN source_scope TEXT NOT NULL DEFAULT 'local'",
+    "CREATE INDEX reminder_chat_scope ON scheduled_reminders"
+    "(agent_id,source_scope,conversation_id)",
+)
+
 
 class ReminderRepository:
     def __init__(self, store: SQLiteStore, agent_id: str) -> None:
@@ -84,6 +90,7 @@ class ReminderRepository:
             if existing:
                 if (
                     existing["conversation_id"] != request.conversation_id
+                    or existing["source_scope"] != request.source_scope
                     or existing["due_at"] != stamp(request.due_at)
                     or existing["text"] != request.text
                 ):
@@ -100,7 +107,7 @@ class ReminderRepository:
             db.execute(
                 "INSERT INTO scheduled_reminders "
                 "(id,agent_id,conversation_id,request_id,text,due_at,expires_at,status,"
-                "created_at,updated_at) VALUES (?,?,?,?,?,?,?,'scheduled',?,?)",
+                "created_at,updated_at,source_scope) VALUES (?,?,?,?,?,?,?,'scheduled',?,?,?)",
                 (
                     item_id,
                     self.agent_id,
@@ -111,6 +118,7 @@ class ReminderRepository:
                     stamp(request.due_at + timedelta(seconds=policy.grace_seconds)),
                     stamp(at),
                     stamp(at),
+                    request.source_scope,
                 ),
             )
             item = self._get(db, item_id)
@@ -266,14 +274,30 @@ class ReminderRepository:
             (stamp(at), reminder_id, self.agent_id),
         )
 
-    def listing(self, limit: int = 12, cursor: int = 2**63 - 1) -> dict:
-        if not 1 <= limit <= 20 or cursor < 1:
+    def listing(
+        self,
+        limit: int = 12,
+        cursor: int = 2**63 - 1,
+        *,
+        conversation_id: str | None = None,
+        source_scope: str | None = None,
+    ) -> dict:
+        if not 1 <= limit <= 20 or not 1 <= cursor <= 2**63 - 1:
             raise ValueError("Invalid reminder page")
+        filters = ["agent_id=?", "rowid<?"]
+        parameters: list[str | int] = [self.agent_id, cursor]
+        if conversation_id is not None:
+            filters.append("conversation_id=?")
+            parameters.append(conversation_id)
+        if source_scope is not None:
+            filters.append("source_scope=?")
+            parameters.append(source_scope)
         with self.store.reading() as db:
             rows = db.execute(
-                "SELECT rowid AS position,* FROM scheduled_reminders WHERE agent_id=? "
-                "AND rowid<? ORDER BY rowid DESC LIMIT ?",
-                (self.agent_id, cursor, limit + 1),
+                "SELECT rowid AS position,* FROM scheduled_reminders WHERE "
+                + " AND ".join(filters)
+                + " ORDER BY rowid DESC LIMIT ?",
+                (*parameters, limit + 1),
             ).fetchall()
         items = [dict(row) for row in rows[:limit]]
         next_cursor = items[-1]["position"] if len(rows) > limit else None
