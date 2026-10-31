@@ -21,6 +21,8 @@ P4.3 第一阶段把 Attention notify 转成 Luna 口吻的草稿，并提供显
 
 ## 对话接续与学习隔离
 
+`Composer.PROMPT` 要求草稿通常一两句，遵循用户最新澄清，不自动给清单、追加追问或要求汇报。没有用户求建议的来源时，不为凑交流价值提供服务邀约；贴合事项的简短祝愿即可。句数约束只作用于 JSON 的 text 字段，外层始终为符合 MessageDraft 的 JSON 对象，不能裸输出正文。该提示词修订不改变 Gate、证据复核、草稿领取或真实发送边界；隔离 API 测试只生成合成草稿，见 [评测说明](evaluation.md#历史问题驱动的-prompt-复核)。
+
 `core/outbound.py::ConversationNotices` 是独立只读 Protocol。ContextBuilder._injections() 可读取一个带 kind=proactive_messages、origin=proactive、trust=assistant_generated_only、user_evidence=false 的低信任 JSON；该注入计入原上下文预算，不进入 pending 或 messages。数据额外标明每条消息的 assistant 角色，原冻结 system 提示词保持不变。SessionManager.context() 通过 notice_factory 将读取器绑定到当前 Conversation，切换会话不会继续读取旧会话。
 
 当前只有 Fake Sender，所以生产 OutboundContext 默认返回 None。离线 Harness 必须显式 include_simulations=True，才读取当前 Agent/Conversation 最近至多三条 accepted 模拟消息，并标记 simulation=true。prepared、failed、uncertain、其他 Agent/Conversation 都不进入上下文。可在 Fake Provider 请求中看到草稿后再输入“还没做完”，验证接话，不冒充真实投递。

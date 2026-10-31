@@ -120,7 +120,12 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
         (root / "time-aware-conversation-context.json").read_text(encoding="utf-8")
     )
     byte_budget = json.loads((root / "compaction-byte-budget.json").read_text(encoding="utf-8"))
-    assert current == byte_budget
+    reviewed = json.loads((root / "history-reviewed-context.json").read_text(encoding="utf-8"))
+    assert current == reviewed
+    assert reviewed["main"] != byte_budget["main"]
+    assert {k: v for k, v in reviewed.items() if k != "main"} == {
+        k: v for k, v in byte_budget.items() if k != "main"
+    }
     assert current["summary"] != temporal["summary"]  # Host limit fix, no measured quality gain.
     assert {k: v for k, v in current.items() if k not in {"main", "summary"}} == {
         k: v for k, v in temporal.items() if k not in {"main", "summary"}

@@ -46,6 +46,22 @@ manifest 保存 Phase 1 checkpoint、冻结语料与收集器哈希、基线哈�
 
 小样本和单模型不能证明普适提升；词面命中不能证明完整语义质量。本轮没有 LLM Judge，不用模型自评证明权限或事实正确；偏好扩写与 Holdout invalid_create 经过人工复核，并保留失败。开发分组不是最终组合在全部开发集的复测，不能合成一个“最终总准确率”。Holdout 不用于再次调 Prompt。
 
+## 历史问题驱动的 Prompt 复核
+
+`evaluation/prompt_audit.py` 是独立的空工具探针入口。`stages()` 读取主对话、Episode、Thread、Learning、兼容角色状态、Scout、Attention、Composer、检索、Curator、目标选择、局部整合、手动 Reflection、Worthiness 和 Thread Repair 的当前提示词及实际输出模型。`prompt_audit_cases.py` 与 `prompt_audit_workflow.py` 保存合成开发、正向控制和最终独立案例；它们取自历史暴露的问题类型，不复制私人消息或身份。Rubric 是人工审阅要求，不用关键词命中或模型自评声称语义准确率。
+
+执行顺序为 `main()` → `run()` → 检查输出目录隐私 → 保存不可变提示词快照 → 无 `--live` 直接返回。显式 live 才通过正常配置入口加载模型与 Key；不输出配置值。读取同一目录的 ledger，预算按已尝试请求累计，默认 30，最大允许显式配置 100。每次网络请求前追加并 flush 计数；失败也占用额度。SDK `max_retries=0`，每个案例只调用一次空工具 `OpenAIProvider.generate()`，最多输出 4096 tokens；不执行 Agent、Registry、Memory Apply、Scheduler 或 Sender，不读取生产数据库。当前入口按单进程顺序使用，同一 campaign 不并发启动。
+
+完成后按真实 Pydantic 模型校验 JSON，保存结构校验结果与成功响应。API 异常仅保存安全类型、Provider code 和可用的数值 usage；不保存未完成正文或异常体。原始合成结果、提示词快照与 ledger 只留在忽略目录，历史版本不覆盖；重复案例必须用新 variant 显式重跑。结构校验不等于来源校验或完整生产路径通过，引用和语义仍需人工核对。reasoning 是 output 子集，不重复计费；未知价格不估算费用，不完整 usage 不当作零费用。
+
+离线保存快照示例：`uv run python -m personal_agent.evaluation.prompt_audit --output .heybuddy/new-audit --variant snapshot`。获得真实调用授权后，可加 `--live --split dev --max-requests 100`；其他 split 为 holdout、positive、workflow、workflow-positive、fresh，`--stages` 可限定环节，`--prompts` 可加载原版快照作同输入对照。新环节不在旧快照中时沿用当前默认并单列实际 prompt_hash，不能宣称旧快照覆盖该环节。
+
+本轮收敛在主对话、Episode、Learning、兼容 Markdown 角色状态和 Composer；Thread 试验未见稳定收益而撤回。Luna persona.json 当前不运行 CharacterStateService，状态探针只验证兼容环节。Holdout 中暴露的草稿冲突后来用于修订，因而不再视为最终独立测试；另设 fresh 固定案例在停止调参后比较原版与最终版。保留的局限包括摘要偶有多余助手复述、同一事项重复 highlight、个别知识回答数值不一致；不能以合法 JSON 宣称全语义正确。本轮未改固定评分器、Compaction 或任何生产数据。无正文汇总见 `evals/results/history-prompt-audit.json`。
+
+离线契约测试在 `tests/test_prompt_audit.py`，覆盖 snapshot 无需配置或客户端、100 次累计上限在调用前拒绝、失败请求计数且不自动重试；`tests/test_evaluation.py` 继续冻结历史快照和后台记忆规则，仅新增主对话表达快照。API 探针基于采集时工作区提示词，不替代最终提交的离线接线测试，也不保证跨模型收益。
+
+本轮累计 86 次请求，82 次通过输出结构检查，另有 2 次 ProviderError 和 2 次 JSON ValidationError；失败均计入用户授权的 100 次上限。已知 input/output/reasoning 分别为 103171/55458/47171 tokens，usage 不完整且没有单价，不报告费用。最终 fresh 原版/候选五组逐项配对使用相同 case_hash；兼容状态的助手故事反馈循环和草稿冲突合并在这组案例中得到改善，条件偏好仍保留，但这不是总体语义准确率或跨模型收益结论。
+
 ## 阅读与验证
 
 `tests/test_evaluation.py` 离线验证真实 Runtime/Automation 的 Fake 路径、检索工具、预算调用前拒绝、不可被好答案覆盖的安全失败、快照一致、Compaction 计量分离和不完整采集拒绝。默认 pytest 保持网络禁用，真实评测仅通过单独显式命令运行。

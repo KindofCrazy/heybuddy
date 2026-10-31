@@ -1,5 +1,7 @@
 # Passive Character State
 
+`STATE_PROMPT` 增加防止自我强化的语义约束：助手自己的工作烦恼、角色生活或旧模拟状态不是新的外部事件，不能成为状态变化的唯一理由。用户仅简短确认、未给出新反馈时通常 no_op；明确用户反馈或已验证的新结果仍可支持克制更新。引文校验与 CAS 发布路径不变。这是兼容 Markdown 角色路径的提示词修改，不为当前 Luna persona.json 创建状态服务。对应合成 API 正反对照见 [评测说明](evaluation.md#历史问题驱动的-prompt-复核)。
+
 此模块目前只服务旧 Markdown 角色。当前开发的 OpenPersona Luna 使用 persona.json，运行时不创建 CharacterStateService；详见 [简化角色设定](persona.md)。
 
 原生 soul.md 的正文与情绪反应由同一次 Loader 解析派生，主对话和状态服务共用该包；旧包沿用 character/behavior。状态任务说明已中文化，要求自然语言字段使用中文；JSON 字段、枚举、证据验证和调度不变。

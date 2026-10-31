@@ -1,0 +1,825 @@
+{
+  "request_limit": 100,
+  "attempted_requests": 86,
+  "model": "deepseek-flash",
+  "structurally_valid": 82,
+  "errors": {
+    "ProviderError": 2,
+    "ValidationError": 2
+  },
+  "known_usage": {
+    "input_tokens": 103171,
+    "output_tokens": 55458,
+    "reasoning_tokens": 47171
+  },
+  "usage_complete": false,
+  "cost": null,
+  "method": "Tool-free synthetic prompt probes; human semantic review, no numerical semantic accuracy claim.",
+  "retained": [
+    "main",
+    "episode",
+    "learning",
+    "state_legacy_markdown_only",
+    "composer"
+  ],
+  "reverted_trial": [
+    "thread"
+  ],
+  "notes": [
+    "Intermediate holdout informed refinement; only fresh-baseline/fresh-final are the final untouched paired cases.",
+    "Prompt probes used collection-time working-tree prompts; they do not validate production source plumbing, approval or delivery.",
+    "Residual duplicate highlights, incidental assistant details and numerical explanations remain possible.",
+    "Reasoning tokens are a subset of output tokens; unknown usage and prices are not treated as zero."
+  ],
+  "requests": [
+    {
+      "request": 1,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "main",
+      "case_hash": "57b4a25c12ec0384c5705d50ebe937c9f3413f550d4bda6556d3ba9cd5f55e81",
+      "prompt_hash": "acd4b9c8bc439fba9ea54ba7f352193f7f089d685813dddef110fb5498f20d87",
+      "schema_valid": true
+    },
+    {
+      "request": 2,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "30e17b25e5577d1c14db75be7441fd2c6b074181847a7f5bf37297d2a54ab13d",
+      "schema_valid": true
+    },
+    {
+      "request": 3,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_valid": true
+    },
+    {
+      "request": 4,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "learning",
+      "case_hash": "26cd156122520239786a7b82fb6a02e332ef52d3979f05e5ede540a3f8ebe648",
+      "prompt_hash": "97e4fdf523d0cac7c26eff1ffe3a85facdeec446fd35f88f5284756574559a23",
+      "schema_valid": true
+    },
+    {
+      "request": 5,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "f725e6fbffcac37c8705ec56e1a5baf47436027a50f21bab8ec38917a2abf316",
+      "schema_valid": true
+    },
+    {
+      "request": 6,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "scout",
+      "case_hash": "8c3f173501165ae97caf7cf968de0dd93f9d2a36dae2eca04684db9238333e15",
+      "prompt_hash": "1ce1ad820ccb961b8e5db757ca80bca44746556a2bcf27178f57a6fd92dcb688",
+      "schema_valid": true
+    },
+    {
+      "request": 7,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "attention",
+      "case_hash": "e6b3b7fc6c30b67ae60640c14ffca521f7b2295966f3805d2ebe959e52f97b9a",
+      "prompt_hash": "5acb932bfffc3a4ea8002511e33c54fac57c53c0e3afec3dbe8e6b5630cf3e8b",
+      "schema_valid": true
+    },
+    {
+      "request": 8,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "composer",
+      "case_hash": "94985ff1e653739e3c64a3a8b59c6656a455b11d2f29eae47ab28bb82e5286db",
+      "prompt_hash": "13ca06a18a9d891a1c5a4faa76f16991eeecb1e41681d1a2b5d96e89fefee0c2",
+      "schema_valid": true
+    },
+    {
+      "request": 9,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "retrieval",
+      "case_hash": "f809662f0ca01e4bcd6734650cb0d044637a8a60a6d0b1e86884ebf4dde2b3dc",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true
+    },
+    {
+      "request": 10,
+      "variant": "baseline",
+      "split": "dev",
+      "stage": "curator",
+      "case_hash": "f068ce28922e065b8314d121b9d1539ca86fdef35a6759d0c8201cd2b1237b2a",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true
+    },
+    {
+      "request": 11,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "main",
+      "case_hash": "57b4a25c12ec0384c5705d50ebe937c9f3413f550d4bda6556d3ba9cd5f55e81",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 12,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "29ad1a8d64f3ecf7a4718eb38d258342559bcf1669c4fc6500ddb0eac0bf5f39",
+      "schema_valid": true
+    },
+    {
+      "request": 13,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "ca7c211f65a38ded79817b982193d5413b8fe54124f0cfa03f790ce4c065f025",
+      "schema_valid": true
+    },
+    {
+      "request": 14,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "learning",
+      "case_hash": "26cd156122520239786a7b82fb6a02e332ef52d3979f05e5ede540a3f8ebe648",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": false
+    },
+    {
+      "request": 15,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 16,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "scout",
+      "case_hash": "8c3f173501165ae97caf7cf968de0dd93f9d2a36dae2eca04684db9238333e15",
+      "prompt_hash": "1ce1ad820ccb961b8e5db757ca80bca44746556a2bcf27178f57a6fd92dcb688",
+      "schema_valid": true
+    },
+    {
+      "request": 17,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "attention",
+      "case_hash": "e6b3b7fc6c30b67ae60640c14ffca521f7b2295966f3805d2ebe959e52f97b9a",
+      "prompt_hash": "5acb932bfffc3a4ea8002511e33c54fac57c53c0e3afec3dbe8e6b5630cf3e8b",
+      "schema_valid": true
+    },
+    {
+      "request": 18,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "composer",
+      "case_hash": "94985ff1e653739e3c64a3a8b59c6656a455b11d2f29eae47ab28bb82e5286db",
+      "prompt_hash": "be42311635cab2d296ec41c252070f0bcea492dbff5a8786143a6d14def292f5",
+      "schema_valid": true
+    },
+    {
+      "request": 19,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "retrieval",
+      "case_hash": "f809662f0ca01e4bcd6734650cb0d044637a8a60a6d0b1e86884ebf4dde2b3dc",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true
+    },
+    {
+      "request": 20,
+      "variant": "candidate",
+      "split": "dev",
+      "stage": "curator",
+      "case_hash": "f068ce28922e065b8314d121b9d1539ca86fdef35a6759d0c8201cd2b1237b2a",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true
+    },
+    {
+      "request": 21,
+      "variant": "refined",
+      "split": "dev",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "3e10414bc83b89d9cf4f9f86bd1870ecd0119e10dcca995fdb08ee68fb36e063",
+      "schema_valid": false
+    },
+    {
+      "request": 22,
+      "variant": "refined",
+      "split": "dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "b04cb6ee472b7b8857d0ad7f6d1faa5e3e49d90812efaf18025bcbabab865a69",
+      "schema_valid": true
+    },
+    {
+      "request": 23,
+      "variant": "refined",
+      "split": "dev",
+      "stage": "learning",
+      "case_hash": "26cd156122520239786a7b82fb6a02e332ef52d3979f05e5ede540a3f8ebe648",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 24,
+      "variant": "refined",
+      "split": "dev",
+      "stage": "composer",
+      "case_hash": "94985ff1e653739e3c64a3a8b59c6656a455b11d2f29eae47ab28bb82e5286db",
+      "prompt_hash": "215e495c6b87a8dcd299d1b8b417b98ead0ccc42b1ec309862f79c378a89fdf4",
+      "schema_valid": false
+    },
+    {
+      "request": 25,
+      "variant": "holdout",
+      "split": "holdout",
+      "stage": "main",
+      "case_hash": "286b44de74874a4985978f155d97bfa882efc7cf863c7acb5324cbb6dacf6e90",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 26,
+      "variant": "holdout",
+      "split": "holdout",
+      "stage": "episode",
+      "case_hash": "3de5ed654c0719d1960c02dc7456a6bbcd83577f7a14784316b680689f6137b8",
+      "prompt_hash": "3e10414bc83b89d9cf4f9f86bd1870ecd0119e10dcca995fdb08ee68fb36e063",
+      "schema_valid": true
+    },
+    {
+      "request": 27,
+      "variant": "holdout",
+      "split": "holdout",
+      "stage": "learning",
+      "case_hash": "14586c47f11ef834672af0a22602ff84c6ab3c189db6ab8eb998c96934fa30fa",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 28,
+      "variant": "holdout",
+      "split": "holdout",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 29,
+      "variant": "holdout",
+      "split": "holdout",
+      "stage": "scout",
+      "case_hash": "1eea4d77b3de0a7b9943a51a70c63b5565776f2906ef67c56b6e43a9e9511923",
+      "prompt_hash": "1ce1ad820ccb961b8e5db757ca80bca44746556a2bcf27178f57a6fd92dcb688",
+      "schema_valid": true
+    },
+    {
+      "request": 30,
+      "variant": "holdout",
+      "split": "holdout",
+      "stage": "composer",
+      "case_hash": "b379e65b40760e1ebee6fbfea7ac47154b6a85656d6f464210b6220bbd6d06b7",
+      "prompt_hash": "215e495c6b87a8dcd299d1b8b417b98ead0ccc42b1ec309862f79c378a89fdf4",
+      "schema_valid": true
+    },
+    {
+      "request": 31,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "main",
+      "case_hash": "2141d41abac1905b3a3aaa8ba1a6ffb1e1a21c3a6376a96c4deb63fc57c2d1b0",
+      "prompt_hash": "acd4b9c8bc439fba9ea54ba7f352193f7f089d685813dddef110fb5498f20d87",
+      "schema_valid": true
+    },
+    {
+      "request": 32,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "episode",
+      "case_hash": "1b18b0ae6c39e42bc391e829fb36f0e7b4230fb367ba0e32c1793b0863c65712",
+      "prompt_hash": "30e17b25e5577d1c14db75be7441fd2c6b074181847a7f5bf37297d2a54ab13d",
+      "schema_valid": true
+    },
+    {
+      "request": 33,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "thread",
+      "case_hash": "d4887bb5bd1217ed805d68cafa846e4de89e86bf05d092f324345dd5690c0a99",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_valid": true
+    },
+    {
+      "request": 34,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "learning",
+      "case_hash": "b1c5e177e706bacc0efe9f23b9fa80a56a1d6bb84b25b98ff06e60c82ad20d9d",
+      "prompt_hash": "97e4fdf523d0cac7c26eff1ffe3a85facdeec446fd35f88f5284756574559a23",
+      "schema_valid": true
+    },
+    {
+      "request": 35,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "state",
+      "case_hash": "a1e31398ab451bd0271e167e57540daa9c35dc489df6076fc4fd5e7ae60f5003",
+      "prompt_hash": "f725e6fbffcac37c8705ec56e1a5baf47436027a50f21bab8ec38917a2abf316",
+      "schema_valid": true
+    },
+    {
+      "request": 36,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "scout",
+      "case_hash": "5a519d45811c6065191767e3dc7a516a36d142604dca5a55e284201684405070",
+      "prompt_hash": "1ce1ad820ccb961b8e5db757ca80bca44746556a2bcf27178f57a6fd92dcb688",
+      "schema_valid": true
+    },
+    {
+      "request": 37,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "attention",
+      "case_hash": "92f887fca9dc2d62df7cf2ae4ed4b58b97c86b5efdfc773f094c1b41daa724bb",
+      "prompt_hash": "5acb932bfffc3a4ea8002511e33c54fac57c53c0e3afec3dbe8e6b5630cf3e8b",
+      "schema_valid": true
+    },
+    {
+      "request": 38,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "composer",
+      "case_hash": "f0fcb0f434d0cc687f10ff6191f210c52017696355fdcedb4541aa0b323b533e",
+      "prompt_hash": "13ca06a18a9d891a1c5a4faa76f16991eeecb1e41681d1a2b5d96e89fefee0c2",
+      "schema_valid": true
+    },
+    {
+      "request": 39,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "retrieval",
+      "case_hash": "1049e03c68a5c0bdf0fcfefb00cf31595a6ac9e39e8a221ebfa627ab7737cfc4",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true
+    },
+    {
+      "request": 40,
+      "variant": "positive-baseline",
+      "split": "positive",
+      "stage": "curator",
+      "case_hash": "f068ce28922e065b8314d121b9d1539ca86fdef35a6759d0c8201cd2b1237b2a",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true
+    },
+    {
+      "request": 41,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "main",
+      "case_hash": "2141d41abac1905b3a3aaa8ba1a6ffb1e1a21c3a6376a96c4deb63fc57c2d1b0",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 42,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "episode",
+      "case_hash": "1b18b0ae6c39e42bc391e829fb36f0e7b4230fb367ba0e32c1793b0863c65712",
+      "prompt_hash": "3e10414bc83b89d9cf4f9f86bd1870ecd0119e10dcca995fdb08ee68fb36e063",
+      "schema_valid": true
+    },
+    {
+      "request": 43,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "thread",
+      "case_hash": "d4887bb5bd1217ed805d68cafa846e4de89e86bf05d092f324345dd5690c0a99",
+      "prompt_hash": "b04cb6ee472b7b8857d0ad7f6d1faa5e3e49d90812efaf18025bcbabab865a69",
+      "schema_valid": true
+    },
+    {
+      "request": 44,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "learning",
+      "case_hash": "b1c5e177e706bacc0efe9f23b9fa80a56a1d6bb84b25b98ff06e60c82ad20d9d",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 45,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "state",
+      "case_hash": "a1e31398ab451bd0271e167e57540daa9c35dc489df6076fc4fd5e7ae60f5003",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 46,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "scout",
+      "case_hash": "5a519d45811c6065191767e3dc7a516a36d142604dca5a55e284201684405070",
+      "prompt_hash": "1ce1ad820ccb961b8e5db757ca80bca44746556a2bcf27178f57a6fd92dcb688",
+      "schema_valid": true
+    },
+    {
+      "request": 47,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "attention",
+      "case_hash": "92f887fca9dc2d62df7cf2ae4ed4b58b97c86b5efdfc773f094c1b41daa724bb",
+      "prompt_hash": "5acb932bfffc3a4ea8002511e33c54fac57c53c0e3afec3dbe8e6b5630cf3e8b",
+      "schema_valid": true
+    },
+    {
+      "request": 48,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "composer",
+      "case_hash": "f0fcb0f434d0cc687f10ff6191f210c52017696355fdcedb4541aa0b323b533e",
+      "prompt_hash": "215e495c6b87a8dcd299d1b8b417b98ead0ccc42b1ec309862f79c378a89fdf4",
+      "schema_valid": false
+    },
+    {
+      "request": 49,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "retrieval",
+      "case_hash": "1049e03c68a5c0bdf0fcfefb00cf31595a6ac9e39e8a221ebfa627ab7737cfc4",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true
+    },
+    {
+      "request": 50,
+      "variant": "positive-candidate",
+      "split": "positive",
+      "stage": "curator",
+      "case_hash": "f068ce28922e065b8314d121b9d1539ca86fdef35a6759d0c8201cd2b1237b2a",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true
+    },
+    {
+      "request": 51,
+      "variant": "workflow-negative",
+      "split": "workflow",
+      "stage": "selection",
+      "case_hash": "9f4efad0d2376f4bbe04295a33a513ff3eea3345a346007f339897ff090598f9",
+      "prompt_hash": "5d843f139def1e8530088e8452c7e985dde14197f2a8f5f71c80aa0661b864af",
+      "schema_valid": true
+    },
+    {
+      "request": 52,
+      "variant": "workflow-negative",
+      "split": "workflow",
+      "stage": "consolidation",
+      "case_hash": "69d03df122a1781273f31660cdc2e74977778ac2d698b4f2741a02a607e17ba0",
+      "prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "schema_valid": true
+    },
+    {
+      "request": 53,
+      "variant": "workflow-negative",
+      "split": "workflow",
+      "stage": "reflection",
+      "case_hash": "2082b6d805e52e697ba4425bb63fbe8bbb83eaa4971b9964ea55e32ff90e6a8c",
+      "prompt_hash": "a64d4c53a3391ba58b74629ff8442475565d6e60ed1e5be2160b4b1fbb01896b",
+      "schema_valid": true
+    },
+    {
+      "request": 54,
+      "variant": "workflow-negative",
+      "split": "workflow",
+      "stage": "worthiness",
+      "case_hash": "27aef2cabf21de18521c7772e2541fe4b7bcca1938b0b449b916315bf07f2c56",
+      "prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "schema_valid": true
+    },
+    {
+      "request": 55,
+      "variant": "workflow-negative",
+      "split": "workflow",
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_valid": true
+    },
+    {
+      "request": 56,
+      "variant": "workflow-positive",
+      "split": "workflow-positive",
+      "stage": "selection",
+      "case_hash": "44103e49601568dc87ccbdfa98128a6ab80b6e3732f98b2b9339c6dc9e86b9b4",
+      "prompt_hash": "5d843f139def1e8530088e8452c7e985dde14197f2a8f5f71c80aa0661b864af",
+      "schema_valid": true
+    },
+    {
+      "request": 57,
+      "variant": "workflow-positive",
+      "split": "workflow-positive",
+      "stage": "consolidation",
+      "case_hash": "c239ee0908b1793d7adae08ab1a295095c7347eaa3362b5b24ebdd55e5f899f5",
+      "prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "schema_valid": true
+    },
+    {
+      "request": 58,
+      "variant": "workflow-positive",
+      "split": "workflow-positive",
+      "stage": "reflection",
+      "case_hash": "4591ba090c0d464a709790851a25e90f6c5fafe40748a73d3385697a08e6b2c8",
+      "prompt_hash": "a64d4c53a3391ba58b74629ff8442475565d6e60ed1e5be2160b4b1fbb01896b",
+      "schema_valid": true
+    },
+    {
+      "request": 59,
+      "variant": "workflow-positive",
+      "split": "workflow-positive",
+      "stage": "worthiness",
+      "case_hash": "ef13f90d82a1a0646bb5485c5b9fc726a34ca0f751b644170e048aefef823454",
+      "prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "schema_valid": true
+    },
+    {
+      "request": 60,
+      "variant": "workflow-positive",
+      "split": "workflow-positive",
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_valid": true
+    },
+    {
+      "request": 61,
+      "variant": "final-dev",
+      "split": "dev",
+      "stage": "main",
+      "case_hash": "57b4a25c12ec0384c5705d50ebe937c9f3413f550d4bda6556d3ba9cd5f55e81",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 62,
+      "variant": "final-dev",
+      "split": "dev",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true
+    },
+    {
+      "request": 63,
+      "variant": "final-dev",
+      "split": "dev",
+      "stage": "learning",
+      "case_hash": "26cd156122520239786a7b82fb6a02e332ef52d3979f05e5ede540a3f8ebe648",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 64,
+      "variant": "final-dev",
+      "split": "dev",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 65,
+      "variant": "final-dev",
+      "split": "dev",
+      "stage": "composer",
+      "case_hash": "94985ff1e653739e3c64a3a8b59c6656a455b11d2f29eae47ab28bb82e5286db",
+      "prompt_hash": "29d28384396d731150b72310b89e71c290a35afe3fded0801b374273c6f25af3",
+      "schema_valid": true
+    },
+    {
+      "request": 66,
+      "variant": "final-positive",
+      "split": "positive",
+      "stage": "main",
+      "case_hash": "2141d41abac1905b3a3aaa8ba1a6ffb1e1a21c3a6376a96c4deb63fc57c2d1b0",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 67,
+      "variant": "final-positive",
+      "split": "positive",
+      "stage": "episode",
+      "case_hash": "1b18b0ae6c39e42bc391e829fb36f0e7b4230fb367ba0e32c1793b0863c65712",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true
+    },
+    {
+      "request": 68,
+      "variant": "final-positive",
+      "split": "positive",
+      "stage": "learning",
+      "case_hash": "b1c5e177e706bacc0efe9f23b9fa80a56a1d6bb84b25b98ff06e60c82ad20d9d",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 69,
+      "variant": "final-positive",
+      "split": "positive",
+      "stage": "state",
+      "case_hash": "a1e31398ab451bd0271e167e57540daa9c35dc489df6076fc4fd5e7ae60f5003",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 70,
+      "variant": "final-positive",
+      "split": "positive",
+      "stage": "composer",
+      "case_hash": "f0fcb0f434d0cc687f10ff6191f210c52017696355fdcedb4541aa0b323b533e",
+      "prompt_hash": "29d28384396d731150b72310b89e71c290a35afe3fded0801b374273c6f25af3",
+      "schema_valid": true
+    },
+    {
+      "request": 71,
+      "variant": "final-holdout",
+      "split": "holdout",
+      "stage": "main",
+      "case_hash": "286b44de74874a4985978f155d97bfa882efc7cf863c7acb5324cbb6dacf6e90",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 72,
+      "variant": "final-holdout",
+      "split": "holdout",
+      "stage": "episode",
+      "case_hash": "3de5ed654c0719d1960c02dc7456a6bbcd83577f7a14784316b680689f6137b8",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true
+    },
+    {
+      "request": 73,
+      "variant": "final-holdout",
+      "split": "holdout",
+      "stage": "learning",
+      "case_hash": "14586c47f11ef834672af0a22602ff84c6ab3c189db6ab8eb998c96934fa30fa",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 74,
+      "variant": "final-holdout",
+      "split": "holdout",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 75,
+      "variant": "final-holdout",
+      "split": "holdout",
+      "stage": "composer",
+      "case_hash": "b379e65b40760e1ebee6fbfea7ac47154b6a85656d6f464210b6220bbd6d06b7",
+      "prompt_hash": "29d28384396d731150b72310b89e71c290a35afe3fded0801b374273c6f25af3",
+      "schema_valid": true
+    },
+    {
+      "request": 76,
+      "variant": "grounded-holdout",
+      "split": "holdout",
+      "stage": "composer",
+      "case_hash": "b379e65b40760e1ebee6fbfea7ac47154b6a85656d6f464210b6220bbd6d06b7",
+      "prompt_hash": "ca05a90c198b3a25715ee88725062430640a05017a3d475696bd3838107cb1e5",
+      "schema_valid": true
+    },
+    {
+      "request": 77,
+      "variant": "fresh-baseline",
+      "split": "fresh",
+      "stage": "main",
+      "case_hash": "c4971f460042b4c6ff43d8ad3bed6ced16a0c3a70d21a64eab351cdb4aec3198",
+      "prompt_hash": "acd4b9c8bc439fba9ea54ba7f352193f7f089d685813dddef110fb5498f20d87",
+      "schema_valid": true
+    },
+    {
+      "request": 78,
+      "variant": "fresh-baseline",
+      "split": "fresh",
+      "stage": "episode",
+      "case_hash": "2d1a64cb5a9f9e884b1c3355f0369a4ef2b033a7e10ee0aa5bd9affeff5d3e9a",
+      "prompt_hash": "30e17b25e5577d1c14db75be7441fd2c6b074181847a7f5bf37297d2a54ab13d",
+      "schema_valid": true
+    },
+    {
+      "request": 79,
+      "variant": "fresh-baseline",
+      "split": "fresh",
+      "stage": "learning",
+      "case_hash": "96c760117eccd0a2a18ee90079c7d92527cb36bd39b3daf1e2e237c24d4867e6",
+      "prompt_hash": "97e4fdf523d0cac7c26eff1ffe3a85facdeec446fd35f88f5284756574559a23",
+      "schema_valid": true
+    },
+    {
+      "request": 80,
+      "variant": "fresh-baseline",
+      "split": "fresh",
+      "stage": "state",
+      "case_hash": "184c1abcaa94de85586c0509b5ec558fba9d025dbcd33ee0bdaaf58af7e89196",
+      "prompt_hash": "f725e6fbffcac37c8705ec56e1a5baf47436027a50f21bab8ec38917a2abf316",
+      "schema_valid": true
+    },
+    {
+      "request": 81,
+      "variant": "fresh-baseline",
+      "split": "fresh",
+      "stage": "composer",
+      "case_hash": "a12a145d2e0afd9dd1dff75a8ab9eed850f0a51cd39f2dda7522fb420ca1e9f6",
+      "prompt_hash": "13ca06a18a9d891a1c5a4faa76f16991eeecb1e41681d1a2b5d96e89fefee0c2",
+      "schema_valid": true
+    },
+    {
+      "request": 82,
+      "variant": "fresh-final",
+      "split": "fresh",
+      "stage": "main",
+      "case_hash": "c4971f460042b4c6ff43d8ad3bed6ced16a0c3a70d21a64eab351cdb4aec3198",
+      "prompt_hash": "33ffc023915c92a8dfefa3cd34fcb2b2996c0864840abffd5ec046d6f29b6c94",
+      "schema_valid": true
+    },
+    {
+      "request": 83,
+      "variant": "fresh-final",
+      "split": "fresh",
+      "stage": "episode",
+      "case_hash": "2d1a64cb5a9f9e884b1c3355f0369a4ef2b033a7e10ee0aa5bd9affeff5d3e9a",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true
+    },
+    {
+      "request": 84,
+      "variant": "fresh-final",
+      "split": "fresh",
+      "stage": "learning",
+      "case_hash": "96c760117eccd0a2a18ee90079c7d92527cb36bd39b3daf1e2e237c24d4867e6",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true
+    },
+    {
+      "request": 85,
+      "variant": "fresh-final",
+      "split": "fresh",
+      "stage": "state",
+      "case_hash": "184c1abcaa94de85586c0509b5ec558fba9d025dbcd33ee0bdaaf58af7e89196",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true
+    },
+    {
+      "request": 86,
+      "variant": "fresh-final",
+      "split": "fresh",
+      "stage": "composer",
+      "case_hash": "a12a145d2e0afd9dd1dff75a8ab9eed850f0a51cd39f2dda7522fb420ca1e9f6",
+      "prompt_hash": "ca05a90c198b3a25715ee88725062430640a05017a3d475696bd3838107cb1e5",
+      "schema_valid": true
+    }
+  ],
+  "validation": {
+    "isolated_pytest": {
+      "passed": 1219,
+      "skipped": 3,
+      "failed": 2
+    },
+    "original_prompts_reproduced_failures": [
+      "tests/test_outbound.py::test_process_exit_after_effect_recovers_uncertain_without_replay",
+      "tests/test_reminder_chat.py::test_chat_creates_once_without_agent_or_turn_judge_and_cancels"
+    ],
+    "ruff_check": "passed",
+    "ruff_format_check": "314 files formatted",
+    "build": "sdist and wheel passed",
+    "entry_help": "passed without live calls"
+  }
+}
