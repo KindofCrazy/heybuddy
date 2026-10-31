@@ -55,6 +55,12 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     proactive_quiet_end_hour: int = Field(default=8, ge=0, le=23)
     proactive_utc_offset_minutes: int = Field(default=480, ge=-720, le=840)
     proactive_candidate_limit: int = Field(default=3, ge=1, le=4)
+    proactive_social_followup_enabled: bool = True
+    proactive_evening_start_minute: int = Field(default=1140, ge=0, le=1438)
+    proactive_evening_end_minute: int = Field(default=1290, ge=1, le=1440)
+    proactive_before_probability: float = Field(default=0.3, ge=0, le=1, allow_inf_nan=False)
+    proactive_before_min_minutes: int = Field(default=15, ge=1, le=120)
+    proactive_before_max_minutes: int = Field(default=45, ge=2, le=180)
     character_root: Path | None = None
     character_max_file_bytes: int = Field(default=16384, ge=1024, le=65536)
     character_max_context_bytes: int = Field(default=24576, ge=1024, le=65536)

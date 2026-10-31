@@ -134,3 +134,7 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 # 明确提醒配置
 
 `Settings.scheduler_policy()` 将 AGENT_SCHEDULER_* 转为 SchedulerPolicy，控制本地 timer、每批上限、宽限窗口、未来时间范围和模拟超时。默认 enabled 只表示检查持久提醒，不授予真实发送或模型创建权限；observer_only 始终禁止写入。配置由原 ENV_FIELDS 加载，路径/凭证规则保持。完整字段、调用顺序和未运行的验证清单见 [scheduler.md](scheduler.md)。
+
+`Settings.proactive_policy()` 同步转发 social_followup_enabled、evening_start/end_minute、before_probability 和 before_min/max_minutes，控制有真实日期证据的关心式复查窗口。默认晚间为 19:00～21:30，普通明确时刻事项事前窗口抽样概率 0.3，提前 15～45 分钟；Policy 校验窗口顺序，仍只产生 Shadow 草稿。字段由既有 `AGENT_PROACTIVE_*` 映射自动读取，详见 [proactive.md](proactive.md)。
+
+`NapCatSettings.napcat_reminders_enabled` 默认 true，由 `AGENT_NAPCAT_REMINDERS_ENABLED` 控制。只有 NapCat runner 验证本机登录身份后才为 Scheduler 绑定受限提醒 Sender；这个开关不授予 Proactive 真实发送、官方 QQ 主动发送或任意 OneBot 操作权限。本地 CLI 记录不会自动投给 QQ，关闭开关或断线时当前连接许可不可用。

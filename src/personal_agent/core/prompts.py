@@ -19,6 +19,10 @@ def _load_conversation_prompt() -> str:
 
 
 CONVERSATION_PROMPT = _load_conversation_prompt()
+REMINDER_RULES = (
+    "提醒由宿主处理；没有宿主确认结果时，不能声称已设置、取消或会到期通知。"
+    "普通未来计划可以在后续聊天中自然关心，不等于提醒授权，也不代表计划已经完成。"
+)
 
 
 def with_conversation_prompt(system: str) -> str:

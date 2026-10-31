@@ -61,4 +61,4 @@ OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占
 
 # P4.4.1 明确提醒生命周期
 
-`assemble_chat()` 增加绑定当前 Agent 的 `SchedulerRuntime`，保存于 ChatService.scheduler；observer_only 只读装配不恢复或启动。`open_chat()` 在 yield 前 start()，独立有界 timer 不受 foreground/Idle/Attention 门控；ChatService.close() 先取消并等待提醒定时器和在途模拟，再 finally 关闭原维护 Runtime。没有真实渠道 Sender 接线。创建、取消、恢复状态、异常和待执行验证详见 [scheduler.md](scheduler.md)；本轮按用户要求未运行测试。
+`assemble_chat()` 增加绑定当前 Agent 的 `SchedulerRuntime`，保存于 ChatService.scheduler；observer_only 只读装配不恢复或启动。`open_chat()` 在 yield 前 start()，独立有界 timer 不受 foreground/Idle/Attention 门控；ChatService.close() 撤销绑定，先取消并等待提醒定时器和在途发送，再 finally 关闭原维护 Runtime。库默认没有 Sender，只有 NapCat runner 在身份核对后为当前来源/会话绑定明确提醒的真实 Sender；Proactive 继续 Shadow。创建、取消、恢复、真实回执及验证详见 [scheduler.md](scheduler.md)。

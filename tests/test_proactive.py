@@ -84,6 +84,8 @@ class ProposalProvider(FakeProvider):
 
 def proactive(store, provider=None, **changes):
     repository = ProactiveRepository(store, "heybuddy")
+    # Keep lifecycle decisions immediate; social timing has separate window contracts.
+    changes.setdefault("social_followup_enabled", False)
     policy = ProactivePolicy(enabled=True, quiet_start_hour=0, quiet_end_hour=0, **changes)
     return ProactiveRuntime(
         repository,

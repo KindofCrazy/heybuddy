@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from personal_agent.channels.qq.config import QQSettings
+from personal_agent.core.reminder_intent import reminder_action
 
 MAX_TURN_MESSAGES = 16
 
@@ -53,7 +54,9 @@ def plan_turn(
     maximum = first_at + settings.qq_message_max_wait_seconds
     if first["sequence"] in hold_after:
         deadline = maximum
-    command = (first["content"] or "").lstrip().startswith("/")
+    command = (first["content"] or "").lstrip().startswith("/") or reminder_action(
+        first["content"] or ""
+    ) is not None
     if command:
         return QQTurn(tuple(selected), first_at)
     for row in rows[1:]:
@@ -62,6 +65,7 @@ def plan_turn(
         if (
             row["conversation_id"] != first["conversation_id"]
             or (row["content"] or "").lstrip().startswith("/")
+            or reminder_action(row["content"] or "") is not None
             or datetime.fromisoformat(row["received_at"]).timestamp() >= min(deadline, maximum)
             or len(selected) >= MAX_TURN_MESSAGES
             or len(combined["content"].encode("utf-8")) > settings.qq_input_max_bytes

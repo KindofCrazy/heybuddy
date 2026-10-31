@@ -121,7 +121,12 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     )
     byte_budget = json.loads((root / "compaction-byte-budget.json").read_text(encoding="utf-8"))
     reviewed = json.loads((root / "history-reviewed-context.json").read_text(encoding="utf-8"))
-    assert current == reviewed
+    reminders = json.loads((root / "reminder-aware-context.json").read_text(encoding="utf-8"))
+    assert current == reminders
+    assert "没有宿主确认结果时，不能声称已设置、取消或会到期通知" in reminders["main"]
+    assert {k: v for k, v in reminders.items() if k != "main"} == {
+        k: v for k, v in reviewed.items() if k != "main"
+    }
     assert reviewed["main"] != byte_budget["main"]
     assert {k: v for k, v in reviewed.items() if k != "main"} == {
         k: v for k, v in byte_budget.items() if k != "main"

@@ -10,6 +10,8 @@ QQ 仍使用相同角色、Core 注入、主题/历史检索、会话压缩、Ep
 
 QQAdapter._process() 仅放行明确的 `/remind` 创建、列表、查看和取消，由 `scheduler/chat.py::reply()` 在 Agent 前处理；来源和当前会话隔离、收件幂等与失败路径见 [明确提醒](scheduler.md)。其他斜杠管理命令返回本地 CLI 提示，普通消息明确传入空 permissions。因此不提供 memory_read、memory_edit、memory_update、deferred_create、deferred_edit、deferred_index_repair，也不开放 /reflect 审阅批准、索引修复或会话管理。human.md 与 MEMORY.md 仍自动提供，统一主题检索和 Recall 仍可用；后台 Learning 的写入权限独立，不需要主模型获得 memory.update。
 
+当前明确中文提醒也先经 `scheduler/natural.py::respond()`，例如“明天上午九点提醒我交材料”；缺项仅保存十五分钟的私聊来源/会话草稿，完整后才排期。不调用 Agent 或新增模型请求，不创建普通未来计划的提醒；未命中的正常聊天仍走原 Agent。自然语言请求沿原收件去重与被动确认路径，不获得 Memory 或其他管理权限。官方 QQ 仍没有到期主动发送；NapCat 的受限明确提醒 Sender 独立绑定，详见 [scheduler.md](scheduler.md)。
+
 目前没有 QQ 通用远程管理权限开关。提醒命令不产生 Run、不授予 Memory 写权限、不提供本地模拟；保存提醒后仍没有真实到期发送渠道。其他管理能力如需开放，应新增受信白名单解析，逐 Run 授权并保留批准对象绑定，不能把普通消息内容当作权限。生产入口移除 add_numbers 后，普通 QQ 请求通常提供四个工具，终轮不提供工具。
 
 ## 职责与架构组成

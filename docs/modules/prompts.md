@@ -1,5 +1,7 @@
 # 通用交谈提示词
 
+明确提醒的 Host 结果边界保存在 `core/prompts.py::REMINDER_RULES`，分别进入默认 HOST_EXECUTION_RULES 和角色 compile_system()，不混入通用交谈 Markdown：没有 Host 确认时不能冒称已设置/取消或保证到期通知，普通未来计划不表示提醒授权。当前主对话合成快照新增 `evals/prompts/reminder-aware-context.json`；历史评测快照不覆盖，除主对话规则外的 Reflection、Memory、Summary 和工具快照保持一致，不宣称真实模型收益。
+
 ## 职责与组成
 
 `src/personal_agent/prompts/conversation.md` 独立于角色卡，保存用户确认的日常闲聊默认表达方式。`core/prompts.py` 读取这份随包分发的 Markdown，导出 CONVERSATION_PROMPT 和 with_conversation_prompt()；仅供主对话默认 System 与角色编译器使用，不注入 Learner、Curator、Reflection 或会话摘要请求。

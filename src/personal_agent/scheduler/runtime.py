@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Callable
+from datetime import datetime
 
 from personal_agent.core.evidence import SECRET
 from personal_agent.core.history import HistoryError
@@ -34,6 +35,42 @@ class SchedulerRuntime:
         self._recovering = not read_only
         self._sending: set[asyncio.Task] = set()
         self.error_code = ""
+        self.sender: Sender | None = None
+        self.delivery_grant: Callable[[], ReminderGrant | None] | None = None
+        self.connected_at: datetime | None = None
+
+    def bind_delivery(self, sender: Sender, grant: Callable[[], ReminderGrant | None]) -> None:
+        if self.read_only or self._closed or sender.mode != "napcat":
+            raise ReminderError("scheduler_delivery_unavailable")
+        self.sender, self.delivery_grant = sender, grant
+        self.connected_at = self.clock.now()
+        self.wake.set()
+
+    def unbind_delivery(self) -> None:
+        self.sender, self.delivery_grant, self.connected_at = None, None, None
+        self.wake.set()
+
+    def delivery_available(self) -> bool:
+        grant = self.delivery_grant() if self.delivery_grant is not None else None
+        return bool(
+            not self.read_only
+            and not self._closed
+            and self.policy.enabled
+            and not self.error_code
+            and self.sender is not None
+            and self.sender.mode == "napcat"
+            and grant is not None
+            and grant.enabled
+            and grant.channel == "napcat"
+            and grant.source_scope is not None
+            and grant.source_scope.startswith("chat:")
+        )
+
+    def delivery_for(self, conversation: str, scope: str) -> bool:
+        if not self.delivery_available():
+            return False
+        grant = self.delivery_grant()
+        return bool(grant and grant.conversation_id == conversation and grant.source_scope == scope)
 
     def _require_write(self) -> None:
         if self.read_only or self._closed or not self.policy.enabled or self.error_code:
@@ -46,8 +83,8 @@ class SchedulerRuntime:
         return dict(
             outcome="recorded",
             reminder=item,
-            delivery_available=False,
-            notice="提醒已记录；当前没有真实投递渠道，不保证到期通知。",
+            delivery_available=self.delivery_for(request.conversation_id, request.source_scope),
+            notice="提醒已记录；仅渠道可用且排期有效时尝试投递，不代表已送达。",
         )
 
     def cancel(self, reminder_id: str) -> dict:
@@ -66,7 +103,10 @@ class SchedulerRuntime:
             self._recovering = recovered == self.policy.batch_size
         changed = self.repository.advance(self.clock.now(), self.policy.batch_size)
         return dict(
-            outcome="checked", recovered=recovered, changed=changed, delivery_available=False
+            outcome="checked",
+            recovered=recovered,
+            changed=changed,
+            delivery_available=self.delivery_available(),
         )
 
     def start(self) -> None:
@@ -90,6 +130,9 @@ class SchedulerRuntime:
         try:
             while not self._closed and self.policy.enabled:
                 self.wake.clear()
+                if self._recovering:
+                    self.tick()
+                await self.deliver_due()
                 self.tick()
                 delay = (
                     0.05
@@ -104,6 +147,42 @@ class SchedulerRuntime:
         except Exception:
             self.error_code = "scheduler_runtime_error"
 
+    async def deliver_due(self) -> int:
+        self._require_write()
+        if self._recovering or not self.delivery_available():
+            return 0
+        sender, grant_provider = self.sender, self.delivery_grant
+        if sender is None or grant_provider is None or self.connected_at is None:
+            return 0
+        grant = grant_provider()
+        if grant is None or not grant.enabled or grant.channel != "napcat":
+            return 0
+        items = self.repository.delivery_due(
+            self.clock.now(), grant, self.connected_at, self.policy.batch_size
+        )
+        sent = 0
+        for item in items:
+            current = grant_provider()
+            if (
+                self.sender is not sender
+                or self.delivery_grant is not grant_provider
+                or current != grant
+                or sender.mode != "napcat"
+                or not self.delivery_available()
+            ):
+                break
+            if self.repository.claim(item, current, self.clock.now()):
+                task = asyncio.current_task()
+                if task is not None:
+                    self._sending.add(task)
+                try:
+                    await self._send(item, sender, current)
+                finally:
+                    if task is not None:
+                        self._sending.discard(task)
+                sent += 1
+        return sent
+
     async def simulate(
         self, reminder_id: str, sender: Sender, grant: Callable[[], ReminderGrant | None]
     ) -> dict:
@@ -114,6 +193,7 @@ class SchedulerRuntime:
             or sender.mode != "simulation"
             or initial is None
             or not initial.enabled
+            or initial.channel != "simulation"
         ):
             return dict(outcome="blocked", reason="simulation_permission_or_recovery")
         item = self.repository.get(reminder_id)
@@ -150,20 +230,21 @@ class SchedulerRuntime:
         except DeliveryError as error:
             status = "uncertain" if error.uncertain else "failed"
             self.repository.finish(item["id"], status, self.clock.now(), code="send_" + status)
-            return dict(outcome=status, mode="simulation")
+            return dict(outcome=status, mode=grant.channel)
         except Exception:
             self.repository.finish(
                 item["id"], "uncertain", self.clock.now(), code="send_unconfirmed"
             )
-            return dict(outcome="uncertain", mode="simulation")
+            return dict(outcome="uncertain", mode=grant.channel)
         # A receipt transaction failure leaves sending. Recovery must not replay its effect.
         self.repository.finish(
             item["id"], "accepted", self.clock.now(), receipt_id=receipt.receipt_id
         )
-        return dict(outcome="accepted", mode="simulation", reminder_id=item["id"])
+        return dict(outcome="accepted", mode=grant.channel, reminder_id=item["id"])
 
     async def close(self) -> None:
         self._closed = True
+        self.unbind_delivery()
         tasks = [
             task
             for task in [self.task, *self._sending]
@@ -181,5 +262,5 @@ class SchedulerRuntime:
             running=bool(self.task and not self.task.done()),
             recovering=self._recovering,
             error_code=self.error_code,
-            delivery_available=False,
+            delivery_available=self.delivery_available(),
         )

@@ -13,10 +13,12 @@ from personal_agent.channels.qq.events import QQText, parse_text, split_reply
 from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.core.models import RunResult
+from personal_agent.core.reminder_intent import reminder_action
 from personal_agent.runtime import ChatService
 from personal_agent.scheduler.chat import reply as reminder_reply
 from personal_agent.scheduler.chat import source_scope as reminder_scope
 from personal_agent.scheduler.models import ReminderError
+from personal_agent.scheduler.natural import respond as natural_reminder
 from personal_agent.storage.qq import QQInbox
 
 logger = logging.getLogger(__name__)
@@ -218,6 +220,7 @@ class QQAdapter:
         if (
             turn.deadline <= now
             or (turn.messages[0]["content"] or "").lstrip().startswith("/")
+            or reminder_action(turn.messages[0]["content"] or "") is not None
             or any(json.loads(row["attachments"]) for row in turn.messages)
             or sequences in state.attempted
             or len(state.attempted) >= self.settings.qq_message_judge_max_calls
@@ -265,7 +268,27 @@ class QQAdapter:
             )
             return None
         result = None
-        if row["content"].lstrip().split(maxsplit=1)[:1] == ["/remind"]:
+        natural = None
+        if self.service.scheduler is not None and not row["content"].lstrip().startswith("/"):
+            try:
+                natural = natural_reminder(
+                    self.service.scheduler,
+                    self.conversation_id,
+                    row["content"],
+                    scope=reminder_scope(self.inbox.scope),
+                    message_id=row["message_id"],
+                    received_at=datetime.fromisoformat(row["received_at"]),
+                    has_attachments=bool(json.loads(row.get("attachments", "[]"))),
+                )
+            except ReminderError:
+                natural = "提醒服务当前未确认设置成功，请用 /remind list 检查已有记录。"
+        elif self.service.scheduler is None and reminder_action(row["content"]) is not None:
+            natural = "当前入口尚未配置提醒。"
+        if natural is not None:
+            row["execution_started"] = True
+            text = natural
+            self.inbox.mark(row.get("sequences", row["sequence"]), "processed")
+        elif row["content"].lstrip().split(maxsplit=1)[:1] == ["/remind"]:
             # Commit a reminder before the passive acknowledgement; never replay on send failure.
             row["execution_started"] = True
             if self.service.scheduler is None:

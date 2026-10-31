@@ -54,6 +54,20 @@ CHAT_SCHEMA = (
     "(agent_id,source_scope,conversation_id)",
 )
 
+REAL_SCHEMA = (
+    "ALTER TABLE scheduled_reminders ADD COLUMN delivery_channel TEXT NOT NULL DEFAULT '' "
+    "CHECK(delivery_channel IN ('','simulation','napcat'))",
+    "CREATE INDEX reminder_delivery_due ON scheduled_reminders "
+    "(agent_id,source_scope,conversation_id,status,due_at,id)",
+)
+
+
+def record(row) -> dict:
+    value = dict(row)
+    # Keep the schema-18 CHECK-constrained legacy field; expose the current channel as mode.
+    value["mode"] = value["delivery_channel"] or value["mode"]
+    return value
+
 
 class ReminderRepository:
     def __init__(self, store: SQLiteStore, agent_id: str) -> None:
@@ -66,7 +80,7 @@ class ReminderRepository:
         ).fetchone()
         if not row:
             raise ReminderError("reminder_not_found")
-        return dict(row)
+        return record(row)
 
     def get(self, reminder_id: str) -> dict:
         with self.store.reading() as db:
@@ -95,7 +109,7 @@ class ReminderRepository:
                     or existing["text"] != request.text
                 ):
                     raise ReminderError("reminder_idempotency_conflict")
-                return dict(existing)
+                return record(existing)
             if not db.execute(
                 "SELECT 1 FROM conversations WHERE id=? AND agent_id=?",
                 (request.conversation_id, self.agent_id),
@@ -122,7 +136,7 @@ class ReminderRepository:
                 ),
             )
             item = self._get(db, item_id)
-            self._event(db, item, "created", at, "delivery_unavailable")
+            self._event(db, item, "created", at, "reminder_recorded")
             return item
 
     def _transition(self, db, item: dict, status: str, code: str, at: datetime) -> dict:
@@ -205,16 +219,31 @@ class ReminderRepository:
                 current != item
                 or current["status"] not in {"scheduled", "blocked"}
                 or not grant.enabled
-                or grant.channel != "simulation"
+                or (
+                    grant.channel == "napcat"
+                    and (
+                        grant.source_scope is None
+                        or not grant.source_scope.startswith("chat:")
+                        or grant.source_scope != current["source_scope"]
+                    )
+                )
                 or grant.conversation_id != current["conversation_id"]
                 or not current["due_at"] <= stamp(at) < current["expires_at"]
             ):
                 return False
             changed = self._transition(db, current, "sending", "", at)
             db.execute(
-                "UPDATE scheduled_reminders SET mode='simulation',recipient=?,grant_revision=? "
+                "UPDATE scheduled_reminders SET mode=?,delivery_channel=?,"
+                "recipient=?,grant_revision=? "
                 "WHERE id=? AND agent_id=?",
-                (grant.recipient, grant.revision, item["id"], self.agent_id),
+                (
+                    "simulation" if grant.channel == "simulation" else "unavailable",
+                    grant.channel,
+                    grant.recipient,
+                    grant.revision,
+                    item["id"],
+                    self.agent_id,
+                ),
             )
             db.execute(
                 "INSERT INTO reminder_attempts "
@@ -299,12 +328,38 @@ class ReminderRepository:
                 + " ORDER BY rowid DESC LIMIT ?",
                 (*parameters, limit + 1),
             ).fetchall()
-        items = [dict(row) for row in rows[:limit]]
+        items = [record(row) for row in rows[:limit]]
         next_cursor = items[-1]["position"] if len(rows) > limit else None
         for item in items:
             item.pop("position")
             item["origin"] = "scheduled_reminder"
         return dict(items=items, next_cursor=next_cursor, has_more=next_cursor is not None)
+
+    def delivery_due(
+        self,
+        at: datetime,
+        grant: ReminderGrant,
+        connected_at: datetime,
+        limit: int,
+    ) -> list[dict]:
+        if not 1 <= limit <= 64:
+            raise ValueError("Invalid reminder delivery page")
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT * FROM scheduled_reminders WHERE agent_id=? AND source_scope=? "
+                "AND conversation_id=? AND status IN ('scheduled','blocked') "
+                "AND due_at>=? AND due_at<=? AND expires_at>? ORDER BY due_at,id LIMIT ?",
+                (
+                    self.agent_id,
+                    grant.source_scope,
+                    grant.conversation_id,
+                    stamp(connected_at),
+                    stamp(at),
+                    stamp(at),
+                    limit,
+                ),
+            ).fetchall()
+            return [record(row) for row in rows]
 
     def events(self, reminder_id: str, after: int = 0, limit: int = 20) -> list[dict]:
         if not 0 <= after <= 2**63 - 1 or not 1 <= limit <= 20:

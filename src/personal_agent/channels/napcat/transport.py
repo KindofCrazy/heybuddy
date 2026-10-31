@@ -160,6 +160,19 @@ class NapCatTransport:
             or len(text.encode("utf-8")) > self.policy.qq_text_max_bytes
         ):
             raise QQError("napcat_send_scope", fatal=True)
+        await self._send_private(text)
+
+    async def send_reminder(self, recipient: str, text: str) -> str:
+        if (
+            not self.account.napcat_reminders_enabled
+            or recipient != self.account.napcat_peer_id
+            or not text.strip()
+            or len(text.encode("utf-8")) > self.policy.qq_text_max_bytes
+        ):
+            raise QQError("napcat_reminder_scope", fatal=True)
+        return await self._send_private(text)
+
+    async def _send_private(self, text: str) -> str:
         socket = self.socket
         if socket is None or self.state != "ready":
             raise QQError("napcat_not_connected")
@@ -185,6 +198,7 @@ class NapCatTransport:
                 data = result(await future, sending=True)
                 if numeric_id(data.get("message_id")) is None:
                     raise QQError("napcat_send_receipt", uncertain=True)
+                return str(data["message_id"])
         except (ConnectionClosed, OSError, TimeoutError):
             raise QQError("napcat_send_uncertain", uncertain=True) from None
         finally:

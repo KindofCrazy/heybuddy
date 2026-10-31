@@ -7,7 +7,7 @@ import pytest
 from personal_agent.character.context import CharacterContextCompiler
 from personal_agent.character.loader import CharacterLoader
 from personal_agent.core.context import ContextBuilder
-from personal_agent.core.prompts import CONVERSATION_PROMPT
+from personal_agent.core.prompts import CONVERSATION_PROMPT, REMINDER_RULES
 from personal_agent.reflection import service as reflection
 
 
@@ -20,6 +20,7 @@ def test_shared_style_is_in_single_system_once_for_default_and_character_chat(ch
     messages = context.for_request(context.build("你好"))
     assert sum(m.role == "system" for m in messages) == 1
     assert messages[0].text.count(CONVERSATION_PROMPT) == 1
+    assert messages[0].text.count(REMINDER_RULES) == 1
     if character:
         assert (
             hashlib.sha256(messages[0].text.encode()).hexdigest()
@@ -31,3 +32,4 @@ def test_shared_style_is_in_single_system_once_for_default_and_character_chat(ch
 def test_shared_style_does_not_change_reflection_structured_instructions():
     for name in ("BASE", "EXTRACT", "SELECT", "CONSOLIDATE"):
         assert CONVERSATION_PROMPT not in getattr(reflection, name)
+        assert REMINDER_RULES not in getattr(reflection, name)

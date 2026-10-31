@@ -22,7 +22,7 @@ P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running R
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 19 与发行包版本 0.7.2 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 21 与发行包版本 0.7.2 是不同概念。
 
 schema 16 通过 `storage/proactive.py::SCHEMA` 追加 Agent 隔离的增量水位、候选事项和 Shadow 决策审计；`ProactiveRepository.publish()` 在同一短事务提交候选/进度/审计，复核来源和修订。派生状态不替代 Run Journal 或 MemoryFS，不创建发送记录。schema 15→16 迁移与故障回滚、发布回滚在 `tests/test_proactive.py` 验证，完整调用路径见 [Proactive](proactive.md)。
 
@@ -136,4 +136,14 @@ LearningRepository 提供 Curator schedule、最近 Job 和写入路径查询；
 
 # 明确提醒（schema 18）
 
-`storage/reminders.py::SCHEMA` 追加 scheduled_reminders、reminder_attempts、reminder_events。ReminderRepository 绑定 Agent；create() 原子保存幂等记录和创建审计，advance() 有界更新到期/过期，claim() 原子领取并创建唯一尝试，finish() 原子提交回执与事件。recover() 仅把遗留 sending 有界标为 uncertain，不重发；取消与终态不可复活，提醒不进入 Run Journal/Recall/MemoryFS。schema 19 的 CHAT_SCHEMA 追加 source_scope（旧记录默认 local）和来源索引；聊天请求幂等性也校验 source_scope，listing() 可同时按来源及会话过滤，所有值通过参数绑定。实际入口和待执行的迁移回滚场景见 [scheduler.md](scheduler.md)、`tests/test_scheduler.py` 及 `tests/test_reminder_chat.py`，当前版本 schema 19。
+`storage/reminders.py::SCHEMA` 追加 scheduled_reminders、reminder_attempts、reminder_events。ReminderRepository 绑定 Agent；create() 原子保存幂等记录和创建审计，advance() 有界更新到期/过期，claim() 原子领取并创建唯一尝试，finish() 原子提交回执与事件。recover() 仅把遗留 sending 有界标为 uncertain，不重发；取消与终态不可复活，提醒不进入 Run Journal/Recall/MemoryFS。schema 19 的 CHAT_SCHEMA 追加 source_scope（旧记录默认 local）和来源索引；聊天请求幂等性也校验 source_scope，listing() 可同时按来源及会话过滤，所有值通过参数绑定。实际入口和待执行的迁移回滚场景见 [scheduler.md](scheduler.md)、`tests/test_scheduler.py` 及 `tests/test_reminder_chat.py`。
+
+# 提醒追问与社交窗口（schema 20）
+
+`storage/reminder_dialogues.py::SCHEMA` 与 `storage/proactive.py::SOCIAL_SCHEMA` 在一次顺序迁移中创建 reminder_dialogues 并追加 proactive_proposals.followup_window。ReminderDialogues.get/save/clear 用绑定参数访问当前 Agent/Conversation/source_scope 的唯一草稿；正文 JSON 限制 8192 字节，有效期十五分钟，过期不再作为补全上下文。提醒创建与草稿清理是两个短事务，前者提交后后者失败不能撤销提醒，沿原 request_id 防止重复创建。
+
+ProactiveRepository.publish() 将社交窗口、随机选定 next_review_at 和有限 expiry 与候选/水位原子保存；旧记录默认为空窗口，不做历史回填。candidates/listing 和 OutboxRepository._proposal() 返回解析后的 JSON，仍复核 Agent、Revision、来源及过期。实际路径见 [proactive.md](proactive.md) 与 [scheduler.md](scheduler.md)，迁移失败回滚用例位于 `tests/test_reminder_natural.py`。
+
+# 明确提醒真实渠道（schema 21）
+
+`storage/reminders.py::REAL_SCHEMA` 只追加 delivery_channel 和当前来源/会话/状态/到期时间索引，不改 schema-18 的旧 CHECK 或历史回执。record() 以非空 delivery_channel 投影当前 mode，空值继续读取旧 simulation/unavailable；不会将旧模拟回执重新解释为真实发送。delivery_due() 参数化过滤来源、会话、连接起点、到期与有效期，有界返回；claim() 重新比较完整记录并复核当前 NapCat 源许可，然后原子写 sending、渠道和唯一 attempt。网络请求发生在事务提交后，finish() 同事务保存实际 message_id、尝试与事件，重启只把遗留 sending 标 uncertain，不重发。迁移回滚和旧回执兼容见 `tests/test_reminder_delivery.py`。

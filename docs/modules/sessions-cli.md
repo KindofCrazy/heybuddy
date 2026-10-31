@@ -109,3 +109,5 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 `main._chat()` 在 Agent.run 前将 `/remind` 交给 `scheduler/cli.py::command()`，仅接受明确的带时区 at 或相对 in，以及 status/list/show/events/cancel/simulate。命令不会写用户 Run 或通过模型授予权限。目标 Conversation 在创建时固定，不随 SessionManager 当前会话变更；取消仍按当前 Host 的 Agent Scope 校验，模拟使用记录原会话的本地许可。没有真实发送保证，详细解析、状态和待执行用例见 [scheduler.md](scheduler.md)。
 
 共享解析器还接受 Host 显式提供的 request_id、reference_at 与 source_scope，供 `scheduler/chat.py::reply()` 对已验证的 QQ/NapCat 私聊做受限创建；CLI 默认使用随机请求 ID、当前时钟和 local 来源。聊天 list/show/cancel 不调用 CLI 的 Agent 级管理分支，而在聊天入口额外限制来源和会话；不开放 status/events/simulate。
+
+`main._chat()` 在分派完管理命令、进入 Agent 前调用 `scheduler/natural.py::respond()`，用当前 Conversation、local 来源、独立输入 ID 和 Scheduler 时钟处理有限中文提醒。命中后直接显示 Host 结果，不保存用户 Run；未命中继续 service.run。缺项草稿、十五分钟过期、取消歧义与语法边界见 [scheduler.md](scheduler.md) 和 [calendar.md](calendar.md)。

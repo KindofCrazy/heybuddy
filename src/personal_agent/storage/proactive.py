@@ -15,6 +15,7 @@ from personal_agent.proactive.models import (
     ScoutResult,
     UserSource,
 )
+from personal_agent.proactive.timing import followup_window
 
 if TYPE_CHECKING:
     from personal_agent.storage.sqlite import SQLiteStore
@@ -46,6 +47,11 @@ SCHEMA = (
 
 def stamp(value: datetime) -> str:
     return value.astimezone(UTC).isoformat()
+
+
+SOCIAL_SCHEMA = (
+    "ALTER TABLE proactive_proposals ADD COLUMN followup_window TEXT NOT NULL DEFAULT '{}'",
+)
 
 
 class ProactiveRepository:
@@ -232,6 +238,7 @@ class ProactiveRepository:
     def _decode(row) -> dict:
         value = dict(row)
         value["sources"] = json.loads(value["sources"])
+        value["followup_window"] = json.loads(value["followup_window"])
         return value
 
     def _event(self, db, at: datetime, action: str, reason: str, payload: dict) -> None:
@@ -324,10 +331,32 @@ class ProactiveRepository:
                     for r in change.sources
                 )
                 expiry = source_at + timedelta(seconds=policy.lifetime_seconds)
+                latest = max(
+                    change.sources,
+                    key=lambda r: (
+                        users[(r.conversation_id, r.run_id, r.sequence)].position,
+                        r.sequence,
+                    ),
+                )
+                window = (
+                    followup_window(
+                        latest.quote,
+                        source_at,
+                        f"{self.agent_id}:{change.topic_key}:{position}",
+                        policy,
+                    )
+                    if change.status == "open"
+                    else None
+                )
+                if window:
+                    expiry = min(expiry, datetime.fromisoformat(window["end"]))
                 status = "expired" if change.status == "open" and expiry <= at else change.status
                 review = max(
                     at,
-                    change.next_review_at or (source_at + timedelta(seconds=policy.review_seconds)),
+                    datetime.fromisoformat(window["review_at"])
+                    if window
+                    else change.next_review_at
+                    or (source_at + timedelta(seconds=policy.review_seconds)),
                 )
                 raw = json.dumps(
                     [r.model_dump(mode="json") for r in change.sources], ensure_ascii=False
@@ -335,13 +364,14 @@ class ProactiveRepository:
                 db.execute(
                     "INSERT INTO proactive_proposals (id,agent_id,topic_key,title,context,sources,"
                     "thread_id,source_position,status,revision,next_review_at,expires_at,"
-                    "updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                    "updated_at,followup_window) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                     "ON CONFLICT(agent_id,topic_key) DO UPDATE SET "
                     "title=excluded.title,context=excluded.context,sources=excluded.sources,"
                     "thread_id=COALESCE(excluded.thread_id,proactive_proposals.thread_id),"
                     "source_position=excluded.source_position,status=excluded.status,"
                     "revision=proactive_proposals.revision+1,next_review_at=excluded.next_review_at,"
-                    "expires_at=excluded.expires_at,last_action='',updated_at=excluded.updated_at",
+                    "expires_at=excluded.expires_at,last_action='',updated_at=excluded.updated_at,"
+                    "followup_window=excluded.followup_window",
                     (
                         previous["id"] if previous else str(uuid4()),
                         self.agent_id,
@@ -356,6 +386,7 @@ class ProactiveRepository:
                         stamp(min(review, expiry)) if status == "open" else None,
                         stamp(expiry),
                         stamp(at),
+                        json.dumps(window or {}, ensure_ascii=False),
                     ),
                 )
             lane = snapshot["lane"]
@@ -517,4 +548,6 @@ class ProactiveRepository:
             item.pop("position")
             key = "sources" if kind == "proposals" else "payload"
             item[key] = json.loads(item[key])
+            if kind == "proposals":
+                item["followup_window"] = json.loads(item["followup_window"])
         return dict(items=items, next_cursor=next_cursor, has_more=next_cursor is not None)

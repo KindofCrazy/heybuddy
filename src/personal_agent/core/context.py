@@ -10,7 +10,7 @@ from personal_agent.core.images import ImageRef
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
 from personal_agent.core.outbound import ConversationNotices
-from personal_agent.core.prompts import with_conversation_prompt
+from personal_agent.core.prompts import REMINDER_RULES, with_conversation_prompt
 from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
 from personal_agent.core.tracing import RunTrace
 from personal_agent.llm.base import Provider
@@ -38,7 +38,7 @@ HOST_EXECUTION_RULES = (
     "检查工具的 ok/error 和截断标记；必要时携带 next_offset 和 expected_hash 继续有界读取。"
     "发生错误时说明限制，不重复相同的失败调用。若写入部分成功或结果不明确，先检查已保存内容"
     "的摘要和索引状态，再请用户审阅；不盲目重做、不自动回滚、不执行历史调用。"
-    "不保存凭据。"
+    "不保存凭据。" + REMINDER_RULES
 )
 DEFAULT_SYSTEM_PROMPT = with_conversation_prompt(
     "你是帮助用户处理问题的个人助理。"

@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 from collections.abc import Callable
+from uuid import uuid4
 
 from pydantic import ValidationError
 
@@ -29,6 +30,7 @@ from personal_agent.reflection.service import ReflectionService
 from personal_agent.runtime import ChatService, open_application, open_chat
 from personal_agent.scheduler.cli import command as reminder_command
 from personal_agent.scheduler.models import ReminderError
+from personal_agent.scheduler.natural import respond as natural_reminder
 from personal_agent.sessions import SessionManager
 
 
@@ -245,6 +247,22 @@ async def _chat(
                 continue
             session_command(service, user_input, write)
             continue
+        if service.scheduler is not None and sessions is not None:
+            try:
+                reminder_text = natural_reminder(
+                    service.scheduler,
+                    sessions.current.id,
+                    user_input,
+                    scope="local",
+                    message_id=str(uuid4()),
+                    received_at=service.scheduler.clock.now(),
+                )
+            except (ReminderError, HistoryError):
+                write("Reminder > 设置结果未确认，请用 /remind list 检查；不会自动重试。")
+                continue
+            if reminder_text is not None:
+                write("Reminder > " + reminder_text)
+                continue
         result = await service.run(user_input, permissions=permissions)
         if result.status == "completed":
             write(f"Agent > {result.text}")

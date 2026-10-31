@@ -41,4 +41,5 @@ class ReminderGrant(Model):
     revision: int = Field(default=1, ge=1)
     conversation_id: str = Field(min_length=1, max_length=128)
     recipient: str = Field(min_length=1, max_length=128)
-    channel: Literal["simulation"] = "simulation"
+    channel: Literal["simulation", "napcat"] = "simulation"
+    source_scope: str | None = Field(default=None, min_length=1, max_length=128)

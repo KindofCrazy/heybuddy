@@ -7,12 +7,15 @@ import httpx
 
 from personal_agent.channels.lifecycle import stop_on_termination
 from personal_agent.channels.napcat.events import parse_input_status, parse_message
+from personal_agent.channels.napcat.reminders import NapCatReminderSender
 from personal_agent.channels.napcat.transport import NapCatTransport
 from personal_agent.channels.qq.adapter import QQAdapter
 from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.config import Settings
 from personal_agent.runtime import open_application
+from personal_agent.scheduler.chat import source_scope
+from personal_agent.scheduler.models import ReminderGrant
 from personal_agent.storage.images import SQLiteImages
 from personal_agent.storage.qq import QQInbox
 
@@ -41,6 +44,7 @@ async def run_napcat(
                     settings.napcat_peer_id,
                 )
                 transport = NapCatTransport(settings, policy)
+                reminder_sender = NapCatReminderSender(transport)
                 adapter = QQAdapter(
                     policy,
                     service,
@@ -60,7 +64,20 @@ async def run_napcat(
                 }
                 started = asyncio.Event()
 
+                def reminder_grant() -> ReminderGrant | None:
+                    if not settings.napcat_reminders_enabled or transport.state != "ready":
+                        return None
+                    return ReminderGrant(
+                        enabled=True,
+                        channel="napcat",
+                        conversation_id=adapter.conversation_id,
+                        recipient=settings.napcat_peer_id,
+                        source_scope=source_scope(inbox.scope),
+                    )
+
                 def ready() -> None:
+                    if service.scheduler is not None and settings.napcat_reminders_enabled:
+                        service.scheduler.bind_delivery(reminder_sender, reminder_grant)
                     if adapter.worker is None:
                         adapter.start()
                         started.set()
@@ -94,6 +111,8 @@ async def run_napcat(
                         if task in done:
                             await task
                 finally:
+                    if service.scheduler is not None:
+                        service.scheduler.unbind_delivery()
                     adapter.closing = True
                     for task in (receiving, stopping, starting):
                         task.cancel()

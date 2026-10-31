@@ -1,5 +1,7 @@
 # Composer 与离线 Outbox / Delivery
 
+关心式窗口的来源读取：`OutboxRepository._proposal()` 同时解析 schema 20 的 followup_window，供 Composer 看到 before/evening 阶段；原来源、Revision、epoch 与有效期复核不变。明确提醒的真实 NapCat Sender 仅接在独立 Scheduler，当前 Proactive DeliveryGrant 和 FakeSender 仍只有 simulation，不复用该真实发送许可。窗口路径见 [proactive.md](proactive.md)，提醒投递见 [scheduler.md](scheduler.md)。
+
 ## 职责与架构组成
 
 P4.3 第一阶段把 Attention notify 转成 Luna 口吻的草稿，并提供显式本地模拟投递。`proactive/composer.py::Composer` 复用原 OrganizerModel，严格 MessageDraft JSON、空工具、原输入/输出/超时预算；`proactive/outbound.py::OutboundRuntime` 负责生成前后和投递前的 Host 复核。`proactive/delivery.py` 定义不可变的 DeliveryGrant、SendReceipt、Sender Protocol 和完全内存实现的 FakeSender；没有注册真实渠道 Sender，没有自动模拟投递。

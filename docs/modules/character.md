@@ -1,5 +1,7 @@
 # 被动角色系统
 
+`character/prompt.py::compile_system()` 在 JSON、原生 Profile 与兼容 Markdown 三条路径中各加入一次 `core/prompts.py::REMINDER_RULES`，随后仍只追加一份通用交谈段落。Luna 与其他角色没有 Host 确认时都不能声称提醒已设置/取消；普通未来计划不是提醒授权。该规则来自代码，不改角色包或关系记忆；`tests/test_conversation_prompt.py` 验证同一 System、唯一规则和实际 system_hash。
+
 当前开发使用 OpenPersona 的 Luna persona.json，加上独立的通用交谈提示词，不运行角色状态学习。简单 JSON 角色的组成、完整执行路径、异常与验证见 [简化角色设定](persona.md)。开发示例显式选择 luna，库级默认仍关闭；Miru 角色卡已删除，Sherlock 包保留兼容，tests/test_qq_integration.py 对 Luna/Sherlock 验证同一生产入口。
 
 以下描述旧 Markdown 角色的兼容实现；persona.json 存在时优先使用新的简单路径。旧 Sherlock 的逐段改写与真实调用记录见 [历史记录](../holmes-miru-prompt-rewrite.md)，不作为当前 Luna 的效果结论。

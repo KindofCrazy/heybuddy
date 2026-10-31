@@ -30,7 +30,10 @@ async def test_chat_creates_once_without_agent_or_turn_judge_and_cancels(state):
     scheduler = attach(state)
     sender = Sender()
     adapter = QQAdapter(
-        config(qq_message_mode="hybrid", qq_humanize_enabled=False), service, inbox, sender
+        config(qq_message_mode="hybrid", qq_message_judge_idle_seconds=0.001),
+        service,
+        inbox,
+        sender,
     )
     adapter.start()
     try:
@@ -53,7 +56,7 @@ async def test_chat_creates_once_without_agent_or_turn_judge_and_cancels(state):
 
 @pytest.mark.parametrize(
     "text",
-    ["我明天准备做一个demo", "明天九点提醒我喝水", "讨论一下 /remind in 10m 喝水"],
+    ["我明天准备做一个demo", "讨论一下 /remind in 10m 喝水"],
 )
 async def test_ordinary_chat_does_not_create_schedule(state, text):
     _, _, provider, service, inbox = state

@@ -10,6 +10,8 @@
 
 首条 received_at 开始 max_wait，每条后续消息重置 idle，先到的截止时间提交。历史积压也按原始接收时间分组，不能因为 Run 很慢或重启把相隔很久的消息合并。恰好位于 deadline 的消息属于下一组。命令立即独立提交；遇到后续命令、时间间隔、不同 Conversation、16 条上限、合并输入字节上限或图片数量上限，也立即提交已有前缀，其余消息仍留 received。普通输入的 UTF-8 总量（包含换行和图片位置提示）不得超过 `qq_input_max_bytes`，总图片数不得超过 `qq_image_max_count`。原始单条输入仍先经过 `events.parse_text()` 的校验；空文本且无图片、异常事件和未授权输入保持原忽略策略。
 
+明确中文提醒通过纯 `core/reminder_intent.py::reminder_action()` 识别后也作为独立边界，不与前后普通聊天合并；hybrid 对这些明确请求跳过完整性模型判断。缺项追问的后续普通时间/事项片段仍按通常聚合规则等待，再由 Host 提醒入口读取当前来源草稿；它们不是通用远程命令。
+
 ## 代码实际运行路径
 
 1. `runner.run_qq()` 装配原有共享 ChatService / QQInbox / QQAdapter；`QQAdapter.start()` 先 recover，再启动唯一消费者。

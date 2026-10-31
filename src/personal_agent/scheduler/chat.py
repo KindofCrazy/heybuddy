@@ -12,7 +12,7 @@ HELP = (
     "可以发送：\n/remind in 10m 喝水\n"
     "/remind at 2026-10-31T09:00:00+08:00 提交论文\n"
     "/remind list\n/remind show <提醒ID>\n/remind cancel <提醒ID>\n"
-    "当前只能保存提醒，尚无到期主动发送渠道。"
+    "保存记录不表示已经投递，具体渠道能力以设置回执为准。"
 )
 STATUS = {
     "scheduled": "等待到期",
@@ -42,10 +42,16 @@ def when(value: str) -> str:
 
 
 def describe(item: dict) -> str:
-    return (
-        f"ID：{item['id']}\n时间：{when(item['due_at'])}\n"
-        f"状态：{STATUS.get(item['status'], item['status'])}\n内容：{item['text']}"
-    )
+    status = STATUS.get(item["status"], item["status"])
+    if item["status"] == "accepted" and item["mode"] == "napcat":
+        status = "渠道已接受（不代表已读）"
+    return f"ID：{item['id']}\n时间：{when(item['due_at'])}\n状态：{status}\n内容：{item['text']}"
+
+
+def delivery_notice(runtime: SchedulerRuntime, conversation: str, scope: str) -> str:
+    if runtime.delivery_for(conversation, scope):
+        return "当前 NapCat 提醒渠道可用，将在到期时尝试投递；应用离线时不会保证通知。"
+    return "尚无到期主动发送渠道，不保证准时通知。"
 
 
 async def reply(
@@ -85,10 +91,7 @@ async def reply(
             return "当前聊天还没有提醒记录。"
         lines = ["当前聊天的提醒："]
         for item in data["items"]:
-            lines.append(
-                f"{item['id']}\n{when(item['due_at'])} · {STATUS[item['status']]}"
-                f"\n{item['text'][:160]}"
-            )
+            lines.append(describe({**item, "text": item["text"][:160]}))
         if data["next_cursor"] is not None:
             lines.append(f"继续查看：/remind list {data['next_cursor']}")
         return "\n\n".join(lines)
@@ -119,5 +122,8 @@ async def reply(
     if result.get("outcome") != "recorded":
         return HELP
     return (
-        "提醒记录：\n" + describe(result["reminder"]) + "\n尚无到期主动发送渠道，不保证准时通知。"
+        "提醒记录：\n"
+        + describe(result["reminder"])
+        + "\n"
+        + delivery_notice(runtime, conversation_id, scope)
     )

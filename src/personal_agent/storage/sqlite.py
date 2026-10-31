@@ -35,6 +35,7 @@ from personal_agent.storage import (
     qq,
     recall,
     reflection,
+    reminder_dialogues,
     reminders,
     threads,
     tracing,
@@ -42,7 +43,7 @@ from personal_agent.storage import (
 from personal_agent.storage.lock import DatabaseLock
 from personal_agent.storage.models import AgentRecord, ConversationRecord, RunRecord, StoredMessage
 
-SCHEMA_VERSION = 19
+SCHEMA_VERSION = 21
 MESSAGE = TypeAdapter(Message)
 # Version 0 -> 1. Future changes append a migration instead of replacing existing tables.
 MIGRATIONS = {
@@ -87,6 +88,8 @@ MIGRATIONS = {
     17: outbox.SCHEMA,
     18: reminders.SCHEMA,
     19: reminders.CHAT_SCHEMA,
+    20: reminder_dialogues.SCHEMA + proactive.SOCIAL_SCHEMA,
+    21: reminders.REAL_SCHEMA,
 }
 
 

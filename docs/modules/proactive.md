@@ -4,9 +4,9 @@
 
 P4.1/P4.2 为现有应用增加未来关注事项，不增加长期事实存储、模型工具权限或外部发送能力。`proactive/models.py` 定义 Host 策略、真实用户来源、候选变更和 Attention 建议；`scout.py::OpportunityScout` 提取机会；`attention.py::AttentionEngine` 判断沉默、稍后检查、建议交流或建议任务。`wake.py::WakeCoordinator` 从持久截止时间计算检查间隔和安静窗口。`proactive/runtime.py::ProactiveRuntime` 编排一次有界检查，`storage/proactive.py::ProactiveRepository` 绑定 Agent，保存进度、Proposal 和审计。
 
-当前只生成 follow_up 候选。notify 可在下一有界维护单元生成角色口吻草稿；[Composer 与离线 Outbox](outbox.md) 提供明确标记的 Fake Sender 和接续 Harness。外部事件、Social Window、真实投递、明确提醒和自主工具任务留给后续阶段。notify 和 propose_task 不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
+当前只生成 follow_up 候选。notify 可在下一有界维护单元生成角色口吻草稿；[Composer 与离线 Outbox](outbox.md) 提供明确标记的 Fake Sender 和接续 Harness。`proactive/timing.py::followup_window()` 为有日期的真实计划生成关心式复查窗口；明确提醒另走独立 [Scheduler](scheduler.md)。外部事件、真实投递和自主工具任务留给后续阶段。notify 和 propose_task 不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
 
-SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
+SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions；schema 20 追加 followup_window JSON，旧候选默认空窗口，不重新抽样或默认历史补学。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
 
 ## 代码实际运行路径
 
@@ -35,10 +35,25 @@ SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisi
 | AGENT_PROACTIVE_QUIET_START_HOUR / END_HOUR | 23 / 8 | 安静窗口，相等表示关闭 |
 | AGENT_PROACTIVE_UTC_OFFSET_MINUTES | 480 | 固定 UTC+8 偏移；当前不支持夏令时规则 |
 | AGENT_PROACTIVE_CANDIDATE_LIMIT | 3 | 单次输入候选数，最多四个 |
+| AGENT_PROACTIVE_SOCIAL_FOLLOWUP_ENABLED | true | 对新计划证据生成社交复查窗口；不启用真实发送 |
+| AGENT_PROACTIVE_EVENING_START_MINUTE / END_MINUTE | 1140 / 1290 | 当地 19:00～21:30，分钟从午夜起算 |
+| AGENT_PROACTIVE_BEFORE_PROBABILITY | 0.3 | 普通明确时刻事项考虑事前关心的抽样概率 |
+| AGENT_PROACTIVE_BEFORE_MIN_MINUTES / MAX_MINUTES | 15 / 45 | 事前窗口距开始的分钟范围 |
 
 CLI 的 `/proactive status|proposals|decisions` 只读；`/proactive run` 在相同维护预算内执行一个单元；`/proactive retry` 显式解除失败暂停，下次重新读取当前证据，不重放旧模型输出。这些入口不注册为模型工具。QQ 自然语言不能修改开关或调用管理命令。
 
 Observatory 的 `/proactive` 页面及 `/api/proactive/status`、`/api/proactive/proposals`、`/api/proactive/decisions` 只读。列表按 rowid 游标分页，每页最多 20；复用 Agent 隔离、loopback Host/Origin 防护、隐私过滤和响应上限。页面逐页展示来源、状态与判断原因，不自动加载全部私人历史。
+
+## 关心式跟进的实际时间路径
+
+1. 原 OpportunityScout 仍是唯一语义提取入口，须引用实际提供的 completed 用户原话；普通“明天准备跑实验”可以成为 follow_up，不创建提醒。取消/完成继续分别为 dismissed/resolved，不以角色经历或助手建议生成机会。
+2. `ProactiveRepository.publish()` 验证水位后，从本次变更的最新真实引用取时间表达，交给 `followup_window()`；日期解释以来源时间为锚点并复用 [有限时间语法](calendar.md)。没有具体日期/可靠时刻或语法不明时不编造日期，沿用原通用复查策略。
+3. 只有日期的计划，在当天 19:00～21:30 内抽取一次含秒的非整分时间。SHA256 以 Agent、topic_key、来源位置及抽样用途为种子；同一证据稳定，不在每次检查或重启重新抽取。结果与 next_review_at 同事务保存，后续 JSON 查询和 Attention 均看到实际窗口。
+4. 有明确时刻且提前量足够的事项，原话出现“重要、关键、答辩、面试、考试、手术”等有限重要性线索时考虑开始前 15～45 分钟；其他事项按默认 30% 的稳定抽样考虑这个窗口。这只是选择何时评估，重要性与抽样都不保证 notify。未选事前窗口的事项走稍后晚间窗口；不会把计划尚未开始时当作事后追问，太晚的事项改到次日晚间。
+5. Proposal expiry 取原证据寿命与窗口结束的较早值；错过窗口则有界过期，不在下次启动集中追问。安静时段、前台输入、维护预算、未处理新证据和 Attention 仍优先；随机时间不能绕过这些门控。defer 也不能越过有效期。没有每个计划一个后台任务或 Scheduler 条目。
+6. Attention 的输入含 phase=before/evening，提示根据语境选择轻量关心、祝愿或保持沉默，不把问候变成催汇报，也不推断已经完成或成功。notify 后通过原 OutboundRuntime 生成草稿；`OutboxRepository._proposal()` 再读窗口与真实来源，原 Revision、epoch、过期和最终复核仍有效。默认 Shadow，没有真实主动消息。
+
+窗口只是 Host 选择的评估时机，后台维护有自己的检查和预算节奏，不承诺在那个随机秒精确生成草稿。表达自然度、事项重要性和是否刚聊过进展仍依赖 Scout/Attention 语义质量，本轮没有做真实模型验证。
 
 ## 异常与边界
 
@@ -53,5 +68,7 @@ Observatory 的 `/proactive` 页面及 `/api/proactive/status`、`/api/proactive
 最小离线验证：`uv run pytest tests/test_proactive.py`。测试建立临时 SQLite 和 FakeProvider，启用后写入 completed 用户 Run，再执行 Scout 和 Attention，验证只有派生状态与审计，没有额外 Run、工具或发送。
 
 `tests/test_proactive.py` 覆盖 Run/Thread 增量、空结果、重启水位、取消与旧摘要竞争、助手引文拒绝、跨 Agent、未完成 Run、过大来源、安静窗口、失效、Attention 动作、新 Run/QQ 收件版本/Revision 竞争、吞取消、共享预算、其他维护全部关闭后的定时检查、schema 15→16 原子迁移和回滚、发布失败回滚及 Observatory 只读分页。项目完整验证还包括 pytest、Ruff、打包和 CLI 启动检查。
+
+`tests/test_social_timing.py` 增加晚间范围、非整分稳定抽样、重要/概率分支、晚开始事项、无日期/歧义回退、配置、窗口重启持久性、取消和停机错过窗口场景；旧生命周期 Fixture 显式关闭社交时间策略以独立验证原 CAS/权限契约。2026-10-31 用户已允许执行回归和明确提醒的真实投递验证，关心式跟进仍只生成 Shadow 草稿，不做真实模型语义评测。
 
 审查修复验证见 `tests/test_proactive_review_fixes.py`：长助手/Provider 正文不遮蔽短取消、用户证据超限不推进且重启保持暂停、显式 retry 与预算修正、默认整批 Learning 与 Proactive 轮换、不可容纳 Learning 时保留 Scout，以及 Thread 关联前后草稿继续可用和终态不重发。

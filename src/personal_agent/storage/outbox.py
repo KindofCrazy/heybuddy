@@ -116,6 +116,7 @@ class OutboxRepository:
             return None
         proposal = dict(row)
         proposal["sources"] = json.loads(proposal["sources"])
+        proposal["followup_window"] = json.loads(proposal["followup_window"])
         for source in proposal["sources"]:
             raw = db.execute(
                 "SELECT m.payload,length(CAST(m.payload AS BLOB)) AS size FROM messages m "

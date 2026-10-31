@@ -1,5 +1,7 @@
 # ContextBuilder 与会话工作上下文
 
+Host 执行规则增加提醒结果边界：没有宿主确认时不能声称已创建、取消或保证到期通知；普通未来计划只可作为后续关心线索，不表示提醒授权或事项已完成。`core/prompts.py::REMINDER_RULES` 分别进入普通模式的 HOST_EXECUTION_RULES 和角色 compile_system()，不从历史或用户 Memory 授权。自然语言提醒在 Agent 前由 Host 有限解析，详见 [scheduler.md](scheduler.md)。
+
 主对话新增独立的 prompts/conversation.md 通用交谈说明：默认普通 System 和原生/兼容角色编译器各自在最终正文中加入一次；角色模式继续使用空默认 Base，因此不重复注入。完整角色 system_hash 和请求预算包含该段。显式自定义的非角色 System 不被擅自改写，后台结构化请求不受影响。文件加载、启动错误、消息分段配合和验证见 [通用提示词](prompts.md)。
 
 宿主回答规则和执行契约现使用中文，普通与角色模式共用事实、检索、权限和部分失败语义。此次语言变更由用户明确要求；历史英文快照不覆盖，当前主提示词和工具说明记录于 `evals/prompts/chinese-main-context.json`。中文化未经真实模型收益验证，不改变动态数据的消息角色或授予权限。

@@ -21,6 +21,20 @@ class ProactivePolicy(Model):
     quiet_end_hour: int = Field(default=8, ge=0, le=23)
     utc_offset_minutes: int = Field(default=480, ge=-720, le=840)
     candidate_limit: int = Field(default=3, ge=1, le=4)
+    social_followup_enabled: bool = True
+    evening_start_minute: int = Field(default=1140, ge=0, le=1438)
+    evening_end_minute: int = Field(default=1290, ge=1, le=1440)
+    before_probability: float = Field(default=0.3, ge=0, le=1, allow_inf_nan=False)
+    before_min_minutes: int = Field(default=15, ge=1, le=120)
+    before_max_minutes: int = Field(default=45, ge=2, le=180)
+
+    @model_validator(mode="after")
+    def windows(self):
+        if self.evening_start_minute >= self.evening_end_minute:
+            raise ValueError("Invalid evening window")
+        if self.before_min_minutes >= self.before_max_minutes:
+            raise ValueError("Invalid pre-event window")
+        return self
 
 
 class UserSource(Model):

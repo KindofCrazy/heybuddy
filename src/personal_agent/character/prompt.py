@@ -4,7 +4,7 @@ import re
 
 from personal_agent.character.loader import sections
 from personal_agent.character.models import CharacterPackage, Section
-from personal_agent.core.prompts import with_conversation_prompt
+from personal_agent.core.prompts import REMINDER_RULES, with_conversation_prompt
 from personal_agent.memory.retrieval import terms
 
 PROFILE_HEADINGS = {
@@ -171,7 +171,7 @@ def compile_system(
             "需要主题记忆细节时用 archival_memory_search；确认历史原话时用 recall_search、"
             "recall_get；需要刷新当前时间时用 get_current_time。只使用这一轮实际提供的工具。"
         )
-        return with_conversation_prompt("\n\n".join(parts))
+        return with_conversation_prompt("\n\n".join([*parts, REMINDER_RULES]))
     if package.profile is not None:
         profile = package.profile
         parts = [profile["身份"]]
@@ -210,7 +210,7 @@ def compile_system(
                 + "\n\n".join(render_sections(example.text, {}) for example in examples)
             )
         parts.extend(runtime_sections(profile))
-        return with_conversation_prompt("\n\n".join(parts))
+        return with_conversation_prompt("\n\n".join([*parts, REMINDER_RULES]))
     parts = [
         "【角色设定】\n" + render_sections(package.character, PROFILE_HEADINGS),
     ]
@@ -224,4 +224,4 @@ def compile_system(
                 ),
             ]
         )
-    return with_conversation_prompt("\n\n".join([*parts, *MEMORY_GUIDANCE]))
+    return with_conversation_prompt("\n\n".join([*parts, *MEMORY_GUIDANCE, REMINDER_RULES]))

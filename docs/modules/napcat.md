@@ -2,6 +2,8 @@
 
 ## 职责与架构组成
 
+明确提醒的真实发送由 `reminders.py::NapCatReminderSender` 独立接在 Scheduler：已验证登录后的 ready() 才绑定当前主号、来源和会话许可，开关为 `AGENT_NAPCAT_REMINDERS_ENABLED`。`transport.send_reminder()` 与被动回答复用固定 `_send_private()`，返回真实 message_id；来源、领取、断线与终态审计见 [scheduler.md](scheduler.md)。只发送明确提醒，关心式主动聊天仍为 Shadow；不扩大群聊或任意 QQ 工具权限。
+
 `src/personal_agent/channels/napcat/config.py::NapCatSettings` 保存 loopback WS、Token 与大小号绑定；`events.py::parse_message()` 将 OneBot 数组消息投影为现有 `QQText` 收件结构，不构造虚假官方 Gateway 事件。`transport.py::NapCatTransport` 负责身份核对、收发复用、echo 关联和有限重连。`runner.py::run_napcat()` 负责真实入口的生命周期，不包含另一条 Agent Loop。
 
 复用 `channels/qq/adapter.py::QQAdapter`、`humanize.py::Humanizer`、`images.py::QQImages`、`storage/qq.py::QQInbox`。`QQAdapter.accept_message()` 接受已校验投影；官方入口的 `accept()` 仍使用官方 `parse_text()`。新增显式 `scope_id` 仅改变 Host 绑定校验，模型不能传入。NapCat 的收件 app_id 使用 `napcat:<self_id>:<peer_id>` 命名空间，与官方 AppID 及其他大小号组合隔离。复用 schema 16 的既有 `qq_receipts`，没有新迁移或第二份聊天历史。
