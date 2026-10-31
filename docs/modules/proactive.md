@@ -6,7 +6,7 @@ P4.1/P4.2 为现有应用增加未来关注事项，不增加长期事实存储�
 
 当前只生成 follow_up 候选。notify 可在下一有界维护单元生成角色口吻草稿；[Composer 与离线 Outbox](outbox.md) 提供明确标记的 Fake Sender 和接续 Harness。`proactive/timing.py::followup_window()` 为有日期的真实计划生成关心式复查窗口；明确提醒另走独立 [Scheduler](scheduler.md)。外部事件、真实投递和自主工具任务留给后续阶段。notify 和 propose_task 不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
 
-SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions；schema 20 追加 followup_window JSON，旧候选默认空窗口，不重新抽样或默认历史补学。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
+SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions；schema 20 追加 followup_window JSON；schema 22 追加 followup_state、covered_position 和 covered_sources。旧候选默认 pending 和空覆盖证据，不重新抽样或默认历史补学。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
 
 ## 代码实际运行路径
 
@@ -54,6 +54,31 @@ Observatory 的 `/proactive` 页面及 `/api/proactive/status`、`/api/proactive
 6. Attention 的输入含 phase=before/evening，提示根据语境选择轻量关心、祝愿或保持沉默，不把问候变成催汇报，也不推断已经完成或成功。notify 后通过原 OutboundRuntime 生成草稿；`OutboxRepository._proposal()` 再读窗口与真实来源，原 Revision、epoch、过期和最终复核仍有效。默认 Shadow，没有真实主动消息。
 
 窗口只是 Host 选择的评估时机，后台维护有自己的检查和预算节奏，不承诺在那个随机秒精确生成草稿。表达自然度、事项重要性和是否刚聊过进展仍依赖 Scout/Attention 语义质量，本轮没有做真实模型验证。
+
+## 提前主动谈进展后的本轮覆盖
+
+### 职责与状态
+
+`proactive/models.py::FollowupReview` 表示对一个现有候选的 keep/covered 判断，绑定 proposal_id、proposal_revision 和当前用户引文；`ScoutResult.followups` 每次必须完整覆盖已提供的 pending 候选，最多 48 项。`ProposalChange.followup_intent` 区分普通 update 与用户明确提出的 new_plan。`FollowupEvidence` 允许“跑完了”等简短真实答复，但仍校验实际 user 来源及精确引文，不建立长期事实。
+
+covered 只表示这轮原定的关心已被用户主动交谈满足。例如“我明天准备跑实验”后、晚间到来前说“实验结果出来了”，可关闭原定的“实验怎么样了”；“还没开始”“仍在等结果”也可以是已主动谈过的当前状态。事项的 status 仍可 open，不推断实验成功或全部完成。普通无关消息和含糊提及返回 keep；并不因为发了任何新消息就取消所有候选。
+
+### 实际运行路径
+
+1. 原增量 Run/Thread 读取和前台抢占路径保持。`ProactiveRuntime.run()` 处理新用户证据时，获取同一次 candidates() 快照，保存 `review_targets=followup_targets(existing)`，再 await OpportunityScout.extract()。只处理原本可见、已完成且有界的用户证据，助手话语或模拟投递不进入来源。
+2. Scout 输入为每个候选提供 ID、修订、topic_key、状态和需要核对的标记。候选不超过 16 项时，为最近八项补充有限上下文和原计划引文；容量较大时保留紧凑元数据，沿用原预算，不增加 tokens 配额。每个尚未覆盖的 open/deferred 候选都必须返回一次核对，包括之前 silent 或 failed 的候选，避免 retry 又恢复已聊过的问候。
+3. `OpportunityScout.extract()` 验证核对目标集合完整、无重复、修订一致；covered 的引文必须来自本次提供的真实 users。即使 changes=[] 也必须返回这些核对。漏项、未知目标、假引文、跨来源和相互冲突的 covered/new_plan 返回固定错误码，暂停水位，不继续采用旧 Attention 判断。
+4. `ProactiveRepository.publish()` 在原水位事务中重新比较每个目标的完整快照。covered 证据必须更新于原计划 source_position 与既有 covered_position；晚到的旧 Thread 引文不能撤掉一个更新的计划。
+5. 命中后保存 followup_state=covered、证据位置和引文，清空 next_review_at，记录 last_action=covered 并递增 revision；同事务将对应 composing/prepared/compose_failed 草稿改为 cancelled/followup_covered，追加审计并推进水位。事务失败全部回滚，后台暂停。历史 sending/accepted/failed/uncertain 回执不伪装成已撤回。
+6. due()/decide() 与 OutboxRepository._proposal() 显式拒绝 covered。已 notify 但尚未生成的旧决策只会形成 cancelled 记录，不再调用 Composer。已生成的草稿立即撤下；一般输入导致的旧 epoch 失效保护继续保留。
+7. 后续普通 update 即使带新引文，也保留 covered 和空复查。只有 new_plan 且来源位置更新于覆盖证据，才重新变为 pending；旧证据上的 new_plan 标记无效。covered 不占 48 个待跟进名额，新一轮重新开启仍受容量上限。明确提醒 Scheduler 不读写这些字段。
+8. Observatory 显示“本轮进展已聊过”和原定问候撤下说明，展开可分别查看计划与进展证据。后续重启保留状态，不靠内存中的“最近聊过”标记维持。
+
+### 验证与能力边界
+
+最小示例是依次完成两轮真实用户交谈：“我明天准备跑实验”与“实验结果出来了”；等后台 Scout 完成核对后，在只读候选中查看 followup_state=covered、next_review_at=null，以及 covered_sources。没有新的明确计划时不再生成那次问候。
+
+`tests/test_followup_coverage.py` 离线验证窗口前主动进展、短答、其他话题不受影响、重启、未生成/已生成草稿、历史回执保护、明确提醒隔离、普通更新/新计划、旧历史、核对缺项/伪造、目标竞争、事务回滚、容量和 schema 21→22 迁移。语义上是否属于同一事项的进展仍由 Scout 判断；这次实现保证命中后的持久撤下和失败停住，不把 Fake Provider 用例当成真实模型识别准确率。
 
 ## 异常与边界
 

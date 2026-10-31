@@ -1,5 +1,7 @@
 # Composer 与离线 Outbox / Delivery
 
+本轮进展覆盖：`ProactiveRepository.publish()` 将已聊过事项的 composing/prepared/compose_failed 草稿与候选一同撤下；`OutboxRepository._proposal()` 显式拒绝 followup_state=covered，旧 notify 决策不能再生成问候。sending/accepted 等历史尝试不伪装成撤回。`OutboundRuntime.compose()` 只向模型投影 ID、topic_key、title、context、sources、followup_window，账务/覆盖字段留给 Host 校验；角色内容完整保留，只移除末尾重复的主对话通用段落，使原预算用于角色和真实证据。状态和验证见 [proactive.md](proactive.md)。
+
 关心式窗口的来源读取：`OutboxRepository._proposal()` 同时解析 schema 20 的 followup_window，供 Composer 看到 before/evening 阶段；原来源、Revision、epoch 与有效期复核不变。明确提醒的真实 NapCat Sender 仅接在独立 Scheduler，当前 Proactive DeliveryGrant 和 FakeSender 仍只有 simulation，不复用该真实发送许可。窗口路径见 [proactive.md](proactive.md)，提醒投递见 [scheduler.md](scheduler.md)。
 
 ## 职责与架构组成

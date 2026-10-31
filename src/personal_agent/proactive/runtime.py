@@ -7,7 +7,12 @@ from personal_agent.organization.clock import Clock, SystemClock
 from personal_agent.organization.models import OrganizationError
 from personal_agent.organization.provider import OrganizerModel
 from personal_agent.proactive.attention import AttentionEngine
-from personal_agent.proactive.models import AttentionDecision, ProactivePolicy, ScoutResult
+from personal_agent.proactive.models import (
+    AttentionDecision,
+    ProactivePolicy,
+    ScoutResult,
+    followup_targets,
+)
 from personal_agent.proactive.scout import OpportunityScout
 from personal_agent.proactive.wake import WakeCoordinator
 from personal_agent.storage.proactive import ProactiveRepository, stamp
@@ -89,11 +94,11 @@ class ProactiveRuntime:
                 self.repository.fail("source_budget", at)
                 return dict(outcome="blocked", error_code="source_budget")
             try:
-                result = (
-                    await self.scout.extract(snapshot, self.repository.candidates(), stamp(at))
-                    if snapshot["users"] and not snapshot["skip"]
-                    else ScoutResult()
-                )
+                result = ScoutResult()
+                if snapshot["users"] and not snapshot["skip"]:
+                    existing = self.repository.candidates()
+                    snapshot["review_targets"] = followup_targets(existing)
+                    result = await self.scout.extract(snapshot, existing, stamp(at))
                 self.repository.publish(snapshot, result, self.policy, at)
                 return dict(outcome="completed", stage="scout", changes=len(result.changes))
             except OrganizationError as error:

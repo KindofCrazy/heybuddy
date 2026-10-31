@@ -1,4 +1,6 @@
 {
+  "Progress discussed": "本轮进展已聊过",
+  "The scheduled check-in was withdrawn.": "原定的本轮问候已撤下。",
   "Message drafts": "消息草稿",
   "Simulation attempts": "模拟投递记录",
   "COMPOSER / OUTBOX": "生成 / 待投递记录",

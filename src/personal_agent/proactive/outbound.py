@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import Callable
 
 from personal_agent.core.evidence import SECRET
+from personal_agent.core.prompts import CONVERSATION_PROMPT
 from personal_agent.organization.models import OrganizationError
 from personal_agent.proactive.composer import Composer
 from personal_agent.proactive.delivery import DeliveryError, DeliveryGrant, Sender, SendReceipt
@@ -72,7 +73,17 @@ class OutboundRuntime:
             return dict(outcome="stale", outbox_id=item["id"])
         proposal = self.repository.proposal(item["proposal_id"], item["proposal_revision"], at)
         try:
-            draft = await self.composer.compose(proposal, style, stamp(at))
+            draft = await self.composer.compose(
+                {
+                    key: proposal[key]
+                    for key in ("id", "topic_key", "title", "context", "sources", "followup_window")
+                },
+                [
+                    {**part, "text": part["text"].removesuffix("\n\n" + CONVERSATION_PROMPT)}
+                    for part in style
+                ],
+                stamp(at),
+            )
         except asyncio.CancelledError:
             self.repository.stop(
                 item["id"], "compose_failed", "compose_cancelled", self.proactive.clock.now()

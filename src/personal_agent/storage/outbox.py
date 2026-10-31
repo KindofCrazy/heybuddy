@@ -110,6 +110,7 @@ class OutboxRepository:
             not row
             or row["revision"] != revision
             or row["last_action"] != "notify"
+            or row["followup_state"] != "pending"
             or row["status"] not in {"open", "deferred"}
             or row["expires_at"] <= stamp(at)
         ):
@@ -117,6 +118,7 @@ class OutboxRepository:
         proposal = dict(row)
         proposal["sources"] = json.loads(proposal["sources"])
         proposal["followup_window"] = json.loads(proposal["followup_window"])
+        proposal["covered_sources"] = json.loads(proposal["covered_sources"])
         for source in proposal["sources"]:
             raw = db.execute(
                 "SELECT m.payload,length(CAST(m.payload AS BLOB)) AS size FROM messages m "

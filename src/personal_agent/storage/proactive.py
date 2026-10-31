@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from personal_agent.core.evidence import redact
+from personal_agent.core.evidence import SECRET, redact
 from personal_agent.core.history import HistoryError
 from personal_agent.proactive.models import (
     AttentionDecision,
@@ -51,6 +51,15 @@ def stamp(value: datetime) -> str:
 
 SOCIAL_SCHEMA = (
     "ALTER TABLE proactive_proposals ADD COLUMN followup_window TEXT NOT NULL DEFAULT '{}'",
+)
+
+COVERAGE_SCHEMA = (
+    "ALTER TABLE proactive_proposals ADD COLUMN followup_state TEXT NOT NULL DEFAULT 'pending' "
+    "CHECK(followup_state IN ('pending','covered'))",
+    "ALTER TABLE proactive_proposals ADD COLUMN covered_position INTEGER NOT NULL DEFAULT 0 "
+    "CHECK(covered_position>=0)",
+    "ALTER TABLE proactive_proposals ADD COLUMN covered_sources TEXT NOT NULL DEFAULT '[]' "
+    "CHECK(length(CAST(covered_sources AS BLOB))<=32768)",
 )
 
 
@@ -224,12 +233,14 @@ class ProactiveRepository:
         with self.store.reading() as db:
             rows = db.execute(
                 "SELECT * FROM proactive_proposals WHERE agent_id=? AND status IN "
-                "('open','deferred') ORDER BY source_position DESC LIMIT 48",
+                "('open','deferred') AND followup_state='pending' "
+                "ORDER BY source_position DESC LIMIT 48",
                 (self.agent_id,),
             ).fetchall()
             closed = db.execute(
-                "SELECT * FROM proactive_proposals WHERE agent_id=? AND status NOT IN "
-                "('open','deferred') ORDER BY source_position DESC LIMIT 16",
+                "SELECT * FROM proactive_proposals WHERE agent_id=? AND (status NOT IN "
+                "('open','deferred') OR followup_state='covered') "
+                "ORDER BY source_position DESC LIMIT 16",
                 (self.agent_id,),
             ).fetchall()
             return [self._decode(row) for row in [*rows, *closed]]
@@ -239,6 +250,7 @@ class ProactiveRepository:
         value = dict(row)
         value["sources"] = json.loads(value["sources"])
         value["followup_window"] = json.loads(value["followup_window"])
+        value["covered_sources"] = json.loads(value["covered_sources"])
         return value
 
     def _event(self, db, at: datetime, action: str, reason: str, payload: dict) -> None:
@@ -281,6 +293,23 @@ class ProactiveRepository:
                     )
                 ):
                     raise HistoryError("Proactive thread changed.")
+            targets = {p["id"]: p for p in snapshot.get("review_targets", [])}
+            if len(result.followups) != len(targets) or {
+                r.proposal_id for r in result.followups
+            } != set(targets):
+                raise HistoryError("Follow-up reviews are incomplete.")
+            for review in result.followups:
+                target = targets[review.proposal_id]
+                row = db.execute(
+                    "SELECT * FROM proactive_proposals WHERE id=? AND agent_id=?",
+                    (review.proposal_id, self.agent_id),
+                ).fetchone()
+                if (
+                    row is None
+                    or self._decode(row) != target
+                    or review.proposal_revision != target["revision"]
+                ):
+                    raise HistoryError("Follow-up target changed.")
             for change in result.changes:
                 position = max(
                     users[(r.conversation_id, r.run_id, r.sequence)].position
@@ -308,15 +337,29 @@ class ProactiveRepository:
                             ),
                         )
                     continue
+                preserve_coverage = bool(
+                    previous
+                    and previous["followup_state"] == "covered"
+                    and (
+                        change.followup_intent != "new_plan"
+                        or position <= previous["covered_position"]
+                        or change.status != "open"
+                    )
+                )
                 count = db.execute(
                     "SELECT COUNT(*) FROM proactive_proposals WHERE agent_id=? "
-                    "AND status IN ('open','deferred')",
+                    "AND status IN ('open','deferred') AND followup_state='pending'",
                     (self.agent_id,),
                 ).fetchone()[0]
                 if (
                     change.status == "open"
+                    and not preserve_coverage
                     and count >= 48
-                    and (not previous or previous["status"] not in {"open", "deferred"})
+                    and (
+                        not previous
+                        or previous["status"] not in {"open", "deferred"}
+                        or previous["followup_state"] == "covered"
+                    )
                 ):
                     self._event(
                         db,
@@ -389,6 +432,74 @@ class ProactiveRepository:
                         json.dumps(window or {}, ensure_ascii=False),
                     ),
                 )
+                if previous:
+                    db.execute(
+                        "UPDATE proactive_proposals SET followup_state=?,"
+                        "next_review_at=CASE WHEN ? THEN NULL ELSE next_review_at END,"
+                        "last_action=CASE WHEN ? THEN 'covered' ELSE last_action END "
+                        "WHERE id=? AND agent_id=?",
+                        (
+                            "covered" if preserve_coverage else "pending",
+                            preserve_coverage,
+                            preserve_coverage,
+                            previous["id"],
+                            self.agent_id,
+                        ),
+                    )
+            for review in result.followups:
+                if review.outcome != "covered":
+                    continue
+                target = targets[review.proposal_id]
+                if any(
+                    c.topic_key == target["topic_key"] and c.followup_intent == "new_plan"
+                    for c in result.changes
+                ):
+                    raise HistoryError("Conflicting follow-up decisions.")
+                refs = [
+                    users.get((r.conversation_id, r.run_id, r.sequence)) for r in review.sources
+                ]
+                if not refs or any(
+                    s is None
+                    or r.quote not in s.text
+                    or "[REDACTED]" in r.quote
+                    or SECRET.search(r.quote)
+                    for r, s in zip(review.sources, refs, strict=True)
+                ):
+                    raise HistoryError("Follow-up coverage evidence is invalid.")
+                position = max(s.position for s in refs)
+                if position <= max(target["source_position"], target["covered_position"]):
+                    continue  # A late Thread interpretation cannot suppress a newer plan.
+                db.execute(
+                    "UPDATE proactive_proposals SET followup_state='covered',covered_position=?,"
+                    "covered_sources=?,next_review_at=NULL,last_action='covered',"
+                    "revision=revision+1,updated_at=? WHERE id=? AND agent_id=?",
+                    (
+                        position,
+                        json.dumps(
+                            [r.model_dump(mode="json") for r in review.sources], ensure_ascii=False
+                        ),
+                        stamp(at),
+                        review.proposal_id,
+                        self.agent_id,
+                    ),
+                )
+                db.execute(
+                    "UPDATE proactive_outbox SET status='cancelled',error_code='followup_covered',"
+                    "updated_at=? WHERE agent_id=? AND proposal_id=? "
+                    "AND status IN ('composing','prepared','compose_failed')",
+                    (stamp(at), self.agent_id, review.proposal_id),
+                )
+                self._event(
+                    db,
+                    at,
+                    "covered",
+                    "user_progress_shared",
+                    dict(
+                        proposal_id=review.proposal_id,
+                        position=position,
+                        sources=[r.model_dump(mode="json") for r in review.sources],
+                    ),
+                )
             lane = snapshot["lane"]
             if lane not in {"run_cursor", "thread_cursor"}:
                 raise ValueError("Invalid cursor lane")
@@ -458,7 +569,8 @@ class ProactiveRepository:
                 self._decode(r)
                 for r in db.execute(
                     "SELECT * FROM proactive_proposals WHERE agent_id=? AND status IN "
-                    "('open','deferred') AND next_review_at<=? AND expires_at>? "
+                    "('open','deferred') AND followup_state='pending' "
+                    "AND next_review_at<=? AND expires_at>? "
                     "ORDER BY next_review_at,id LIMIT ?",
                     (self.agent_id, stamp(at), stamp(at), limit),
                 )
@@ -480,7 +592,7 @@ class ProactiveRepository:
         with self.store._transaction() as db:
             for proposal in proposals:
                 row = db.execute(
-                    "SELECT revision,status,expires_at FROM proactive_proposals "
+                    "SELECT revision,status,expires_at,followup_state FROM proactive_proposals "
                     "WHERE id=? AND agent_id=?",
                     (proposal["id"], self.agent_id),
                 ).fetchone()
@@ -488,6 +600,7 @@ class ProactiveRepository:
                     not row
                     or row["revision"] != proposal["revision"]
                     or row["status"] not in {"open", "deferred"}
+                    or row["followup_state"] != "pending"
                     or row["expires_at"] <= stamp(at)
                 ):
                     return False
@@ -550,4 +663,5 @@ class ProactiveRepository:
             item[key] = json.loads(item[key])
             if kind == "proposals":
                 item["followup_window"] = json.loads(item["followup_window"])
+                item["covered_sources"] = json.loads(item["covered_sources"])
         return dict(items=items, next_cursor=next_cursor, has_more=next_cursor is not None)

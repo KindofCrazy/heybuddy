@@ -2,7 +2,7 @@
 
 ## 当前实现范围与历史阶段说明
 
-当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 21，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
+当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 22，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
 
 ## NapCat 一对一渠道明确授权
 
@@ -15,6 +15,8 @@
 2026-10-30 用户明确当前开发角色为 Luna，并要求删除 Miru 角色卡。开发配置与示例显式选择 luna，库级默认仍为 none；保留已有 Sherlock 包和历史评测记录。Luna 关系由实际互动形成，不默认继承其他角色的关系阶段。
 
 ## P4 Shadow 明确授权
+
+2026-10-31 用户要求实现“提前主动聊过进展，就撤掉原定关心”。允许 Scout 对所有待跟进候选逐项返回结构化 keep/covered 判断，covered 必须绑定真实新用户引文、目标和修订；schema 22 保存本轮已聊过的派生状态与证据，原事项不冒充已完成。匹配后清除复查并原子撤下尚未发送的旧草稿；普通更新和旧 Thread 不自动恢复，只有新计划和更新的用户证据可以重新开启。明确提醒 Scheduler、已接受回执、Memory 和权限边界不变，保持 Shadow；沿用离线测试授权，不做付费模型验证。
 
 2026-10-31 用户同意自然语言提醒接入，并要求继续实现未来计划的关心式跟进。允许可信 CLI 与已验证的 QQ/NapCat 私聊使用有限中文语法创建、查看和取消提醒，缺项先追问；schema 20 保存十五分钟有效的来源/会话隔离草稿。普通未来计划不转成提醒。Shadow 对有日期的计划保存一次抽样的晚间窗口，对有明确时刻的事项按重要性或概率选择开始前窗口，继续受 Attention、安静时段、最新证据和维护预算复核；不接通真实主动发送，不增加付费验证或通用任务平台，运行测试继续延后。
 

@@ -62,7 +62,7 @@ export async function proactivePage() {
           const entry = node("article", "object-card");
           entry.append(
             node("h3", "", item.title || ui(item.action || item.status)),
-            badge(item.status || item.action),
+            badge(item.followup_state === "covered" ? "Progress discussed" : item.status || item.action),
             node(
               "p",
               "",
@@ -73,13 +73,20 @@ export async function proactivePage() {
           );
           if (item.next_review_at)
             entry.append(node("p", "muted", time(item.next_review_at)));
+          if (item.followup_state === "covered")
+            entry.append(node("p", "muted", ui("The scheduled check-in was withdrawn.")));
           const detail = node("details");
           detail.append(
             node("summary", "", ui("Evidence and decision")),
             node(
               "pre",
               "",
-              JSON.stringify(item.sources || item.payload || item, null, 2),
+              JSON.stringify(
+                item.followup_state === "covered"
+                  ? { candidate_sources: item.sources, progress_sources: item.covered_sources }
+                  : item.sources || item.payload || item,
+                null, 2,
+              ),
             ),
           );
           entry.append(detail);

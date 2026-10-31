@@ -22,7 +22,7 @@ P1 的 `SQLiteStore.last_interaction()` 按当前流查最近一个非 running R
 
 `storage/sqlite.py::SQLiteStore` 使用标准库 sqlite3 和短事务；`storage/models.py` 定义记录模型。 `storage/lock.py::DatabaseLock` 复用 `file_lock.py::FileLock`，用 Windows msvcrt / POSIX flock 持有进程占用锁，数据库关闭或进程退出后由 OS 释放。锁文件可以保留，存在本身不代表被占用。 `storage/history.py` 是面向 ContextBuilder 的小型适配层。
 
-表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 21 与发行包版本 0.7.2 是不同概念。
+表关系：Agent 1 → N Conversation，Conversation 1 → N Run / Message，Run 1 → N Message。 client_state 按 Agent 保存上次选中的 Conversation；复合外键防止选入其他 Agent 的会话。消息保存完整 JSON，包括 provider_data，并用会话内唯一递增 sequence 排序。当前数据库 schema 22 与发行包版本 0.7.2 是不同概念。
 
 schema 16 通过 `storage/proactive.py::SCHEMA` 追加 Agent 隔离的增量水位、候选事项和 Shadow 决策审计；`ProactiveRepository.publish()` 在同一短事务提交候选/进度/审计，复核来源和修订。派生状态不替代 Run Journal 或 MemoryFS，不创建发送记录。schema 15→16 迁移与故障回滚、发布回滚在 `tests/test_proactive.py` 验证，完整调用路径见 [Proactive](proactive.md)。
 
@@ -147,3 +147,7 @@ ProactiveRepository.publish() 将社交窗口、随机选定 next_review_at 和�
 # 明确提醒真实渠道（schema 21）
 
 `storage/reminders.py::REAL_SCHEMA` 只追加 delivery_channel 和当前来源/会话/状态/到期时间索引，不改 schema-18 的旧 CHECK 或历史回执。record() 以非空 delivery_channel 投影当前 mode，空值继续读取旧 simulation/unavailable；不会将旧模拟回执重新解释为真实发送。delivery_due() 参数化过滤来源、会话、连接起点、到期与有效期，有界返回；claim() 重新比较完整记录并复核当前 NapCat 源许可，然后原子写 sending、渠道和唯一 attempt。网络请求发生在事务提交后，finish() 同事务保存实际 message_id、尝试与事件，重启只把遗留 sending 标 uncertain，不重发。迁移回滚和旧回执兼容见 `tests/test_reminder_delivery.py`。
+
+# 本轮进展已聊过（schema 22）
+
+`storage/proactive.py::COVERAGE_SCHEMA` 追加 followup_state（pending/covered）、非负 covered_position 和有界 covered_sources JSON。候选、覆盖证据、未发送草稿的撤下、覆盖审计和源水位在 publish() 的同一事务中提交，已接受/不确定回执保持历史语义。新的覆盖必须来自更新的用户证据且目标快照一致；covered 后的普通更新不恢复复查，明确 new_plan 也必须更新于 covered_position。pending 查询和容量排除 covered，已有记录仍以有界历史候选提供给 Scout。具体执行、来源和故障路径见 [proactive.md](proactive.md) 与 `tests/test_followup_coverage.py`。

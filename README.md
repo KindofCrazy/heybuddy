@@ -219,7 +219,7 @@ Apply 复用 MemoryFS 的精确局部编辑、expected_hash、原子替换、路
 详细设计见[整体架构与 Pipeline](docs/architecture.md)，包括模块依赖图、请求时序图、四种历史视图、事务边界、Run 状态转换及启动/切换/恢复流程。[开发文档索引](docs/README.md)提供阅读顺序。
 
 ```text
-main → runtime.open_application → SQLiteStore.initialize(schema 21) / recover_incomplete_runs → SessionManager(Continuous Stream)
+main → runtime.open_application → SQLiteStore.initialize(schema 22) / recover_incomplete_runs → SessionManager(Continuous Stream)
      → ContextBuilder(ConversationHistory) → Agent.run
           ↓ begin：保存 running Run + 用户消息
        ContextBuilder.prepare → Core/时间/有界历史/Working Summary + 可选 Thread/Episode/raw（不写 Journal）
@@ -233,7 +233,7 @@ main → runtime.open_application → SQLiteStore.initialize(schema 21) / recove
 - Agent 核心依赖历史 Protocol，不依赖 sqlite3、CLI 或 SDK 的具体响应对象。
 - SQLite 保存 Agent / Conversation / Message / Run，client_state 记录上次选择。
 - Message 保留完整 role、文本、工具参数、call_id、结果和 provider_data，不只保存展示文本。
-- `user_version` 管理 schema；当前使用 schema 21；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加图片正文与 QQ 附件字段，16 追加 Proactive Shadow 水位、候选和判断审计，17 追加草稿与模拟投递尝试，18 追加明确提醒、投递尝试与事件，19 追加提醒聊天来源隔离，20 追加提醒缺项草稿与社交窗口，21 追加提醒真实渠道标记和到期查询索引；旧迁移定义不改，原 Journal/Summary/Reflection 保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
+- `user_version` 管理 schema；当前使用 schema 22；11 追加学习任务与水位，12 追加角色状态与来源，13 追加 QQ 收件回执，14 追加主 Agent 模型调用审计快照，15 追加图片正文与 QQ 附件字段，16 追加 Proactive Shadow 水位、候选和判断审计，17 追加草稿与模拟投递尝试，18 追加明确提醒、投递尝试与事件，19 追加提醒聊天来源隔离，20 追加提醒缺项草稿与社交窗口，21 追加提醒真实渠道标记和到期查询索引，22 追加本轮跟进已聊过的状态与证据；旧迁移定义不改，原 Journal/Summary/Reflection 保留。迁移失败回滚，遇到更高版本或陌生数据库不覆盖。
 - ContextBuilder 区分完整审计、有界可重放窗口、会话摘要和运行中消息；摘要不会删除原历史。
 - Provider 继续使用 Responses API 的完整本地上下文、`store=False` 和 reasoning 项目重放，持久化前后使用相同映射。工具调用格式参考 [OpenAI 官方函数调用文档](https://developers.openai.com/api/docs/guides/function-calling)。
 
@@ -412,3 +412,5 @@ QQ 现支持图片、图文和 JPEG/PNG/GIF/WebP 表情包输入；动图只读�
 [明确提醒](docs/modules/scheduler.md) 支持 CLI 与已验证 QQ/NapCat 私聊的 `/remind` 命令，也支持“明天上午九点提醒我交材料”“十分钟后提醒我喝水”“取消刚才那个提醒”等有限中文表达；缺时间或事项先追问，不猜上午/下午、不把过去时间滚到明天。只管理当前来源与会话，重复收件不重复创建。NapCat 可向已绑定主号投递当前连接期间到期的明确提醒；官方 QQ 和本地 CLI 记录不自动借用这个渠道。离线积压不集中补发，API 回执不等于用户已读。
 
 “我明天准备跑实验”继续是 [关心式 follow_up](docs/modules/proactive.md)，不创建提醒：没有具体时刻可在当天晚间窗口稳定抽样；有明确时刻时按重要性或概率考虑开始前关心。Attention、安静时段、新证据和预算仍可选择沉默，默认 Shadow 只生成草稿。运行测试和明确提醒的真实投递验证已获得用户授权，验证结果见交付记录。
+
+提前主动说“实验结果出来了”后，Scout 会逐项核对待跟进候选；匹配到真实新进展便保存“本轮已聊过”，清除原定问候，并撤下还未发送的旧草稿。事项仍可未完成，普通补充和旧历史不会重新激活这轮问候；明确的新计划可开启新一轮。这个语义识别由 Scout 完成，缺项、伪造引用或版本冲突会暂停后台，不沿用旧判断。明确设置的定时提醒独立处理。

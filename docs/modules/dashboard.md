@@ -1,5 +1,7 @@
 # Observatory：本地只读工作台
 
+`static/proactive.js` 对 followup_state=covered 的候选显示“本轮进展已聊过”和原定问候撤下说明；展开分别展示 sources 与 covered_sources。界面文本经现有 i18n/zh-CN 字典翻译，用户引文不改写；API 仍是既有只读候选分页，不增加写操作或真实发送入口。状态产生和原子撤下见 [proactive.md](proactive.md)。
+
 ## 职责与架构组成
 
 `dashboard/app.py:create_app` 接受已装配的 `runtime.ChatService`，路由只保留查询投影。`dashboard/repository.py:ObservatoryRepository` 绑定当前 Agent，使用 `SQLiteStore.reading()` 在原有连接和事件循环上执行有界 SELECT，并复用 Episode/Thread 记录校验；不开放 SQL、Provider、Agent 或 Host 命令。`dashboard/memory.py:MemoryView` 负责路径受限的文件展示。`dashboard/server.py:dashboard_server` 管理一个 Uvicorn task，不创建第二个数据库 Owner、不接管进程信号。

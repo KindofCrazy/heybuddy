@@ -53,10 +53,38 @@ class ProposalChange(Model):
     status: Literal["open", "resolved", "dismissed"] = "open"
     sources: list[Evidence] = Field(min_length=1, max_length=4)
     next_review_at: AwareDatetime | None = None
+    followup_intent: Literal["update", "new_plan"] = "update"
+
+
+class FollowupEvidence(Evidence):
+    # A terse current user reply may cover a check-in without establishing a long-term fact.
+    quote: str = Field(min_length=1, max_length=512)
+
+
+class FollowupReview(Model):
+    proposal_id: str = Field(min_length=1, max_length=128)
+    proposal_revision: int = Field(ge=1)
+    outcome: Literal["keep", "covered"]
+    sources: list[FollowupEvidence] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def evidence(self):
+        if self.outcome == "covered" and not self.sources:
+            raise ValueError("Covered follow-up requires user evidence")
+        return self
 
 
 class ScoutResult(Model):
     changes: list[ProposalChange] = Field(default_factory=list, max_length=4)
+    followups: list[FollowupReview] = Field(default_factory=list, max_length=48)
+
+
+def followup_targets(existing: list[dict]) -> list[dict]:
+    return [
+        item
+        for item in existing
+        if item["status"] in {"open", "deferred"} and item["followup_state"] == "pending"
+    ]
 
 
 class AttentionDecision(Model):

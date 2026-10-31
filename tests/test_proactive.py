@@ -69,6 +69,11 @@ class ProposalProvider(FakeProvider):
                     )
                 ]
             )
+            result["followups"] = [
+                dict(proposal_id=p["id"], proposal_revision=p["revision"], outcome="keep")
+                for p in data["existing"]
+                if p["needs_followup_review"]
+            ]
         else:
             result = dict(
                 action=self.action,
@@ -572,7 +577,8 @@ async def test_capacity_skip_advances_so_later_cancellation_can_still_close(stat
     service.model.provider.mutate = lambda result, _: result["changes"][0].update(
         topic_key="new-item"
     )
-    assert (await service.run())["outcome"] == "completed"
+    result = await service.run()
+    assert result["outcome"] == "completed", (result, service.model.metrics)
     assert not service.repository.pending()
     assert len(service.repository.candidates()) == 48
     assert any(
