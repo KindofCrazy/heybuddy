@@ -1,0 +1,1793 @@
+{
+  "request_limit": 100,
+  "attempts": 94,
+  "probe_requests": 91,
+  "runtime_requests": 3,
+  "model": "deepseek-flash",
+  "previous_campaign_attempts": [
+    94,
+    73
+  ],
+  "combined_attempts": 261,
+  "known_usage": {
+    "input_tokens": 171410,
+    "output_tokens": 121471,
+    "reasoning_tokens": 111773
+  },
+  "usage_complete": true,
+  "cost": null,
+  "schema_valid_probes": 86,
+  "contract_valid_probes": 86,
+  "semantic_accuracy": null,
+  "retained_prompt_hashes": {
+    "main": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+    "episode": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+    "thread": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+    "repair": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2"
+  },
+  "decisions": {
+    "main": "retain",
+    "thread": "retain",
+    "repair": "retain_shared_rules",
+    "episode": "revert_to_pre_task"
+  },
+  "fresh_review": [
+    {
+      "split": "a",
+      "stage": "main",
+      "case_hash": "3e0c40da9e19970931ce5dd3c30a42fe38f03c7195716ebdceb3d8f864aa3246",
+      "baseline_prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "candidate_prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "repeated_prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "observed_pass",
+      "observation": "两组新留出及重复都遵守单一表达式/两句话的限制；明确求比较的开发控制保留两种方法。知识正确性不由范围遵守保证。"
+    },
+    {
+      "split": "a",
+      "stage": "episode",
+      "case_hash": "5d4fdc60c8d319088d4ac241e5e5e283b029e29189f0a22e0330c7c574de0aeb",
+      "baseline_prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "candidate_prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "repeated_prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "baseline_contract_valid": false,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "rejected",
+      "observation": "A完成且清理旁枝，但B两次仍重复拆计划与更正，且把原文没有的误谈比赛归给助手；候选撤回，恢复任务前提示词。"
+    },
+    {
+      "split": "a",
+      "stage": "thread",
+      "case_hash": "d7aa519a0aa982b10930ddbddbc705ffe94ccec47356e88c19d3766f10928600",
+      "baseline_prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "candidate_prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "repeated_prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "observed_improvement",
+      "observation": "新留出A原版保留了未接受的相机/议程建议；新版两次仅保留选纸安排。新留出B两次保留是否带样稿未定。"
+    },
+    {
+      "split": "a",
+      "stage": "repair",
+      "case_hash": "2c91ee05f8d4fe0f0a06a69be168cc2e3d7cf00e94dc2141e85a502482ffea3b",
+      "baseline_prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "candidate_prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "repeated_prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "observed_pass",
+      "observation": "两组新留出与重复中状态简短；明确未决点保留。原版在这两组也较干净，不声称普遍收益。"
+    },
+    {
+      "split": "b",
+      "stage": "main",
+      "case_hash": "d8b13e2e86624cce77578ab6ee85a451bf38f5eff810e8dde99f8a742107a3b9",
+      "baseline_prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "candidate_prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "repeated_prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "observed_pass",
+      "observation": "两组新留出及重复都遵守单一表达式/两句话的限制；明确求比较的开发控制保留两种方法。知识正确性不由范围遵守保证。"
+    },
+    {
+      "split": "b",
+      "stage": "episode",
+      "case_hash": "88ee8e973f4143043fce0219d8e790df4c2ae5ea202b349e798d5ecc2741f1c4",
+      "baseline_prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "candidate_prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "repeated_prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "rejected",
+      "observation": "A完成且清理旁枝，但B两次仍重复拆计划与更正，且把原文没有的误谈比赛归给助手；候选撤回，恢复任务前提示词。"
+    },
+    {
+      "split": "b",
+      "stage": "thread",
+      "case_hash": "bd39235c9592f4f78c376b38f9601e01eb295abcb847d7f0b549553a4a2386b5",
+      "baseline_prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "candidate_prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "repeated_prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "observed_improvement",
+      "observation": "新留出A原版保留了未接受的相机/议程建议；新版两次仅保留选纸安排。新留出B两次保留是否带样稿未定。"
+    },
+    {
+      "split": "b",
+      "stage": "repair",
+      "case_hash": "3bddb45d4b7f92c450b23620a53f204f053c6370c76cb141e8353fb758f62089",
+      "baseline_prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "candidate_prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "repeated_prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "baseline_contract_valid": true,
+      "candidate_contract_valid": true,
+      "repeat_contract_valid": true,
+      "review": "observed_pass",
+      "observation": "两组新留出与重复中状态简短；明确未决点保留。原版在这两组也较干净，不声称普遍收益。"
+    }
+  ],
+  "runtime": {
+    "requests": [
+      92,
+      93,
+      94
+    ],
+    "arithmetic": "真实add_numbers两轮完成，41.75。",
+    "tool_boundary": "没有shell工具；说明能力不足后结束，未附带命令或服务邀约。"
+  },
+  "language_control": {
+    "episode": "被拒候选可以使用英语，但未保留该候选。",
+    "thread": "原版与新版在带中文标题的混合输入中均用中文；不宣称语言迁移达标。",
+    "repair": "新版使用英语且保留原事项。"
+  },
+  "remaining_limits": [
+    "Episode旁枝、重复条目和错误归因尚未稳定修复，试验撤回。",
+    "五次Episode请求在8192总输出预算内未完成，原版和候选均有；失败保留计数。",
+    "混合元数据下Thread语言选择仍可能受标题影响。",
+    "小样本单模型不支持总体准确率或跨模型收益结论。"
+  ],
+  "notes": [
+    "新增100次单独计数，未使用上轮剩余额度；本轮停于94次。",
+    "原iteration-held-a/b暴露问题后转为开发诊断，不作为最终独立成绩；另设fresh-a/b并冻结后配对和重复。",
+    "输出预算在配对中一致；未增加生产预算、重试、思考参数或调用次数。",
+    "91个纯探针中86个通过结构与宿主契约检查，5个Episode未完成；结构不等于语义通过。",
+    "只保留主回复与Thread/Repair规则，Episode按任务开始备份精确恢复，其他未提交组织实现保留。",
+    "本轮测试基于工作区冻结提示词；提交不包含其他组织实现改动。",
+    "原始合成正文、冻结输入和ledger仅在忽略目录，汇总无正文。",
+    "未访问生产数据库、写入长期Memory、创建提醒或发送真实消息。",
+    "reasoning属于output子集，无单价，不估算费用。"
+  ],
+  "validation": {
+    "status": "complete",
+    "prior_candidate_full_suite": {
+      "passed": 1314,
+      "skipped": 3
+    },
+    "earlier_suite": {
+      "passed": 1311,
+      "failed": 1,
+      "skipped": 3,
+      "failure": "QQ shutdown/restart timing test; no test code modified."
+    },
+    "final_retained_full_suite": {
+      "passed": 1314,
+      "skipped": 3,
+      "failed": 0,
+      "scope": "仅本轮暂存补丁的隔离副本；独立解释器用于主进程与子进程。"
+    },
+    "ruff": "check and format --check passed; 332 files",
+    "build": "offline sdist and wheel passed",
+    "cli": "prompt_audit --help passed"
+  },
+  "requests": [
+    {
+      "request": 1,
+      "variant": "baseline",
+      "split": "iteration-dev",
+      "stage": "main",
+      "case_hash": "9c5b7dff97d139432dd754cb2808f3e7299aa726ec36a0d7d548c91abf7b6c3c",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3036,
+        "output_tokens": 94,
+        "reasoning_tokens": 52
+      }
+    },
+    {
+      "request": 2,
+      "variant": "baseline",
+      "split": "iteration-dev",
+      "stage": "episode",
+      "case_hash": "b5cbf3c42aa3043ce83a70a820c997e6be98bf1760246eb09583c544eb443fa5",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2563,
+        "output_tokens": 3796,
+        "reasoning_tokens": 3452
+      }
+    },
+    {
+      "request": 3,
+      "variant": "baseline",
+      "split": "iteration-dev",
+      "stage": "thread",
+      "case_hash": "942d7dfdf71672bda3413e69beae4ddf1b55e56c83e0482a5bad98b76f9dd57a",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1149,
+        "output_tokens": 557,
+        "reasoning_tokens": 511
+      }
+    },
+    {
+      "request": 4,
+      "variant": "baseline",
+      "split": "iteration-dev",
+      "stage": "repair",
+      "case_hash": "34ada6cff37e8b77cbbd3bc74176adb1af86cf3829db5f6135a65951df812756",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 846,
+        "output_tokens": 356,
+        "reasoning_tokens": 314
+      }
+    },
+    {
+      "request": 5,
+      "variant": "baseline-control",
+      "split": "iteration-control",
+      "stage": "main",
+      "case_hash": "48bb9c2cb12f2037f96ab2f2f1418dd0c287d59d2a49243d32bb5095ca6ebc3e",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3041,
+        "output_tokens": 576,
+        "reasoning_tokens": 373
+      }
+    },
+    {
+      "request": 6,
+      "variant": "baseline-control",
+      "split": "iteration-control",
+      "stage": "episode",
+      "case_hash": "b3fecb76464d08aa7f5af0e8291f11c51f1a6dd784c35125b04175f3d64f6bb5",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2414,
+        "output_tokens": 2165,
+        "reasoning_tokens": 1699
+      }
+    },
+    {
+      "request": 7,
+      "variant": "baseline-control",
+      "split": "iteration-control",
+      "stage": "thread",
+      "case_hash": "1e145779d639730481113c93571b1120f1062f506812f181f08415fc4aed2f96",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1154,
+        "output_tokens": 379,
+        "reasoning_tokens": 318
+      }
+    },
+    {
+      "request": 8,
+      "variant": "baseline-control",
+      "split": "iteration-control",
+      "stage": "repair",
+      "case_hash": "dba1e8f4e33d9fa6a7cdcf415bd0e471537869c2c912b713317078791d1afcdc",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 851,
+        "output_tokens": 342,
+        "reasoning_tokens": 313
+      }
+    },
+    {
+      "request": 9,
+      "variant": "candidate",
+      "split": "iteration-dev",
+      "stage": "main",
+      "case_hash": "9c5b7dff97d139432dd754cb2808f3e7299aa726ec36a0d7d548c91abf7b6c3c",
+      "prompt_hash": "c617dc267b55c3f9313081b375977c6ba3abea581f45781dac647edeb94c2813",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2968,
+        "output_tokens": 217,
+        "reasoning_tokens": 149
+      }
+    },
+    {
+      "request": 10,
+      "variant": "candidate",
+      "split": "iteration-dev",
+      "stage": "episode",
+      "case_hash": "b5cbf3c42aa3043ce83a70a820c997e6be98bf1760246eb09583c544eb443fa5",
+      "prompt_hash": "15404c6247dc411b993b34a6859084b32f4e7add6aa7f7d5eeba9c31f0d63e62",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": false,
+      "contract_valid": false,
+      "error_type": "ProviderError",
+      "provider_code": "incomplete_response",
+      "usage": {
+        "input_tokens": 2199,
+        "output_tokens": 8192,
+        "reasoning_tokens": 7846
+      }
+    },
+    {
+      "request": 11,
+      "variant": "candidate",
+      "split": "iteration-dev",
+      "stage": "thread",
+      "case_hash": "942d7dfdf71672bda3413e69beae4ddf1b55e56c83e0482a5bad98b76f9dd57a",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1127,
+        "output_tokens": 472,
+        "reasoning_tokens": 428
+      }
+    },
+    {
+      "request": 12,
+      "variant": "candidate",
+      "split": "iteration-dev",
+      "stage": "repair",
+      "case_hash": "34ada6cff37e8b77cbbd3bc74176adb1af86cf3829db5f6135a65951df812756",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 821,
+        "output_tokens": 277,
+        "reasoning_tokens": 258
+      }
+    },
+    {
+      "request": 13,
+      "variant": "candidate-control",
+      "split": "iteration-control",
+      "stage": "main",
+      "case_hash": "48bb9c2cb12f2037f96ab2f2f1418dd0c287d59d2a49243d32bb5095ca6ebc3e",
+      "prompt_hash": "c617dc267b55c3f9313081b375977c6ba3abea581f45781dac647edeb94c2813",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2973,
+        "output_tokens": 495,
+        "reasoning_tokens": 327
+      }
+    },
+    {
+      "request": 14,
+      "variant": "candidate-control",
+      "split": "iteration-control",
+      "stage": "episode",
+      "case_hash": "b3fecb76464d08aa7f5af0e8291f11c51f1a6dd784c35125b04175f3d64f6bb5",
+      "prompt_hash": "15404c6247dc411b993b34a6859084b32f4e7add6aa7f7d5eeba9c31f0d63e62",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2050,
+        "output_tokens": 2144,
+        "reasoning_tokens": 1828
+      }
+    },
+    {
+      "request": 15,
+      "variant": "candidate-control",
+      "split": "iteration-control",
+      "stage": "thread",
+      "case_hash": "1e145779d639730481113c93571b1120f1062f506812f181f08415fc4aed2f96",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1132,
+        "output_tokens": 154,
+        "reasoning_tokens": 97
+      }
+    },
+    {
+      "request": 16,
+      "variant": "candidate-control",
+      "split": "iteration-control",
+      "stage": "repair",
+      "case_hash": "dba1e8f4e33d9fa6a7cdcf415bd0e471537869c2c912b713317078791d1afcdc",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 826,
+        "output_tokens": 162,
+        "reasoning_tokens": 132
+      }
+    },
+    {
+      "request": 17,
+      "variant": "compact",
+      "split": "iteration-dev",
+      "stage": "main",
+      "case_hash": "9c5b7dff97d139432dd754cb2808f3e7299aa726ec36a0d7d548c91abf7b6c3c",
+      "prompt_hash": "c617dc267b55c3f9313081b375977c6ba3abea581f45781dac647edeb94c2813",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2968,
+        "output_tokens": 52,
+        "reasoning_tokens": 21
+      }
+    },
+    {
+      "request": 18,
+      "variant": "compact",
+      "split": "iteration-dev",
+      "stage": "episode",
+      "case_hash": "b5cbf3c42aa3043ce83a70a820c997e6be98bf1760246eb09583c544eb443fa5",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1921,
+        "output_tokens": 4242,
+        "reasoning_tokens": 3955
+      }
+    },
+    {
+      "request": 19,
+      "variant": "compact",
+      "split": "iteration-dev",
+      "stage": "thread",
+      "case_hash": "942d7dfdf71672bda3413e69beae4ddf1b55e56c83e0482a5bad98b76f9dd57a",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1127,
+        "output_tokens": 909,
+        "reasoning_tokens": 864
+      }
+    },
+    {
+      "request": 20,
+      "variant": "compact",
+      "split": "iteration-dev",
+      "stage": "repair",
+      "case_hash": "34ada6cff37e8b77cbbd3bc74176adb1af86cf3829db5f6135a65951df812756",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 821,
+        "output_tokens": 212,
+        "reasoning_tokens": 196
+      }
+    },
+    {
+      "request": 21,
+      "variant": "compact-control",
+      "split": "iteration-control",
+      "stage": "main",
+      "case_hash": "48bb9c2cb12f2037f96ab2f2f1418dd0c287d59d2a49243d32bb5095ca6ebc3e",
+      "prompt_hash": "aabbbb978a0a4fb9564e06c8b8ba9fd48f0979a34f029490590b3380c1a36600",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3019,
+        "output_tokens": 417,
+        "reasoning_tokens": 250
+      }
+    },
+    {
+      "request": 22,
+      "variant": "compact-control",
+      "split": "iteration-control",
+      "stage": "episode",
+      "case_hash": "b3fecb76464d08aa7f5af0e8291f11c51f1a6dd784c35125b04175f3d64f6bb5",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1772,
+        "output_tokens": 1936,
+        "reasoning_tokens": 1620
+      }
+    },
+    {
+      "request": 23,
+      "variant": "compact-control",
+      "split": "iteration-control",
+      "stage": "thread",
+      "case_hash": "1e145779d639730481113c93571b1120f1062f506812f181f08415fc4aed2f96",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1132,
+        "output_tokens": 346,
+        "reasoning_tokens": 286
+      }
+    },
+    {
+      "request": 24,
+      "variant": "compact-control",
+      "split": "iteration-control",
+      "stage": "repair",
+      "case_hash": "dba1e8f4e33d9fa6a7cdcf415bd0e471537869c2c912b713317078791d1afcdc",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 826,
+        "output_tokens": 217,
+        "reasoning_tokens": 185
+      }
+    },
+    {
+      "request": 25,
+      "variant": "scope-check",
+      "split": "iteration-dev",
+      "stage": "main",
+      "case_hash": "9c5b7dff97d139432dd754cb2808f3e7299aa726ec36a0d7d548c91abf7b6c3c",
+      "prompt_hash": "aabbbb978a0a4fb9564e06c8b8ba9fd48f0979a34f029490590b3380c1a36600",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3014,
+        "output_tokens": 57,
+        "reasoning_tokens": 27
+      }
+    },
+    {
+      "request": 26,
+      "variant": "scope-pair",
+      "split": "iteration-control",
+      "stage": "main",
+      "case_hash": "48bb9c2cb12f2037f96ab2f2f1418dd0c287d59d2a49243d32bb5095ca6ebc3e",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3041,
+        "output_tokens": 412,
+        "reasoning_tokens": 268
+      }
+    },
+    {
+      "request": 27,
+      "variant": "held-a-baseline",
+      "split": "iteration-held-a",
+      "stage": "main",
+      "case_hash": "f9bfa487a3a8cab0a6cc5e271ec67d5d59f53d49bee8ef88cd2246302c202ba5",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 7,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 28,
+      "variant": "held-a-baseline",
+      "split": "iteration-held-a",
+      "stage": "episode",
+      "case_hash": "c531c967a5d56d4212764f572f762994213e1fd06816d9db9bec89e5183a54dc",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": false,
+      "contract_valid": false,
+      "error_type": "ProviderError",
+      "provider_code": "incomplete_response",
+      "usage": {
+        "input_tokens": 2572,
+        "output_tokens": 8192,
+        "reasoning_tokens": 8192
+      }
+    },
+    {
+      "request": 29,
+      "variant": "held-a-baseline",
+      "split": "iteration-held-a",
+      "stage": "thread",
+      "case_hash": "41ec8341006c9a7168e4cfbf4d3bfdcd02fdfaeb5bd0a3377f4099ff74fbc445",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1152,
+        "output_tokens": 1200,
+        "reasoning_tokens": 1141
+      }
+    },
+    {
+      "request": 30,
+      "variant": "held-a-baseline",
+      "split": "iteration-held-a",
+      "stage": "repair",
+      "case_hash": "ba9fb5589f088d7b8ab057626acffdf6fc1b594cbbcdb0abefd64c14483da364",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 849,
+        "output_tokens": 710,
+        "reasoning_tokens": 689
+      }
+    },
+    {
+      "request": 31,
+      "variant": "held-a-final",
+      "split": "iteration-held-a",
+      "stage": "main",
+      "case_hash": "f9bfa487a3a8cab0a6cc5e271ec67d5d59f53d49bee8ef88cd2246302c202ba5",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 7,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 32,
+      "variant": "held-a-final",
+      "split": "iteration-held-a",
+      "stage": "episode",
+      "case_hash": "c531c967a5d56d4212764f572f762994213e1fd06816d9db9bec89e5183a54dc",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1930,
+        "output_tokens": 2826,
+        "reasoning_tokens": 2458
+      }
+    },
+    {
+      "request": 33,
+      "variant": "held-a-final",
+      "split": "iteration-held-a",
+      "stage": "thread",
+      "case_hash": "41ec8341006c9a7168e4cfbf4d3bfdcd02fdfaeb5bd0a3377f4099ff74fbc445",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1130,
+        "output_tokens": 1961,
+        "reasoning_tokens": 1914
+      }
+    },
+    {
+      "request": 34,
+      "variant": "held-a-final",
+      "split": "iteration-held-a",
+      "stage": "repair",
+      "case_hash": "ba9fb5589f088d7b8ab057626acffdf6fc1b594cbbcdb0abefd64c14483da364",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 824,
+        "output_tokens": 449,
+        "reasoning_tokens": 412
+      }
+    },
+    {
+      "request": 35,
+      "variant": "held-b-baseline",
+      "split": "iteration-held-b",
+      "stage": "main",
+      "case_hash": "376217bf02fa97b4a3cb338ccc777f8705d7a0edb42a5e844576524d12bb0f6d",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3039,
+        "output_tokens": 161,
+        "reasoning_tokens": 80
+      }
+    },
+    {
+      "request": 36,
+      "variant": "held-b-baseline",
+      "split": "iteration-held-b",
+      "stage": "episode",
+      "case_hash": "0e481c7b3dbb9e21648baf540cd62e578eb67bab4e4a31b0e6f56e463ea0534c",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": false,
+      "contract_valid": false,
+      "error_type": "ProviderError",
+      "provider_code": "incomplete_response",
+      "usage": {
+        "input_tokens": 2564,
+        "output_tokens": 8192,
+        "reasoning_tokens": 8192
+      }
+    },
+    {
+      "request": 37,
+      "variant": "held-b-baseline",
+      "split": "iteration-held-b",
+      "stage": "thread",
+      "case_hash": "910727420778f1f597c707e00d6ce8fca5102ea60109718a130277177f7a2bdd",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1152,
+        "output_tokens": 307,
+        "reasoning_tokens": 257
+      }
+    },
+    {
+      "request": 38,
+      "variant": "held-b-baseline",
+      "split": "iteration-held-b",
+      "stage": "repair",
+      "case_hash": "450e59ad2f07d536c35d014bb74b142ca1038598887fda0a22adf1c58abad26d",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 849,
+        "output_tokens": 130,
+        "reasoning_tokens": 104
+      }
+    },
+    {
+      "request": 39,
+      "variant": "held-b-final",
+      "split": "iteration-held-b",
+      "stage": "main",
+      "case_hash": "376217bf02fa97b4a3cb338ccc777f8705d7a0edb42a5e844576524d12bb0f6d",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3039,
+        "output_tokens": 137,
+        "reasoning_tokens": 30
+      }
+    },
+    {
+      "request": 40,
+      "variant": "held-b-final",
+      "split": "iteration-held-b",
+      "stage": "episode",
+      "case_hash": "0e481c7b3dbb9e21648baf540cd62e578eb67bab4e4a31b0e6f56e463ea0534c",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": false,
+      "contract_valid": false,
+      "error_type": "ProviderError",
+      "provider_code": "incomplete_response",
+      "usage": {
+        "input_tokens": 1922,
+        "output_tokens": 8192,
+        "reasoning_tokens": 8192
+      }
+    },
+    {
+      "request": 41,
+      "variant": "held-b-final",
+      "split": "iteration-held-b",
+      "stage": "thread",
+      "case_hash": "910727420778f1f597c707e00d6ce8fca5102ea60109718a130277177f7a2bdd",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1130,
+        "output_tokens": 285,
+        "reasoning_tokens": 232
+      }
+    },
+    {
+      "request": 42,
+      "variant": "held-b-final",
+      "split": "iteration-held-b",
+      "stage": "repair",
+      "case_hash": "450e59ad2f07d536c35d014bb74b142ca1038598887fda0a22adf1c58abad26d",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 824,
+        "output_tokens": 91,
+        "reasoning_tokens": 62
+      }
+    },
+    {
+      "request": 43,
+      "variant": "held-a-repeat",
+      "split": "iteration-held-a",
+      "stage": "main",
+      "case_hash": "f9bfa487a3a8cab0a6cc5e271ec67d5d59f53d49bee8ef88cd2246302c202ba5",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 7,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 44,
+      "variant": "held-a-repeat",
+      "split": "iteration-held-a",
+      "stage": "episode",
+      "case_hash": "c531c967a5d56d4212764f572f762994213e1fd06816d9db9bec89e5183a54dc",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1930,
+        "output_tokens": 4196,
+        "reasoning_tokens": 3605
+      }
+    },
+    {
+      "request": 45,
+      "variant": "held-a-repeat",
+      "split": "iteration-held-a",
+      "stage": "thread",
+      "case_hash": "41ec8341006c9a7168e4cfbf4d3bfdcd02fdfaeb5bd0a3377f4099ff74fbc445",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1130,
+        "output_tokens": 1433,
+        "reasoning_tokens": 1377
+      }
+    },
+    {
+      "request": 46,
+      "variant": "held-a-repeat",
+      "split": "iteration-held-a",
+      "stage": "repair",
+      "case_hash": "ba9fb5589f088d7b8ab057626acffdf6fc1b594cbbcdb0abefd64c14483da364",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 824,
+        "output_tokens": 21,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 47,
+      "variant": "held-b-repeat",
+      "split": "iteration-held-b",
+      "stage": "main",
+      "case_hash": "376217bf02fa97b4a3cb338ccc777f8705d7a0edb42a5e844576524d12bb0f6d",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3039,
+        "output_tokens": 141,
+        "reasoning_tokens": 61
+      }
+    },
+    {
+      "request": 48,
+      "variant": "held-b-repeat",
+      "split": "iteration-held-b",
+      "stage": "episode",
+      "case_hash": "0e481c7b3dbb9e21648baf540cd62e578eb67bab4e4a31b0e6f56e463ea0534c",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1922,
+        "output_tokens": 3882,
+        "reasoning_tokens": 3604
+      }
+    },
+    {
+      "request": 49,
+      "variant": "held-b-repeat",
+      "split": "iteration-held-b",
+      "stage": "thread",
+      "case_hash": "910727420778f1f597c707e00d6ce8fca5102ea60109718a130277177f7a2bdd",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1130,
+        "output_tokens": 331,
+        "reasoning_tokens": 278
+      }
+    },
+    {
+      "request": 50,
+      "variant": "held-b-repeat",
+      "split": "iteration-held-b",
+      "stage": "repair",
+      "case_hash": "450e59ad2f07d536c35d014bb74b142ca1038598887fda0a22adf1c58abad26d",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 824,
+        "output_tokens": 83,
+        "reasoning_tokens": 54
+      }
+    },
+    {
+      "request": 51,
+      "variant": "language-baseline",
+      "split": "iteration-language",
+      "stage": "main",
+      "case_hash": "6359d5c37756792ac71783d77b68f72f32c9d90fd20562131f153360606a58a4",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3037,
+        "output_tokens": 40,
+        "reasoning_tokens": 33
+      }
+    },
+    {
+      "request": 52,
+      "variant": "language-baseline",
+      "split": "iteration-language",
+      "stage": "episode",
+      "case_hash": "4815bf1c68649aef68d1039aa7a331db91314a769471c88e8a117e94b95d81b0",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2409,
+        "output_tokens": 3616,
+        "reasoning_tokens": 3211
+      }
+    },
+    {
+      "request": 53,
+      "variant": "language-baseline",
+      "split": "iteration-language",
+      "stage": "thread",
+      "case_hash": "950ec7025abe93717160b664bdd1313d9c5c5261760e378bdef64d77e6fe99a1",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1157,
+        "output_tokens": 559,
+        "reasoning_tokens": 504
+      }
+    },
+    {
+      "request": 54,
+      "variant": "language-baseline",
+      "split": "iteration-language",
+      "stage": "repair",
+      "case_hash": "a1f1edc232c19bf9c69d3e811f1847992b5f94792dbc1f12891b145ba5cff3a9",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 853,
+        "output_tokens": 617,
+        "reasoning_tokens": 587
+      }
+    },
+    {
+      "request": 55,
+      "variant": "language-final",
+      "split": "iteration-language",
+      "stage": "main",
+      "case_hash": "6359d5c37756792ac71783d77b68f72f32c9d90fd20562131f153360606a58a4",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3037,
+        "output_tokens": 52,
+        "reasoning_tokens": 45
+      }
+    },
+    {
+      "request": 56,
+      "variant": "language-final",
+      "split": "iteration-language",
+      "stage": "episode",
+      "case_hash": "4815bf1c68649aef68d1039aa7a331db91314a769471c88e8a117e94b95d81b0",
+      "prompt_hash": "77e29f23ccb423f87af36dcc8779fb078608584e7f701738a88fd13a1412fe00",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1767,
+        "output_tokens": 1850,
+        "reasoning_tokens": 1578
+      }
+    },
+    {
+      "request": 57,
+      "variant": "language-final",
+      "split": "iteration-language",
+      "stage": "thread",
+      "case_hash": "950ec7025abe93717160b664bdd1313d9c5c5261760e378bdef64d77e6fe99a1",
+      "prompt_hash": "e8b855283217db606080bdcbe3c27af0be4bf8b7cb0dd6065196320b82147dec",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1135,
+        "output_tokens": 345,
+        "reasoning_tokens": 296
+      }
+    },
+    {
+      "request": 58,
+      "variant": "language-final",
+      "split": "iteration-language",
+      "stage": "repair",
+      "case_hash": "a1f1edc232c19bf9c69d3e811f1847992b5f94792dbc1f12891b145ba5cff3a9",
+      "prompt_hash": "25d2981a3210074c092ba0c34180069194386133531853f09f621e3496b0c4a4",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 828,
+        "output_tokens": 682,
+        "reasoning_tokens": 654
+      }
+    },
+    {
+      "request": 59,
+      "variant": "examples-dev",
+      "split": "iteration-dev",
+      "stage": "episode",
+      "case_hash": "b5cbf3c42aa3043ce83a70a820c997e6be98bf1760246eb09583c544eb443fa5",
+      "prompt_hash": "b074118aa1160030b9f9b4c15b59aa8ed72ac6700e77fc862e9ece3be36d2684",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2092,
+        "output_tokens": 4247,
+        "reasoning_tokens": 3963
+      }
+    },
+    {
+      "request": 60,
+      "variant": "examples-dev",
+      "split": "iteration-dev",
+      "stage": "thread",
+      "case_hash": "942d7dfdf71672bda3413e69beae4ddf1b55e56c83e0482a5bad98b76f9dd57a",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1153,
+        "output_tokens": 458,
+        "reasoning_tokens": 414
+      }
+    },
+    {
+      "request": 61,
+      "variant": "examples-dev",
+      "split": "iteration-dev",
+      "stage": "repair",
+      "case_hash": "34ada6cff37e8b77cbbd3bc74176adb1af86cf3829db5f6135a65951df812756",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 847,
+        "output_tokens": 202,
+        "reasoning_tokens": 186
+      }
+    },
+    {
+      "request": 62,
+      "variant": "examples-control",
+      "split": "iteration-control",
+      "stage": "episode",
+      "case_hash": "b3fecb76464d08aa7f5af0e8291f11c51f1a6dd784c35125b04175f3d64f6bb5",
+      "prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1949,
+        "output_tokens": 1493,
+        "reasoning_tokens": 1193
+      }
+    },
+    {
+      "request": 63,
+      "variant": "examples-control",
+      "split": "iteration-control",
+      "stage": "thread",
+      "case_hash": "1e145779d639730481113c93571b1120f1062f506812f181f08415fc4aed2f96",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1158,
+        "output_tokens": 428,
+        "reasoning_tokens": 345
+      }
+    },
+    {
+      "request": 64,
+      "variant": "examples-control",
+      "split": "iteration-control",
+      "stage": "repair",
+      "case_hash": "dba1e8f4e33d9fa6a7cdcf415bd0e471537869c2c912b713317078791d1afcdc",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 852,
+        "output_tokens": 192,
+        "reasoning_tokens": 159
+      }
+    },
+    {
+      "request": 65,
+      "variant": "fresh-a-baseline",
+      "split": "iteration-fresh-a",
+      "stage": "main",
+      "case_hash": "3e0c40da9e19970931ce5dd3c30a42fe38f03c7195716ebdceb3d8f864aa3246",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 36,
+        "reasoning_tokens": 26
+      }
+    },
+    {
+      "request": 66,
+      "variant": "fresh-a-baseline",
+      "split": "iteration-fresh-a",
+      "stage": "episode",
+      "case_hash": "5d4fdc60c8d319088d4ac241e5e5e283b029e29189f0a22e0330c7c574de0aeb",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": false,
+      "contract_valid": false,
+      "error_type": "ProviderError",
+      "provider_code": "incomplete_response",
+      "usage": {
+        "input_tokens": 2569,
+        "output_tokens": 8192,
+        "reasoning_tokens": 8192
+      }
+    },
+    {
+      "request": 67,
+      "variant": "fresh-a-baseline",
+      "split": "iteration-fresh-a",
+      "stage": "thread",
+      "case_hash": "d7aa519a0aa982b10930ddbddbc705ffe94ccec47356e88c19d3766f10928600",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1150,
+        "output_tokens": 495,
+        "reasoning_tokens": 429
+      }
+    },
+    {
+      "request": 68,
+      "variant": "fresh-a-baseline",
+      "split": "iteration-fresh-a",
+      "stage": "repair",
+      "case_hash": "2c91ee05f8d4fe0f0a06a69be168cc2e3d7cf00e94dc2141e85a502482ffea3b",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 847,
+        "output_tokens": 428,
+        "reasoning_tokens": 403
+      }
+    },
+    {
+      "request": 69,
+      "variant": "fresh-a-final",
+      "split": "iteration-fresh-a",
+      "stage": "main",
+      "case_hash": "3e0c40da9e19970931ce5dd3c30a42fe38f03c7195716ebdceb3d8f864aa3246",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 28,
+        "reasoning_tokens": 18
+      }
+    },
+    {
+      "request": 70,
+      "variant": "fresh-a-final",
+      "split": "iteration-fresh-a",
+      "stage": "episode",
+      "case_hash": "5d4fdc60c8d319088d4ac241e5e5e283b029e29189f0a22e0330c7c574de0aeb",
+      "prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2104,
+        "output_tokens": 3353,
+        "reasoning_tokens": 2973
+      }
+    },
+    {
+      "request": 71,
+      "variant": "fresh-a-final",
+      "split": "iteration-fresh-a",
+      "stage": "thread",
+      "case_hash": "d7aa519a0aa982b10930ddbddbc705ffe94ccec47356e88c19d3766f10928600",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1154,
+        "output_tokens": 617,
+        "reasoning_tokens": 569
+      }
+    },
+    {
+      "request": 72,
+      "variant": "fresh-a-final",
+      "split": "iteration-fresh-a",
+      "stage": "repair",
+      "case_hash": "2c91ee05f8d4fe0f0a06a69be168cc2e3d7cf00e94dc2141e85a502482ffea3b",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 848,
+        "output_tokens": 168,
+        "reasoning_tokens": 148
+      }
+    },
+    {
+      "request": 73,
+      "variant": "fresh-b-baseline",
+      "split": "iteration-fresh-b",
+      "stage": "main",
+      "case_hash": "d8b13e2e86624cce77578ab6ee85a451bf38f5eff810e8dde99f8a742107a3b9",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3037,
+        "output_tokens": 78,
+        "reasoning_tokens": 34
+      }
+    },
+    {
+      "request": 74,
+      "variant": "fresh-b-baseline",
+      "split": "iteration-fresh-b",
+      "stage": "episode",
+      "case_hash": "88ee8e973f4143043fce0219d8e790df4c2ae5ea202b349e798d5ecc2741f1c4",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2405,
+        "output_tokens": 2456,
+        "reasoning_tokens": 2201
+      }
+    },
+    {
+      "request": 75,
+      "variant": "fresh-b-baseline",
+      "split": "iteration-fresh-b",
+      "stage": "thread",
+      "case_hash": "bd39235c9592f4f78c376b38f9601e01eb295abcb847d7f0b549553a4a2386b5",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1156,
+        "output_tokens": 514,
+        "reasoning_tokens": 457
+      }
+    },
+    {
+      "request": 76,
+      "variant": "fresh-b-baseline",
+      "split": "iteration-fresh-b",
+      "stage": "repair",
+      "case_hash": "3bddb45d4b7f92c450b23620a53f204f053c6370c76cb141e8353fb758f62089",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 853,
+        "output_tokens": 368,
+        "reasoning_tokens": 342
+      }
+    },
+    {
+      "request": 77,
+      "variant": "fresh-b-final",
+      "split": "iteration-fresh-b",
+      "stage": "main",
+      "case_hash": "d8b13e2e86624cce77578ab6ee85a451bf38f5eff810e8dde99f8a742107a3b9",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3037,
+        "output_tokens": 49,
+        "reasoning_tokens": 18
+      }
+    },
+    {
+      "request": 78,
+      "variant": "fresh-b-final",
+      "split": "iteration-fresh-b",
+      "stage": "episode",
+      "case_hash": "88ee8e973f4143043fce0219d8e790df4c2ae5ea202b349e798d5ecc2741f1c4",
+      "prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1940,
+        "output_tokens": 1591,
+        "reasoning_tokens": 1310
+      }
+    },
+    {
+      "request": 79,
+      "variant": "fresh-b-final",
+      "split": "iteration-fresh-b",
+      "stage": "thread",
+      "case_hash": "bd39235c9592f4f78c376b38f9601e01eb295abcb847d7f0b549553a4a2386b5",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1160,
+        "output_tokens": 878,
+        "reasoning_tokens": 826
+      }
+    },
+    {
+      "request": 80,
+      "variant": "fresh-b-final",
+      "split": "iteration-fresh-b",
+      "stage": "repair",
+      "case_hash": "3bddb45d4b7f92c450b23620a53f204f053c6370c76cb141e8353fb758f62089",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 854,
+        "output_tokens": 105,
+        "reasoning_tokens": 80
+      }
+    },
+    {
+      "request": 81,
+      "variant": "fresh-a-repeat",
+      "split": "iteration-fresh-a",
+      "stage": "main",
+      "case_hash": "3e0c40da9e19970931ce5dd3c30a42fe38f03c7195716ebdceb3d8f864aa3246",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 24,
+        "reasoning_tokens": 14
+      }
+    },
+    {
+      "request": 82,
+      "variant": "fresh-a-repeat",
+      "split": "iteration-fresh-a",
+      "stage": "episode",
+      "case_hash": "5d4fdc60c8d319088d4ac241e5e5e283b029e29189f0a22e0330c7c574de0aeb",
+      "prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2104,
+        "output_tokens": 3101,
+        "reasoning_tokens": 2832
+      }
+    },
+    {
+      "request": 83,
+      "variant": "fresh-a-repeat",
+      "split": "iteration-fresh-a",
+      "stage": "thread",
+      "case_hash": "d7aa519a0aa982b10930ddbddbc705ffe94ccec47356e88c19d3766f10928600",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1154,
+        "output_tokens": 1978,
+        "reasoning_tokens": 1909
+      }
+    },
+    {
+      "request": 84,
+      "variant": "fresh-a-repeat",
+      "split": "iteration-fresh-a",
+      "stage": "repair",
+      "case_hash": "2c91ee05f8d4fe0f0a06a69be168cc2e3d7cf00e94dc2141e85a502482ffea3b",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 848,
+        "output_tokens": 168,
+        "reasoning_tokens": 148
+      }
+    },
+    {
+      "request": 85,
+      "variant": "fresh-b-repeat",
+      "split": "iteration-fresh-b",
+      "stage": "main",
+      "case_hash": "d8b13e2e86624cce77578ab6ee85a451bf38f5eff810e8dde99f8a742107a3b9",
+      "prompt_hash": "2f53297fb334476c030d96285c2ec1ebff8dc16653816973f48c70a75abe63b3",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3037,
+        "output_tokens": 59,
+        "reasoning_tokens": 20
+      }
+    },
+    {
+      "request": 86,
+      "variant": "fresh-b-repeat",
+      "split": "iteration-fresh-b",
+      "stage": "episode",
+      "case_hash": "88ee8e973f4143043fce0219d8e790df4c2ae5ea202b349e798d5ecc2741f1c4",
+      "prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1940,
+        "output_tokens": 1434,
+        "reasoning_tokens": 1147
+      }
+    },
+    {
+      "request": 87,
+      "variant": "fresh-b-repeat",
+      "split": "iteration-fresh-b",
+      "stage": "thread",
+      "case_hash": "bd39235c9592f4f78c376b38f9601e01eb295abcb847d7f0b549553a4a2386b5",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1160,
+        "output_tokens": 507,
+        "reasoning_tokens": 452
+      }
+    },
+    {
+      "request": 88,
+      "variant": "fresh-b-repeat",
+      "split": "iteration-fresh-b",
+      "stage": "repair",
+      "case_hash": "3bddb45d4b7f92c450b23620a53f204f053c6370c76cb141e8353fb758f62089",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 854,
+        "output_tokens": 143,
+        "reasoning_tokens": 116
+      }
+    },
+    {
+      "request": 89,
+      "variant": "examples-language",
+      "split": "iteration-language",
+      "stage": "episode",
+      "case_hash": "4815bf1c68649aef68d1039aa7a331db91314a769471c88e8a117e94b95d81b0",
+      "prompt_hash": "a9c9c70eb41d031e54a43c5281dd820364fe7b13a21b4f131852941df3435a3e",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1944,
+        "output_tokens": 5663,
+        "reasoning_tokens": 5270
+      }
+    },
+    {
+      "request": 90,
+      "variant": "examples-language",
+      "split": "iteration-language",
+      "stage": "thread",
+      "case_hash": "950ec7025abe93717160b664bdd1313d9c5c5261760e378bdef64d77e6fe99a1",
+      "prompt_hash": "3e2bcc2b9acbf43e8573f24c03c9488797cf29d0f12296b8f52f00173defdc8c",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1161,
+        "output_tokens": 1748,
+        "reasoning_tokens": 1700
+      }
+    },
+    {
+      "request": 91,
+      "variant": "examples-language",
+      "split": "iteration-language",
+      "stage": "repair",
+      "case_hash": "a1f1edc232c19bf9c69d3e811f1847992b5f94792dbc1f12891b145ba5cff3a9",
+      "prompt_hash": "6ae39debebfac97c3890e05546522644386556bf5763145712ac157f2c1aa5d2",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 854,
+        "output_tokens": 195,
+        "reasoning_tokens": 171
+      }
+    },
+    {
+      "request": 92,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools",
+      "usage": {
+        "input_tokens": 3354,
+        "output_tokens": 58,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 93,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools",
+      "usage": {
+        "input_tokens": 3467,
+        "output_tokens": 21,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 94,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tool-boundary",
+      "usage": {
+        "input_tokens": 3351,
+        "output_tokens": 116,
+        "reasoning_tokens": 97
+      }
+    }
+  ]
+}

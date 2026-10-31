@@ -124,7 +124,12 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     reminders = json.loads((root / "reminder-aware-context.json").read_text(encoding="utf-8"))
     flow_reviewed = json.loads((root / "flow-reviewed-context.json").read_text(encoding="utf-8"))
     revised = json.loads((root / "flow-revised-context.json").read_text(encoding="utf-8"))
-    assert current == revised
+    focused = json.loads((root / "scope-focused-context.json").read_text(encoding="utf-8"))
+    assert current == focused
+    assert focused["main"] != revised["main"]
+    assert {k: v for k, v in focused.items() if k != "main"} == {
+        k: v for k, v in revised.items() if k != "main"
+    }
     assert revised["main"] != flow_reviewed["main"]
     assert revised["summary"] != flow_reviewed["summary"]
     assert {k: v for k, v in revised.items() if k not in {"main", "summary"}} == {

@@ -23,6 +23,7 @@ from personal_agent.evaluation.flow_cases import flow_cases, validate_contract
 from personal_agent.evaluation.flow_revision_cases import revision_cases
 from personal_agent.evaluation.prompt_audit_cases import cases, fresh_cases, positive_cases
 from personal_agent.evaluation.prompt_audit_workflow import workflow_cases
+from personal_agent.evaluation.prompt_iteration_cases import iteration_cases
 from personal_agent.learning.curator import CURATE, Curation
 from personal_agent.learning.models import ExistingFileDecision, Targets
 from personal_agent.learning.service import LEARN_CONSOLIDATE, LEARN_EXTRACT, LEARN_SELECT
@@ -93,7 +94,9 @@ async def run(args: argparse.Namespace) -> None:
     settings = load_settings()
     ledger = folder / "ledger.jsonl"
     used = len(ledger.read_text(encoding="utf-8").splitlines()) if ledger.exists() else 0
-    if args.split.startswith("revision-"):
+    if args.split.startswith("iteration-"):
+        selected = iteration_cases(args.split)
+    elif args.split.startswith("revision-"):
         selected = revision_cases(args.split)
     elif args.split.startswith("flow-"):
         selected = flow_cases(args.split)
@@ -155,7 +158,7 @@ async def run(args: argparse.Namespace) -> None:
             used += 1
             try:
                 options = {"max_output_tokens": case.get("output_tokens", 4096)}
-                if args.split.startswith(("flow-", "revision-")) and stage in {
+                if args.split.startswith(("flow-", "revision-", "iteration-")) and stage in {
                     "episode",
                     "thread",
                     "repair",
@@ -175,12 +178,12 @@ async def run(args: argparse.Namespace) -> None:
                 )
                 row["schema_valid"] = not response.tool_calls
                 row["result"] = result
-                if args.split.startswith(("flow-", "revision-")):
+                if args.split.startswith(("flow-", "revision-", "iteration-")):
                     validate_contract(stage, result, case)
                     row["contract_valid"] = not response.tool_calls
             except Exception as error:
                 row.setdefault("schema_valid", False)
-                if args.split.startswith(("flow-", "revision-")):
+                if args.split.startswith(("flow-", "revision-", "iteration-")):
                     row["contract_valid"] = False
                 row["error_type"] = type(error).__name__
                 if isinstance(error, ProviderError):
@@ -218,6 +221,13 @@ def main() -> None:
             "revision-held-b",
             "revision-stop",
             "revision-stop-positive",
+            "iteration-dev",
+            "iteration-control",
+            "iteration-held-a",
+            "iteration-held-b",
+            "iteration-language",
+            "iteration-fresh-a",
+            "iteration-fresh-b",
         ),
         default="dev",
     )

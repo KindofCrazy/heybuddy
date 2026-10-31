@@ -10,10 +10,11 @@ from personal_agent.storage.thread_repair import ThreadRepairRepository
 from personal_agent.storage.threads import ThreadRepository
 
 CURRENT_STATE_RULES = (
-    " current_state is a concise snapshot for continuing THIS topic now, not a cumulative "
-    "history or a concatenation of Episode summaries. Usually use 1-3 short sentences: "
-    "the user's current goal or concern, latest relevant progress or decision, and any "
-    "remaining constraint or concrete open question. Include only applicable parts. "
+    " current_state 是接续该主题所需的最小事实集，通常一两句，不套目标/进度/待办栏目。"
+    "来源只提供计划时，写计划就够。未提及的信息不进入状态，也不改写成未说明、待确认或"
+    "尚不清楚。只有用户明确表达不确定、提出待决问题或证据实际冲突时，才保留未决点。"
+    "例如来源是‘周四和同事看样片’，状态写‘用户周四与同事看样片’，不再追加地点和准备"
+    "情况未说明。当前状态不是累计历史，也不是 Episode 摘要的拼接。"
     "Rewrite and deduplicate on every update; replace superseded details, omit resolved "
     "process and retain earlier facts only when they still constrain the current topic. "
     "Treat prior state and Episode summaries as fallible navigation data; do not perpetuate "
@@ -22,14 +23,9 @@ CURRENT_STATE_RULES = (
     "real-world project progress, user facts or pending tasks. If an assistant self-report "
     "is essential to a topic explicitly about that character, label it as character "
     "self-report and keep it brief. User feedback about the interaction can be relevant. "
-    "Keep assistant advice only when essential to continuation, label it as advice, and "
-    "never treat it as an accepted user plan without explicit user evidence. "
-    "Do not fill a template: if a source does not mention a constraint, next step or open "
-    "question, omit that part. Missing information is not itself an unresolved task. "
-    "Do not append generic 'details/preparation/results still unknown' or 'needs further "
-    "confirmation' merely because the source says nothing about them. Preserve uncertainty "
-    "when the user actually expresses it or evidence conflicts. A sufficient state can "
-    "be just one factual sentence. A confirmed plan is not a request for a progress report. "
+    "未接受的助手建议不写入 current_state。用户明确权衡某个建议时，记录用户正在权衡的选项，"
+    "不记录助手发出建议的过程。本页细化了同一安排时，用具体新描述替换旧泛称，不累加两遍。"
+    "A confirmed plan is not a request for a progress report. "
 )
 
 THREAD_PROMPT = (
@@ -44,8 +40,8 @@ THREAD_PROMPT = (
     "An Episode can have at most one Thread. Prefer a supplied existing thread_id for the same "
     "ongoing topic across days; null creates a new Thread only for a sustained topic/project, "
     "not one-off small talk. Each existing Thread can appear in at most one group. Ordinary "
-    "chat may all go to no_thread. Refresh current_state with current goals, constraints, "
-    "progress, explicit latest decisions and open questions; preserve uncertainty and "
+    "chat may all go to no_thread. Rewrite current_state using only still-relevant "
+    "source-supported facts; do not fill absent categories. Preserve actual uncertainty and "
     "distinguish user confirmation from assistant advice. Episode source times determine "
     "recency, not processing time. Recent explicit corrections supersede old states. Never "
     "close or pause only because of elapsed time; paused is not closed. Re-evaluate links "

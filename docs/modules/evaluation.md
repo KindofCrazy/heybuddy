@@ -110,6 +110,16 @@ manifest 保存 Phase 1 checkpoint、冻结语料与收集器哈希、基线哈�
 
 复现时使用新忽略目录，先以 `--split revision-dev|revision-control` 开发，冻结后才跑 `revision-held-a|revision-held-b`；`--stages` 可以限定环节。最后主回复通过 `revision-stop|revision-stop-positive` 单独复核。`flow_runtime --tools-only` 只重测真实工具续轮与能力说明，不重复图片；`--judge-only` 仍独立。相同 campaign 顺序运行，入口最大一百次、调用前计数，不自动续预算或重试。
 
+## 范围与最小状态的后续迭代
+
+再次授权的一百次请求使用独立 `.heybuddy/prompt-iteration-20261031` ledger，实际 94 次：91 个纯探针和三次真实 Agent 轮次。`prompt_iteration_cases.py::iteration_cases()` 提供四环节的开发、正向控制、早期留出、英语迁移和最终 fresh 案例，`prompt_audit --split iteration-*` 复用原有请求前计数、无自动重试、来源与覆盖校验。`iteration-held-a/b` 暴露问题后用于修订，已转为开发诊断；后设 `iteration-fresh-a/b` 在冻结后做原版/候选/显式重复对照，不能把前面的留出称为最终独立结果。
+
+本次保留通用交谈的范围结束规则与 Thread/Repair 的最小事实规则。比较 A/B 时不额外讲 C，一种方法不扩成多条路线；明确请求多个方案时仍逐项回答。状态不再先列目标/进展/待办栏目，只保留来源支持且仍相关的内容；未接受建议不因加了“尚未确认”说明而保留，本页细化同一安排时替换旧泛称。最终新留出与重复中，只给表达式/两句话的要求得到遵守；旧助手建议从选纸安排中移除，“是否带样稿未定”仍保留。真实 add_numbers 两轮完成，能力不足说明没有附送命令或邀约。
+
+Episode 尝试过合并重复规则、选择性摘要和明确删留示例；少数案例变干净，但新留出 B 两次仍重复拆条目，并出现把未发生的“误谈比赛”归给助手。因此该试验撤回，文件恢复任务前版本，原有未提交实现保留。五次 Episode 请求耗尽 8192 输出预算未完成，原版和候选均出现；没有加生产预算或把失败当通过。英语迁移中，Thread 在中文标题混合输入下仍使用中文，原版也存在，不宣称已解决。
+
+无正文结果在 `evals/results/scope-focused-audit.json`，记录全部请求元数据、失败和保留/撤回决定，不计算整体语义准确率。最终组合快照另存 `evals/prompts/scope-focused-context.json`，历史快照和历史评分不改。`tests/test_flow_audit.py` 验证案例封装、未知 split 拒绝与共享额度，`tests/test_evaluation.py` 仅允许当前组合的主回复规则变化；默认 pytest 禁网保护保持。所有真实测试使用合成数据，没有生产历史重算、Memory Apply 或真实发送。
+
 ## 阅读与验证
 
 `tests/test_evaluation.py` 离线验证真实 Runtime/Automation 的 Fake 路径、检索工具、预算调用前拒绝、不可被好答案覆盖的安全失败、快照一致、Compaction 计量分离和不完整采集拒绝。默认 pytest 保持网络禁用，真实评测仅通过单独显式命令运行。

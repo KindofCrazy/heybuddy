@@ -1,5 +1,7 @@
 # 通用交谈提示词
 
+后续范围迭代将重复的结束规则合并为“按范围答完就停”：限定一种方法时不扩成多条路线，比较 A/B 时不附送第三种方案；只问操作路径时，在必要步骤结束后停止例行提醒和收尾。明确要求多个方案时仍逐项回答，角色口吻不扩大请求。当前组合快照为 `evals/prompts/scope-focused-context.json`，历史快照保留；默认与角色编译、权限、提醒边界不变。
+
 全流程复核在 conversation.md 增加“按请求结束”：用户只要能力说明、不要建议或明确要求不能就结束时，回应完成即停，不附送命令、脚本或继续帮忙的追问；用户明确要步骤和例子时仍充分回答。克制通过实际少问体现，不套用“不催你”“按你的节奏来”的安抚声明。默认与角色编译路径不变，新增 `evals/prompts/flow-revised-context.json` 保存此次主对话、共享 Reflection 抽取与摘要规则的组合；旧快照保留。真实 API 与工程检查分开记录于 [评测](evaluation.md#全流程-api-调用清单与复核)。
 
 明确提醒的 Host 结果边界保存在 `core/prompts.py::REMINDER_RULES`，分别进入默认 HOST_EXECUTION_RULES 和角色 compile_system()，不混入通用交谈 Markdown：没有 Host 确认时不能冒称已设置/取消或保证到期通知，普通未来计划不表示提醒授权。当前主对话合成快照新增 `evals/prompts/reminder-aware-context.json`；历史评测快照不覆盖，除主对话规则外的 Reflection、Memory、Summary 和工具快照保持一致，不宣称真实模型收益。

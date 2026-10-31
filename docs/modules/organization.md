@@ -1,5 +1,7 @@
 # Episode 与事后整理
 
+后续 Thread 范围迭代将 `CURRENT_STATE_RULES` 的首要要求改为“最小事实集”，移除容易被当成必填栏目的一组目标/进展/待办要求。来源只有一项安排时只写该安排；明确表达的疑问、条件和不确定性仍保留。`THREAD_PROMPT` 与 `REPAIR_PROMPT` 共用此规则，未接受的助手建议不再以“未确认建议”旁枝留在状态；同一安排的新描述细化旧泛称时直接替换。关联、分页 checkpoint、CAS 与发布路径不变。真实 API 复核与失败保留见 [评测](evaluation.md)。
+
 全流程提示词复核进一步区分摘要和历史流水：`EPISODE_PROMPT` 将同一用户计划及其措辞更正合为一个事实，不重复生成 correction/open_loop；摘要与 highlight 都省略未接受的助手清单、催汇报和无关角色生活。用户明确提出的互动反馈、关键回答和纠错仍保留；助手自称检查过工具不能替代实际 ToolMessage 证据。`CURRENT_STATE_RULES` 同时用于组织和修复：只保留最新目标、真实进度与仍适用的约束，不因原文没提准备情况就补“仍待确认”等任务；用户明确表达的不确定性仍需保留。实际组织、引用校验和发布路径不变，模型语义复核与预算记录见 [评测](evaluation.md#全流程-api-调用清单与复核)。
 
 Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移动/解除关联后的旧 owner 不再依赖新 Episode 才能维护；`/thread repair` 分页重建当前实际成员，最终 CAS 才发布 clean state。无成员时宿主明确归档，不调用 LLM。

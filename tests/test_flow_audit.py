@@ -9,6 +9,8 @@ from personal_agent.evaluation.flow_cases import ORDER, flow_cases, validate_con
 from personal_agent.evaluation.flow_revision_cases import ORDER as REVISION_ORDER
 from personal_agent.evaluation.flow_revision_cases import revision_cases
 from personal_agent.evaluation.prompt_audit import stages
+from personal_agent.evaluation.prompt_iteration_cases import ORDER as ITERATION_ORDER
+from personal_agent.evaluation.prompt_iteration_cases import iteration_cases
 from personal_agent.organization.models import OrganizationError
 from personal_agent.proactive.composer import Composer, MessageDraft
 
@@ -54,6 +56,32 @@ def test_compaction_budget_counts_json_utf8_not_characters():
     validate_contract("compaction", "甲" * 100, case)
     with pytest.raises(ValueError, match="summary size"):
         validate_contract("compaction", "甲" * 400, case)
+
+
+@pytest.mark.parametrize(
+    "split",
+    [
+        "iteration-dev",
+        "iteration-control",
+        "iteration-held-a",
+        "iteration-held-b",
+        "iteration-language",
+        "iteration-fresh-a",
+        "iteration-fresh-b",
+    ],
+)
+def test_focused_iteration_uses_current_source_envelopes(split):
+    cases = iteration_cases(split)
+    assert tuple(cases) == ITERATION_ORDER
+    assert cases["main"]["plain_user"]
+    assert len(cases["episode"]["input"]["runs"]) >= 3
+    assert cases["repair"]["input"]["has_more"] is False
+    assert [r["id"] for r in cases["thread"]["input"]["episodes"]] == ["ep-current"]
+
+
+def test_unknown_iteration_split_is_rejected():
+    with pytest.raises(ValueError, match="Unknown iteration"):
+        iteration_cases("unregistered")
 
 
 def test_partition_checks_use_the_real_episode_validator():
