@@ -1,0 +1,1386 @@
+{
+  "request_limit": 100,
+  "attempts": 73,
+  "probe_requests": 66,
+  "runtime_requests": 7,
+  "model": "deepseek-flash",
+  "previous_campaign_attempts": 94,
+  "combined_attempts": 167,
+  "known_usage": {
+    "input_tokens": 117132,
+    "output_tokens": 48255,
+    "reasoning_tokens": 41276
+  },
+  "usage_complete": true,
+  "cost": null,
+  "schema_valid_probes": 66,
+  "contract_valid_probes": 66,
+  "semantic_accuracy": null,
+  "paired_review": [
+    {
+      "split": "a",
+      "stage": "main",
+      "case_hash": "5f511c6014307ee3ef10d4875bc5a3f538d5445ee46a02ec45e8fec3756f4d2b",
+      "baseline_prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "candidate_prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "review": "partial",
+      "observation": "晚间招呼不再因宿主中午时间质疑；能力说明仍偶有多余一句。最后另收紧工具不足时的结束规则。"
+    },
+    {
+      "split": "a",
+      "stage": "episode",
+      "case_hash": "9bc474882ebf6c5ed1d397139d82c9a3d96e1a7090d4bfb40009513bafbdd4dc",
+      "baseline_prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "candidate_prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "review": "partial",
+      "observation": "两组计划均保留、措辞更正不再重复highlight，角色任务未进入highlight；第二组摘要仍复述了无关助手插话。"
+    },
+    {
+      "split": "a",
+      "stage": "thread",
+      "case_hash": "cc227c0a530ba6b45178e88382e178f0ac643a265aff28b4f7dd79cf531166d1",
+      "baseline_prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "candidate_prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "review": "partial",
+      "observation": "留出状态保持最新方案和交付对象；额外稀疏样例仍出现准备情况未说明，不能认为占位问题已解决。"
+    },
+    {
+      "split": "a",
+      "stage": "repair",
+      "case_hash": "24a39152a9d185e6872d5cba73578a126d161c1c7e9b39703928c21db96a6954",
+      "baseline_prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "candidate_prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "review": "observed_improvement",
+      "observation": "不再由暂不发布补出等待发布时间；保留用户明确的不确定性。"
+    },
+    {
+      "split": "a",
+      "stage": "compaction",
+      "case_hash": "bbec29a59e4865c4ab6c5d1bece1262616d2d6dd9d7fbbc6a79502cabe98b109",
+      "baseline_prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "candidate_prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "review": "partial",
+      "observation": "不再补上线/发布下一步；一组仍解释旧建议不再适用，存在冗余。"
+    },
+    {
+      "split": "a",
+      "stage": "composer",
+      "case_hash": "a5670cc12467b6e93977b63d051488a5de598ef3581f20ac02f08ffbc8bf44b8",
+      "baseline_prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "candidate_prompt_hash": "b2e352d40864b56d64b9a969c3c4eaf10048b058ae047cc5efca30433b6bd203",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "review": "partial",
+      "observation": "留出草稿简短祝愿，无不催你/进度管理模板；正向求建议时仍有预测安抚口吻，不宣称完全自然。"
+    },
+    {
+      "split": "b",
+      "stage": "main",
+      "case_hash": "9179281251b20e4310e9e0b911a499646f962df09b8072ff334f2944e8e25f47",
+      "baseline_prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "candidate_prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "review": "partial",
+      "observation": "晚间招呼不再因宿主中午时间质疑；能力说明仍偶有多余一句。最后另收紧工具不足时的结束规则。"
+    },
+    {
+      "split": "b",
+      "stage": "episode",
+      "case_hash": "9400e7f0c7b99ec68d92eb99289434bbd5cd437d524d25f88b6797aa0927d824",
+      "baseline_prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "candidate_prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "review": "partial",
+      "observation": "两组计划均保留、措辞更正不再重复highlight，角色任务未进入highlight；第二组摘要仍复述了无关助手插话。"
+    },
+    {
+      "split": "b",
+      "stage": "thread",
+      "case_hash": "96b7e4b62efd5bd4ce12deb3d0b0568a329dbfd7e4d918f061d5e1c57cbeec75",
+      "baseline_prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "candidate_prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "review": "partial",
+      "observation": "留出状态保持最新方案和交付对象；额外稀疏样例仍出现准备情况未说明，不能认为占位问题已解决。"
+    },
+    {
+      "split": "b",
+      "stage": "repair",
+      "case_hash": "31f97db0d4acf07f8b7161df01a122fc361b5583f7c3df4aee985a33ddea6785",
+      "baseline_prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "candidate_prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "review": "observed_improvement",
+      "observation": "不再由暂不发布补出等待发布时间；保留用户明确的不确定性。"
+    },
+    {
+      "split": "b",
+      "stage": "compaction",
+      "case_hash": "15bb1115ffec7880f5bf520a1af26a11663870e21c958dacf8e940ec5b20789c",
+      "baseline_prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "candidate_prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "review": "partial",
+      "observation": "不再补上线/发布下一步；一组仍解释旧建议不再适用，存在冗余。"
+    },
+    {
+      "split": "b",
+      "stage": "composer",
+      "case_hash": "9583b6a770df1d821725812087feee9bd476e356df2fb9f553c593ff1e29ceec",
+      "baseline_prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "candidate_prompt_hash": "b2e352d40864b56d64b9a969c3c4eaf10048b058ae047cc5efca30433b6bd203",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "review": "partial",
+      "observation": "留出草稿简短祝愿，无不催你/进度管理模板；正向求建议时仍有预测安抚口吻，不宣称完全自然。"
+    }
+  ],
+  "final_main": {
+    "runtime_requests": [
+      67,
+      68,
+      69
+    ],
+    "arithmetic": "真实add_numbers续轮，41.75；completed。",
+    "tool_boundary": "无shell调用，说明能力不足后未再提供命令或邀约；仍略重复。",
+    "new_holdout_requests": [
+      70,
+      71,
+      72,
+      73
+    ],
+    "holdout": "不能执行的动作如实说明；明确请求替代步骤时会回答，但额外列出多种方式，仍偏多。"
+  },
+  "remaining_limits": [
+    "Episode摘要偶有助手旁枝；重要内容未出现虚构角色待办。",
+    "稀疏Thread仍可能添加未说明信息占位。",
+    "主回复或建议有时多给内容、带预测式安抚。",
+    "图片颜色和位置正确，近正方形矩形仍误判正方形。",
+    "上一轮一秒判断器可能uncertain；未更改生产超时。"
+  ],
+  "notes": [
+    "新增100次授权单独建ledger；73次已尝试，不自动花完预算。",
+    "开发/控制36次，新留出两组原版/新版24次，稀疏对照2次，末版主回复留出4次，真实Agent/图片7次。",
+    "十九环节覆盖和首轮发现见full-flow-audit.json；本轮只针对失败类型追加。",
+    "停止调参后测试held-a/b；真实Agent暴露末版主回复问题后仅修主回复，另用新stop留出验证。",
+    "部分语义目标仍不稳定，不给整体准确率，不以JSON合法替代语义通过。",
+    "比较时使用同一工作区的冻结提示词；组织模块另有未提交前置工作，未并入本提交。",
+    "Composer移除主对话专用尾文，防止角色表达重复携带交谈规则导致输入预算回归。",
+    "原始合成正文、输入和ledger只保存于忽略目录；汇总不含正文。",
+    "没有访问生产数据库、Apply记忆、发送真实消息或创建提醒。",
+    "推理tokens属于output子集，不重复计费；无单价，不估算费用。"
+  ],
+  "validation": {
+    "full_suite": {
+      "passed": 1276,
+      "skipped": 3,
+      "failed": 0,
+      "scope": "暂存补丁隔离副本；独立解释器确保子进程不导入并行schema22。"
+    },
+    "new_crlf_regression": "passed in 31-test focused run",
+    "ruff": "check and format --check passed; 330 files",
+    "build": "sdist and wheel built offline",
+    "history": [
+      "首轮发现Composer输入预算回归，修复后相关链路恢复。",
+      "快照CRLF差异通过加载时规范化修正。",
+      "隔离检查子进程误用工作区schema22，使用独立解释器修正后全量通过。"
+    ],
+    "focused_suite": {
+      "passed": 31,
+      "failed": 0
+    },
+    "cli": "main --help and both evaluation --help entries passed"
+  },
+  "requests": [
+    {
+      "request": 1,
+      "variant": "baseline",
+      "split": "revision-dev",
+      "stage": "main",
+      "case_hash": "8d35a159c4a3867ee5e725dc81b8127fae2331d9f7ac46c62f65061fcce08d08",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2849,
+        "output_tokens": 47,
+        "reasoning_tokens": 34
+      }
+    },
+    {
+      "request": 2,
+      "variant": "baseline",
+      "split": "revision-dev",
+      "stage": "episode",
+      "case_hash": "181583da55df13e3b6b91ae1c687ce07899e2aadb4d555d77c576705eb23d2ca",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2078,
+        "output_tokens": 5513,
+        "reasoning_tokens": 5029
+      }
+    },
+    {
+      "request": 3,
+      "variant": "baseline",
+      "split": "revision-dev",
+      "stage": "thread",
+      "case_hash": "124d7696088c5d8e8ad1d7d0f78dc40c025ae61ceb77b0cbd25ba839ab6eb87f",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1071,
+        "output_tokens": 430,
+        "reasoning_tokens": 368
+      }
+    },
+    {
+      "request": 4,
+      "variant": "baseline",
+      "split": "revision-dev",
+      "stage": "repair",
+      "case_hash": "c94e3ae9689e29ad1b969243c274abaee7b414e0fadc06fb8e929b73a65d2d09",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 768,
+        "output_tokens": 292,
+        "reasoning_tokens": 253
+      }
+    },
+    {
+      "request": 5,
+      "variant": "baseline",
+      "split": "revision-dev",
+      "stage": "compaction",
+      "case_hash": "d1caef151aa48dfd5fa7a4ef89e1014786f17b728272e0726b3d90b80f4d3588",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 505,
+        "output_tokens": 447,
+        "reasoning_tokens": 385
+      }
+    },
+    {
+      "request": 6,
+      "variant": "baseline",
+      "split": "revision-dev",
+      "stage": "composer",
+      "case_hash": "7f8391a2c42253048f0211b212f00b21540d7bb648bf4f99bf7db8497972f000",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 660,
+        "output_tokens": 24,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 7,
+      "variant": "baseline-control",
+      "split": "revision-control",
+      "stage": "main",
+      "case_hash": "6d4af1505a1d0d087a273514a1bb4bf51db4b60ca365708a7554421a4ddab84a",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2848,
+        "output_tokens": 573,
+        "reasoning_tokens": 336
+      }
+    },
+    {
+      "request": 8,
+      "variant": "baseline-control",
+      "split": "revision-control",
+      "stage": "episode",
+      "case_hash": "08670475f0388874e0a44f2f4eacbd3b24dae9356de3f2b321bc2405505e8f07",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1914,
+        "output_tokens": 1138,
+        "reasoning_tokens": 850
+      }
+    },
+    {
+      "request": 9,
+      "variant": "baseline-control",
+      "split": "revision-control",
+      "stage": "thread",
+      "case_hash": "179495983c9a0967be7f8ca0e3e3fba0ecb89a23ff3b121ec0dbf8d8532c82b4",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1063,
+        "output_tokens": 427,
+        "reasoning_tokens": 349
+      }
+    },
+    {
+      "request": 10,
+      "variant": "baseline-control",
+      "split": "revision-control",
+      "stage": "repair",
+      "case_hash": "b1b436df7660455776b692075c1e345bdee599fdf4e05a39a5ce553efc68f0b3",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 760,
+        "output_tokens": 276,
+        "reasoning_tokens": 234
+      }
+    },
+    {
+      "request": 11,
+      "variant": "baseline-control",
+      "split": "revision-control",
+      "stage": "compaction",
+      "case_hash": "a724d6a1e64b20c49a4b3f6a86e0565f1d39d354b341e9d8dda3cb113b95ac63",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 497,
+        "output_tokens": 524,
+        "reasoning_tokens": 411
+      }
+    },
+    {
+      "request": 12,
+      "variant": "baseline-control",
+      "split": "revision-control",
+      "stage": "composer",
+      "case_hash": "da693ac9193354ad4b9a3b87755f04256f88d5d14b6caadbda3d3bc87b9211da",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 668,
+        "output_tokens": 209,
+        "reasoning_tokens": 164
+      }
+    },
+    {
+      "request": 13,
+      "variant": "candidate",
+      "split": "revision-dev",
+      "stage": "main",
+      "case_hash": "8d35a159c4a3867ee5e725dc81b8127fae2331d9f7ac46c62f65061fcce08d08",
+      "prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2964,
+        "output_tokens": 47,
+        "reasoning_tokens": 37
+      }
+    },
+    {
+      "request": 14,
+      "variant": "candidate",
+      "split": "revision-dev",
+      "stage": "episode",
+      "case_hash": "181583da55df13e3b6b91ae1c687ce07899e2aadb4d555d77c576705eb23d2ca",
+      "prompt_hash": "1d79043f3faad0cd3a544de1a6bf23ca6718c07f7198cd18da2d0c0468442dc6",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2271,
+        "output_tokens": 1913,
+        "reasoning_tokens": 1495
+      }
+    },
+    {
+      "request": 15,
+      "variant": "candidate",
+      "split": "revision-dev",
+      "stage": "thread",
+      "case_hash": "124d7696088c5d8e8ad1d7d0f78dc40c025ae61ceb77b0cbd25ba839ab6eb87f",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1169,
+        "output_tokens": 672,
+        "reasoning_tokens": 605
+      }
+    },
+    {
+      "request": 16,
+      "variant": "candidate",
+      "split": "revision-dev",
+      "stage": "repair",
+      "case_hash": "c94e3ae9689e29ad1b969243c274abaee7b414e0fadc06fb8e929b73a65d2d09",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 866,
+        "output_tokens": 337,
+        "reasoning_tokens": 296
+      }
+    },
+    {
+      "request": 17,
+      "variant": "candidate",
+      "split": "revision-dev",
+      "stage": "compaction",
+      "case_hash": "d1caef151aa48dfd5fa7a4ef89e1014786f17b728272e0726b3d90b80f4d3588",
+      "prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 567,
+        "output_tokens": 234,
+        "reasoning_tokens": 204
+      }
+    },
+    {
+      "request": 18,
+      "variant": "candidate",
+      "split": "revision-dev",
+      "stage": "composer",
+      "case_hash": "7f8391a2c42253048f0211b212f00b21540d7bb648bf4f99bf7db8497972f000",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 660,
+        "output_tokens": 24,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 19,
+      "variant": "candidate-control",
+      "split": "revision-control",
+      "stage": "main",
+      "case_hash": "6d4af1505a1d0d087a273514a1bb4bf51db4b60ca365708a7554421a4ddab84a",
+      "prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2963,
+        "output_tokens": 426,
+        "reasoning_tokens": 154
+      }
+    },
+    {
+      "request": 20,
+      "variant": "candidate-control",
+      "split": "revision-control",
+      "stage": "episode",
+      "case_hash": "08670475f0388874e0a44f2f4eacbd3b24dae9356de3f2b321bc2405505e8f07",
+      "prompt_hash": "1d79043f3faad0cd3a544de1a6bf23ca6718c07f7198cd18da2d0c0468442dc6",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2107,
+        "output_tokens": 1130,
+        "reasoning_tokens": 799
+      }
+    },
+    {
+      "request": 21,
+      "variant": "candidate-control",
+      "split": "revision-control",
+      "stage": "thread",
+      "case_hash": "179495983c9a0967be7f8ca0e3e3fba0ecb89a23ff3b121ec0dbf8d8532c82b4",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1161,
+        "output_tokens": 511,
+        "reasoning_tokens": 416
+      }
+    },
+    {
+      "request": 22,
+      "variant": "candidate-control",
+      "split": "revision-control",
+      "stage": "repair",
+      "case_hash": "b1b436df7660455776b692075c1e345bdee599fdf4e05a39a5ce553efc68f0b3",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 858,
+        "output_tokens": 307,
+        "reasoning_tokens": 264
+      }
+    },
+    {
+      "request": 23,
+      "variant": "candidate-control",
+      "split": "revision-control",
+      "stage": "compaction",
+      "case_hash": "a724d6a1e64b20c49a4b3f6a86e0565f1d39d354b341e9d8dda3cb113b95ac63",
+      "prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 559,
+        "output_tokens": 210,
+        "reasoning_tokens": 172
+      }
+    },
+    {
+      "request": 24,
+      "variant": "candidate-control",
+      "split": "revision-control",
+      "stage": "composer",
+      "case_hash": "da693ac9193354ad4b9a3b87755f04256f88d5d14b6caadbda3d3bc87b9211da",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 668,
+        "output_tokens": 184,
+        "reasoning_tokens": 151
+      }
+    },
+    {
+      "request": 25,
+      "variant": "refined",
+      "split": "revision-dev",
+      "stage": "main",
+      "case_hash": "8d35a159c4a3867ee5e725dc81b8127fae2331d9f7ac46c62f65061fcce08d08",
+      "prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2964,
+        "output_tokens": 75,
+        "reasoning_tokens": 66
+      }
+    },
+    {
+      "request": 26,
+      "variant": "refined",
+      "split": "revision-dev",
+      "stage": "episode",
+      "case_hash": "181583da55df13e3b6b91ae1c687ce07899e2aadb4d555d77c576705eb23d2ca",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2420,
+        "output_tokens": 3110,
+        "reasoning_tokens": 2819
+      }
+    },
+    {
+      "request": 27,
+      "variant": "refined",
+      "split": "revision-dev",
+      "stage": "thread",
+      "case_hash": "124d7696088c5d8e8ad1d7d0f78dc40c025ae61ceb77b0cbd25ba839ab6eb87f",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1169,
+        "output_tokens": 643,
+        "reasoning_tokens": 578
+      }
+    },
+    {
+      "request": 28,
+      "variant": "refined",
+      "split": "revision-dev",
+      "stage": "repair",
+      "case_hash": "c94e3ae9689e29ad1b969243c274abaee7b414e0fadc06fb8e929b73a65d2d09",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 866,
+        "output_tokens": 393,
+        "reasoning_tokens": 360
+      }
+    },
+    {
+      "request": 29,
+      "variant": "refined",
+      "split": "revision-dev",
+      "stage": "compaction",
+      "case_hash": "d1caef151aa48dfd5fa7a4ef89e1014786f17b728272e0726b3d90b80f4d3588",
+      "prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 567,
+        "output_tokens": 326,
+        "reasoning_tokens": 271
+      }
+    },
+    {
+      "request": 30,
+      "variant": "refined",
+      "split": "revision-dev",
+      "stage": "composer",
+      "case_hash": "7f8391a2c42253048f0211b212f00b21540d7bb648bf4f99bf7db8497972f000",
+      "prompt_hash": "b2e352d40864b56d64b9a969c3c4eaf10048b058ae047cc5efca30433b6bd203",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 714,
+        "output_tokens": 349,
+        "reasoning_tokens": 326
+      }
+    },
+    {
+      "request": 31,
+      "variant": "refined-control",
+      "split": "revision-control",
+      "stage": "main",
+      "case_hash": "6d4af1505a1d0d087a273514a1bb4bf51db4b60ca365708a7554421a4ddab84a",
+      "prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2963,
+        "output_tokens": 488,
+        "reasoning_tokens": 180
+      }
+    },
+    {
+      "request": 32,
+      "variant": "refined-control",
+      "split": "revision-control",
+      "stage": "episode",
+      "case_hash": "08670475f0388874e0a44f2f4eacbd3b24dae9356de3f2b321bc2405505e8f07",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2256,
+        "output_tokens": 2001,
+        "reasoning_tokens": 1744
+      }
+    },
+    {
+      "request": 33,
+      "variant": "refined-control",
+      "split": "revision-control",
+      "stage": "thread",
+      "case_hash": "179495983c9a0967be7f8ca0e3e3fba0ecb89a23ff3b121ec0dbf8d8532c82b4",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1161,
+        "output_tokens": 678,
+        "reasoning_tokens": 578
+      }
+    },
+    {
+      "request": 34,
+      "variant": "refined-control",
+      "split": "revision-control",
+      "stage": "repair",
+      "case_hash": "b1b436df7660455776b692075c1e345bdee599fdf4e05a39a5ce553efc68f0b3",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 858,
+        "output_tokens": 323,
+        "reasoning_tokens": 282
+      }
+    },
+    {
+      "request": 35,
+      "variant": "refined-control",
+      "split": "revision-control",
+      "stage": "compaction",
+      "case_hash": "a724d6a1e64b20c49a4b3f6a86e0565f1d39d354b341e9d8dda3cb113b95ac63",
+      "prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 559,
+        "output_tokens": 257,
+        "reasoning_tokens": 199
+      }
+    },
+    {
+      "request": 36,
+      "variant": "refined-control",
+      "split": "revision-control",
+      "stage": "composer",
+      "case_hash": "da693ac9193354ad4b9a3b87755f04256f88d5d14b6caadbda3d3bc87b9211da",
+      "prompt_hash": "b2e352d40864b56d64b9a969c3c4eaf10048b058ae047cc5efca30433b6bd203",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 722,
+        "output_tokens": 63,
+        "reasoning_tokens": 23
+      }
+    },
+    {
+      "request": 37,
+      "variant": "held-a-baseline",
+      "split": "revision-held-a",
+      "stage": "main",
+      "case_hash": "5f511c6014307ee3ef10d4875bc5a3f538d5445ee46a02ec45e8fec3756f4d2b",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2848,
+        "output_tokens": 33,
+        "reasoning_tokens": 23
+      }
+    },
+    {
+      "request": 38,
+      "variant": "held-a-baseline",
+      "split": "revision-held-a",
+      "stage": "episode",
+      "case_hash": "9bc474882ebf6c5ed1d397139d82c9a3d96e1a7090d4bfb40009513bafbdd4dc",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2069,
+        "output_tokens": 4403,
+        "reasoning_tokens": 4070
+      }
+    },
+    {
+      "request": 39,
+      "variant": "held-a-baseline",
+      "split": "revision-held-a",
+      "stage": "thread",
+      "case_hash": "cc227c0a530ba6b45178e88382e178f0ac643a265aff28b4f7dd79cf531166d1",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1061,
+        "output_tokens": 398,
+        "reasoning_tokens": 300
+      }
+    },
+    {
+      "request": 40,
+      "variant": "held-a-baseline",
+      "split": "revision-held-a",
+      "stage": "repair",
+      "case_hash": "24a39152a9d185e6872d5cba73578a126d161c1c7e9b39703928c21db96a6954",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 758,
+        "output_tokens": 330,
+        "reasoning_tokens": 297
+      }
+    },
+    {
+      "request": 41,
+      "variant": "held-a-baseline",
+      "split": "revision-held-a",
+      "stage": "compaction",
+      "case_hash": "bbec29a59e4865c4ab6c5d1bece1262616d2d6dd9d7fbbc6a79502cabe98b109",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 495,
+        "output_tokens": 316,
+        "reasoning_tokens": 248
+      }
+    },
+    {
+      "request": 42,
+      "variant": "held-a-baseline",
+      "split": "revision-held-a",
+      "stage": "composer",
+      "case_hash": "a5670cc12467b6e93977b63d051488a5de598ef3581f20ac02f08ffbc8bf44b8",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 656,
+        "output_tokens": 25,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 43,
+      "variant": "held-a-final",
+      "split": "revision-held-a",
+      "stage": "main",
+      "case_hash": "5f511c6014307ee3ef10d4875bc5a3f538d5445ee46a02ec45e8fec3756f4d2b",
+      "prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2963,
+        "output_tokens": 14,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 44,
+      "variant": "held-a-final",
+      "split": "revision-held-a",
+      "stage": "episode",
+      "case_hash": "9bc474882ebf6c5ed1d397139d82c9a3d96e1a7090d4bfb40009513bafbdd4dc",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2411,
+        "output_tokens": 2107,
+        "reasoning_tokens": 1807
+      }
+    },
+    {
+      "request": 45,
+      "variant": "held-a-final",
+      "split": "revision-held-a",
+      "stage": "thread",
+      "case_hash": "cc227c0a530ba6b45178e88382e178f0ac643a265aff28b4f7dd79cf531166d1",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1159,
+        "output_tokens": 281,
+        "reasoning_tokens": 225
+      }
+    },
+    {
+      "request": 46,
+      "variant": "held-a-final",
+      "split": "revision-held-a",
+      "stage": "repair",
+      "case_hash": "24a39152a9d185e6872d5cba73578a126d161c1c7e9b39703928c21db96a6954",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 856,
+        "output_tokens": 350,
+        "reasoning_tokens": 319
+      }
+    },
+    {
+      "request": 47,
+      "variant": "held-a-final",
+      "split": "revision-held-a",
+      "stage": "compaction",
+      "case_hash": "bbec29a59e4865c4ab6c5d1bece1262616d2d6dd9d7fbbc6a79502cabe98b109",
+      "prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 557,
+        "output_tokens": 483,
+        "reasoning_tokens": 423
+      }
+    },
+    {
+      "request": 48,
+      "variant": "held-a-final",
+      "split": "revision-held-a",
+      "stage": "composer",
+      "case_hash": "a5670cc12467b6e93977b63d051488a5de598ef3581f20ac02f08ffbc8bf44b8",
+      "prompt_hash": "b2e352d40864b56d64b9a969c3c4eaf10048b058ae047cc5efca30433b6bd203",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 710,
+        "output_tokens": 178,
+        "reasoning_tokens": 163
+      }
+    },
+    {
+      "request": 49,
+      "variant": "held-b-baseline",
+      "split": "revision-held-b",
+      "stage": "main",
+      "case_hash": "9179281251b20e4310e9e0b911a499646f962df09b8072ff334f2944e8e25f47",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2842,
+        "output_tokens": 177,
+        "reasoning_tokens": 153
+      }
+    },
+    {
+      "request": 50,
+      "variant": "held-b-baseline",
+      "split": "revision-held-b",
+      "stage": "episode",
+      "case_hash": "9400e7f0c7b99ec68d92eb99289434bbd5cd437d524d25f88b6797aa0927d824",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2073,
+        "output_tokens": 4489,
+        "reasoning_tokens": 4166
+      }
+    },
+    {
+      "request": 51,
+      "variant": "held-b-baseline",
+      "split": "revision-held-b",
+      "stage": "thread",
+      "case_hash": "96b7e4b62efd5bd4ce12deb3d0b0568a329dbfd7e4d918f061d5e1c57cbeec75",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1058,
+        "output_tokens": 333,
+        "reasoning_tokens": 271
+      }
+    },
+    {
+      "request": 52,
+      "variant": "held-b-baseline",
+      "split": "revision-held-b",
+      "stage": "repair",
+      "case_hash": "31f97db0d4acf07f8b7161df01a122fc361b5583f7c3df4aee985a33ddea6785",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 755,
+        "output_tokens": 136,
+        "reasoning_tokens": 92
+      }
+    },
+    {
+      "request": 53,
+      "variant": "held-b-baseline",
+      "split": "revision-held-b",
+      "stage": "compaction",
+      "case_hash": "15bb1115ffec7880f5bf520a1af26a11663870e21c958dacf8e940ec5b20789c",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 492,
+        "output_tokens": 446,
+        "reasoning_tokens": 375
+      }
+    },
+    {
+      "request": 54,
+      "variant": "held-b-baseline",
+      "split": "revision-held-b",
+      "stage": "composer",
+      "case_hash": "9583b6a770df1d821725812087feee9bd476e356df2fb9f553c593ff1e29ceec",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 658,
+        "output_tokens": 117,
+        "reasoning_tokens": 97
+      }
+    },
+    {
+      "request": 55,
+      "variant": "held-b-final",
+      "split": "revision-held-b",
+      "stage": "main",
+      "case_hash": "9179281251b20e4310e9e0b911a499646f962df09b8072ff334f2944e8e25f47",
+      "prompt_hash": "74a53e76cbd87eea808d46e49c13179f4387cf93a50d7c00bd202c6b5742d62f",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2957,
+        "output_tokens": 45,
+        "reasoning_tokens": 40
+      }
+    },
+    {
+      "request": 56,
+      "variant": "held-b-final",
+      "split": "revision-held-b",
+      "stage": "episode",
+      "case_hash": "9400e7f0c7b99ec68d92eb99289434bbd5cd437d524d25f88b6797aa0927d824",
+      "prompt_hash": "45afd09efba415d9f653940c5492108809bd3e1bcf45345c767c0dd05ce663a3",
+      "schema_hash": "cceae3c87d908519fe579532a062d1145a42059599b185691a12eefa61115a7d",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2415,
+        "output_tokens": 6220,
+        "reasoning_tokens": 5831
+      }
+    },
+    {
+      "request": 57,
+      "variant": "held-b-final",
+      "split": "revision-held-b",
+      "stage": "thread",
+      "case_hash": "96b7e4b62efd5bd4ce12deb3d0b0568a329dbfd7e4d918f061d5e1c57cbeec75",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1156,
+        "output_tokens": 211,
+        "reasoning_tokens": 152
+      }
+    },
+    {
+      "request": 58,
+      "variant": "held-b-final",
+      "split": "revision-held-b",
+      "stage": "repair",
+      "case_hash": "31f97db0d4acf07f8b7161df01a122fc361b5583f7c3df4aee985a33ddea6785",
+      "prompt_hash": "d763fc3229e6f257f4bfbdee7a26f2e7c86a934367ca7a60f68447fc247669c6",
+      "schema_hash": "6a48f3f90662a744d45dbfbdda2c72cd455e666c49cc1dacf2b828dc0e4c542c",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 853,
+        "output_tokens": 222,
+        "reasoning_tokens": 193
+      }
+    },
+    {
+      "request": 59,
+      "variant": "held-b-final",
+      "split": "revision-held-b",
+      "stage": "compaction",
+      "case_hash": "15bb1115ffec7880f5bf520a1af26a11663870e21c958dacf8e940ec5b20789c",
+      "prompt_hash": "d034749dae5f5d546e7f7f478047462950bb65066bb4d1b8018aab974b50a0da",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 554,
+        "output_tokens": 224,
+        "reasoning_tokens": 175
+      }
+    },
+    {
+      "request": 60,
+      "variant": "held-b-final",
+      "split": "revision-held-b",
+      "stage": "composer",
+      "case_hash": "9583b6a770df1d821725812087feee9bd476e356df2fb9f553c593ff1e29ceec",
+      "prompt_hash": "b2e352d40864b56d64b9a969c3c4eaf10048b058ae047cc5efca30433b6bd203",
+      "schema_hash": "4f7af2c2d71a8ec596b92d6e7f066c5920d58f3faf9453e1be3b900136e36255",
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 712,
+        "output_tokens": 184,
+        "reasoning_tokens": 167
+      }
+    },
+    {
+      "request": 61,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools",
+      "usage": {
+        "input_tokens": 3277,
+        "output_tokens": 58,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 62,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools",
+      "usage": {
+        "input_tokens": 3387,
+        "output_tokens": 20,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 63,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tool-boundary",
+      "usage": {
+        "input_tokens": 3274,
+        "output_tokens": 166,
+        "reasoning_tokens": 112
+      }
+    },
+    {
+      "request": 64,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-image",
+      "usage": {
+        "input_tokens": 256,
+        "output_tokens": 169,
+        "reasoning_tokens": 158
+      }
+    },
+    {
+      "request": 65,
+      "variant": "sparse-baseline",
+      "split": "flow-dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1057,
+        "output_tokens": 604,
+        "reasoning_tokens": 531
+      }
+    },
+    {
+      "request": 66,
+      "variant": "sparse-final",
+      "split": "flow-dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "69c46191dee96e6d0728f166ea45ba0a9abd4eeb2e77fb37a46cd8a2742d9498",
+      "schema_hash": "4f5bc9538899473f4a33b78e088c675a0058f0e785e83a199b35c524e053d8f1",
+      "requested_output_tokens": 8192,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 1155,
+        "output_tokens": 335,
+        "reasoning_tokens": 273
+      }
+    },
+    {
+      "request": 67,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools",
+      "usage": {
+        "input_tokens": 3354,
+        "output_tokens": 68,
+        "reasoning_tokens": 10
+      }
+    },
+    {
+      "request": 68,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools",
+      "usage": {
+        "input_tokens": 3474,
+        "output_tokens": 11,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 69,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tool-boundary",
+      "usage": {
+        "input_tokens": 3351,
+        "output_tokens": 59,
+        "reasoning_tokens": 30
+      }
+    },
+    {
+      "request": 70,
+      "variant": "stop-baseline",
+      "split": "revision-stop",
+      "stage": "main",
+      "case_hash": "977d73d21e00df63b0b2ed7201b94f5e8ad059d8b2838ba4a9315d91d640f92c",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2845,
+        "output_tokens": 31,
+        "reasoning_tokens": 20
+      }
+    },
+    {
+      "request": 71,
+      "variant": "stop-final",
+      "split": "revision-stop",
+      "stage": "main",
+      "case_hash": "977d73d21e00df63b0b2ed7201b94f5e8ad059d8b2838ba4a9315d91d640f92c",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3037,
+        "output_tokens": 15,
+        "reasoning_tokens": 0
+      }
+    },
+    {
+      "request": 72,
+      "variant": "stop-positive-baseline",
+      "split": "revision-stop-positive",
+      "stage": "main",
+      "case_hash": "e024d18f6b0bb697c4e65cd2784e87e56ae93d15f158053091b2d7f2b5ba2d83",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 2846,
+        "output_tokens": 217,
+        "reasoning_tokens": 80
+      }
+    },
+    {
+      "request": 73,
+      "variant": "stop-positive-final",
+      "split": "revision-stop-positive",
+      "stage": "main",
+      "case_hash": "e024d18f6b0bb697c4e65cd2784e87e56ae93d15f158053091b2d7f2b5ba2d83",
+      "prompt_hash": "c393514a7b4631ce332d96bb1ea0631f694c45c3d844cbaa6cc1a6f481dd68e7",
+      "schema_hash": null,
+      "requested_output_tokens": 4096,
+      "schema_valid": true,
+      "contract_valid": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 179,
+        "reasoning_tokens": 43
+      }
+    }
+  ]
+}

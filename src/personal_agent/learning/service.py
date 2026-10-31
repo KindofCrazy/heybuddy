@@ -59,6 +59,10 @@ LEARN_EXTRACT = (
 )
 LEARNING_BASE = memory_rules("ephemeral one-off context")
 LEARN_SELECT = LEARNING_BASE + (
+    "This stage only assigns targets, it does not accept or reject candidates. Even a weak "
+    "or temporary candidate MUST appear in exactly one group; the later consolidation stage "
+    "can reject or no_op. Never silently drop candidate_ids or return empty groups for a "
+    "nonempty candidate list. "
     "Group ALL candidate_ids exactly once by one canonical target path. Prefer existing topics; "
     "select related existing files for comparison by reusing their path. Core preferences may "
     "target human.md. Relationship candidates alone may target persona.md when "

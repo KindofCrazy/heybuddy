@@ -1,5 +1,7 @@
 # P2 Memory Learning
 
+`LEARN_SELECT` 仅负责归组和目标选择，不负责拒绝候选：非空候选必须恰好覆盖一次，即使某项看起来临时或不值得保存，也应分配目标，再由局部整合返回 no_op/reject/review。返回空 groups 丢弃候选会被宿主覆盖检查拒绝。共享 `EXTRACTION_RULES` 进一步限定持久更正和认同范围，避免把一次普通词义澄清存为用户长期认识，或将表情偏好扩展为所有符号/写作偏好；真实持续事实更正和明确长期特殊用法仍可保留。
+
 `LEARN_EXTRACT` 在长期复用价值判断中区分一次措辞澄清与持续事实更正：单次玩笑的解释通常留在 Episode；更正已有持续事实或明确表达可复用偏好时才作为长期候选。用户认同只覆盖实际认同的观点，不扩展到同一回复中的其他偏好。这些规则仍在 `propose()` 的抽取请求中使用，不改变后续精确引文验证、目标选择、局部整合或发布权限。正反 API 探针保留真实实习目标、时间更正和明确交流偏好；仅为小样本观察，见 [评测说明](evaluation.md#历史问题驱动的-prompt-复核)。
 
 LEARN_EXTRACT 区分用户资料与 relationship 候选：后者是有用户证据的相处认识、真实共同经历和交流反思，可更新首行为“# 相处记忆”的 persona.md。旧空 # Persona 模板可首次转换，非空旧人格不可自动重新解释。Canon/示例/模拟角色心境不是关系事实，明确的简洁程度等一般偏好仍进入 human.md。角色包和索引不在 Learner 可写目标中。验证见 tests/test_relationship_memory.py 和 tests/test_character_relationship.py。

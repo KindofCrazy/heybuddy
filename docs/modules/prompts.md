@@ -1,5 +1,7 @@
 # 通用交谈提示词
 
+全流程复核在 conversation.md 增加“按请求结束”：用户只要能力说明、不要建议或明确要求不能就结束时，回应完成即停，不附送命令、脚本或继续帮忙的追问；用户明确要步骤和例子时仍充分回答。克制通过实际少问体现，不套用“不催你”“按你的节奏来”的安抚声明。默认与角色编译路径不变，新增 `evals/prompts/flow-revised-context.json` 保存此次主对话、共享 Reflection 抽取与摘要规则的组合；旧快照保留。真实 API 与工程检查分开记录于 [评测](evaluation.md#全流程-api-调用清单与复核)。
+
 明确提醒的 Host 结果边界保存在 `core/prompts.py::REMINDER_RULES`，分别进入默认 HOST_EXECUTION_RULES 和角色 compile_system()，不混入通用交谈 Markdown：没有 Host 确认时不能冒称已设置/取消或保证到期通知，普通未来计划不表示提醒授权。当前主对话合成快照新增 `evals/prompts/reminder-aware-context.json`；历史评测快照不覆盖，除主对话规则外的 Reflection、Memory、Summary 和工具快照保持一致，不宣称真实模型收益。
 
 ## 职责与组成
@@ -8,7 +10,7 @@
 
 ## 实际执行路径
 
-1. 主对话模块导入时，_load_conversation_prompt() 有界读取 UTF-8 文件，拒绝缺失、空白、非法编码、NUL 或超过 8192 字节的文件。
+1. 主对话模块导入时，_load_conversation_prompt() 有界读取 UTF-8 文件，将 CRLF 统一为 LF，再去除首尾空白；拒绝缺失、空白、非法编码、NUL 或超过 8192 字节的文件。不同 checkout 换行不会改变规则语义、哈希或快照。
 2. 无角色时，core/context.py 的 DEFAULT_SYSTEM_PROMPT 在构建时追加通用段落；显式自定义非角色 System 仍按调用者提供的原文处理，不擅自重写它。
 3. 有角色时，character/prompt.py::compile_system() 在 persona.json、原生 Markdown 和旧兼容格式的最终正文中追加通用段落。角色模式仍使用空的默认 Host Base，所以不会再叠加普通助理正文或重复通用段落。当前开发使用 [OpenPersona Luna](persona.md)，不把通用闲聊规则复制进角色文件。
 4. CharacterContextCompiler 对包含通用段落的完整正文计算 system_hash、字节大小和预算；ContextBuilder 仍合并为一条 System，再提供独立的 Core、时间等数据。工具轮次继续重新编译，Journal 不额外保存一份系统提示词作为聊天消息。

@@ -24,6 +24,12 @@ CURRENT_STATE_RULES = (
     "self-report and keep it brief. User feedback about the interaction can be relevant. "
     "Keep assistant advice only when essential to continuation, label it as advice, and "
     "never treat it as an accepted user plan without explicit user evidence. "
+    "Do not fill a template: if a source does not mention a constraint, next step or open "
+    "question, omit that part. Missing information is not itself an unresolved task. "
+    "Do not append generic 'details/preparation/results still unknown' or 'needs further "
+    "confirmation' merely because the source says nothing about them. Preserve uncertainty "
+    "when the user actually expresses it or evidence conflicts. A sufficient state can "
+    "be just one factual sentence. A confirmed plan is not a request for a progress report. "
 )
 
 THREAD_PROMPT = (

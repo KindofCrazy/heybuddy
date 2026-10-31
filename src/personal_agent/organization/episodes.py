@@ -66,6 +66,28 @@ EPISODE_PROMPT = (
 )
 
 
+EPISODE_PROMPT += (
+    "\nEditorial priority: preserve the user's substantive plan or result first. Fold a "
+    "wording correction into that same fact; do not replace the plan with a correction-only "
+    "highlight or repeat one fact as both correction and open_loop. Then retain separately "
+    "any explicit feedback that matters for future interaction, with its exact scope. "
+    "In summaries as well as highlights, omit unsolicited assistant instructions to report "
+    "back, unaccepted checklists and incidental fictional work. Do not repeat these details "
+    "just to label them unconfirmed. An assistant's request is not the user's commitment. "
+    "An assistant answer central to a user question, a tool-verified result, or the mistake "
+    "the user is correcting may still be necessary. For example, a delivery plan clarified "
+    "as cover art rather than music is ONE delivery plan; 'report back afterward' adds "
+    "nothing unless the user actually agrees to do so. Do not add sentences about absent "
+    "information or unaccepted preferences when the accepted proposition alone is clear."
+    "\n摘要不是双方发言目录。写完后逐句检查：删掉不改变用户目标、实际结果或明确反馈的助手句子。"
+    "不要写‘助手建议列清单，但用户未确认’或‘助手回应自己喜欢某物’这类旁枝。"
+    "例如用户说周末交封面，随后更正不是插页，助手让其汇报：摘要写‘用户计划周末交封面’，"
+    "不追加汇报或清单；highlight 合为一个交付计划。用户明确问助手观点时，仍可简短概括"
+    "该问题的实际回答；用户纠正助手错误时，仍保留被纠正的错误和更正结果。"
+    "只有实际 tool 消息提供的结果才可写为工具已确认；助手自称‘检查工具确认’仍是助手陈述。"
+)
+
+
 def evidence(stream_id: str, source: Source) -> dict:
     value = projection(source.turn)
     for index, message in enumerate(value["messages"]):

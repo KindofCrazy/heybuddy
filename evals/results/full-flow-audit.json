@@ -1,0 +1,1124 @@
+{
+  "request_limit": 100,
+  "attempts": 94,
+  "probe_requests": 86,
+  "runtime_requests": 8,
+  "model": "deepseek-flash",
+  "known_usage": {
+    "input_tokens": 96036,
+    "output_tokens": 48858,
+    "reasoning_tokens": 41269
+  },
+  "usage_complete": false,
+  "cost": null,
+  "runtime": {
+    "arithmetic": "completed in two Agent rounds; 41.75",
+    "tool_boundary": "no shell execution; response too verbose for explicit request",
+    "image": "correct color/location; near-square rectangle incorrectly called square",
+    "judges": {
+      "judge-ready-2s-result": {
+        "decision": "ready",
+        "expected": "ready",
+        "budget_seconds": 2.0,
+        "elapsed_seconds": 1.29316850000032
+      },
+      "judge-ready-result": {
+        "decision": "uncertain",
+        "expected": "ready",
+        "budget_seconds": 1.0,
+        "elapsed_seconds": 1.014188599998306
+      },
+      "judge-wait-2s-result": {
+        "decision": "wait",
+        "expected": "wait",
+        "budget_seconds": 2.0,
+        "elapsed_seconds": 0.8258338999949046
+      },
+      "judge-wait-result": {
+        "decision": "wait",
+        "expected": "wait",
+        "budget_seconds": 1.0,
+        "elapsed_seconds": 1.0174445999946329
+      }
+    }
+  },
+  "unexpected_prompt_drift": [
+    "scout"
+  ],
+  "notes": [
+    "No numerical semantic accuracy claim; observed-pass refers only to these synthetic cases.",
+    "Source/coverage contracts rechecked without overwriting raw rows.",
+    "4096-output incomplete Episode kept as failure; later Episode/Thread/Repair use 8192 equally in paired holdout.",
+    "Parallel working-tree changes to prompts or schemas cannot be attributed to this task.",
+    "Reasoning tokens are a subset of output; no prices available and cancelled usage incomplete.",
+    "No production database, Memory Apply, message delivery or reminder creation."
+  ],
+  "paired_review": [
+    {
+      "stage": "completeness",
+      "case_hash": "68a963f04d72db4e2c56d220ad88ac44d8adc00380b09f1b3d2d1c173a1d7b99",
+      "baseline_prompt_hash": "fa985848eb649e592f3ef38e6364d1018e705f1e50dad8096eb4aad12a7b90f7",
+      "final_prompt_hash": "fa985848eb649e592f3ef38e6364d1018e705f1e50dad8096eb4aad12a7b90f7",
+      "review": "timing_risk",
+      "observation": "Token decisions fit cases; one-second ready probe fell back to uncertain; two-second controls returned ready/wait."
+    },
+    {
+      "stage": "retrieval",
+      "case_hash": "356fc7faf96e18cae8c47d1a4fe9269133311d22ae431683d516e6137f96cab4",
+      "baseline_prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "final_prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "review": "observed_pass",
+      "observation": "Selected supplied user/project sources, not unrelated role references."
+    },
+    {
+      "stage": "compaction",
+      "case_hash": "4cb3c0e55853abb9d402513e7d27643c8b79cb8a11435f2bc3386bdfcf6e4742",
+      "baseline_prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "final_prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "review": "partial",
+      "observation": "Fits serialized byte budget and preserves B verified/not released; sometimes adds an unsupported next step to release."
+    },
+    {
+      "stage": "main",
+      "case_hash": "7319ef2ae13d2262a7ffe095eff375dd9598a20df08d5d02c95f3ec738a03b64",
+      "baseline_prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "final_prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "review": "partial",
+      "observation": "Casual responses short; unavailable-tool request still yielded unsolicited commands and a follow-up offer."
+    },
+    {
+      "stage": "episode",
+      "case_hash": "3de5ed654c0719d1960c02dc7456a6bbcd83577f7a14784316b680689f6137b8",
+      "baseline_prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "final_prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "review": "partial",
+      "observation": "Evidence/partition valid in completed cases; repeated clarification and incidental assistant echoes remain. Dedup trial removed a plan and was reverted."
+    },
+    {
+      "stage": "thread",
+      "case_hash": "5375fb0347b529afee3e4be282a81386d606786f3c2b0fc115fba750326366fb",
+      "baseline_prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "final_prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "review": "partial",
+      "observation": "Latest goal updates work in cases; unspecified-detail filler not consistently eliminated. Trial reverted."
+    },
+    {
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "baseline_prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "final_prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "review": "observed_pass",
+      "observation": "Current source correction supersedes old direction in supplied page/checkpoint."
+    },
+    {
+      "stage": "learning",
+      "case_hash": "14586c47f11ef834672af0a22602ff84c6ab3c189db6ab8eb998c96934fa30fa",
+      "baseline_prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "final_prompt_hash": "b2968af988dbecfbd1d499ae2adca96fbb3dfe84a07d2965d0381e44c32ec338",
+      "review": "observed_improvement",
+      "observation": "Keeps real plans/conditional preferences; scoped wording rule reduces generalization."
+    },
+    {
+      "stage": "selection",
+      "case_hash": "9f4efad0d2376f4bbe04295a33a513ff3eea3345a346007f339897ff090598f9",
+      "baseline_prompt_hash": "5d843f139def1e8530088e8452c7e985dde14197f2a8f5f71c80aa0661b864af",
+      "final_prompt_hash": "267b9ffb646eaee6ae720b12f9fc7b50bcfd0032f0066e127ae277e574024101",
+      "review": "observed_improvement",
+      "observation": "Baseline empty groups failed coverage; candidate retains every supplied ID for later consolidation."
+    },
+    {
+      "stage": "consolidation",
+      "case_hash": "69d03df122a1781273f31660cdc2e74977778ac2d698b4f2741a02a607e17ba0",
+      "baseline_prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "final_prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "review": "observed_pass",
+      "observation": "Temporary preference no-op; supplied updates match exact existing spans."
+    },
+    {
+      "stage": "curator",
+      "case_hash": "a1f975a907473e37a4256a87bfc9bba21b7233d2ff933e9db9d544bdd329c04d",
+      "baseline_prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "final_prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "review": "observed_pass",
+      "observation": "Literal duplicate removed with remaining claims preserved, no unsupported factual rewrite."
+    },
+    {
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "baseline_prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "final_prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "review": "observed_pass",
+      "observation": "Assistant story no-op, real user feedback can update; legacy Markdown characters only."
+    },
+    {
+      "stage": "scout",
+      "case_hash": "1eea4d77b3de0a7b9943a51a70c63b5565776f2906ef67c56b6e43a9e9511923",
+      "baseline_prompt_hash": "2549a565fd1dcf0cac465d323018bbe18e5ec799ab9ba068096f9f3d35c452a6",
+      "final_prompt_hash": "79cf574e9486450ef7b26aeb09f1558d4a959ee0a74c0ff27ae4947f0c3cf4df",
+      "review": "observed_pass",
+      "observation": "Wish yields no opportunity, cancellation reuses existing key and dismisses; parallel-worktree drift is not attributable to this change."
+    },
+    {
+      "stage": "attention",
+      "case_hash": "92f887fca9dc2d62df7cf2ae4ed4b58b97c86b5efdfc773f094c1b41daa724bb",
+      "baseline_prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "final_prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "review": "observed_pass",
+      "observation": "Recent/no-new-value cases silent; separately tested explicit encouragement before interview yields notify."
+    },
+    {
+      "stage": "composer",
+      "case_hash": "832317ba13469640342d84cfdc89b6a272c3d78c8a47af41c148e6c0f497c3ff",
+      "baseline_prompt_hash": "ca05a90c198b3a25715ee88725062430640a05017a3d475696bd3838107cb1e5",
+      "final_prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "review": "observed_improvement",
+      "observation": "Grounded draft avoids conflicting interview, boundary pledges and unsolicited modality/advice in final cases."
+    },
+    {
+      "stage": "reflection",
+      "case_hash": "c139f2473acc016d85577ff1b97d76905c6ce5eaec75641b923cc5fef8a9b254",
+      "baseline_prompt_hash": "a64d4c53a3391ba58b74629ff8442475565d6e60ed1e5be2160b4b1fbb01896b",
+      "final_prompt_hash": "4db2bc8ac1b52e212ad0d34a52ce67deab6d9277af85c847e8d0166b5d726616",
+      "review": "observed_improvement",
+      "observation": "Ordinary word clarification excluded while durable conditional preference retained."
+    },
+    {
+      "stage": "reflection_select",
+      "case_hash": "82d94d62663d4dc00b062e2ded03d0ed762afebbe3be7679d7fba0fa3550f999",
+      "baseline_prompt_hash": "92250c269db147540611e82f978b0c49a5521348aeff07725fd19d0aa184d06f",
+      "final_prompt_hash": "92250c269db147540611e82f978b0c49a5521348aeff07725fd19d0aa184d06f",
+      "review": "observed_pass",
+      "observation": "Only supplied related path selected."
+    },
+    {
+      "stage": "reflection_consolidate",
+      "case_hash": "c15a78e586b7b065566355b790dbec4b0061a4d25cbf117a5827e9c3361de4c0",
+      "baseline_prompt_hash": "8a4df8da087e84593b38f991ab34aaa8f5cec5358983ec13897616a3ab23fddf",
+      "final_prompt_hash": "8a4df8da087e84593b38f991ab34aaa8f5cec5358983ec13897616a3ab23fddf",
+      "review": "observed_pass",
+      "observation": "Single candidate covered and unique exact update preserves unrelated content."
+    },
+    {
+      "stage": "worthiness",
+      "case_hash": "27aef2cabf21de18521c7772e2541fe4b7bcca1938b0b449b916315bf07f2c56",
+      "baseline_prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "final_prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "review": "observed_pass",
+      "observation": "Undecided temporary request false; explicit lasting preference true."
+    }
+  ],
+  "requests": [
+    {
+      "request": 1,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "completeness",
+      "case_hash": "97aa883206ddfe3af28eb9ba5554fdcf32b73c60f6f1334d74079d07c7170905",
+      "prompt_hash": "fa985848eb649e592f3ef38e6364d1018e705f1e50dad8096eb4aad12a7b90f7",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 2,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "retrieval",
+      "case_hash": "c0b91af455e019176906464366a0d0a524056428a76c2f82b683c9821b7c2116",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 3,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "compaction",
+      "case_hash": "4cb3c0e55853abb9d402513e7d27643c8b79cb8a11435f2bc3386bdfcf6e4742",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 4,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "main",
+      "case_hash": "d383a6e67d4ba6a4fa20e2023d0836150913a75eb90011a284749a0a943b42eb",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 5,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 6,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 7,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 8,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "learning",
+      "case_hash": "26cd156122520239786a7b82fb6a02e332ef52d3979f05e5ede540a3f8ebe648",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 9,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "selection",
+      "case_hash": "9f4efad0d2376f4bbe04295a33a513ff3eea3345a346007f339897ff090598f9",
+      "prompt_hash": "5d843f139def1e8530088e8452c7e985dde14197f2a8f5f71c80aa0661b864af",
+      "schema_valid": true,
+      "rechecked_contract_valid": false
+    },
+    {
+      "request": 10,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "consolidation",
+      "case_hash": "69d03df122a1781273f31660cdc2e74977778ac2d698b4f2741a02a607e17ba0",
+      "prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 11,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "curator",
+      "case_hash": "a1f975a907473e37a4256a87bfc9bba21b7233d2ff933e9db9d544bdd329c04d",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 12,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 13,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "scout",
+      "case_hash": "8c3f173501165ae97caf7cf968de0dd93f9d2a36dae2eca04684db9238333e15",
+      "prompt_hash": "2549a565fd1dcf0cac465d323018bbe18e5ec799ab9ba068096f9f3d35c452a6",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 14,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "attention",
+      "case_hash": "e6b3b7fc6c30b67ae60640c14ffca521f7b2295966f3805d2ebe959e52f97b9a",
+      "prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 15,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "composer",
+      "case_hash": "d4755fab878e9f336aa59f81c5bf30aabe8e91cf7acd0921c0576064afe9a17d",
+      "prompt_hash": "ca05a90c198b3a25715ee88725062430640a05017a3d475696bd3838107cb1e5",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 16,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "reflection",
+      "case_hash": "ded35eb6fb8c132dc5870fdcacc274828b49467cf9cf4293e1ec37a9a687a990",
+      "prompt_hash": "a64d4c53a3391ba58b74629ff8442475565d6e60ed1e5be2160b4b1fbb01896b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 17,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "reflection_select",
+      "case_hash": "191e8c4d5596c935a874e7a9c57d29e64e59dc8017f55e73d1efb651c6690d8d",
+      "prompt_hash": "92250c269db147540611e82f978b0c49a5521348aeff07725fd19d0aa184d06f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 18,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "reflection_consolidate",
+      "case_hash": "3338acf47c19eacdd844d7f11a9e4ec914198c0750dab1c2ca697f35542b0761",
+      "prompt_hash": "8a4df8da087e84593b38f991ab34aaa8f5cec5358983ec13897616a3ab23fddf",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 19,
+      "variant": "baseline",
+      "split": "flow-dev",
+      "stage": "worthiness",
+      "case_hash": "27aef2cabf21de18521c7772e2541fe4b7bcca1938b0b449b916315bf07f2c56",
+      "prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 20,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "completeness",
+      "case_hash": "9a187c73785adc51cea5f77f74e830594c9a5b53e40d11ef9bc1602b1aabb14d",
+      "prompt_hash": "fa985848eb649e592f3ef38e6364d1018e705f1e50dad8096eb4aad12a7b90f7",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 21,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "retrieval",
+      "case_hash": "0641583b20ce8629ec3df2704946a56b2e52b598829f694300c6ed0768838c95",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 22,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "compaction",
+      "case_hash": "4cb3c0e55853abb9d402513e7d27643c8b79cb8a11435f2bc3386bdfcf6e4742",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 23,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "main",
+      "case_hash": "d82b7891ed5fef4e64f0fdd6781e7154bce98a476605eb9c35fb1f96501e6693",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 24,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "episode",
+      "case_hash": "1b18b0ae6c39e42bc391e829fb36f0e7b4230fb367ba0e32c1793b0863c65712",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": false,
+      "error_type": "ProviderError",
+      "provider_code": "incomplete_response",
+      "rechecked_contract_valid": false
+    },
+    {
+      "request": 25,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "thread",
+      "case_hash": "d4887bb5bd1217ed805d68cafa846e4de89e86bf05d092f324345dd5690c0a99",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 26,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 27,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "learning",
+      "case_hash": "b1c5e177e706bacc0efe9f23b9fa80a56a1d6bb84b25b98ff06e60c82ad20d9d",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 28,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "selection",
+      "case_hash": "44103e49601568dc87ccbdfa98128a6ab80b6e3732f98b2b9339c6dc9e86b9b4",
+      "prompt_hash": "5d843f139def1e8530088e8452c7e985dde14197f2a8f5f71c80aa0661b864af",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 29,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "consolidation",
+      "case_hash": "c239ee0908b1793d7adae08ab1a295095c7347eaa3362b5b24ebdd55e5f899f5",
+      "prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 30,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "curator",
+      "case_hash": "a1f975a907473e37a4256a87bfc9bba21b7233d2ff933e9db9d544bdd329c04d",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 31,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "state",
+      "case_hash": "a1e31398ab451bd0271e167e57540daa9c35dc489df6076fc4fd5e7ae60f5003",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 32,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "scout",
+      "case_hash": "5a519d45811c6065191767e3dc7a516a36d142604dca5a55e284201684405070",
+      "prompt_hash": "2549a565fd1dcf0cac465d323018bbe18e5ec799ab9ba068096f9f3d35c452a6",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 33,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "attention",
+      "case_hash": "92f887fca9dc2d62df7cf2ae4ed4b58b97c86b5efdfc773f094c1b41daa724bb",
+      "prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 34,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "composer",
+      "case_hash": "d4755fab878e9f336aa59f81c5bf30aabe8e91cf7acd0921c0576064afe9a17d",
+      "prompt_hash": "ca05a90c198b3a25715ee88725062430640a05017a3d475696bd3838107cb1e5",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 35,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "reflection",
+      "case_hash": "ded35eb6fb8c132dc5870fdcacc274828b49467cf9cf4293e1ec37a9a687a990",
+      "prompt_hash": "a64d4c53a3391ba58b74629ff8442475565d6e60ed1e5be2160b4b1fbb01896b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 36,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "reflection_select",
+      "case_hash": "191e8c4d5596c935a874e7a9c57d29e64e59dc8017f55e73d1efb651c6690d8d",
+      "prompt_hash": "92250c269db147540611e82f978b0c49a5521348aeff07725fd19d0aa184d06f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 37,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "reflection_consolidate",
+      "case_hash": "3338acf47c19eacdd844d7f11a9e4ec914198c0750dab1c2ca697f35542b0761",
+      "prompt_hash": "8a4df8da087e84593b38f991ab34aaa8f5cec5358983ec13897616a3ab23fddf",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 38,
+      "variant": "baseline-positive",
+      "split": "flow-positive",
+      "stage": "worthiness",
+      "case_hash": "ef13f90d82a1a0646bb5485c5b9fc726a34ca0f751b644170e048aefef823454",
+      "prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 39,
+      "variant": "candidate-dev",
+      "split": "flow-dev",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "5ae029b326c6283c755a78c69bdd02939f9a629b233d701082d134695ec24e30",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 40,
+      "variant": "candidate-dev",
+      "split": "flow-dev",
+      "stage": "thread",
+      "case_hash": "f18212770f93eae2a4fcf51733a31608f1b734da2b708c2ed2061c9268204259",
+      "prompt_hash": "d7480225eda20357a513127823df8e7f54f088ebc4ef877692c696f8cbbf47e0",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 41,
+      "variant": "candidate-dev",
+      "split": "flow-dev",
+      "stage": "learning",
+      "case_hash": "26cd156122520239786a7b82fb6a02e332ef52d3979f05e5ede540a3f8ebe648",
+      "prompt_hash": "1585c7cd6a7cb7407fbb49a181af374213ca6cb2f8d354ec9928cd415f621e29",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 42,
+      "variant": "candidate-dev",
+      "split": "flow-dev",
+      "stage": "selection",
+      "case_hash": "9f4efad0d2376f4bbe04295a33a513ff3eea3345a346007f339897ff090598f9",
+      "prompt_hash": "267b9ffb646eaee6ae720b12f9fc7b50bcfd0032f0066e127ae277e574024101",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 43,
+      "variant": "candidate-dev",
+      "split": "flow-dev",
+      "stage": "composer",
+      "case_hash": "d4755fab878e9f336aa59f81c5bf30aabe8e91cf7acd0921c0576064afe9a17d",
+      "prompt_hash": "ed539ccfee8b866415c5d26b801e7f97832c46f762d6e7b64878d2c64d243b4b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 44,
+      "variant": "candidate-dev",
+      "split": "flow-dev",
+      "stage": "reflection",
+      "case_hash": "ded35eb6fb8c132dc5870fdcacc274828b49467cf9cf4293e1ec37a9a687a990",
+      "prompt_hash": "0243bdaeb25fdead4ce391ca99db48eaf5cf3d8f547496143cf99e2ab02827c5",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 45,
+      "variant": "focused",
+      "split": "flow-focus",
+      "stage": "episode",
+      "case_hash": "468fddb5fe5a071a9de71374430036d1ef1fc0dd3936d735575cf5881f4db46d",
+      "prompt_hash": "5ae029b326c6283c755a78c69bdd02939f9a629b233d701082d134695ec24e30",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 46,
+      "variant": "focused",
+      "split": "flow-focus",
+      "stage": "reflection",
+      "case_hash": "ded35eb6fb8c132dc5870fdcacc274828b49467cf9cf4293e1ec37a9a687a990",
+      "prompt_hash": "4db2bc8ac1b52e212ad0d34a52ce67deab6d9277af85c847e8d0166b5d726616",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 47,
+      "variant": "focused",
+      "split": "flow-focus",
+      "stage": "composer",
+      "case_hash": "d4755fab878e9f336aa59f81c5bf30aabe8e91cf7acd0921c0576064afe9a17d",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 48,
+      "variant": "focused",
+      "split": "flow-focus",
+      "stage": "attention",
+      "case_hash": "e4c38fd7eb170374158deaee472191b2f6839ca76677a48c239e8a90b8f4ba9e",
+      "prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 49,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "completeness",
+      "case_hash": "68a963f04d72db4e2c56d220ad88ac44d8adc00380b09f1b3d2d1c173a1d7b99",
+      "prompt_hash": "fa985848eb649e592f3ef38e6364d1018e705f1e50dad8096eb4aad12a7b90f7",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 50,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "retrieval",
+      "case_hash": "356fc7faf96e18cae8c47d1a4fe9269133311d22ae431683d516e6137f96cab4",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 51,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "compaction",
+      "case_hash": "4cb3c0e55853abb9d402513e7d27643c8b79cb8a11435f2bc3386bdfcf6e4742",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 52,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "main",
+      "case_hash": "7319ef2ae13d2262a7ffe095eff375dd9598a20df08d5d02c95f3ec738a03b64",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 53,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "episode",
+      "case_hash": "3de5ed654c0719d1960c02dc7456a6bbcd83577f7a14784316b680689f6137b8",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 54,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "thread",
+      "case_hash": "5375fb0347b529afee3e4be282a81386d606786f3c2b0fc115fba750326366fb",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 55,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 56,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "learning",
+      "case_hash": "14586c47f11ef834672af0a22602ff84c6ab3c189db6ab8eb998c96934fa30fa",
+      "prompt_hash": "5169c35c889fb05e141aaf833423a5d983dc09add6f818f9f2bc2d3831f4528f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 57,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "selection",
+      "case_hash": "9f4efad0d2376f4bbe04295a33a513ff3eea3345a346007f339897ff090598f9",
+      "prompt_hash": "5d843f139def1e8530088e8452c7e985dde14197f2a8f5f71c80aa0661b864af",
+      "schema_valid": true,
+      "error_type": "ValueError",
+      "rechecked_contract_valid": false
+    },
+    {
+      "request": 58,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "consolidation",
+      "case_hash": "69d03df122a1781273f31660cdc2e74977778ac2d698b4f2741a02a607e17ba0",
+      "prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 59,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "curator",
+      "case_hash": "a1f975a907473e37a4256a87bfc9bba21b7233d2ff933e9db9d544bdd329c04d",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 60,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 61,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "scout",
+      "case_hash": "1eea4d77b3de0a7b9943a51a70c63b5565776f2906ef67c56b6e43a9e9511923",
+      "prompt_hash": "2549a565fd1dcf0cac465d323018bbe18e5ec799ab9ba068096f9f3d35c452a6",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 62,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "attention",
+      "case_hash": "92f887fca9dc2d62df7cf2ae4ed4b58b97c86b5efdfc773f094c1b41daa724bb",
+      "prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 63,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "composer",
+      "case_hash": "832317ba13469640342d84cfdc89b6a272c3d78c8a47af41c148e6c0f497c3ff",
+      "prompt_hash": "ca05a90c198b3a25715ee88725062430640a05017a3d475696bd3838107cb1e5",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 64,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "reflection",
+      "case_hash": "c139f2473acc016d85577ff1b97d76905c6ce5eaec75641b923cc5fef8a9b254",
+      "prompt_hash": "a64d4c53a3391ba58b74629ff8442475565d6e60ed1e5be2160b4b1fbb01896b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 65,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "reflection_select",
+      "case_hash": "82d94d62663d4dc00b062e2ded03d0ed762afebbe3be7679d7fba0fa3550f999",
+      "prompt_hash": "92250c269db147540611e82f978b0c49a5521348aeff07725fd19d0aa184d06f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 66,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "reflection_consolidate",
+      "case_hash": "c15a78e586b7b065566355b790dbec4b0061a4d25cbf117a5827e9c3361de4c0",
+      "prompt_hash": "8a4df8da087e84593b38f991ab34aaa8f5cec5358983ec13897616a3ab23fddf",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 67,
+      "variant": "holdout-baseline",
+      "split": "flow-holdout",
+      "stage": "worthiness",
+      "case_hash": "27aef2cabf21de18521c7772e2541fe4b7bcca1938b0b449b916315bf07f2c56",
+      "prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 68,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "completeness",
+      "case_hash": "68a963f04d72db4e2c56d220ad88ac44d8adc00380b09f1b3d2d1c173a1d7b99",
+      "prompt_hash": "fa985848eb649e592f3ef38e6364d1018e705f1e50dad8096eb4aad12a7b90f7",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 69,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "retrieval",
+      "case_hash": "356fc7faf96e18cae8c47d1a4fe9269133311d22ae431683d516e6137f96cab4",
+      "prompt_hash": "dc5093a75e15b807b59c0fe82bbcdb8393ab7d5a3a73358b9dc8b6e7893e0f47",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 70,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "compaction",
+      "case_hash": "4cb3c0e55853abb9d402513e7d27643c8b79cb8a11435f2bc3386bdfcf6e4742",
+      "prompt_hash": "cbdf5acd103e02f330712595f45a6ebd97baef367a69bc2f3696f357046c277b",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 71,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "main",
+      "case_hash": "7319ef2ae13d2262a7ffe095eff375dd9598a20df08d5d02c95f3ec738a03b64",
+      "prompt_hash": "b8c85276b083a79e712123e3c6fb06d1d5234e46a2904faefe3c0c6209dced17",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 72,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "episode",
+      "case_hash": "3de5ed654c0719d1960c02dc7456a6bbcd83577f7a14784316b680689f6137b8",
+      "prompt_hash": "59fc554267f0e9a052df916d66abf0337e3b4657f606d594987114e8dbc494b1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 73,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "thread",
+      "case_hash": "5375fb0347b529afee3e4be282a81386d606786f3c2b0fc115fba750326366fb",
+      "prompt_hash": "544071878a763a76f2013dc1f31da4b9e9536e5b51a3e2ab034d8ccae6c202d4",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 74,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "repair",
+      "case_hash": "b628529d6adb3aff848f5130e55e91b6f1d942e8507e0819fded700756c1c86e",
+      "prompt_hash": "a8464092368f15f0165c6f41a11255247f75be03b67e13b2e2cf9897dae44b72",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 75,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "learning",
+      "case_hash": "14586c47f11ef834672af0a22602ff84c6ab3c189db6ab8eb998c96934fa30fa",
+      "prompt_hash": "b2968af988dbecfbd1d499ae2adca96fbb3dfe84a07d2965d0381e44c32ec338",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 76,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "selection",
+      "case_hash": "9f4efad0d2376f4bbe04295a33a513ff3eea3345a346007f339897ff090598f9",
+      "prompt_hash": "267b9ffb646eaee6ae720b12f9fc7b50bcfd0032f0066e127ae277e574024101",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 77,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "consolidation",
+      "case_hash": "69d03df122a1781273f31660cdc2e74977778ac2d698b4f2741a02a607e17ba0",
+      "prompt_hash": "6360a90b4bdc5ac9d257c0343609ce7403a384aee8eec74c6ba16d9b0a3c1c9d",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 78,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "curator",
+      "case_hash": "a1f975a907473e37a4256a87bfc9bba21b7233d2ff933e9db9d544bdd329c04d",
+      "prompt_hash": "4ecb3cbb5c65a09b4e7055ade3b4a276b3225684ef5b7b1cd1544ac036580aa2",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 79,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "state",
+      "case_hash": "671bb61ea3d0c2c5992c380f4aea8bfbc6c6aadfb0b3cdd529f39b11d7d85a9c",
+      "prompt_hash": "e1fc9c99da8f0409cf255d6fc273a95f75f9ebc94e4fdd43b751c6cb9cd58ef1",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 80,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "scout",
+      "case_hash": "1eea4d77b3de0a7b9943a51a70c63b5565776f2906ef67c56b6e43a9e9511923",
+      "prompt_hash": "79cf574e9486450ef7b26aeb09f1558d4a959ee0a74c0ff27ae4947f0c3cf4df",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 81,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "attention",
+      "case_hash": "92f887fca9dc2d62df7cf2ae4ed4b58b97c86b5efdfc773f094c1b41daa724bb",
+      "prompt_hash": "ba906e5f751bb9a97cf8ced208b0de42d5c206bdd614aa6be83dd7d944086b84",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 82,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "composer",
+      "case_hash": "832317ba13469640342d84cfdc89b6a272c3d78c8a47af41c148e6c0f497c3ff",
+      "prompt_hash": "8b7f728a0617c0c78fcb811b4219432e24cc10f7d867d7ead9b1eb75e95863d3",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 83,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "reflection",
+      "case_hash": "c139f2473acc016d85577ff1b97d76905c6ce5eaec75641b923cc5fef8a9b254",
+      "prompt_hash": "4db2bc8ac1b52e212ad0d34a52ce67deab6d9277af85c847e8d0166b5d726616",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 84,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "reflection_select",
+      "case_hash": "82d94d62663d4dc00b062e2ded03d0ed762afebbe3be7679d7fba0fa3550f999",
+      "prompt_hash": "92250c269db147540611e82f978b0c49a5521348aeff07725fd19d0aa184d06f",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 85,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "reflection_consolidate",
+      "case_hash": "c15a78e586b7b065566355b790dbec4b0061a4d25cbf117a5827e9c3361de4c0",
+      "prompt_hash": "8a4df8da087e84593b38f991ab34aaa8f5cec5358983ec13897616a3ab23fddf",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 86,
+      "variant": "holdout-final",
+      "split": "flow-holdout",
+      "stage": "worthiness",
+      "case_hash": "27aef2cabf21de18521c7772e2541fe4b7bcca1938b0b449b916315bf07f2c56",
+      "prompt_hash": "9da15d89e1fb113393a56ef6a07990bde5f5617ff832157779bdb3229bcb988c",
+      "schema_valid": true,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 87,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools"
+    },
+    {
+      "request": 88,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tools"
+    },
+    {
+      "request": 89,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-tool-boundary"
+    },
+    {
+      "request": 90,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "main-image"
+    },
+    {
+      "request": 91,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "judge-ready",
+      "error_type": "CancelledError"
+    },
+    {
+      "request": 92,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "judge-wait"
+    },
+    {
+      "request": 93,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "judge-ready-2s"
+    },
+    {
+      "request": 94,
+      "variant": "runtime",
+      "split": "runtime",
+      "stage": "judge-wait-2s"
+    }
+  ]
+}

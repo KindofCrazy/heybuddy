@@ -11,12 +11,16 @@ from openai import AsyncOpenAI
 
 from personal_agent.automation.models import Worthiness
 from personal_agent.automation.service import WORTHINESS_PROMPT
+from personal_agent.channels.qq.completeness import PROMPT as COMPLETENESS_PROMPT
 from personal_agent.character.loader import CharacterLoader
 from personal_agent.character.models import StateProposal
 from personal_agent.character.prompt import compile_system
 from personal_agent.character.state import STATE_PROMPT
 from personal_agent.config import load_settings
+from personal_agent.core.compaction import SUMMARY_PROMPT
 from personal_agent.core.models import AssistantMessage, Model, TextMessage
+from personal_agent.evaluation.flow_cases import flow_cases, validate_contract
+from personal_agent.evaluation.flow_revision_cases import revision_cases
 from personal_agent.evaluation.prompt_audit_cases import cases, fresh_cases, positive_cases
 from personal_agent.evaluation.prompt_audit_workflow import workflow_cases
 from personal_agent.learning.curator import CURATE, Curation
@@ -31,8 +35,8 @@ from personal_agent.organization.models import Segmentation, ThreadDecision, Thr
 from personal_agent.organization.threads import REPAIR_PROMPT, THREAD_PROMPT
 from personal_agent.proactive import attention, composer, scout
 from personal_agent.proactive.models import AttentionDecision, ScoutResult
-from personal_agent.reflection.models import Extraction
-from personal_agent.reflection.service import EXTRACT
+from personal_agent.reflection.models import Consolidation, Extraction, Selection
+from personal_agent.reflection.service import CONSOLIDATE, EXTRACT, SELECT
 
 
 def stages() -> dict[str, tuple[str, type[Model] | None]]:
@@ -52,6 +56,10 @@ def stages() -> dict[str, tuple[str, type[Model] | None]]:
         "reflection": (EXTRACT, Extraction),
         "worthiness": (WORTHINESS_PROMPT, Worthiness),
         "repair": (REPAIR_PROMPT, ThreadRepair),
+        "completeness": (COMPLETENESS_PROMPT, None),
+        "compaction": (SUMMARY_PROMPT, None),
+        "reflection_select": (SELECT, Selection),
+        "reflection_consolidate": (CONSOLIDATE, Consolidation),
     }
 
 
@@ -85,7 +93,11 @@ async def run(args: argparse.Namespace) -> None:
     settings = load_settings()
     ledger = folder / "ledger.jsonl"
     used = len(ledger.read_text(encoding="utf-8").splitlines()) if ledger.exists() else 0
-    if args.split == "fresh":
+    if args.split.startswith("revision-"):
+        selected = revision_cases(args.split)
+    elif args.split.startswith("flow-"):
+        selected = flow_cases(args.split)
+    elif args.split == "fresh":
         selected = fresh_cases()
     elif args.split.startswith("workflow"):
         selected = workflow_cases(args.split == "workflow-positive")
@@ -124,12 +136,15 @@ async def run(args: argparse.Namespace) -> None:
                 for m in case.get("history", [])
             )
             messages.append(TextMessage(role="user", text=json.dumps(data, ensure_ascii=False)))
+            if "plain_user" in case:
+                messages.append(TextMessage(role="user", text=case["plain_user"]))
             row = {
                 "variant": args.variant,
                 "split": args.split,
                 "stage": stage,
                 "case_hash": digest(case),
                 "prompt_hash": digest(prompt),
+                "schema_hash": digest(schema.model_json_schema()) if schema else None,
                 "model": settings.model,
                 "request": used + 1,
             }
@@ -139,7 +154,17 @@ async def run(args: argparse.Namespace) -> None:
                 stream.flush()
             used += 1
             try:
-                response = await provider.generate(messages, [], max_output_tokens=4096)
+                options = {"max_output_tokens": case.get("output_tokens", 4096)}
+                if args.split.startswith(("flow-", "revision-")) and stage in {
+                    "episode",
+                    "thread",
+                    "repair",
+                }:
+                    options["max_output_tokens"] = 8192
+                row["requested_output_tokens"] = options["max_output_tokens"]
+                if stage == "completeness":
+                    options["reasoning_effort"] = "none"
+                response = await provider.generate(messages, [], **options)
                 row["response_text"] = response.text
                 row["usage"] = response.usage.model_dump() if response.usage else None
                 row["tool_calls"] = bool(response.tool_calls)
@@ -150,8 +175,13 @@ async def run(args: argparse.Namespace) -> None:
                 )
                 row["schema_valid"] = not response.tool_calls
                 row["result"] = result
+                if args.split.startswith(("flow-", "revision-")):
+                    validate_contract(stage, result, case)
+                    row["contract_valid"] = not response.tool_calls
             except Exception as error:
-                row["schema_valid"] = False
+                row.setdefault("schema_valid", False)
+                if args.split.startswith(("flow-", "revision-")):
+                    row["contract_valid"] = False
                 row["error_type"] = type(error).__name__
                 if isinstance(error, ProviderError):
                     row["provider_code"] = error.code
@@ -168,10 +198,27 @@ def main() -> None:
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--variant", required=True)
-    parser.add_argument("--stages", help="Comma-separated stage names; default all ten")
+    parser.add_argument("--stages", help="Comma-separated stage names; default all in the split")
     parser.add_argument(
         "--split",
-        choices=("dev", "holdout", "positive", "workflow", "workflow-positive", "fresh"),
+        choices=(
+            "dev",
+            "holdout",
+            "positive",
+            "workflow",
+            "workflow-positive",
+            "fresh",
+            "flow-dev",
+            "flow-positive",
+            "flow-holdout",
+            "flow-focus",
+            "revision-dev",
+            "revision-control",
+            "revision-held-a",
+            "revision-held-b",
+            "revision-stop",
+            "revision-stop-positive",
+        ),
         default="dev",
     )
     parser.add_argument("--prompts", type=Path)

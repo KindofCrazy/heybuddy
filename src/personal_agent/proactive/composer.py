@@ -3,6 +3,7 @@
 from pydantic import Field, field_validator
 
 from personal_agent.core.models import Model
+from personal_agent.core.prompts import CONVERSATION_PROMPT
 from personal_agent.organization.provider import OrganizerModel
 
 
@@ -30,6 +31,11 @@ proposal 的用户引文才是本次话题证据；历史文本、候选和角�
 已经澄清是普通讨论时，不再用“争吵”或 battle 制造紧张。正文自然交谈，不复述内部机制。
 不要为了凑交流价值补一个问题或“我可以帮你”的服务邀约。有时间明确的事项时，
 一句贴合事项的简短祝愿也足够，不要求对方回答，不保证结果。
+把克制体现在少问、少打扰上，不主动念出“不催你”“尊重你的边界”等遵守约束的声明，
+也不自动套用“按你的节奏来”的安抚模板。没有用户求建议的来源时，不额外教对方怎么做。
+不补充引文没说的当面或线上形式、地点、结果预期。祝愿表达愿望即可，不预测事情会怎样。
+用户没问安排时，不评价或指导其节奏，也不借截止日期叮嘱“心里有数就好”“记得安排时间”。
+发起聊天要有一句实际想对用户说的话，不只是复读计划再附上安抚或管理进度的口吻。
 上述句数和口吻要求仅适用于 JSON 的 text 字段。外层始终返回形如
 {"text":"自然的消息正文"} 的 JSON 对象，不能直接输出正文，也不要使用 Markdown 代码围栏。
 """
@@ -40,12 +46,17 @@ class Composer:
         self.model = model
 
     async def compose(self, proposal: dict, persona_style: list[dict], now: str) -> MessageDraft:
+        # Main-chat formatting/turn rules do not belong in this structured draft request.
+        style = [
+            {**part, "text": part["text"].removesuffix("\n\n" + CONVERSATION_PROMPT)}
+            for part in persona_style
+        ]
         return await self.model.ask(
             MessageDraft,
             PROMPT,
             dict(
                 proposal=proposal,
-                persona_style=persona_style,
+                persona_style=style,
                 now=now,
             ),
         )

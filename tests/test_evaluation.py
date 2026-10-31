@@ -122,7 +122,21 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     byte_budget = json.loads((root / "compaction-byte-budget.json").read_text(encoding="utf-8"))
     reviewed = json.loads((root / "history-reviewed-context.json").read_text(encoding="utf-8"))
     reminders = json.loads((root / "reminder-aware-context.json").read_text(encoding="utf-8"))
-    assert current == reminders
+    flow_reviewed = json.loads((root / "flow-reviewed-context.json").read_text(encoding="utf-8"))
+    revised = json.loads((root / "flow-revised-context.json").read_text(encoding="utf-8"))
+    assert current == revised
+    assert revised["main"] != flow_reviewed["main"]
+    assert revised["summary"] != flow_reviewed["summary"]
+    assert {k: v for k, v in revised.items() if k not in {"main", "summary"}} == {
+        k: v for k, v in flow_reviewed.items() if k not in {"main", "summary"}
+    }
+    assert flow_reviewed["reflection"]["EXTRACT"] != reminders["reflection"]["EXTRACT"]
+    assert {k: v for k, v in flow_reviewed.items() if k != "reflection"} == {
+        k: v for k, v in reminders.items() if k != "reflection"
+    }
+    assert {k: v for k, v in flow_reviewed["reflection"].items() if k != "EXTRACT"} == {
+        k: v for k, v in reminders["reflection"].items() if k != "EXTRACT"
+    }
     assert "没有宿主确认结果时，不能声称已设置、取消或会到期通知" in reminders["main"]
     assert {k: v for k, v in reminders.items() if k != "main"} == {
         k: v for k, v in reviewed.items() if k != "main"
@@ -132,7 +146,7 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
         k: v for k, v in byte_budget.items() if k != "main"
     }
     assert current["summary"] != temporal["summary"]  # Host limit fix, no measured quality gain.
-    assert {k: v for k, v in current.items() if k not in {"main", "summary"}} == {
+    assert {k: v for k, v in reminders.items() if k not in {"main", "summary"}} == {
         k: v for k, v in temporal.items() if k not in {"main", "summary"}
     }
     # Keep all historical, measured prompt versions unchanged below.

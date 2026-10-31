@@ -27,6 +27,10 @@ SUMMARY_PROMPT = (
     "bytes, NOT model tokens or character count. Aim below target_utf8_bytes, leaving room "
     "for JSON quotes and escaping. Rewrite concisely instead of appending; omit resolved "
     "details and repetitive social exchanges before exceeding the limit."
+    " Include next steps or unresolved questions ONLY when the supplied evidence actually "
+    "states them; these are optional, not fields to fill by inference. 'Not released' "
+    "does not imply a commitment to release next. Omit unsolicited assistant requests for "
+    "progress reports and incidental fictional work; do not turn either into user tasks."
 )
 
 

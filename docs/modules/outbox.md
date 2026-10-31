@@ -23,6 +23,10 @@ P4.3 第一阶段把 Attention notify 转成 Luna 口吻的草稿，并提供显
 
 ## 对话接续与学习隔离
 
+后续实测补充 Composer 的自然度约束：通过少问、少打扰体现克制，不主动把“不催你”、边界声明或“按你的节奏”念成安抚模板；不添加未被用户引文支持的当面/线上形式、地点、建议或结果预期。该规则只约束 text 内容，外层 MessageDraft JSON 和领取/复核流程不变。模型仍可能忽略语义约束，结构检查通过不等于自然度或事实完全正确。
+
+`Composer.compose()` 接收角色风格时剔除末尾精确匹配的通用主对话尾文，避免把主对话分条/终止规则重复带入结构化生成和输入预算；角色内容保留，原始入参不变。预算上限不扩大，集成回归见 `tests/test_flow_audit.py` 与 `tests/test_outbound.py`。
+
 `Composer.PROMPT` 要求草稿通常一两句，遵循用户最新澄清，不自动给清单、追加追问或要求汇报。没有用户求建议的来源时，不为凑交流价值提供服务邀约；贴合事项的简短祝愿即可。句数约束只作用于 JSON 的 text 字段，外层始终为符合 MessageDraft 的 JSON 对象，不能裸输出正文。该提示词修订不改变 Gate、证据复核、草稿领取或真实发送边界；隔离 API 测试只生成合成草稿，见 [评测说明](evaluation.md#历史问题驱动的-prompt-复核)。
 
 `core/outbound.py::ConversationNotices` 是独立只读 Protocol。ContextBuilder._injections() 可读取一个带 kind=proactive_messages、origin=proactive、trust=assistant_generated_only、user_evidence=false 的低信任 JSON；该注入计入原上下文预算，不进入 pending 或 messages。数据额外标明每条消息的 assistant 角色，原冻结 system 提示词保持不变。SessionManager.context() 通过 notice_factory 将读取器绑定到当前 Conversation，切换会话不会继续读取旧会话。

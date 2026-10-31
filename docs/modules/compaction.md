@@ -1,5 +1,7 @@
 # Context Budget 与 Compaction
 
+全流程 API 复核收紧 `SUMMARY_PROMPT` 的内容选择：下一步与未决问题只有来源明确提出时才保存，不因“尚未发布”推导“下一步上线”，不把助手催汇报或虚构工作写成用户任务。这次仅调整摘要语义，不处理另行排期的连续 Compaction 失败、重试或恢复行为；预算、校验与持久化路径不变。合成对照入口与记录见 [评测](evaluation.md#全流程-api-调用清单与复核)。
+
 P1 的 SUMMARY_PROMPT 将摘要明确限定为仍影响当前对话的工作目标、约束、进展与待续信息，保留来源时间、未确认建议和最新明确更正。存储/checksum/CAS、保护近期完整 Run 和原日志均不变；既有 context_summaries 继续使用，不删除或重建。可选 Thread/Episode/raw 检索只使用触发水位内剩余预算，不为旧参考材料额外启动压缩，见 [Retrieval](retrieval.md)。
 
 ## 职责与架构组成

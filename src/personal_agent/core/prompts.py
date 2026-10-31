@@ -10,7 +10,7 @@ def _load_conversation_prompt() -> str:
             raw = stream.read(8193)
         if not raw or len(raw) > 8192:
             raise ValueError
-        text = raw.decode("utf-8-sig").strip()
+        text = raw.decode("utf-8-sig").replace("\r\n", "\n").strip()
         if not text or "\x00" in text:
             raise ValueError
         return text
