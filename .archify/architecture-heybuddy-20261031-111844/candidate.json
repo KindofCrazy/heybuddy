@@ -1,0 +1,536 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HeyBuddy · 当前运行架构与发送边界",
+    "locale": "zh-CN",
+    "output": ".archify/architecture-heybuddy-20261031-111844/heybuddy.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/KindofCrazy/heybuddy.git",
+      "revision": "40aeac1a108212da1d2f0b991dfcb262ae9eb678"
+    }
+  },
+  "components": [
+    {
+      "id": "channels",
+      "type": "frontend",
+      "label": "CLI / QQ / NapCat",
+      "sublabel": "文本与图片 · 授权私聊",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/channels/napcat/runner.py",
+          "line": 23,
+          "end_line": 55
+        },
+        {
+          "path": "src/personal_agent/channels/qq/adapter.py",
+          "line": 259,
+          "end_line": 332
+        }
+      ],
+      "tag": "普通对话与明确指令分流"
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "共享 Runtime / Agent",
+      "sublabel": "ChatService · Agent · ToolRegistry",
+      "pos": [
+        460,
+        40
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 61,
+          "end_line": 105
+        },
+        {
+          "path": "src/personal_agent/core/agent.py",
+          "line": 98,
+          "end_line": 135
+        },
+        {
+          "path": "src/personal_agent/core/agent.py",
+          "line": 263,
+          "end_line": 296
+        }
+      ],
+      "tag": "权限由 Host 按 Run 传入"
+    },
+    {
+      "id": "llm",
+      "type": "cloud",
+      "label": "Provider / 模型端点",
+      "sublabel": "OpenAI adapter · Responses API",
+      "pos": [
+        880,
+        40
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 265,
+          "end_line": 295
+        },
+        {
+          "path": "src/personal_agent/llm/openai_provider.py",
+          "line": 84,
+          "end_line": 110
+        }
+      ],
+      "tag": "统一消息 · SDK 不外溢"
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "MemoryFS / Markdown",
+      "sublabel": "Core · 相处记忆 · 主题索引",
+      "pos": [
+        880,
+        510
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/memory/store.py",
+          "line": 111,
+          "end_line": 149
+        },
+        {
+          "path": "src/personal_agent/learning/service.py",
+          "line": 267,
+          "end_line": 315
+        }
+      ],
+      "tag": "长期记忆唯一权威源"
+    },
+    {
+      "id": "context",
+      "type": "backend",
+      "label": "会话与上下文",
+      "sublabel": "ContextBuilder · 检索 / 压缩",
+      "pos": [
+        460,
+        270
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/core/context.py",
+          "line": 151,
+          "end_line": 161
+        },
+        {
+          "path": "src/personal_agent/core/context.py",
+          "line": 321,
+          "end_line": 343
+        },
+        {
+          "path": "src/personal_agent/storage/history.py",
+          "line": 20,
+          "end_line": 48
+        }
+      ],
+      "tag": "近期 Run + 有界按需读取"
+    },
+    {
+      "id": "character",
+      "type": "backend",
+      "label": "P3 角色包 / Luna",
+      "sublabel": "静态角色提示 · 关系来自互动",
+      "pos": [
+        880,
+        270
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 124,
+          "end_line": 131
+        },
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 186,
+          "end_line": 202
+        },
+        {
+          "path": "src/personal_agent/character/context.py",
+          "line": 49,
+          "end_line": 64
+        }
+      ],
+      "tag": "Luna 无旧版状态服务"
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite / schema 21",
+      "sublabel": "消息 · 图片 · Trace · 工作回执",
+      "pos": [
+        460,
+        510
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/storage/sqlite.py",
+          "line": 46,
+          "end_line": 46
+        },
+        {
+          "path": "src/personal_agent/storage/history.py",
+          "line": 20,
+          "end_line": 48
+        },
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 299,
+          "end_line": 320
+        }
+      ],
+      "tag": "单 Owner · Agent 隔离"
+    },
+    {
+      "id": "maintenance",
+      "type": "backend",
+      "label": "可抢占后台维护",
+      "sublabel": "P1 Organizer · P2 Learning",
+      "pos": [
+        460,
+        760
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 173,
+          "end_line": 219
+        },
+        {
+          "path": "src/personal_agent/organization/runtime.py",
+          "line": 218,
+          "end_line": 251
+        },
+        {
+          "path": "src/personal_agent/learning/service.py",
+          "line": 405,
+          "end_line": 430
+        }
+      ],
+      "tag": "空闲 / 累计触发 · 共用预算"
+    },
+    {
+      "id": "shadow",
+      "type": "backend",
+      "label": "P4 关心式跟进",
+      "sublabel": "Scout → Attention → 草稿",
+      "pos": [
+        880,
+        760
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/proactive/runtime.py",
+          "line": 78,
+          "end_line": 137
+        },
+        {
+          "path": "src/personal_agent/proactive/outbound.py",
+          "line": 45,
+          "end_line": 75
+        },
+        {
+          "path": "src/personal_agent/runtime.py",
+          "line": 220,
+          "end_line": 249
+        }
+      ],
+      "tag": "默认 Shadow · 不真实发送"
+    },
+    {
+      "id": "observatory",
+      "type": "frontend",
+      "label": "只读 Observatory",
+      "sublabel": "loopback · 历史 / 记忆 / 草稿",
+      "pos": [
+        40,
+        760
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/dashboard/app.py",
+          "line": 32,
+          "end_line": 54
+        },
+        {
+          "path": "src/personal_agent/dashboard/server.py",
+          "line": 25,
+          "end_line": 42
+        }
+      ],
+      "tag": "GET / HEAD · 无执行入口"
+    },
+    {
+      "id": "reminders",
+      "type": "backend",
+      "label": "明确提醒 / Scheduler",
+      "sublabel": "有限中文语法 · 一次性队列",
+      "pos": [
+        40,
+        270
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/channels/qq/adapter.py",
+          "line": 272,
+          "end_line": 317
+        },
+        {
+          "path": "src/personal_agent/scheduler/runtime.py",
+          "line": 129,
+          "end_line": 184
+        },
+        {
+          "path": "src/personal_agent/scheduler/runtime.py",
+          "line": 215,
+          "end_line": 243
+        }
+      ],
+      "tag": "独立定时器 · 不经 Attention"
+    },
+    {
+      "id": "sender",
+      "type": "backend",
+      "label": "NapCat 提醒投递",
+      "sublabel": "实时许可 · 主号私聊 · 回执",
+      "pos": [
+        40,
+        510
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/personal_agent/channels/napcat/runner.py",
+          "line": 67,
+          "end_line": 83
+        },
+        {
+          "path": "src/personal_agent/channels/napcat/reminders.py",
+          "line": 10,
+          "end_line": 33
+        }
+      ],
+      "tag": "仅当前来源 / 会话"
+    }
+  ],
+  "connections": [
+    {
+      "id": "channels-agent",
+      "from": "channels",
+      "to": "agent",
+      "label": "普通对话",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-llm",
+      "from": "agent",
+      "to": "llm",
+      "label": "模型请求",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-context",
+      "from": "agent",
+      "to": "context",
+      "label": "prepare",
+      "variant": "default"
+    },
+    {
+      "id": "context-memory",
+      "from": "context",
+      "to": "memory",
+      "label": "编译 / 检索",
+      "variant": "default"
+    },
+    {
+      "id": "context-sqlite",
+      "from": "context",
+      "to": "sqlite",
+      "label": "历史 / 账本",
+      "variant": "default"
+    },
+    {
+      "id": "context-character",
+      "from": "context",
+      "to": "character",
+      "label": "启用时读取",
+      "variant": "default"
+    },
+    {
+      "id": "agent-maintenance",
+      "from": "agent",
+      "to": "maintenance",
+      "label": "回答后",
+      "variant": "dashed"
+    },
+    {
+      "id": "maintenance-memory",
+      "from": "maintenance",
+      "to": "memory",
+      "label": "P2 启用才写",
+      "variant": "dashed"
+    },
+    {
+      "id": "maintenance-sqlite",
+      "from": "maintenance",
+      "to": "sqlite",
+      "label": "进度 / 回执",
+      "variant": "dashed"
+    },
+    {
+      "id": "maintenance-shadow",
+      "from": "maintenance",
+      "to": "shadow",
+      "label": "预算内运行",
+      "variant": "dashed"
+    },
+    {
+      "id": "shadow-sqlite",
+      "from": "shadow",
+      "to": "sqlite",
+      "label": "提案 / 草稿",
+      "variant": "default"
+    },
+    {
+      "id": "channels-reminders",
+      "from": "channels",
+      "to": "reminders",
+      "label": "明确提醒指令",
+      "variant": "default"
+    },
+    {
+      "id": "reminders-sqlite",
+      "from": "reminders",
+      "to": "sqlite",
+      "label": "领取 / 回执",
+      "variant": "default"
+    },
+    {
+      "id": "reminders-sender",
+      "from": "reminders",
+      "to": "sender",
+      "label": "实时许可才发",
+      "variant": "security"
+    },
+    {
+      "id": "observatory-sqlite",
+      "from": "observatory",
+      "to": "sqlite",
+      "label": "只读投影",
+      "variant": "default"
+    },
+    {
+      "id": "observatory-memory",
+      "from": "observatory",
+      "to": "memory",
+      "label": "只读浏览",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一条前台主链路",
+      "items": [
+        "CLI、官方 QQ C2C、NapCat 小号好友私聊均复用 open_application → open_chat → assemble_chat。渠道校验、持久收件、消息聚合、图片准备后进入同一 Agent；QQ/NapCat 普通聊天使用空 permissions。",
+        "Agent 每轮先构建预算内上下文，再调用 Provider；工具调用先落库，ToolRegistry 顺序执行并复查权限，结果携带 call_id。模型失败和上限返回明确 RunResult，不重放历史工具。",
+        "生产只读工具包括 archival_memory_search、recall_search / recall_get 和宿主本地时间工具；获 Host 明确授权的 Core / Deferred 写工具才会开放。统一主题检索不新增事实库。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "记忆、关系与角色",
+      "items": [
+        "Markdown 是长期记忆权威：human.md 保存用户资料；persona.md 的“相处记忆”保存有真实用户证据的相处认识、共同经历与交流反思；MEMORY.md 和主题索引提供渐进发现。旧非空静态 persona 不自动重解释。",
+        "Luna 的 persona.json 角色包只读编译为稳定提示词；运行装配不为该 JSON 角色创建旧版 CharacterStateService。库级角色默认 none，历史 Sherlock 包仍保留。角色包不能赋权，也不成为真实共同经历。",
+        "Context 通过 Protocol 访问历史；Core 每请求最新编译为 user JSON，角色按独立层注入。Summary 和检索均为低信任数据，不写回原始 Journal。压缩保护当前 Run 和近期完整工具链。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "后台维护与 Shadow",
+      "items": [
+        "P1 Episode / Thread 与 P2 Priority / Batch Learning、低频 Curator、回执核对复用一个可取消维护任务及请求、token、时间预算，前台输入取消并等待维护。P2 开启时暂停兼容 Automation。",
+        "Learner 可在证据与目标校验后更新相处记忆，不能改角色包；Curator 不改此块。手动 Reflection 仍需可信 Host 审批。MemoryFS 写入校验路径、隐私、expected_hash，以短锁和原子替换发布；文件与 SQLite 无共同事务。",
+        "P4 由真实 completed 用户证据增量生成 Proposal，经 Wake / Attention 与最新输入复核，Composer 保存角色口吻草稿。关心式窗口只是评估时机，普通未来计划不创建明确提醒；默认无真实主动 Sender。"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "明确提醒是独立发送路径",
+      "items": [
+        "已验证私聊或可信 CLI 的明确 /remind 与有限中文语法先由 Host 解析，缺项追问并保存十五分钟、来源和会话隔离的草稿；不调用模型，不把普通未来计划当提醒。",
+        "SchedulerRuntime 使用独立应用级 asyncio timer，持久队列不借用 Shadow Outbox，也不等待空闲或 Attention。NapCat 身份核对且连接 ready 后才绑定实时 Sender；官方 QQ 和 CLI 没有真实提醒 Sender。",
+        "只选择连接后到期、当前来源 / 会话且未过期的明确提醒；领取、唯一尝试先于外部发送。不集中补发离线积压，不重试 uncertain。accepted 只表示 NapCat API 已接受，不表示用户已读；本次制图没有登录账号、真实发消息或调用付费模型。"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "范围与证据",
+      "items": [
+        "此图是运行时系统总览，按职责聚合工具与辅助存储类；箭头表示调用 / 访问方向，正常返回沿原调用返回。图片、Trace、Recall 派生索引、维护工作状态和提醒尝试均位于同一 SQLite 责任域。",
+        "Observatory 复用 Agent 范围和 MemoryFS，只提供有界读取；独立 web 使用 observer_only 与 SQLite read_only，不执行 Run、迁移、维护或模型请求。",
+        "源码引用固定于 40aeac1（schema 21）。未提交的 Learning、Organizer、Proactive、Reflection 提示与 flow 评测改动不作为该提交证据；具体路径见同目录 scope.md。"
+      ]
+    }
+  ]
+}
