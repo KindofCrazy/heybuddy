@@ -12,9 +12,9 @@
 
 ## 真实投递状态
 
-用户明确授权后，使用隔离 SQLite、现有 NapCat 绑定和固定“HeyBuddy 提醒投递测试”文本启动真实验证，不装配 Provider、Memory 或后台维护。当前探针返回 napcat_not_ready：NapCat 进程存在，WebUI 可用，OneBot 端口未就绪，登录日志有待确认提示。验证在创建提醒和发送尝试前停止，没有发送测试消息，也没有伪造真实回执。
+用户明确授权并完成登录确认后，使用隔离 SQLite、现有 NapCat 绑定和固定“HeyBuddy 提醒投递测试”文本完成真实验证。安排三秒后的一次性提醒，实际结果为 status=accepted、mode=napcat，取得 OneBot 数值 message_id，model_requests=0；没有装配 Provider、Memory 或后台维护。只发送这一条固定测试消息，之前登录尚未就绪的探针在创建提醒前就停止。
 
-小号完成扫码或手机登录确认后，继续执行一次固定消息测试；API 接受时记录 mode=napcat 与实际 message_id，仅证明渠道接受，不宣称用户已读。任何发送结果不确定时都不重发。真实探针的本地数据库和日志保持在 Git 忽略目录，不提交私人账号、会话或凭据。
+真实回执仅证明渠道接受，不宣称用户已读。发送结果不确定时不重发。探针的数据库、账号、实际回执号和日志保留在 Git 忽略目录，不提交私人数据或凭据。随后使用既有 `scripts/start-qq.ps1 -Restart -NoBrowser` 正常重启 HeyBuddy，启动脚本报告 ready，更新后的运行服务已加载中文提醒与明确提醒 Sender。
 
 ## 最小使用与限制
 
