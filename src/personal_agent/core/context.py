@@ -10,7 +10,7 @@ from personal_agent.core.images import ImageRef
 from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
 from personal_agent.core.outbound import ConversationNotices
-from personal_agent.core.prompts import REMINDER_RULES, with_conversation_prompt
+from personal_agent.core.prompts import REMINDER_RULES, VISUAL_RULES, with_conversation_prompt
 from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
 from personal_agent.core.tracing import RunTrace
 from personal_agent.llm.base import Provider
@@ -192,6 +192,8 @@ class ContextBuilder:
             if role_system
             else messages[0]
         )
+        if any(isinstance(message, TextMessage) and message.images for message in messages):
+            system = TextMessage(role="system", text=system.text + "\n\n" + VISUAL_RULES)
         return [
             system,
             *injected,

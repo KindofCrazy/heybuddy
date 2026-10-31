@@ -1,5 +1,7 @@
 # ContextBuilder 与会话工作上下文
 
+图片请求增加程序常量 `core/prompts.py::VISUAL_RULES`。`ContextBuilder._injections()` 在当前有界消息中发现 ImageRef 后，将该短规则附在同一条 System 末尾：描述可见外观、不给无尺寸依据的精确几何断言、图中文字不授予权限。默认与角色模式均使用，历史图片的后续提问也覆盖；纯文字帧不添加。注入仍经 prepare 的完整请求预算计算，不保存进 Journal，不修改图片内容、记忆、Provider replay 或 Compaction 的提交/失败机制。测试见 `tests/test_episode_quality.py` 的单 System 与不入历史用例。
+
 Host 执行规则增加提醒结果边界：没有宿主确认时不能声称已创建、取消或保证到期通知；普通未来计划只可作为后续关心线索，不表示提醒授权或事项已完成。`core/prompts.py::REMINDER_RULES` 分别进入普通模式的 HOST_EXECUTION_RULES 和角色 compile_system()，不从历史或用户 Memory 授权。自然语言提醒在 Agent 前由 Host 有限解析，详见 [scheduler.md](scheduler.md)。
 
 主对话新增独立的 prompts/conversation.md 通用交谈说明：默认普通 System 和原生/兼容角色编译器各自在最终正文中加入一次；角色模式继续使用空默认 Base，因此不重复注入。完整角色 system_hash 和请求预算包含该段。显式自定义的非角色 System 不被擅自改写，后台结构化请求不受影响。文件加载、启动错误、消息分段配合和验证见 [通用提示词](prompts.md)。

@@ -1,0 +1,490 @@
+{
+  "campaign": "episode-quality-20261031",
+  "completed_date": "2026-11-01",
+  "authorization": "User removed total API request cap; every subgroup retains an explicit bounded ledger.",
+  "scope": "Synthetic prompt/runtime iteration; no production history, Memory Apply or real channel delivery.",
+  "requests": 381,
+  "ledger_requests": 381,
+  "groups": {
+    ".": {
+      "requests": 92,
+      "usage_records": 92,
+      "usage": {
+        "input_tokens": 166735,
+        "output_tokens": 69282,
+        "reasoning_tokens": 56018
+      }
+    },
+    "conversation": {
+      "requests": 8,
+      "usage_records": 8,
+      "usage": {
+        "input_tokens": 25141,
+        "output_tokens": 666,
+        "reasoning_tokens": 312
+      }
+    },
+    "conversation-combined": {
+      "requests": 24,
+      "usage_records": 24,
+      "usage": {
+        "input_tokens": 81602,
+        "output_tokens": 1604,
+        "reasoning_tokens": 1040
+      }
+    },
+    "conversation-final": {
+      "requests": 16,
+      "usage_records": 16,
+      "usage": {
+        "input_tokens": 53263,
+        "output_tokens": 1256,
+        "reasoning_tokens": 815
+      }
+    },
+    "conversation-fresh": {
+      "requests": 8,
+      "usage_records": 8,
+      "usage": {
+        "input_tokens": 26348,
+        "output_tokens": 532,
+        "reasoning_tokens": 341
+      }
+    },
+    "conversation-new": {
+      "requests": 8,
+      "usage_records": 8,
+      "usage": {
+        "input_tokens": 26312,
+        "output_tokens": 731,
+        "reasoning_tokens": 419
+      }
+    },
+    "conversation-retained": {
+      "requests": 24,
+      "usage_records": 24,
+      "usage": {
+        "input_tokens": 81523,
+        "output_tokens": 1633,
+        "reasoning_tokens": 1044
+      }
+    },
+    "conversation-semantics": {
+      "requests": 24,
+      "usage_records": 24,
+      "usage": {
+        "input_tokens": 82637,
+        "output_tokens": 1995,
+        "reasoning_tokens": 1353
+      }
+    },
+    "conversation-stop": {
+      "requests": 24,
+      "usage_records": 24,
+      "usage": {
+        "input_tokens": 80854,
+        "output_tokens": 1977,
+        "reasoning_tokens": 1340
+      }
+    },
+    "conversation-strict": {
+      "requests": 24,
+      "usage_records": 24,
+      "usage": {
+        "input_tokens": 81032,
+        "output_tokens": 2122,
+        "reasoning_tokens": 1471
+      }
+    },
+    "final": {
+      "requests": 60,
+      "usage_records": 60,
+      "usage": {
+        "input_tokens": 128478,
+        "output_tokens": 62707,
+        "reasoning_tokens": 52282
+      }
+    },
+    "final-runtime": {
+      "requests": 3,
+      "usage_records": 3,
+      "usage": {
+        "input_tokens": 8658,
+        "output_tokens": 2902,
+        "reasoning_tokens": 2082
+      }
+    },
+    "image": {
+      "requests": 2,
+      "usage_records": 2,
+      "usage": {
+        "input_tokens": 6334,
+        "output_tokens": 22,
+        "reasoning_tokens": 0
+      }
+    },
+    "image-calibrated": {
+      "requests": 2,
+      "usage_records": 2,
+      "usage": {
+        "input_tokens": 6726,
+        "output_tokens": 22,
+        "reasoning_tokens": 0
+      }
+    },
+    "image-calibrated-fresh": {
+      "requests": 3,
+      "usage_records": 3,
+      "usage": {
+        "input_tokens": 9895,
+        "output_tokens": 116,
+        "reasoning_tokens": 92
+      }
+    },
+    "image-combined": {
+      "requests": 3,
+      "usage_records": 3,
+      "usage": {
+        "input_tokens": 10763,
+        "output_tokens": 49,
+        "reasoning_tokens": 24
+      }
+    },
+    "image-evidence": {
+      "requests": 2,
+      "usage_records": 2,
+      "usage": {
+        "input_tokens": 6950,
+        "output_tokens": 26,
+        "reasoning_tokens": 0
+      }
+    },
+    "image-evidence-fresh": {
+      "requests": 3,
+      "usage_records": 3,
+      "usage": {
+        "input_tokens": 10433,
+        "output_tokens": 105,
+        "reasoning_tokens": 78
+      }
+    },
+    "image-final": {
+      "requests": 6,
+      "usage_records": 6,
+      "usage": {
+        "input_tokens": 20866,
+        "output_tokens": 105,
+        "reasoning_tokens": 36
+      }
+    },
+    "image-fresh": {
+      "requests": 2,
+      "usage_records": 2,
+      "usage": {
+        "input_tokens": 6652,
+        "output_tokens": 22,
+        "reasoning_tokens": 0
+      }
+    },
+    "image-new": {
+      "requests": 2,
+      "usage_records": 2,
+      "usage": {
+        "input_tokens": 6652,
+        "output_tokens": 22,
+        "reasoning_tokens": 0
+      }
+    },
+    "image-retained": {
+      "requests": 6,
+      "usage_records": 6,
+      "usage": {
+        "input_tokens": 21358,
+        "output_tokens": 199,
+        "reasoning_tokens": 137
+      }
+    },
+    "image-scale": {
+      "requests": 2,
+      "usage_records": 2,
+      "usage": {
+        "input_tokens": 6828,
+        "output_tokens": 58,
+        "reasoning_tokens": 36
+      }
+    },
+    "image-strict": {
+      "requests": 9,
+      "usage_records": 9,
+      "usage": {
+        "input_tokens": 32055,
+        "output_tokens": 326,
+        "reasoning_tokens": 252
+      }
+    },
+    "independent-controls": {
+      "requests": 9,
+      "usage_records": 9,
+      "usage": {
+        "input_tokens": 28839,
+        "output_tokens": 2172,
+        "reasoning_tokens": 990
+      }
+    },
+    "plan-controls": {
+      "requests": 6,
+      "usage_records": 6,
+      "usage": {
+        "input_tokens": 19422,
+        "output_tokens": 340,
+        "reasoning_tokens": 261
+      }
+    },
+    "runtime": {
+      "requests": 6,
+      "usage_records": 6,
+      "usage": {
+        "input_tokens": 16996,
+        "output_tokens": 7208,
+        "reasoning_tokens": 5539
+      }
+    },
+    "staged-runtime": {
+      "requests": 3,
+      "usage_records": 3,
+      "usage": {
+        "input_tokens": 8566,
+        "output_tokens": 2503,
+        "reasoning_tokens": 1743
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 1061918,
+    "output_tokens": 160702,
+    "reasoning_tokens": 127705
+  },
+  "usage_complete": true,
+  "estimated_cost_usd": null,
+  "accounting_note": "No price configured. Reasoning is included in output; never add it again. Failed/withdrawn and collector-error calls remain counted.",
+  "errors": [
+    {
+      "group": ".",
+      "request": 25,
+      "error_type": "ValidationError",
+      "classification": "collector_projection"
+    },
+    {
+      "group": ".",
+      "request": 24,
+      "error_type": "ValidationError",
+      "classification": "collector_projection"
+    },
+    {
+      "group": ".",
+      "request": 14,
+      "error_type": "OrganizationError",
+      "classification": "model_contract"
+    }
+  ],
+  "collector_rechecks": [
+    {
+      "request": 24,
+      "original_contract_valid": false,
+      "rechecked_contract_valid": true
+    },
+    {
+      "request": 25,
+      "original_contract_valid": false,
+      "rechecked_contract_valid": true
+    }
+  ],
+  "episode_final": {
+    "cases": 20,
+    "repetitions": 3,
+    "requests": 60,
+    "schema_valid": 60,
+    "production_contract_valid": 60,
+    "case_counts": {
+      "adjacent_context": 3,
+      "cancel": 3,
+      "character_question": 3,
+      "conditional_preference": 3,
+      "delivery": 3,
+      "distinct_goals": 3,
+      "english": 3,
+      "injection": 3,
+      "later_midnight": 3,
+      "local_midnight": 3,
+      "long_topic": 3,
+      "not_blame": 3,
+      "real_answer": 3,
+      "required_boundary": 3,
+      "role_noise": 3,
+      "smalltalk": 3,
+      "source_blame": 3,
+      "tool_failure": 3,
+      "tool_success": 3,
+      "wish": 3
+    },
+    "median_seconds": 5.768384900002275,
+    "review": [
+      "One independent user matter per highlight; plan/clarification/outcome merged, separate interaction feedback retained.",
+      "No fictional character duties selected as user highlights; explicit character questions remain attributed self-report.",
+      "Negative user wording does not invent an earlier assistant mistake; actual ToolMessage prevails over claimed success.",
+      "User-source midnight dates remain November 1 and November 9 respectively; assistant repetition does not shift dates.",
+      "Cancelled goals, conditional preferences, required boundaries, independent goals and untrusted instructions reviewed."
+    ],
+    "limitations": "Human review of these cases, not a universal semantic score. Initial holdout failures became development diagnostics; final matrix includes development and new fixed cases."
+  },
+  "parameter_control": {
+    "method": "Old prompt none/low compared first; old/new prompt then compared at the same low effort on eight development and eight initial holdout inputs.",
+    "decision": "Keep low for this configured model; none was faster but produced a source/contract failure. No model-name-based routing.",
+    "library_default": null,
+    "local_episode_effort_activated": "low",
+    "production_output_cap": 393216,
+    "production_timeout_seconds": 60,
+    "probe_output_cap": 8192,
+    "correction": "Earlier 8192 exhaustion was a probe limit, not the current production setting. Production output cap and timeout were not increased."
+  },
+  "thread_language": {
+    "cases": 3,
+    "stages": [
+      "thread",
+      "repair"
+    ],
+    "baseline_requests": 6,
+    "candidate_requests": 18,
+    "candidate_repetitions": 3,
+    "effort": null,
+    "review": "English/Chinese summary BODY selects output language despite conflicting titles/old state; technical names preserved. Existing minimal-current-state rules retained."
+  },
+  "runtime": {
+    "pipeline": {
+      "checks": {
+        "expected_contiguous_segments": true,
+        "cross_day_thread_and_unthreaded_smalltalk": true,
+        "main_completed": true,
+        "thread_retrieval": true,
+        "journal_preserved": true,
+        "memory_unchanged_no_apply": true
+      },
+      "contract_pass": true,
+      "semantic_review_required": true,
+      "episode_outcome": "completed",
+      "thread_outcome": "completed",
+      "corpus_hash": "d887c493cb54feeb9ef137e677fba36495031214aca4b987b58d37674fa664f1",
+      "prompt_hashes": {
+        "main": "f438ba07d5d272529487490d439e8556b4ba0f960753d487c5245d9e361e80dd",
+        "summary": "f7ffd188767f3fd7fc70b8c5acb3713658733bf77120d34400efd2d466e71c09",
+        "episode": "b6d2a98cb4fcba95d8dd3c5de16d584b4f36ce98b6f4cb01208a73d2a08eb914",
+        "thread": "31a0ba35cbd91d894dcbfc1a37554997dd3f9f97dc102de7726ca18748d58c96"
+      },
+      "usage": {
+        "requests": 3,
+        "reserved_tokens": 824252,
+        "reserved_cost_usd": 0.0,
+        "exhausted": false,
+        "input_tokens": 8658,
+        "output_tokens": 2902,
+        "reasoning_tokens": 2082,
+        "usage_complete": true,
+        "estimated_cost_usd": null
+      },
+      "stage_requests": {
+        "episode": 1,
+        "thread": 1,
+        "main": 1,
+        "compaction": 0
+      },
+      "memory_automation_requests": 0
+    },
+    "conversation": "Retained combined version: three eight-turn actual Luna conversations completed, no premature farewell at style feedback, no advice at no-advice turn, expression-only output, correct eager-evaluation answer without unasked alternative APIs. A post-example explanation in one repetition still confused non-insertion with an unused value; not claimed fully accurate.",
+    "comparability": "Multi-turn answers change downstream inputs. These are behavior regressions, not fixed-input A/B causal estimates.",
+    "independent_controls": "New append/extend question and explicitly requested two alternatives each repeated three times; notice-only delivery/travel inputs each repeated three times.",
+    "vision": "Conditional same-System image rules calibrate coarse contours without asserting equal sides; explicit equal-side/right-angle question still yields square. Fourfold test-only scaling did not fix perception and was not shipped.",
+    "judge": "Current host mode is time. Previous one-second hybrid uncertain fallback is optional and unchanged; no latency SLA claim."
+  },
+  "current_prompt_sha256": {
+    "main": "568d4e95a1dc4b8950a8e3fc5e48fc391a03c9526470d0a9c2e4b47f8a39d4a8",
+    "episode": "b6d2a98cb4fcba95d8dd3c5de16d584b4f36ce98b6f4cb01208a73d2a08eb914",
+    "thread": "31a0ba35cbd91d894dcbfc1a37554997dd3f9f97dc102de7726ca18748d58c96",
+    "learning": "da97c2ba5962237dd895b5400afcf9a07ebc7aefa49b5274bd5bf1142490d309",
+    "state": "7a6d8f58ce2a97627ea18e4da1885f4badb7e27304c6ebd32116a3a0dc27406a",
+    "scout": "07a8126ff840dcd96aec36576f73ad7f3fbe1d795bfcd3df044856ff08a29550",
+    "attention": "d61efe56d60f3475eec0686c1741ef8c6aea26c7b3f8941b8e011daebbcfb76a",
+    "composer": "50002d8ecede74a59190d6aafa44fbd923d1c186e8b987478518be112e0b4cd3",
+    "retrieval": "b4eea8c97e4da3653d3412c145a161bb12379a5633677770dee529415024fea0",
+    "curator": "650d9e65cd5d96aac9edc1beb13a95375893ef8162f9c6d472eb5f84d16d36a2",
+    "selection": "73d3956b96a2b22129d0529b868fc55160172789346acf50349b839ea8e39ee7",
+    "consolidation": "e8e0c1d59230723b3192dba5974f2a792bee14341c19914f13bcf89398b6e4f8",
+    "reflection": "2953fbdeed32290cb5cf42018489ec85651c7c2df75090c32e4997f352c30261",
+    "worthiness": "000b295201e069c6656452edbc0b2e5ac0435591e131682a529aa3a79c24cb8d",
+    "repair": "cf80773f4827fa92ed2ad7f2fe0284c0b5ab003282bc31923b96da2710bd2f7f",
+    "completeness": "082fdb1c72badd644db65ae1d8993be14e6c97140895cd564048c2984b1d2c66",
+    "compaction": "f7ffd188767f3fd7fc70b8c5acb3713658733bf77120d34400efd2d466e71c09",
+    "reflection_select": "bb34fb3c8eaf4e87b7f66b57d34f7cba6a484a4463b7d32cfbda687e17b7ae59",
+    "reflection_consolidate": "e18cfb753c677da267f9c2423e506b3b95008f18602123a64aeeb55ce82e45eb"
+  },
+  "retained": [
+    "Episode matter selection/attribution/date prompt",
+    "Episode-only optional reasoning effort",
+    "Thread/Repair body-language rule",
+    "Main request scope, notice-only and fact-calibration rules",
+    "Conditional visual calibration",
+    "Safe Organizer failure usage and real-evidence evaluation collector"
+  ],
+  "unchanged": [
+    "Historical prompt snapshots/reports/scorer",
+    "Production DB and original history",
+    "Memory permissions/manual approvals",
+    "Compaction failure mechanism",
+    "Real delivery behavior",
+    "User's unrelated unstaged preceding-context/storage implementation"
+  ],
+  "remaining_limits": [
+    "Finite single-endpoint tests cannot prove perfection, arbitrary knowledge accuracy, all image detail or all future phrasing.",
+    "Earlier main drafts still produced extra advice and one wrong post-example inference; those raw results remain preserved and counted.",
+    "Casual tone still varies in emoji, acknowledgements and occasional follow-up wording; appropriate topic questions are not automatically failures.",
+    "Changes require application restart; existing Episode/Thread entries are not automatically regenerated.",
+    "Retained knowledge explanation still had one incorrect post-example inference. Prompt constraints do not provide a general factual guarantee; extra semantic wording was evaluated and withdrawn rather than claimed successful."
+  ],
+  "verification": {
+    "scope": "Exported staged source, excluding unrelated pre-existing worktree edits",
+    "pytest": {
+      "passed": 1322,
+      "skipped": 3,
+      "failed": 0,
+      "seconds": 225.01
+    },
+    "ruff_check": "passed",
+    "ruff_format": {
+      "passed": true,
+      "files": 335
+    },
+    "uv_build": "sdist and wheel passed",
+    "entry_help": [
+      "personal_agent.main",
+      "evaluation.prompt_audit",
+      "evaluation.quality_runtime"
+    ],
+    "wheel_contents": [
+      "prompts/conversation.md",
+      "evaluation/episode_quality_cases.py",
+      "evaluation/quality_runtime.py"
+    ],
+    "network_note": "Sandbox Windows asyncio socketpair hung; stopped those runs and completed offline suite with local loopback allowed. tests/conftest.py external-network guard unchanged.",
+    "test_adjustments": "Image assembly assertion includes the single appended visual rule; restart paging fixture window increased to 16384 to isolate paging from growing packaged prompt size. No production window/Compaction mechanism change."
+  },
+  "withdrawn": [
+    {
+      "change": "Last extra code-value-semantics instruction",
+      "requests": 24,
+      "reason": "No stable combined benefit: unasked alternatives and the disfavored reassurance phrase reappeared. Restored the preceding frozen/staged combination; all raw calls remain counted."
+    },
+    {
+      "change": "Fourfold image input scaling",
+      "reason": "Did not repair fine-grained shape classification; never added to production."
+    }
+  ]
+}

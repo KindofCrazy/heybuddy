@@ -1,5 +1,7 @@
 # Provider 与 Responses 重放
 
+Episode 质量复核新增一条明确调用路径：Host 的 `OrganizationPolicy.episode_reasoning_effort` → `EpisodeOrganizer.organize()` → `OrganizerModel.ask(..., reasoning_effort=...)` → Provider/CycleProvider → 已有 OpenAI 映射。库默认仍不传，其他整理类型也不继承该值；不自动猜测某模型支持哪些档位。Organizer 的 incomplete_response 诊断只保留枚举原因与数值 usage，即使没有完整正文也能区分探针输出预算耗尽和普通请求错误，且不会执行重试。失败调用在维护预算中的 usage 由 CycleProvider 观察，不重复累加 model.metrics。
+
 ## 架构组成
 
 `llm/base.py::Provider` 是接受内部消息和 ToolDefinition、返回 ModelResponse 的 Protocol。 `llm/openai_provider.py::OpenAIProvider` 是唯一具体适配器，使用官方 AsyncOpenAI Responses API。 SQLite、MemoryFS、CLI 和会话选择都不进入 Provider；Agent 也不使用 SDK 响应对象。

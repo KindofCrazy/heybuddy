@@ -20,6 +20,7 @@ from personal_agent.core.agent import Agent
 from personal_agent.core.context import ContextBuilder
 from personal_agent.core.images import ImageRef
 from personal_agent.core.models import TextMessage
+from personal_agent.llm.base import ProviderError
 from personal_agent.llm.openai_provider import OpenAIProvider
 from personal_agent.memory.privacy import require_private_directory
 from personal_agent.tools.builtin import create_builtin_registry
@@ -40,9 +41,28 @@ class Meter:
             "stage": self.stage,
             "split": "runtime",
             "tool_definitions": [t.name for t in tools],
+            "requested_output_tokens": options.get("max_output_tokens"),
+            "requested_reasoning_effort": options.get("reasoning_effort"),
+            "prompt_hash": hashlib.sha256(messages[0].text.encode()).hexdigest(),
+            "input_hash": hashlib.sha256(
+                json.dumps(
+                    {
+                        "messages": [m.model_dump(mode="json") for m in messages],
+                        "tools": [t.model_dump(mode="json") for t in tools],
+                    },
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ).encode()
+            ).hexdigest(),
+            "replayed_provider_items": sum(
+                len(items)
+                for message in messages
+                for items in getattr(message, "provider_data", {}).values()
+            ),
         }
         with ledger.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(row) + "\n")
+        started = perf_counter()
         try:
             response = await self.provider.generate(messages, tools, **options)
             row["usage"] = response.usage.model_dump() if response.usage else None
@@ -51,11 +71,16 @@ class Meter:
             return response
         except Exception as error:
             row["error_type"] = type(error).__name__
+            if isinstance(error, ProviderError) and error.diagnostics:
+                row["usage"] = (
+                    error.diagnostics.usage.model_dump() if error.diagnostics.usage else None
+                )
             raise
         except asyncio.CancelledError:
             row["error_type"] = "CancelledError"
             raise
         finally:
+            row["elapsed_seconds"] = perf_counter() - started
             (self.folder / f"runtime-{used + 1}.json").write_text(
                 json.dumps(row, ensure_ascii=False, indent=2), encoding="utf-8"
             )

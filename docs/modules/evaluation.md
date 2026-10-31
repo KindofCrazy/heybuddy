@@ -120,6 +120,24 @@ Episode 尝试过合并重复规则、选择性摘要和明确删留示例；少
 
 无正文结果在 `evals/results/scope-focused-audit.json`，记录全部请求元数据、失败和保留/撤回决定，不计算整体语义准确率。最终组合快照另存 `evals/prompts/scope-focused-context.json`，历史快照和历史评分不改。`tests/test_flow_audit.py` 验证案例封装、未知 split 拒绝与共享额度，`tests/test_evaluation.py` 仅允许当前组合的主回复规则变化；默认 pytest 禁网保护保持。所有真实测试使用合成数据，没有生产历史重算、Memory Apply 或真实发送。
 
+## Episode 质量、语言与真实上下文复核
+
+后续授权取消了总请求上限；单个入口仍按 ledger 限制最多一百次，通过独立忽略目录分组，失败和开发试验全部计数，不自动重试。此轮实测见 `evals/results/episode-quality-audit.json`，原始合成正文、数据库、快照与 ledger 仍只在忽略目录。历史结果和固定评分器不改，不把结构通过率写成语义准确率。
+
+此轮实际 381 次请求，已知 input/output/reasoning 为 1061918/160702/127705 tokens，推理属于 output 子集，没有价格配置，不报告费用。最终 Episode 六十次通过结构及来源/分段契约；保留主对话组合的三组八轮测试遵守技术题范围，但一轮代码后的补充推论仍有错误。最后追加的代码语义规则未稳定改善组合表现，且再次出现多余建议和“不催你”，因此撤回，保留前一冻结组合；不据此宣称事实准确率或自然度达到百分之百。完整离线验证在排除用户原有未提交改动的暂存导出上运行，1322 通过、3 跳过，Ruff 与构建通过；没有改生产压缩预算来迎合测试。
+
+`evaluation/episode_quality_cases.py::quality_cases()` 提供 quality-dev/quality-holdout，共二十个固定案例，覆盖角色插话、虚构归责、事项合并、真实工具结果、取消、有条件偏好、跨午夜日期、必分边界、长主题和不可信指令。`language_cases()` 提供三组正文/标题语言冲突及技术名称案例。`prompt_audit --case-id` 可选择一例，`--reasoning-effort none|minimal|low` 明确控制探针参数。输出保存 case_id、参数、时长、schema/contract 检查和哈希；工具投影通过 `flow_cases.turns()` 还原真实内部消息，去除投影标记而保留工具调用/结果，必分边界继续调用生产 Episode validate 校验。
+
+先分别比较同一旧提示词的 none/low，再在同一 low 下比较旧版与按独立事项提取的新版。none 虽快但出现来源问题，因此未作为生产选择。最终 Episode 组合以二十例各重复三次复核；早期留出暴露问题后已转为开发诊断，不宣称六十次都是独立留出。Thread/Repair 的三组语言案例用默认推理参数作旧版对照和新版重复，避免把参数收益混入提示词收益。日期锚点取对应用户 Run 的 local_started_at，不取后续助手重复或 Episode 结束时间。
+
+`evaluation/quality_runtime.py::run()` 先拒绝缺少 --live，再加载正常 Host 配置；pipeline 模式复用 `evaluation.p1.evaluate()`，隔离 SQLite/Memory 并经过实际 Episode、Thread 和 Agent 检索调用。conversation 模式用真实 Luna、ContextBuilder、Agent 和 provider_data 回放顺序执行八轮；image 模式把合成图片交给同一条角色主对话链，不增加视觉专用模型。Meter 在每次请求前持久计数，保存输出预算、effort、系统/输入哈希、时长和 replay 数量；SDK 禁止自动重试。多轮输出会改变后续输入，所以这类对照是行为回归，不是固定输入 A/B。
+
+实际 Host 的 Organizer 输出上限是 393216，早期 8192 耗尽发生在探针，不应误报为生产配置。此轮没有提高生产输出上限或超时；只增加可选 Episode 专用 effort，并在已验证的本机配置设 low，库级默认仍不发送该参数。图片试验中四倍缩放没有纠正误判，未进入生产；最终规则使无尺寸依据时使用外观类别，有明确等边直角条件时仍准确命名。这是确定性校准，不证明精细视觉能力增强。当前 QQ 聚合配置为 time，历史一秒 hybrid 判断回退属于可选路径，本轮不修改其默认或宣称解决延迟 SLA。
+
+显式复现示例：`uv run python -m personal_agent.evaluation.prompt_audit --live --output .heybuddy/new-quality --variant q1 --split quality-holdout --case-id local_midnight --reasoning-effort low --max-requests 100`。真实调用链用 `uv run python -m personal_agent.evaluation.quality_runtime --live --mode pipeline --variant p1 --output .heybuddy/new-runtime --max-requests 100`；另可选 --mode conversation|image、--case-set fresh。每次使用新 variant，不覆盖失败记录；--image-scale 仅为评测图片生成参数，不改变生产图片处理。
+
+`tests/test_episode_quality.py` 离线验证默认与显式 effort、仅 Episode 转发、真实来源和必分边界、不完整 usage 安全诊断、视觉规则单 System/不入历史及无 live 时不加载配置；`tests/test_qq_images.py` 核对真实图片角色装配路径。当前主对话组合另存 quality-reviewed-context.json，历史快照保留。本轮未重算生产历史、执行 Memory Apply、连接真实发送或修改 Compaction 的连续失败机制。现有进程需重启才能加载新代码、提示词和配置。
+
 ## 阅读与验证
 
 `tests/test_evaluation.py` 离线验证真实 Runtime/Automation 的 Fake 路径、检索工具、预算调用前拒绝、不可被好答案覆盖的安全失败、快照一致、Compaction 计量分离和不完整采集拒绝。默认 pytest 保持网络禁用，真实评测仅通过单独显式命令运行。

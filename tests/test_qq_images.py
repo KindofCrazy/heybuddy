@@ -338,7 +338,11 @@ async def test_images_remain_in_same_character_pipeline(state, tmp_path):
         assert result.status == "completed"
         request = provider.requests[0]
         expected_role = sessions.character.compile("看这张图")[0].text
-        assert any(m.role == "system" and m.text == expected_role for m in request)
+        from personal_agent.core.prompts import VISUAL_RULES
+
+        systems = [m for m in request if m.role == "system"]
+        assert len(systems) == 1
+        assert systems[0].text == expected_role + "\n\n" + VISUAL_RULES
         assert any(isinstance(m, TextMessage) and m.images == [ref] for m in request)
     finally:
         await service.close()

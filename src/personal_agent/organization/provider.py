@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from personal_agent.core.budget import ContextBudget, estimate_request
 from personal_agent.core.evidence import SECRET
 from personal_agent.core.models import Model, TextMessage
-from personal_agent.llm.base import Provider
+from personal_agent.llm.base import Provider, ProviderError, ProviderTimeout, ReasoningEffort
 from personal_agent.organization.models import OrganizationError, OrganizationPolicy
 
 
@@ -24,7 +24,14 @@ class OrganizerModel:
         )
         self.metrics: dict = {}
 
-    async def ask[Result: Model](self, kind: type[Result], prompt: str, data: dict) -> Result:
+    async def ask[Result: Model](
+        self,
+        kind: type[Result],
+        prompt: str,
+        data: dict,
+        *,
+        reasoning_effort: ReasoningEffort | None = None,
+    ) -> Result:
         request = [
             TextMessage(role="system", text=prompt),
             TextMessage(
@@ -47,7 +54,14 @@ class OrganizerModel:
         try:
             async with asyncio.timeout(self.policy.timeout_seconds) as deadline:
                 response = await self.provider.generate(
-                    request, [], max_output_tokens=self.policy.output_tokens
+                    request,
+                    [],
+                    max_output_tokens=self.policy.output_tokens,
+                    **(
+                        {"reasoning_effort": reasoning_effort}
+                        if reasoning_effort is not None
+                        else {}
+                    ),
                 )
                 # A provider may swallow cooperative cancellation. Do not publish
                 # that late suggestion after foreground preemption or a deadline.
@@ -58,12 +72,26 @@ class OrganizerModel:
                     raise asyncio.CancelledError
         except asyncio.CancelledError:
             raise
+        except (TimeoutError, ProviderTimeout):
+            self.metrics["failure_reason"] = "timeout"
+            raise OrganizationError("provider_failed") from None
+        except ProviderError as error:
+            self.metrics["failure_reason"] = (
+                "incomplete_response" if error.code == "incomplete_response" else "provider_error"
+            )
+            if error.diagnostics:
+                self.metrics["incomplete_reason"] = error.diagnostics.incomplete_reason
+                if error.diagnostics.usage:
+                    self.metrics["usage"] = error.diagnostics.usage.model_dump()
+            raise OrganizationError("provider_failed") from None
         except OrganizationError as error:
             if error.code in {"maintenance_budget", "maintenance_request_budget"}:
                 self.metrics["requests"] = 0
                 raise
+            self.metrics["failure_reason"] = "organization_error"
             raise OrganizationError("provider_failed") from None
         except Exception:
+            self.metrics["failure_reason"] = "provider_exception"
             raise OrganizationError("provider_failed") from None
         if response.usage:
             self.metrics["usage"] = response.usage.model_dump()

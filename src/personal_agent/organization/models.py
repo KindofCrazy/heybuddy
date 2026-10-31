@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, Field, model_validator
 
 from personal_agent.core.history import HistoryTurn
 from personal_agent.core.models import Model
+from personal_agent.llm.base import ReasoningEffort
 
 
 class OrganizationError(Exception):
@@ -23,6 +24,7 @@ class OrganizationPolicy(Model):
     response_bytes: int = Field(default=32768, ge=1024, le=65536)
     source_bytes: int = Field(default=65536, ge=1024, le=262144)
     timeout_seconds: float = Field(default=60, gt=0, le=300, allow_inf_nan=False)
+    episode_reasoning_effort: ReasoningEffort | None = None
     idle_seconds: float = Field(default=1500, gt=0, le=86400, allow_inf_nan=False)
     run_threshold: int = Field(default=8, ge=1, le=64)
     weak_gap_seconds: int = Field(default=900, ge=1)

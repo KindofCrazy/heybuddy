@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from time import perf_counter
 
 from openai import AsyncOpenAI
 
@@ -19,6 +20,7 @@ from personal_agent.character.state import STATE_PROMPT
 from personal_agent.config import load_settings
 from personal_agent.core.compaction import SUMMARY_PROMPT
 from personal_agent.core.models import AssistantMessage, Model, TextMessage
+from personal_agent.evaluation.episode_quality_cases import language_cases, quality_cases
 from personal_agent.evaluation.flow_cases import flow_cases, validate_contract
 from personal_agent.evaluation.flow_revision_cases import revision_cases
 from personal_agent.evaluation.prompt_audit_cases import cases, fresh_cases, positive_cases
@@ -94,7 +96,17 @@ async def run(args: argparse.Namespace) -> None:
     settings = load_settings()
     ledger = folder / "ledger.jsonl"
     used = len(ledger.read_text(encoding="utf-8").splitlines()) if ledger.exists() else 0
-    if args.split.startswith("iteration-"):
+    if args.split == "quality-language":
+        corpus = language_cases()
+        if getattr(args, "case_id", None) not in corpus:
+            raise ValueError("Choose a registered --case-id")
+        selected = corpus[args.case_id]
+    elif args.split.startswith("quality-"):
+        corpus = quality_cases(args.split)
+        if getattr(args, "case_id", None) not in corpus:
+            raise ValueError("Choose a registered --case-id")
+        selected = {"episode": corpus[args.case_id]}
+    elif args.split.startswith("iteration-"):
         selected = iteration_cases(args.split)
     elif args.split.startswith("revision-"):
         selected = revision_cases(args.split)
@@ -148,6 +160,7 @@ async def run(args: argparse.Namespace) -> None:
                 "case_hash": digest(case),
                 "prompt_hash": digest(prompt),
                 "schema_hash": digest(schema.model_json_schema()) if schema else None,
+                "case_id": getattr(args, "case_id", None),
                 "model": settings.model,
                 "request": used + 1,
             }
@@ -158,7 +171,9 @@ async def run(args: argparse.Namespace) -> None:
             used += 1
             try:
                 options = {"max_output_tokens": case.get("output_tokens", 4096)}
-                if args.split.startswith(("flow-", "revision-", "iteration-")) and stage in {
+                if args.split.startswith(
+                    ("flow-", "revision-", "iteration-", "quality-")
+                ) and stage in {
                     "episode",
                     "thread",
                     "repair",
@@ -167,6 +182,10 @@ async def run(args: argparse.Namespace) -> None:
                 row["requested_output_tokens"] = options["max_output_tokens"]
                 if stage == "completeness":
                     options["reasoning_effort"] = "none"
+                if effort := getattr(args, "reasoning_effort", None):
+                    options["reasoning_effort"] = effort
+                row["requested_reasoning_effort"] = options.get("reasoning_effort")
+                started = perf_counter()
                 response = await provider.generate(messages, [], **options)
                 row["response_text"] = response.text
                 row["usage"] = response.usage.model_dump() if response.usage else None
@@ -178,18 +197,19 @@ async def run(args: argparse.Namespace) -> None:
                 )
                 row["schema_valid"] = not response.tool_calls
                 row["result"] = result
-                if args.split.startswith(("flow-", "revision-", "iteration-")):
+                if args.split.startswith(("flow-", "revision-", "iteration-", "quality-")):
                     validate_contract(stage, result, case)
                     row["contract_valid"] = not response.tool_calls
             except Exception as error:
                 row.setdefault("schema_valid", False)
-                if args.split.startswith(("flow-", "revision-", "iteration-")):
+                if args.split.startswith(("flow-", "revision-", "iteration-", "quality-")):
                     row["contract_valid"] = False
                 row["error_type"] = type(error).__name__
                 if isinstance(error, ProviderError):
                     row["provider_code"] = error.code
                     if error.diagnostics and error.diagnostics.usage:
                         row["usage"] = error.diagnostics.usage.model_dump()
+            row["elapsed_seconds"] = perf_counter() - started
             (folder / f"{args.variant}-{stage}.json").write_text(
                 json.dumps(row, ensure_ascii=False, indent=2), encoding="utf-8"
             )
@@ -228,10 +248,15 @@ def main() -> None:
             "iteration-language",
             "iteration-fresh-a",
             "iteration-fresh-b",
+            "quality-dev",
+            "quality-holdout",
+            "quality-language",
         ),
         default="dev",
     )
     parser.add_argument("--prompts", type=Path)
+    parser.add_argument("--case-id", help="Registered case name for quality-* corpus")
+    parser.add_argument("--reasoning-effort", choices=("none", "minimal", "low"))
     parser.add_argument("--max-requests", type=int, choices=range(1, 101), default=30)
     try:
         asyncio.run(run(parser.parse_args()))

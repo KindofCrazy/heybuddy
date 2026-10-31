@@ -25,6 +25,10 @@ CURRENT_STATE_RULES = (
     "self-report and keep it brief. User feedback about the interaction can be relevant. "
     "未接受的助手建议不写入 current_state。用户明确权衡某个建议时，记录用户正在权衡的选项，"
     "不记录助手发出建议的过程。本页细化了同一安排时，用具体新描述替换旧泛称，不累加两遍。"
+    "Preserve source-anchored calendar dates, not a moving 'tomorrow'; an assistant's "
+    "repetition does not change an event date or create another open question. Do not "
+    "infer completion from a passed date. Resolve short replies only when their referent "
+    "is supported, and keep agreement scoped to the actual proposition. "
     "A confirmed plan is not a request for a progress report. "
 )
 
@@ -66,6 +70,17 @@ REPAIR_PROMPT = (
     "No tools, SQL, Memory writes, permissions or association changes are available."
     + CURRENT_STATE_RULES
 )
+
+
+STATE_LANGUAGE_RULES = (
+    " OUTPUT LANGUAGE: infer language ONLY from the supplied Episode summary BODY text, "
+    "excluding titles, previous state, checkpoints and this prompt. English summary bodies"
+    " require English title/current_state; Chinese summary bodies require Simplified "
+    "Chinese title/current_state. Preserve technical names. This body-language rule "
+    "overrides metadata-language hints."
+)
+THREAD_PROMPT += STATE_LANGUAGE_RULES
+REPAIR_PROMPT += STATE_LANGUAGE_RULES
 
 
 class ThreadOrganizer:

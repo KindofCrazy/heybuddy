@@ -14,6 +14,7 @@ from personal_agent.character.models import CharacterPolicy, StatePolicy
 from personal_agent.core.budget import ContextBudget
 from personal_agent.core.retrieval import RetrievalPolicy
 from personal_agent.learning.models import CuratorPolicy, LearningPolicy
+from personal_agent.llm.base import ReasoningEffort
 from personal_agent.memory.retrieval import MemoryRetrievalPolicy
 from personal_agent.organization.models import OrganizationPolicy
 from personal_agent.proactive.models import ProactivePolicy
@@ -104,6 +105,7 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     organization_input_tokens: int = Field(default=24576, ge=4096, le=131072)
     organization_output_tokens: int = Field(default=8192, ge=256, le=1_000_000)
     organization_timeout_seconds: float = Field(default=60, gt=0, le=300)
+    organization_episode_reasoning_effort: ReasoningEffort | None = None
     organization_weak_gap_seconds: int = Field(default=900, ge=1)
     organization_strong_gap_seconds: int = Field(default=5400, ge=1)
     organization_split_gap_seconds: int = Field(default=10800, ge=1)

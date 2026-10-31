@@ -1,5 +1,7 @@
 # 配置与 API 地址校验
 
+`AGENT_ORGANIZATION_EPISODE_REASONING_EFFORT` 可设 none/minimal/low；未设置时为 Python None，完全不发送推理档位，保留通用 Provider 兼容性。它映射到 `Settings.organization_episode_reasoning_effort` 与 `OrganizationPolicy.episode_reasoning_effort`，只作用于 Episode 那一次请求，Thread/Repair、Learning、主对话与 Compaction 保持各自原设置。显式配置前应确认所用模型支持该参数；不支持时按普通 Provider 错误停止，不自动换档或重试。修改在下次装配/重启生效，输出 tokens、可见字节、超时、维护预算仍独立校验；低 effort 不表示关闭推理。
+
 当前开发示例显式配置 AGENT_CHARACTER_ID=luna，读取内置 OpenPersona JSON 角色；Settings 的库级默认仍是 none。程序不自动覆盖已有显式配置。角色修改在下次装配/重启时生效，不修改数据库、历史或记忆路径。完整说明见 [简化角色设定](persona.md)。
 
 P2 Review Fix 的 AGENT_MEMORY_LEARNING_RECOVERY_ATTEMPTS/INTERVAL_SECONDS/SECONDS 默认 3/300/2，映射到 LearningPolicy 的有界检查次数、退避和协作时间预算。核对不调用 LLM，重新规划使用原维护额度；没有文件系统硬超时保证。详见 [Learning](learning.md)。

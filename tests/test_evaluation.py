@@ -125,7 +125,12 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     flow_reviewed = json.loads((root / "flow-reviewed-context.json").read_text(encoding="utf-8"))
     revised = json.loads((root / "flow-revised-context.json").read_text(encoding="utf-8"))
     focused = json.loads((root / "scope-focused-context.json").read_text(encoding="utf-8"))
-    assert current == focused
+    quality = json.loads((root / "quality-reviewed-context.json").read_text(encoding="utf-8"))
+    assert current == quality
+    assert quality["main"] != focused["main"]
+    assert {k: v for k, v in quality.items() if k != "main"} == {
+        k: v for k, v in focused.items() if k != "main"
+    }
     assert focused["main"] != revised["main"]
     assert {k: v for k, v in focused.items() if k != "main"} == {
         k: v for k, v in revised.items() if k != "main"

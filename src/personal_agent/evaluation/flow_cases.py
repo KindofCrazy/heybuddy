@@ -2,7 +2,13 @@
 
 from personal_agent.core.budget import estimate_value
 from personal_agent.core.history import HistoryTurn
-from personal_agent.core.models import AssistantMessage, TextMessage
+from personal_agent.core.models import (
+    AssistantMessage,
+    Message,
+    TextMessage,
+    ToolMessage,
+    ToolResult,
+)
 from personal_agent.evaluation.prompt_audit_cases import cases, history, positive_cases
 from personal_agent.evaluation.prompt_audit_workflow import workflow_cases
 from personal_agent.organization.episodes import validate
@@ -191,6 +197,22 @@ def flow_cases(split: str) -> dict[str, dict]:
     return {name: result[name] for name in ORDER}
 
 
+def disclosed_message(message: dict) -> Message:
+    if message["role"] == "tool":
+        if message.get("truncated"):
+            raise ValueError("Synthetic tool evidence must be complete")
+        return ToolMessage(result=ToolResult.model_validate_json(message["evidence"]))
+    if message["role"] == "assistant":
+        return AssistantMessage(
+            text=message.get("text", ""),
+            tool_calls=[
+                {k: call[k] for k in ("id", "name", "arguments")}
+                for call in message.get("tool_calls", [])
+            ],
+        )
+    return TextMessage(role=message["role"], text=message["text"])
+
+
 def turns(records: list[dict]) -> dict[tuple[str, str], HistoryTurn]:
     return {
         (r["conversation_id"], r["run_id"]): HistoryTurn(
@@ -198,12 +220,7 @@ def turns(records: list[dict]) -> dict[tuple[str, str], HistoryTurn]:
             first_sequence=r["first_sequence"],
             last_sequence=r["last_sequence"],
             source_hash="synthetic",
-            messages=[
-                AssistantMessage(text=m["text"])
-                if m["role"] == "assistant"
-                else TextMessage(role=m["role"], text=m["text"])
-                for m in r["messages"]
-            ],
+            messages=[disclosed_message(m) for m in r["messages"]],
         )
         for r in records
     }
@@ -232,7 +249,8 @@ def validate_contract(stage: str, result, case: dict) -> None:
             )
             for i, r in enumerate(data["runs"])
         ]
-        validate(Segmentation.model_validate(result), sources, "synthetic-chat", set())
+        required = {b["before_run_id"] for b in data["boundaries"] if b["strength"] == "required"}
+        validate(Segmentation.model_validate(result), sources, "synthetic-chat", required)
     elif stage in {"learning", "reflection"}:
         verify_candidates(Extraction.model_validate(result), turns(data["history"]))
     elif stage == "retrieval":

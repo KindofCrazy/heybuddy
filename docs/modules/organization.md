@@ -1,5 +1,11 @@
 # Episode 与事后整理
 
+当前 `EPISODE_PROMPT` 按“可独立完成/取消的用户事项”选重要内容，同一事项在一段中最多一条 highlight：计划、对象/日期更正与结果合并，独立交流反馈另留。摘要以实际用户事项和结果为主；角色自述仅在用户明确询问的角色话题中简短归属，不成为现实经历或重要事项。用户澄清“不是比赛”不能推出助手说过比赛，实际工具结果也优先于助手自称成功。`evidence()` 提供本地来源时间；有明确来源时间的明天/后天等写成日历日期，避免跨午夜助手复述造成日期漂移。
+
+调用仍是 `EpisodeOrganizer.organize()` → 一次 `OrganizerModel.ask(Segmentation, ...)` → 来源/完整分段校验 → 原子发布。新增可信配置 `episode_reasoning_effort` 只经该次 ask 透传；默认 None 完全不发送参数，不影响 Thread、Learning、主回复或 Compaction。当前模型实测选择 low，不提高输出预算或自动重试。`OrganizerModel` 对未完成响应保留安全原因枚举和数值 usage，原始正文/推理不进入异常诊断；维护预算继续由 CycleProvider 只记一次实际调用用量。
+
+`STATE_LANGUAGE_RULES` 同时进入 Thread 与 Repair，依据所提供 Episode 的 summary 正文选择语言，排除标题、旧状态与提示词语言的干扰；技术名词保持原样。固定案例、三次重复与真实生产预算链路见 [质量复核](evaluation.md)。对应离线契约在 `tests/test_episode_quality.py`。
+
 后续 Thread 范围迭代将 `CURRENT_STATE_RULES` 的首要要求改为“最小事实集”，移除容易被当成必填栏目的一组目标/进展/待办要求。来源只有一项安排时只写该安排；明确表达的疑问、条件和不确定性仍保留。`THREAD_PROMPT` 与 `REPAIR_PROMPT` 共用此规则，未接受的助手建议不再以“未确认建议”旁枝留在状态；同一安排的新描述细化旧泛称时直接替换。关联、分页 checkpoint、CAS 与发布路径不变。真实 API 复核与失败保留见 [评测](evaluation.md)。
 
 全流程提示词复核进一步区分摘要和历史流水：`EPISODE_PROMPT` 将同一用户计划及其措辞更正合为一个事实，不重复生成 correction/open_loop；摘要与 highlight 都省略未接受的助手清单、催汇报和无关角色生活。用户明确提出的互动反馈、关键回答和纠错仍保留；助手自称检查过工具不能替代实际 ToolMessage 证据。`CURRENT_STATE_RULES` 同时用于组织和修复：只保留最新目标、真实进度与仍适用的约束，不因原文没提准备情况就补“仍待确认”等任务；用户明确表达的不确定性仍需保留。实际组织、引用校验和发布路径不变，模型语义复核与预算记录见 [评测](evaluation.md#全流程-api-调用清单与复核)。
