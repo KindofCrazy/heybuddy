@@ -10,6 +10,13 @@
 
 `evaluation/character_cases.py` 冻结 13 个合成情境、20 轮漂移和七个独立评分维度。`evaluation/character.py` 复用 evaluation.runner.Budget、真实 Agent/ContextBuilder/Provider Protocol/ToolRegistry，提供离线默认与显式 --live 的 E0/E1/E2 对比。没有额外 Judge、第二个角色 Agent 或写记忆工具。
 
+## 机制流程
+
+1. 固定相同对话情境和角色条件，区分无角色、稳定角色与可选状态模式。
+2. 在隔离环境生成多轮对话，观察一致性、纠正、边界与风格漂移。
+3. 将机制契约和语义质量分开评价；合成响应只证明接线，不能证明真实角色表现。
+4. 保留条件、成本和局限，真实调用另行授权。
+
 ## 实际运行路径
 
 1. `uv run python -m personal_agent.evaluation.character` 进入 main()，解析变体、case IDs、请求/token 额度和输出目录，验证目录在源码库内时被完整忽略，再创建唯一 p3-* 子目录。默认构造 OfflineProvider，不加载 Settings/.env/Key，不创建真实 API Client。

@@ -6,6 +6,13 @@
 
 `skills/loader.py::SkillLoader` 读取 Host 安装的操作方法。`tools/mcp.py::MCPManager` 使用官方 MCP Python SDK 2 的真实 Client，统一发现、校验和注册外部工具。Skill、Memory、Persona 分别表达操作知识、用户事实与角色身份。
 
+## 机制流程
+
+1. 宿主预先决定允许连接哪些外部服务，以及每个服务的哪些工具可用。
+2. 启动时建立连接，读取工具清单与参数规则，只把白名单内的能力接入本地工具体系。
+3. 模型提出调用后，先通过与本地工具相同的校验、授权和预算检查，再发送给外部服务。
+4. 把外部响应转为统一工具结果；连接失败标记服务不可用，已经发出的调用不自动重试。退出时关闭连接。
+
 ## 代码实际运行路径
 
 1. HarnessRuntime 扫描 `AGENT_SKILLS_ROOT` 或用户数据目录 `HeyBuddy/skills` 下的 `*/SKILL.md`。YAML safe loader 读取 name/description，拒绝别名、重复名称、越界和过大文件。

@@ -10,6 +10,13 @@ LEARN_EXTRACT 区分用户资料与 relationship 候选：后者是有用户证�
 
 `learning/service.py::MemoryLearningService` 提供 Host 控制的自动学习，与手动 Reflection 共用 `ReflectionModel.ask()`、`reflection.evidence.memory_evidence/verify_candidates()`、`reflection.memory.plan_item()` 和 `reflection/writer.py`，没有新 Agent Loop。`learning/models.py` 限制来源、候选、目标文件、请求输入/输出和超时。`storage/learning.py::LearningRepository` 保存独立任务和来源处理记录，schema 11 追加对象，原迁移 1–10 不改。Markdown 是知识权威源；SQLite 只保存引用、哈希、状态及安全计量，不保存知识正文。
 
+## 机制流程
+
+1. 在回答后的维护中发现尚未学习的真实对话；明确记住、决定或纠正可以优先处理，其余按批积累。
+2. 提取并验证用户证据，读取现有记忆，合并重复候选并制定有限修改。
+3. 按宿主自动学习策略发布允许的内容，不改角色设定；手动反思的审批边界不变。
+4. 保存发布回执再推进进度，发布未知时先核对，冲突暂停；新输入可以抢占后台工作。
+
 ## 实际执行路径
 
 1. Host 调用 `learn(run_ids=...)` 或 `learn(episode_ids=...)`。`snapshot()` 重新 JOIN Agent/Conversation/Run，拒绝非 completed Run；Episode 必须 finalized。先查询数量/字节预算，再通过原 `read_source()` 加载完整 Run。跨 Conversation 的来源分别携带真实归属、started_at/ended_at，并提供独立处理时间 as_of；按真实来源开始时间排序，相对时间不能按处理日期猜测。摘要只是定位提示。

@@ -16,6 +16,13 @@
 - `character/context.py::CharacterContextCompiler` 管理 E0/E1/E2、静态与动态字节预算、短期状态和角色参与来源。
 - `character/state.py::CharacterStateService` 复用同一角色定义提议有界短期状态，不执行工具或发送消息。
 
+## 机制流程
+
+1. 宿主选择本地角色包，先检查格式、来源文件和大小。
+2. 优先使用简单角色资料；旧角色包沿兼容规则读取稳定设定和按需背景。
+3. 编译角色表达，再配合实际对话与相处记忆生成回答，不让旧人格文件覆盖当前设定。
+4. 角色包不可由学习服务写入，模拟情绪也不成为真实关系事实。
+
 ## 代码实际运行路径
 
 1. `runtime.assemble_chat()` 根据宿主配置的 character_id 调用 CharacterLoader.load()；默认 none 不加载角色。加载错误明确返回，不回退成未知人格。

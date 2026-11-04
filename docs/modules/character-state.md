@@ -10,6 +10,13 @@
 
 `character/state.py::CharacterStateService` 在已有 Idle 维护轮中执行一次空工具状态建议，不聊天、不执行工具、不写 MemoryFS 或角色包。StatePolicy/StateProposal/CharacterState 位于 character/models.py。`character/storage.py::CharacterStateRepository` 用 schema 12 追加角色 Run 归属、单个当前状态和来源处理回执三张小表；1–11 不改，没有人格正文副本、情绪历史轨迹或关系数据库。
 
+## 机制流程
+
+1. 只有使用相应旧角色模式时，才在后台选取有限的真实角色交互。
+2. 基于来源生成短期模拟心境或关注点，核对来源并保存有效期。
+3. 后续对话只读取尚有效且归属正确的状态，过期就不注入。
+4. 这不是长期关系事实；当前简单角色资料路径不额外运行这类状态学习。
+
 ## 真实执行路径
 
 1. runtime.assemble_chat() 只在启用角色时绑定状态服务和角色编译器。Core ContextBuilder.begin() 创建原 Run 后调用可选 record_run()，Host 记录 agent_id/character_id/package_hash；原 Run/Message 不改。标签失败时暴露安全诊断，未标记来源不能作为该角色的状态证据，不伪造归属。

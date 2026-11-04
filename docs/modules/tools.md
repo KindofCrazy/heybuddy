@@ -4,6 +4,14 @@
 
 `src/personal_agent/tools/registry.py` 定义 ToolArguments、Tool、ToolRegistry 和 ToolExecutionError。ToolDefinition 是提供给模型的名称/描述/Schema，ToolCall 是模型提出的调用，ToolResult 是宿主执行回执。模型提出调用不等于已经执行。
 
+## 机制流程
+
+1. 模型只能提出调用请求，真实动作由程序负责；只有宿主预先注册的工具才有机会执行。
+2. 依次检查工具存在、当前授权、参数格式、剩余额度和宿主策略，再经过执行前的拦截检查。
+3. 检查通过后在时间限制内执行，将成功、拒绝、错误或完成未知转换成统一结果，并保留与原调用的关联。
+4. 保存本条结果后才处理下一条调用，下一轮让模型依据实际结果继续。
+5. 工具超时或记账失败不表示动作已撤销；不盲目重试，也不把模型的成功陈述当执行回执。
+
 ## 代码实际运行路径
 
 1. runtime.assemble_chat 注册内建工具、Memory 和 Recall；Harness 再注册工作区、规划、技能、子执行、后台与 Workflow。MCP.start 只导入 Host allowed_tools。

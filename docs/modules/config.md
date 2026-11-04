@@ -22,6 +22,13 @@ Settings.retrieval_policy() 对应 `AGENT_RETRIEVAL_EPISODE_LIMIT`（1–3，默
 
 `src/personal_agent/config.py::Settings` 继承 ContextBudget，使用 Pydantic 校验密钥、模型名、Base URL、轮数、超时、日志级别、数据库路径与记忆大小/根目录；密钥以 `SecretStr` 保存。 `ENV_FIELDS` 映射环境变量到内部字段，`load_settings()` 只读取指定文件或当前目录的 `.env`。 `main.py::main()` 加载配置，`run_cli()` 根据配置装配 SDK 客户端和 Runtime。这里不执行 API 请求，不解析 SDK 响应，也不搜索父目录凭证。
 
+## 机制流程
+
+1. 从明确允许的位置读取配置，按优先级合并环境与本地设置。
+2. 检查必填项、路径、端点和预算组合，拒绝矛盾或无法确认安全的配置。
+3. 校验成功后才装配执行环境，模型不能修改配置或通过对话获得配置权限。
+4. 错误只显示字段和安全原因，不泄露密钥或异常原始输入。
+
 ## 代码实际运行路径
 
 1. `main()` 调用 `load_settings()`。

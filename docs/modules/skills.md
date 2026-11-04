@@ -4,6 +4,13 @@
 
 `src/personal_agent/skills/loader.py::SkillLoader` 读取宿主技能。Harness 注入目录摘要并注册 skill_list、skill_load、skill_read_resource。Skill 表达操作方法，Memory 表达长期理解，Persona 表达角色；技能不授予工具权限。
 
+## 机制流程
+
+1. 宿主先安装经过选择的操作指南，程序读取名称与用途，形成一个有限目录。
+2. 模型看到任务和目录后，按需要选择指南，再读取正文或同目录的补充资料。
+3. 指南提供做事方法，但不直接执行动作；模型仍须通过已授权工具完成实际工作。
+4. 读取结果作为参考资料进入后续交互。指南不能扩大权限、改写角色身份或绕过安全检查。
+
 ## 代码实际运行路径
 
 1. Harness 使用 AGENT_SKILLS_ROOT 或用户数据目录 HeyBuddy/skills 创建 Loader，scan 扫描 */SKILL.md。

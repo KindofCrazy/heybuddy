@@ -26,6 +26,13 @@ Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移
 
 `organization/models.py` 定义严格 Pydantic 模型、来源快照和可信 OrganizationPolicy。`organization/provider.py::OrganizerModel.ask()` 每批仅调用一次原 Provider，空工具、独立输入/总输出 tokens、可见字节、超时和 usage 检查。`organization/episodes.py::EpisodeOrganizer` 生成时间候选边界、语义分段、验证证据。`storage/episodes.py::EpisodeRepository` 绑定 Agent，负责有界读取、归属、修订和原子进度。`organization/runtime.py::OrganizationRuntime` 在共享 CLI/QQ 应用存活时触发维护；独立 Web 不调度，`console.AsyncInput` 由 CLI 持有，只在 daemon 线程读取终端；SQLite 始终在主事件循环线程运行。
 
+## 机制流程
+
+1. 先把真实聊天保留为完整日志，再在空闲或积累足够内容后做事后整理。
+2. 将一段连续交互整理成有来源的片段，提炼当前状态、重要内容和原话证据。
+3. 再把相关片段联系到跨时间的话题；一次性聊天可以不建立持续话题。
+4. 来源修订后更新派生组织，保留独立进度；这些摘要帮助发现历史，不直接变成长久事实。
+
 ## 真实执行路径
 
 1. `runtime.assemble_chat()` 复用同一 Provider/ContextBudget，构造 Repository、OrganizerModel、EpisodeOrganizer 和 OrganizationRuntime；recover() 把未提交的 running 整理恢复 pending，已提交 Episode 不重做。

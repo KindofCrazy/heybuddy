@@ -16,6 +16,13 @@ ContextBuilder.prepare() 在每个 Run 首次加载时 await 可选 preflight，
 
 `retrieval.py::ContextRetriever` 负责相关性和有界来源选择；`core/retrieval.py` 定义独立 ContextRetrieval Protocol、RetrievalResult、RetrievalItem，不导入 SQLite。`ContextBuilder` 决定去重、最终预算及注入，不让检索器更改 System、权限或模型窗口。宿主 `runtime.assemble_chat()` 在 SessionManager.retriever 上绑定 ThreadRepository；切换内部历史流时继续复用同一 Agent 的检索器。
 
+## 机制流程
+
+1. 先判断当前输入是否需要恢复旧话题；普通紧邻接话尽量使用近期信息。
+2. 需要时从相关主题、持续话题和历史交互中形成候选，模糊问题可使用一次有界只读预检。
+3. 核对来源、去重并按上下文剩余额度选择，完整原始交互不能拆开。
+4. 只把选中的证据作为参考加入本次输入，检索失败可保留近期上下文，不自动写长期记忆。
+
 ## 真实执行路径
 
 1. Agent.run() → ContextBuilder.begin() 创建原始 Run/用户消息，清空本轮检索缓存。

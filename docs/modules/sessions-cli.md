@@ -18,6 +18,13 @@ P2 `runtime.assemble_chat()` 在原 Provider/工具/Context 上装配 MemoryLear
 
 `sessions.py::SessionManager` 管理持久 Agent 和当前 Conversation；`main.py` 负责输入、命令和展示。默认每个数据库使用 Agent `heybuddy`，其名称和兼容 system_prompt 字段保存在 agents 表。存储支持多个 Agent 的记录关系，当前 CLI 不引入 Agent 创建/选择命令。一个 Agent 可有多个 Conversation，共享身份和 Core Memory，不共享聊天历史。Base 来自代码，不加载旧 agents.system_prompt。
 
+## 机制流程
+
+1. 启动时恢复同一身份上次选中的会话，未选择时建立新会话。
+2. 将本地管理命令与普通聊天分开，管理操作由可信入口处理，不交给模型猜权限。
+3. 普通消息进入共享执行；切换会话只换历史与工作上下文，长期记忆仍由身份共享。
+4. 退出清理当前资源，保留完整记录；重新打开不会把中断动作自动执行一次。
+
 ## 代码实际运行路径
 
 1. `main()` 加载 Settings、配置安全日志，`asyncio.run(run_cli())` 打开数据库并显式迁移。

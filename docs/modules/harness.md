@@ -8,6 +8,13 @@
 
 `storage/harness.py::HarnessRepository` 是 schema 23 的持久化入口：`harness_records` 保存按 Agent/Conversation/source 隔离的修订状态，`harness_events` 保存状态转换关联，`tool_artifacts` 保存有界工具正文。状态修改与事件原子提交，更新采用 revision 条件检查。原始会话消息继续由原 Journal 保存。
 
+## 机制流程
+
+1. 把一次任务绑定到明确的用户身份、会话、消息来源和根执行编号，后续状态按这些边界隔离。
+2. 给任务一份共享额度，主模型、压缩、评审和子执行都从中消耗，不能通过拆任务重复领取。
+3. 将允许的工具、操作指南、任务计划和后台结果接入同一执行过程，同时保留各自权限检查。
+4. 执行结束后记录预算和结果；重启只展示中断状态，只有具备核对规则的固定流程才能显式恢复。
+
 ## 代码实际运行路径
 
 1. `runtime.assemble_chat()` 构建原 Agent 与维护服务，再按 `Settings.harness_enabled` 装配 HarnessRuntime。此时只做本地配置与状态核对，不启动外部 MCP 连接。

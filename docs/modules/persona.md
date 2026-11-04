@@ -10,6 +10,13 @@ Luna 指南在上游四个主题的基础上，吸收用户提供的 Miru 情绪
 
 `character/persona.py` 只解析 OpenPersona 的 Soul 描述字段；`character/loader.py` 负责固定文件读取、路径保护、大小限制和内容指纹；`character/prompt.py::compile_system()` 将描述编译为自然语言；`character/context.py` 复用现有单一 System、诊断与预算。`runtime.py::assemble_chat()` 将它接到现有 CLI、QQ 和只读 Observatory，不为 JSON 角色创建 CharacterStateService。
 
+## 机制流程
+
+1. 宿主选择角色，读取本地身份、背景、性格、说话方式与指南。
+2. 按固定规则选择允许字段，将角色表达与通用交谈规则合成稳定的身份说明。
+3. 每轮再加入独立的真实用户资料和相处记忆；角色设定不冒充关系已经发展到某个阶段。
+4. 角色文件只读，不能因模型输出或后台学习自行改变。
+
 ## 实际运行路径
 
 1. `config.load_settings()` 从可信配置取得 AGENT_CHARACTER_ID。开发示例为 luna，Settings 的库级默认仍是 none；ROOT 可以指向可信本地角色目录。

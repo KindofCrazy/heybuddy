@@ -14,6 +14,13 @@ SmokeProvider 在请求前复用 Budget.reserve()，记录 episode/thread/main/c
 
 `evaluation/cases.py` 保存 16 个预先定义的合成场景、初始历史/记忆、用户输入和期望行为，覆盖 12 类任务，12 个开发 Case、4 个 Holdout。`scoring.py::score()` 固定程序 Rubric；权限、文件不变、历史完整、工具/路径、Action/来源等可机械检查，正文 marker 只作为有限语义代理。`prompts.py` 保存/安装评测专用快照；不改宿主权限或工具实现。`runner.py` 用真实 Agent、SQLiteStore、MemoryFS、Recall、ReflectionService 和 MemoryAutomation 执行。`__main__.py` 是显式付费入口，与正常 CLI 和 pytest 分开。`reporting.py` 只读取已收集的合成结果，重新校验评分并导出无正文的汇总。
 
+## 机制流程
+
+1. 先固定场景、真实答案依据、评分规则和预算，区分机制验证与模型效果比较。
+2. 在隔离数据中执行基线与候选，分别记录输出、用量、失败和限制。
+3. 按固定标准比较开发集与保留集，不能为提高候选分数改动评分规则。
+4. 默认离线；真实付费评测必须显式授权，小样本结果不作为普遍收益。
+
 ## 代码实际运行路径
 
 1. `python -m personal_agent.evaluation --list-cases` 仅列出清单；`--snapshot <新路径>` 调用 `prompts.capture()` 在隔离临时 SQLite 上注册工具，保存实际 Prompt/description，拒绝覆盖已有基线。这两个入口不加载真实密钥、不调用 API。

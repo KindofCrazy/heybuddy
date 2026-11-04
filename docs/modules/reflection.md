@@ -30,6 +30,13 @@ SQLite proposals 是审阅记录，不是第二套长期 Memory 权威源。成�
 
 上游的 Reflection 是后台子 Agent，可自主维护 Memory/Skills 并提交 Git；HeyBuddy 采用显式 CLI、结构化提案和人类审批，不复制后台调度、Bash/Edit 工具、Git Worktree、提交合并、自动 Skill 学习或多 Agent。来源保存在 SQLite 审阅记录及原始历史；不采用依赖 Git 保存修改理由的上游方案。
 
+## 机制流程
+
+1. 从有限的已完成原始对话提取可能值得保存的内容，并核对真实用户引文。
+2. 先读已有记忆，区分新增、纠正、重复与不确定，再生成具体修改计划。
+3. 向用户展示理由、来源、差异和目标版本；未经可信审批不修改文件。
+4. 批准后逐项执行，已成功项保留；遇到冲突或记账未知先核对，不盲目重放。
+
 ## 代码实际运行路径：提取到计划
 
 1. `main.run_cli()` 经 open_application() 原子迁移到当前 schema 14（Reflection 表来自迁移 4），恢复正常 Run，初始化 MemoryFS；`runtime.assemble_chat()` 把与 Agent 相同的 Provider、MemoryFS、ContextBudget 及 ReflectionPolicy 传给 ReflectionService，Repository 绑定 agent_id。

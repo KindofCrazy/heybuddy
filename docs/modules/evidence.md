@@ -6,6 +6,13 @@
 
 `reflection/evidence.py` 将共用错误转换为 ReflectionError，并在 verify_candidates 中增加 confirmed 必须含真实 user 引文的记忆策略。`reflection/provider.py::ReflectionModel` 独立负责原 Reflection 结构化请求的预算、超时、取消屏障、usage 与 JSON 校验；不会生成/保存计划或写 Memory。各领域继续拥有自己的请求预算和语义策略，不统一成通用 Agent 或安全框架。
 
+## 机制流程
+
+1. 先从真实原始记录提取允许使用的文本，明确身份、会话、执行和位置。
+2. 让候选结论引用这批实际提供的文字，再核对出处和引文是否精确存在。
+3. 通过真实性检查后，仍按具体用途判断语义是否充分；引文真实不等于结论必然正确。
+4. 证据不足或来源越界时拒绝候选，不用助手生成内容冒充用户事实。
+
 ## 代码实际运行路径
 
 1. `runtime.assemble_chat()` 装配 ReflectionService 与 Learner，各自持有独立 ReflectionModel，复用同一底层 Provider；CharacterStateService 直接接收 Provider，使用原 OrganizerModel。

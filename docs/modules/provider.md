@@ -8,6 +8,13 @@ Episode 质量复核新增一条明确调用路径：Host 的 `OrganizationPolic
 
 `generate()` 可选关键字 `reasoning_effort` 接受 `none` / `minimal` / `low`，默认 Python None 表示完全不发送该字段。OpenAIProvider 仅对该次请求映射为 `reasoning={"effort": value}`，不修改实例或主对话默认设置；Automation、维护预算和评测 Provider 包装器按需透传，未指定时保持旧请求形状。QQ 完整性判断默认显式请求 none，可配置 minimal / low 或 default（不传参数）；它与普通主对话和 Compaction 独立。支持档位依模型/端点而定，不按名称猜测，也不在错误后重试其他档位；不支持时返回 ProviderError，由判断器回退时间聚合。[官方 reasoning 文档](https://developers.openai.com/api/docs/guides/reasoning)说明各模型支持范围不同，低 effort 不等于关闭推理。`include=reasoning.encrypted_content` 是返回数据选择，并非推理开关。MockTransport 验证位于 `tests/test_provider.py`。
 
+## 机制流程
+
+1. 接收统一消息和允许工具，将它们转换为目标模型服务的协议。
+2. 发送请求并在时间和预算限制内等待响应，不自动重试可能涉及副作用的轮次。
+3. 把文本、调用、用量与必要重放数据转回统一结构，把失败转换成安全错误类别。
+4. 模型服务的私有对象不传入执行核心；无法确认可安全压缩的数据保持保守处理。
+
 ## 实际运行路径
 
 1. Agent 经 ContextBuilder.prepare/for_request 构造预算内的 Core、Summary 和完整 Run 窗口，连同本轮授权的工具定义传给 generate()。

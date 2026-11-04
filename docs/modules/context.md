@@ -4,6 +4,14 @@
 
 `src/personal_agent/core/context.py::ContextBuilder` 编译规则、Memory、角色、历史与当前 Run，通过 core/history.py 的 ConversationHistory Protocol 访问历史。core/budget.py 估算窗口，core/replay.py 生成派生执行视图，retrieval.py 提供可选证据。
 
+## 机制流程
+
+1. 先确定这轮必须保留的信息：程序规则、当前用户请求、尚需处理的工具结果，以及受保护的近期交互。
+2. 加入最新用户记忆、角色设定、时间、任务状态和会话摘要，并区分程序规则与参考资料。
+3. 从相关旧讨论和主题资料中选择补充证据，去掉重复来源；资料相关也不代表一定放得下。
+4. 把消息与工具说明一起计算大小。先控制可选证据，再在需要时压缩允许缩减的历史；不能牺牲完整工具配对来凑窗口。
+5. 输入可容纳才交给模型；无法安全缩减就停止。下一轮重新编译动态信息，原始聊天记录保持完整。
+
 ## 代码实际运行路径
 
 1. SessionManager.context 绑定 Conversation；Harness.bind_context 安装 ReplayView、Planning/Skills/Execution Contributors 与 on_begin。

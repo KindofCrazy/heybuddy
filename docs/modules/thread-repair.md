@@ -4,6 +4,13 @@
 
 `storage/maintenance.py::CONSISTENCY_SCHEMA` 是追加 migration 8，不修改 1–7。`topic_threads.source_revision` 随 Episode 移入、移出、删除及摘要/来源变更递增；触发器同时标记旧/新 owner dirty。仅 status Finalize 不改变语义内容时不触发失效。`organization/models.py::RepairPage/ThreadRepair` 定义有界来源页与严格输出；`storage/thread_repair.py::ThreadRepairRepository` 管理重建检查点、归一化来源与最终发布。`ThreadOrganizer.repair()` 复用 Provider、输入/输出上限和同一 asyncio.Lock，与普通关联整理串行。
 
+## 机制流程
+
+1. 发现话题依赖的来源发生修订，就将派生状态标记为需要修复。
+2. 空闲时按当前真实成员分页重新核对，不沿用已经失效的成员摘要。
+3. 生成新状态后再次核对来源版本，只在快照仍有效时发布。
+4. 若期间又发生变化则保留待修状态，下次继续；不执行历史工具或修改长期记忆。
+
 ## 真实执行路径
 
 1. `/thread repair` → OrganizationRuntime.command() → ThreadOrganizer.repair()；pending() 查询当前 Agent 的一个 dirty owner，无需新增 Episode。

@@ -12,6 +12,14 @@ P4.1/P4.2 为现有应用增加未来关注事项，不增加长期事实存储�
 
 SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions；schema 20 追加 followup_window JSON；schema 22 追加 followup_state、covered_position 和 covered_sources。旧候选默认 pending 和空覆盖证据，不重新抽样或默认历史补学。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
 
+## 机制流程
+
+1. 回答后的空闲维护先看新用户证据，从计划和持续话题中发现值得未来关注的事项；不把普通计划自动变成提醒。
+2. 为每个事项保存来源、有效期和复查窗口；后来的真实更新可以取消、解决或覆盖原定关心。
+3. 如果用户已经主动聊过该事项的进展，就撤下这轮待发草稿并停止复查；这不等于事项已经完成。只有新计划和更新证据才能重新开启。
+4. 到复查时间后仍需检查新消息、安静时段、有效期和预算，再决定保持沉默、稍后评估或生成交流建议。
+5. 建议通过复核才形成草稿。目前关心式内容保持影子模式，只记录建议与草稿，不真实发送或自动执行任务；明确提醒走独立机制。
+
 ## 代码实际运行路径
 
 1. `runtime.open_application()` 初始化 schema；`assemble_chat()` 复用 Provider、ContextBudget 和当前 Agent，构造 Repository、OrganizerModel 与 ProactiveRuntime，交给 OrganizationRuntime。启用时首次 initialize() 把当前 Run/Thread 水位作为基线，不默认扫描旧历史；重启保留水位。observer_only 不初始化。

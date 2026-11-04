@@ -26,6 +26,13 @@ P2 复用 Candidate/Evidence/Decision，增加 ongoing_goal/current_state 类别
 
 AgentRecord.system_prompt 保留为兼容元数据，CLI 不从中加载 Base。V0.5 的 `memory/models.py::CoreMemoryData` 只持三个块及当前文件摘要，替代 MemoryRevision/MemorySnapshot；摘要派生自普通 Markdown，不保存历史，也不新增 SQLite Memory 表。`render_memory()` 只注入 kind/trust/blocks，读取工具返回 hash 供 expected_hash 检查。RunResult.memory_error 表示请求前编译失败，正常保存停止记录后持久 Run 状态为 failed。
 
+## 机制流程
+
+1. 先用统一结构表示用户输入、模型响应、工具请求和执行结果。
+2. 每个工具结果必须关联原调用，模型专用信息只以普通数据保留。
+3. 同一结构用于持久保存和后续重放，边界校验拒绝缺失、歧义和非法数据。
+4. 执行状态与回答文本分开表达，避免把有文本误判为已完成。
+
 ## 实际数据路径
 
 1. 用户输入转换为 TextMessage；Provider 响应归一化为 ModelResponse 和 AssistantMessage。

@@ -8,6 +8,13 @@ P1 接线更新：生产 CLI 先展示答案，再由 OrganizationRuntime 的可
 
 LLM 决定历史有无长期价值、如何提取/去重/纠正与组织知识；宿主决定触发时机、源范围、预算、权限、来源验证和实际发布。Worthiness 不授予权限，模型输出多一个 approved 字段会被严格 Schema 拒绝。
 
+## 机制流程
+
+1. 只有新学习机制关闭后，旧的回答后自动化才按配置参与。
+2. 先判断已完成回答是否有长期价值，再决定不处理或生成反思计划。
+3. 建议模式只展示提案；自动模式也只能写宿主事先精确授权的小型内容，其他仍需审批。
+4. 保存判断、计划和独立进度，失败需要显式重试，不能把提案当作已经写入。
+
 ## 代码实际运行路径
 
 1. `runtime.assemble_chat()` 用同一 Provider/MemoryFS 构造 ReflectionService，再用 Settings.automation_policy() 构造 MemoryAutomation。取得数据库占用锁后的启动阶段调用 repository.recover()，仅把未结束自动检查标记 interrupted，不执行模型/工具。

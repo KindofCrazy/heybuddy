@@ -8,6 +8,12 @@
 
 `layout.py:CARDS` 只声明布局元数据；`templates/components/cards.html:base_card`、`components/drawer.html` 分别提供卡片与原生 modal dialog。`static/components.js` 构建卡片、状态、空态、元数据；`details.js` 展示关系与消息；`memory-character.js` 展示 Markdown 和 P3；`inspectors.js` 管理 URL、Breadcrumb 和 Drawer；`monitor.js` 展示状态和事件；`overview.js` 管理有界刷新。CSS 实现 12 列不对称 Bento、黄色画布、粗边框和硬阴影，提供移动端重排、离线字体 fallback、键盘焦点和 reduced-motion。
 
+## 机制流程
+
+1. 接收本机只读查看请求，选择有界状态和历史投影。
+2. 把执行状态、来源、预算和时间整理成便于阅读的信息，不触发模型或工具。
+3. 页面查看不确认后台通知、不修改进度；独立观察模式不启动学习或恢复执行。
+
 ## 代码实际运行路径
 
 1. `main.py:main` 解析 `web` 或 `qq --dashboard`、`--dashboard-port`（默认 8765，1024–65535）。不提供 host 配置，固定 `127.0.0.1`。

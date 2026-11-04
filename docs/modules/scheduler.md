@@ -8,6 +8,13 @@ schema 18 追加 scheduled_reminders、reminder_attempts、reminder_events；sch
 
 明确提醒可以使用经身份核对的 NapCat 单主号渠道；只有 NapCat runner 为 Scheduler 绑定实时许可，默认库实例、CLI 与官方 QQ 不绑定。循环提醒、cron、外部事件和后台工具任务不在此阶段。FakeSender 仅用于明确本地模拟；明确提醒不经过 Opportunity Scout、Attention 或 Composer，也不授予 Proactive 真实发送权限。
 
+## 机制流程
+
+1. 只在用户明确要求提醒时解析内容和时间，信息不全就追问，草稿按来源与会话隔离。
+2. 信息完整后保存一次性提醒，用原消息身份避免重复创建；普通未来计划不进入队列。
+3. 到期时检查可用投递绑定和时间边界，先领取并记一次尝试，再向允许的渠道发送。
+4. 记录真实回执，结果未知不重试，离线积压不集中补发；取消不能撤回已经完成的外部发送。
+
 ## 代码实际运行路径
 
 1. `runtime.open_application()` 沿原初始化路径原子迁移到 schema 21；`assemble_chat()` 为当前 Agent 创建 ReminderRepository/SchedulerRuntime，附在 ChatService.scheduler。只读装配传 read_only=True，不恢复、不启动定时器。

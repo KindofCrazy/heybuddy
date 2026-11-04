@@ -10,6 +10,13 @@ P2 在同一维护循环加入 MemoryLearningService/MemoryCurator，复用 Cloc
 
 `OrganizationRuntime` 是唯一的本地维护循环，统一 Episode、Finalize、Thread 和 Dirty Repair；没有通用任务框架。`organization/clock.py::Clock/SystemClock` 提供 UTC wall time、monotonic 和可取消 sleep。`storage/schedule.py::ScheduleRepository` 保存一个 Agent 级调度行；schema 9 追加 organization_schedule，原迁移 1–8 不改，Journal 不改。Run/关联/修复进度仍在原独立表。
 
+## 机制流程
+
+1. 回答后唤醒一个维护通道，先看时间、积压和持久进度，确定是否有工作。
+2. 按优先级和轮换策略选择可容纳的维护单元，共享批次、请求、时间与成本额度。
+3. 每完成一批提交进度并让出执行机会，额度耗尽则冷却后再处理剩余积压。
+4. 新用户输入取消维护并等待清理，已提交批次保留，未完成批次不推进。
+
 ## 真实执行顺序
 
 1. chat() 启动调用 schedule()。ensure() 恢复持久 deadline；首次根据最近终结 Run 的 ended_at 恢复活动时间，Thread 周期参考待处理 Episode 的时间，无历史时从现在开始。schedule() 对同一个存活 task 幂等，不创建并行 Organizer。

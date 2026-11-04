@@ -8,6 +8,13 @@
 
 复用 `channels/qq/adapter.py::QQAdapter`、`humanize.py::Humanizer`、`images.py::QQImages`、`storage/qq.py::QQInbox`。`QQAdapter.accept_message()` 接受已校验投影；官方入口的 `accept()` 仍使用官方 `parse_text()`。新增显式 `scope_id` 仅改变 Host 绑定校验，模型不能传入。NapCat 的收件 app_id 使用 `napcat:<self_id>:<peer_id>` 命名空间，与官方 AppID 及其他大小号组合隔离。复用 schema 16 的既有 `qq_receipts`，没有新迁移或第二份聊天历史。
 
+## 机制流程
+
+1. 连接本机渠道并核对大小号绑定，只接受指定主号的好友私聊。
+2. 将合法文本和图片交给共享接收与执行机制，输出按同一对话返回。
+3. 连接建立后仅为绑定来源启用明确提醒投递；关心式主动聊天仍保持影子模式。
+4. 连接失败和未知回执保留状态，不扩展成任意账号操作。
+
 ## 代码实际运行路径
 
 Windows 双击入口为根目录 `start-heybuddy.cmd` → `scripts/start-qq.ps1`。脚本先通过现有 `load_settings()/require_napcat()` 校验配置，只向脚本返回账号与本机端口；PID 与可执行路径匹配时复用原进程，否则隐藏启动独立 NapCat。OneBot 端口就绪前可打开已配置的本机 WebUI 登录页，最多等待三分钟；随后调用虚拟环境 Python 执行 `-m personal_agent.main napcat --dashboard`，最多等待 30 秒，通过只读 `/api/status` 验证 gateway=ready、consumer=running，再打开浏览器。进程和日志仅在已忽略的 `.heybuddy/napcat` 下记录，不改变 Host 权限或增加模型验证调用。脚本面向默认本机 IPv4 安装布局；其他部署仍使用 CLI。

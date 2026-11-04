@@ -12,6 +12,12 @@
 
 `src/personal_agent/prompts/conversation.md` 独立于角色卡，保存用户确认的日常闲聊默认表达方式。`core/prompts.py` 读取这份随包分发的 Markdown，导出 CONVERSATION_PROMPT 和 with_conversation_prompt()；仅供主对话默认 System 与角色编译器使用，不注入 Learner、Curator、Reflection 或会话摘要请求。
 
+## 机制流程
+
+1. 先确定程序必须遵守的回答与执行规则，再加入宿主选择的角色表达和通用交谈要求。
+2. 将记忆、历史、工具结果等动态参考放在不同信任层，不把它们变成新的程序规则。
+3. 发送前确认规则没有重复、缺失或无意覆盖；提示词影响模型行为，真实权限仍由程序检查。
+
 ## 实际执行路径
 
 1. 主对话模块导入时，_load_conversation_prompt() 有界读取 UTF-8 文件，将 CRLF 统一为 LF，再去除首尾空白；拒绝缺失、空白、非法编码、NUL 或超过 8192 字节的文件。不同 checkout 换行不会改变规则语义、哈希或快照。

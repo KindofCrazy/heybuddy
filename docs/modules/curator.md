@@ -6,6 +6,13 @@ P2 Review Fix：恢复后的 pending Curator 读取原 sources.memory 与已核�
 
 `learning/curator.py::MemoryCurator` 在一小组 Markdown 上执行去重、证据支持的状态核对和有限组织。`learning/models.py::CuratorPolicy` 默认 86400 秒检查、累计 12 次文件更新或选中文件超过 12000 字节才请求模型，最多三个文件、65536 输入字节。它使用 Learner 的 publication() 作用域、`ReflectionModel.ask()`、`plan_item()`、`write_item()`、哈希回执和 reconcile，不维护另一个文件操作系统或事实数据库。
 
+## 机制流程
+
+1. 低频选择一小组相关主题，读取正文、索引和真实来源。
+2. 判断重复、表述混乱或主题过大是否值得整理，不把缺失证据补成事实。
+3. 在受限策略内生成并发布整理结果，目标与索引成功前保留原内容。
+4. 冲突或部分失败保留可审阅状态；不删除用户文件，不修改角色或相处记忆块。
+
 ## 实际运行路径
 
 1. `runtime.assemble_chat()` 装配 Curator，Runtime 在 Idle 且没有未核对写入时调用 `poll()`。due()/status() 仅观察；维护 poll 到期但变化不够才顺延检查，不调用模型；失败需显式 retry。SQLite schema 11 已有 curator_due_at/curator_updates，不改旧迁移。

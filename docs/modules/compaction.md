@@ -4,6 +4,14 @@
 
 `src/personal_agent/core/budget.py` 定义窗口和估算；core/context.py::prepare 编排减压；core/replay.py::ReplayView 管当前 Run；core/compaction.py::compact_step 管完整历史前缀。storage/context.py 和 storage/harness.py 保存不同检查点，原 messages 保持完整。
 
+## 机制流程
+
+1. 在发送前估算输入大小，判断是否接近窗口上限，或是否还有未读完的历史。
+2. 把过大的工具正文保存为可查产物，输入里保留引用和预览；压力继续增大时，省略已经看过的旧结果正文，保护最近结果。
+3. 优先把较早、已经结束的完整交互汇总为会话摘要，保留近期交互。
+4. 若历史已无可压部分，再判断当前执行的旧交互是否已完整结束且可安全摘要；保留原请求、近期交互和必要模型协议数据。
+5. 重建输入并重新估算。无法缩减且仍超限就停止；模型明确报告超限时只允许一次补救，绝不为压缩重新执行工具。
+
 ## 代码实际运行路径
 
 1. prepare 应用 ReplayView.project：超过 16 KiB 的工具 data 存为产物，模型视图使用引用/预览，原 ok/error 与 Journal 保留。tool_output_get 结果不再次卸载。

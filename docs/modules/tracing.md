@@ -6,6 +6,12 @@
 
 `model_rounds` 是 schema 14 的追加表，主键为 `(run_id, number)`，外键关联原 Run。它是调用当时的审计快照，不是长期 Memory、Conversation Recall 或可重放历史的来源。原 `messages` 继续保存完整内部消息及 Provider 数据。快照只保存通用内部消息、工具定义和 `max_output_tokens`，主动排除 opaque `provider_data`；不保存网络请求头、密钥、供应商 wire 格式或推理正文。
 
+## 机制流程
+
+1. 每次普通模型请求发出前，保存当时实际输入、工具说明和请求编号。
+2. 返回、失败或取消后补充耗时、状态与可用用量，将它们关联到同一次执行。
+3. 查看时区分循环轮次与实际请求次数，并标注缺失信息；审计不触发模型、重跑工具或输出私人正文到普通日志。
+
 ## 代码实际运行路径
 
 1. `runtime.open_application()` 取得原数据库占用锁后调用 `SQLiteStore.initialize()`，在原迁移事务内追加 `model_rounds`。旧 Run 不回填推测的 Prompt。

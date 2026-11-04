@@ -4,6 +4,13 @@
 
 `planning/service.py::PlanningService` 管理当前来源的 Todo、Task 依赖与 Goal 验收，状态由 HarnessRepository 保存。Todo 描述执行步骤，Task 记录持久任务和回执；Episode/Thread 继续整理真实历史，提醒继续使用原 Scheduler。
 
+## 机制流程
+
+1. 用待办清单说明准备做什么，用持久任务记录依赖和执行状态，用目标定义最终如何验收。
+2. 先检查依赖是否完成，再领取可做的任务；任务完成必须绑定真实成功回执，勾选清单不能代替证据。
+3. 模型提出最终答案后检查目标要求：所有确定性检查通过才算通过；仍有后台工作则等待状态不能冒充完成。
+4. 检查不足时最多有界继续；没有可用验收依据时明确未验证。取消目标只停止相关未完成工作，不撤销已发生动作。
+
 ## 代码实际运行路径
 
 1. `HarnessRuntime` 注册 `todo_write`、Task 工具，并把 PlanningService 接到 Agent.goal_gate 和 ContextContributor。

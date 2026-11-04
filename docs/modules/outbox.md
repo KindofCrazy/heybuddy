@@ -10,6 +10,13 @@ P4.3 第一阶段把 Attention notify 转成 Luna 口吻的草稿，并提供显
 
 `storage/outbox.py::OutboxRepository` 绑定 Agent，保存草稿、发送尝试、终态和重启恢复。schema 17 原子追加 proactive_outbox 与 proactive_attempts，不修改旧迁移和原 Journal。每个 Agent/Decision 最多一个草稿，每个 Outbox ID 最多一次发送尝试，Outbox ID 同时用作幂等键。状态分开表示 composing、prepared、compose_failed、sending、accepted、failed、uncertain、cancelled；accepted 只表示 Fake Sender 接受，不表示真实送达或用户已读。
 
+## 机制流程
+
+1. 交流建议通过前置条件后，读取当前来源与角色表达，生成待审阅草稿。
+2. 草稿保存时绑定事项版本、有效期和来源；状态变化时旧草稿可被撤下。
+3. 执行显式本地模拟前再次核对资格，先记录领取与一次尝试，再调用模拟发送器。
+4. 回执区分接受、失败和完成未知，模拟不能冒充真实送达。真实用户接话可关联上下文，但草稿本身不成为用户证据。
+
 ## 代码实际运行路径
 
 1. `runtime.assemble_chat()` 在 Agent 构造前绑定 SessionManager.notice_factory。它按当前 Conversation 建立 OutboundContext；默认不读取模拟消息。随后建立现有 ProactiveRuntime，并把 OutboundRuntime 接在其 outbound 属性上。角色 callback 从当前只读 CharacterContextCompiler 编译口吻，保存 Character Package fingerprint；无角色时使用 none。observer_only 不执行 recover。

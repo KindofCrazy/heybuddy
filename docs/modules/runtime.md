@@ -4,6 +4,13 @@
 
 `src/personal_agent/runtime.py` 是具体依赖的装配点。open_application 管 SQLiteStore、SessionManager、MemoryFS；open_chat 管 SDK/Provider 与服务启动关闭；assemble_chat 创建 Agent、Registry、检索、角色、Reflection、Learning/Curator、Organization、Proactive、Scheduler 和可选 HarnessRuntime。ChatService 提供统一 run/after_reply/select_conversation，不包含渠道协议。
 
+## 机制流程
+
+1. 启动时先取得独占存储、验证版本和恢复审计状态，再准备身份、会话与长期记忆。
+2. 装配模型、工具、检索、角色和维护能力，连接宿主允许的外部服务。
+3. 收到新输入先让后台维护退出当前工作，再进入同一条前台执行；展示结果后才安排后续维护。
+4. 退出按依赖顺序取消工作并关闭连接。只读观察模式只查看已有状态，不启动执行或学习。
+
 ## 代码实际运行路径
 
 1. open_application 打开 Store，取得占用锁，initialize 顺序迁移到 schema 23；非只读模式 recover_incomplete_runs 只更新中断审计状态。
