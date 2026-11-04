@@ -4,8 +4,10 @@ from time import perf_counter
 
 from personal_agent.core.budget import ContextError
 from personal_agent.core.context import ContextBuilder
+from personal_agent.core.execution import CURRENT_RUN, CURRENT_SCOPE, BudgetProvider, RunScope
 from personal_agent.core.history import HistoryError
 from personal_agent.core.images import ImageRef
+from personal_agent.core.lifecycle import HookRegistry, LifecycleEvent
 from personal_agent.core.memory import CoreMemoryError
 from personal_agent.core.models import (
     AssistantMessage,
@@ -36,6 +38,8 @@ class Agent:
         max_tool_calls_per_response: int = 64,
         max_tool_calls_per_run: int = 256,
         request_timeout_seconds: float = 60,
+        hooks: HookRegistry | None = None,
+        goal_gate=None,
     ) -> None:
         if max_rounds < 1:
             raise ValueError("max_rounds must be at least 1")
@@ -51,6 +55,9 @@ class Agent:
         self.max_tool_calls_per_run = max_tool_calls_per_run
         self.request_timeout_seconds = request_timeout_seconds
         self._lock = asyncio.Lock()
+        self.hooks = hooks or tools.hooks
+        self.goal_gate = goal_gate
+        self.scope_factory = None
 
     async def run(
         self,
@@ -58,6 +65,7 @@ class Agent:
         *,
         permissions: frozenset[str] = frozenset(),
         images: list[ImageRef] | None = None,
+        scope: RunScope | None = None,
     ) -> RunResult:
         """
         External Lifecycle
@@ -69,14 +77,32 @@ class Agent:
         # Serialize turns on this session to prevent interleaved history.
         async with self._lock:
             self._round_number = 0
+            self._request_number = 0
+            effective_scope = scope or CURRENT_SCOPE.get()
+            if effective_scope is None and self.scope_factory is not None:
+                effective_scope = self.scope_factory(permissions)
+            scope_token = CURRENT_SCOPE.set(effective_scope)
+            run_token = CURRENT_RUN.set(None)
+            outcome = "interrupted"
+            original_provider = self.provider
+            if CURRENT_SCOPE.get() is not None:
+                self.provider = BudgetProvider(self.provider, CURRENT_SCOPE.get().budget)
             try:
                 messages = (
                     self.context.begin(user_input, images=images)
                     if images
                     else self.context.begin(user_input)
                 )
-                return await self._run(messages, permissions=permissions)
+                CURRENT_RUN.set(self.context.run_id)
+                on_begin = getattr(self.context, "on_begin", None)
+                if on_begin is not None:
+                    on_begin(self.context.run_id)
+                await self.hooks.emit(LifecycleEvent("RunStarted", self.context.run_id))
+                result = await self._run(messages, permissions=permissions)
+                outcome = result.status
+                return result
             except HistoryError:
+                outcome = "storage_error"
                 self._abort_context()
                 logger.error("history_failed round=%d", self._round_number)
                 return RunResult(
@@ -86,8 +112,16 @@ class Agent:
                     "run stopped without retrying tools. Tool effects may already have occurred.",
                 )
             except asyncio.CancelledError:
+                outcome = "cancelled"
                 self._abort_context(cancelled=True)
                 raise  # raise error to let the external layers know
+            finally:
+                try:
+                    await self.hooks.emit(LifecycleEvent("Stop", CURRENT_RUN.get(), status=outcome))
+                finally:
+                    self.provider = original_provider
+                    CURRENT_RUN.reset(run_token)
+                    CURRENT_SCOPE.reset(scope_token)
 
     def _abort_context(self, *, cancelled: bool = False) -> None:
         try:
@@ -116,6 +150,8 @@ class Agent:
             return result
 
         accepted_tool_calls = 0
+        reactive_used = False
+        goal_continuations = 0
         for round_number in range(1, self.max_rounds + 1):
             self._round_number = round_number
             logger.info("model_request round=%d", round_number)
@@ -131,12 +167,29 @@ class Agent:
                     if self.context.budget
                     else {}
                 )
-                response = await self._generate(request, definitions, options, round_number)
+                await self.hooks.emit(
+                    LifecycleEvent("BeforeModelCall", self.context.run_id, round_number)
+                )
+                try:
+                    response = await self._generate(request, definitions, options, round_number)
+                except ProviderError as exc:
+                    if exc.code != "context_length_exceeded" or reactive_used:
+                        raise
+                    reactive_used = True
+                    self.context.reactive = True
+                    request = await self.context.prepare(messages, definitions, self.provider)
+                    response = await self._generate(request, definitions, options, round_number)
+                self.context.mark_consumed()
+                await self.hooks.emit(
+                    LifecycleEvent("AfterModelCall", self.context.run_id, round_number)
+                )
                 self.context.observe_usage(response.usage)
             except ContextError as exc:
                 return finish(
                     RunResult(
-                        status="compaction_error"
+                        status="budget_exhausted"
+                        if exc.code == "execution_budget"
+                        else "compaction_error"
                         if exc.code.startswith(("compaction_", "invalid_summary"))
                         else "context_error",
                         rounds=round_number,
@@ -232,6 +285,24 @@ class Agent:
                 "model_response round=%d tool_calls=%d", round_number, len(response.tool_calls)
             )
             if not response.tool_calls:
+                if self.goal_gate is not None:
+                    decision = await self.goal_gate.evaluate(response.text, self.context)
+                    if decision != "passed":
+                        if (
+                            decision == "continue"
+                            and goal_continuations < 2
+                            and round_number < self.max_rounds
+                        ):
+                            goal_continuations += 1
+                            continue
+                        return finish(
+                            RunResult(
+                                status="goal_unverified",
+                                text=response.text,
+                                rounds=round_number,
+                                error="Goal is not verified: " + decision,
+                            )
+                        )
                 return finish(
                     RunResult(status="completed", text=response.text, rounds=round_number)
                 )
@@ -262,8 +333,32 @@ class Agent:
 
             # Sequential execution is deliberate: side effects have a predictable order.
             # ToolRegistry turns validation, execution, and timeout failures into data.
+            tool_budget_exhausted = False
             for call in response.tool_calls:
-                append(ToolMessage(result=await self.tools.execute(call, permissions=permissions)))
+                result = await self.tools.execute(call, permissions=permissions)
+                append(ToolMessage(result=result))
+                tool_budget_exhausted |= bool(
+                    result.error and result.error.code == "execution_budget"
+                )
+                await self.hooks.emit(
+                    LifecycleEvent(
+                        "PostToolUse",
+                        self.context.run_id,
+                        round_number,
+                        call.id,
+                        call.name,
+                        "ok" if result.ok else "failed",
+                    )
+                )
+
+            if tool_budget_exhausted:
+                return finish(
+                    RunResult(
+                        status="budget_exhausted",
+                        rounds=round_number,
+                        error="Shared tool execution budget exhausted.",
+                    )
+                )
 
         return finish(
             RunResult(
@@ -280,6 +375,8 @@ class Agent:
         options: dict,
         number: int,
     ) -> ModelResponse:
+        self._request_number = getattr(self, "_request_number", 0) + 1
+        number = self._request_number
         trace, run_id = self.context.trace, self.context.run_id
         if trace is not None and run_id is not None:
             trace.start(run_id, number, request, definitions, options.get("max_output_tokens"))

@@ -86,6 +86,8 @@ class ModelResponse(Model):
 
 
 class RunResult(Model):
+    execution_id: str | None = None
+    goal_id: str | None = None
     status: Literal[
         "completed",
         "max_rounds",
@@ -97,6 +99,8 @@ class RunResult(Model):
         "memory_error",
         "context_error",
         "compaction_error",
+        "goal_unverified",
+        "budget_exhausted",
     ]
     text: str = ""
     rounds: int

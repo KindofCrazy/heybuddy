@@ -65,3 +65,8 @@ RecallError 映射为安全的 ToolExecutionError，SQL 异常和查询正文不
 builtin.py、memory/tools.py、recall/tools.py 的 description 明确使用时机、根目录空串、分页、原文/hash 与部分完成处理。参数模型、required_permission、函数及 Registry 定义过滤/执行复查保持原逻辑。描述帮助选工具，不能代替 Host 安全检查。
 
 evaluation/prompts.py::tool_variant() 只在评测注册表用 dataclasses.replace 替换描述，不向模型提供注册接口。离线测试仍验证真实权限，评测另查工具尝试、文件不变和 Journal 保留。最终快照与生产描述一致；候选仍发生过一次无效根路径调用，不保证描述能消除全部无效调用。见 [A/B 结果](../prompt-ab-results.md)。
+
+
+## P5 扩展
+
+P5 Tool.arguments 使用 ArgumentParser Protocol，兼容原 ToolArguments 和 MCP JSON Schema；Tool 支持独立 timeout_seconds，Registry 加入共享工具预算、ToolPolicy 和有界 PreToolUse。PostToolUse 由 Agent 在结果落库后发出。

@@ -41,3 +41,8 @@ TokenUsage.reasoning_tokens 可为空，兼容端点缺失 output_tokens_details
 ## 图片输入
 
 `OpenAIProvider` 可接收 `ImageReader`。`_input()` 对携带 images 的 user 消息生成 input_text/input_image 内容块，先按 Host 全请求上限检查引用，再读取并校验 Agent 隔离的图片，在 wire 请求中编码为 JPEG data URL；纯文本格式不变。数据缺失/损坏或超限停止请求，不自动外网补图。`runtime.open_chat()` 装配原 SQLite 的读取器；工具/Provider 数据重放继续复用原路径。结构、预算、失败和测试见[图片输入](images.md)。
+
+
+## P5 扩展
+
+P5 OpenAIProvider 仅通过 SDK 结构化错误码识别 context_length_exceeded；safe_compaction 拒绝未知 opaque namespace 和 item_reference。BudgetProvider 包装请求预算；MCP 使用独立协议 Adapter，不改变 Provider 消息模型。

@@ -143,6 +143,20 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
             }
         )
 
+    @app.get("/api/harness")
+    async def harness_status():
+        # Read-only metadata across the current Agent's sources; never enter execution scope.
+        with sessions.store.reading() as db:
+            rows = db.execute(
+                "SELECT id,kind,revision,conversation_id,source,"
+                "json_extract(payload,'$.status') AS status,updated_at "
+                "FROM harness_records WHERE agent_id=? AND kind IN "
+                "('task','goal','execution','workflow','run_summary') "
+                "ORDER BY updated_at DESC,id DESC LIMIT 50",
+                (sessions.agent.id,),
+            ).fetchall()
+        return output({"items": [dict(row) for row in rows], "read_only": True})
+
     @app.get("/api/activity")
     async def recent_activity(
         limit: int = Query(12, ge=1, le=30), cursor: str = Query("", max_length=512)

@@ -133,8 +133,11 @@ async def test_shutdown_during_wait_and_restart_preserve_input(state):
     adapter = QQAdapter(
         QQSettings(qq_app_id="12345", qq_allowed_openids=("test-openid",)), service, inbox, Sender()
     )
-    await adapter.accept(event("1"))
-    await adapter.accept(event("2"))
+    # One received burst; SQLite fsync latency must not decide the 10ms test boundary.
+    received_at = datetime.now(UTC)
+    for identifier in ("1", "2"):
+        message = parse_text(event(identifier), adapter.settings)
+        await adapter.accept_message(replace(message, received_at=received_at))
     adapter.start()
     await asyncio.sleep(0)  # Consumer reaches its wait, with no real-time delay.
     await adapter.close()

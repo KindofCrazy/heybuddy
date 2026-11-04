@@ -102,3 +102,8 @@ prepare() 的每次迭代先 _injections() 编译 Base/角色/Core/摘要/时间
 # 主动消息的只读接续
 
 `ContextBuilder` 接受 `core/outbound.py::ConversationNotices` Protocol；`_injections()` 在原 user JSON 数据层读取 notices.context()，与 Memory/Summary 一起计入原预算，不写 pending、Run Journal 或 Compaction 证据。`proactive_messages` 带 origin、assistant_generated_only、user_evidence=false，模拟另有 simulation=true；数据标记明确它不是用户证据或指令，既有冻结 system 提示词保持不变。当前生产读取器排除所有模拟，离线 Harness 才显式注入最近三条 accepted 模拟消息。SessionManager.notice_factory 为每个 Context 绑定当前会话，避免切换后的旧会话数据。装配、预算/错误路径和验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`。
+
+
+## P5 扩展
+
+P5 ContextBuilder 按 ContextContributor 装配有界扩展状态，以 ReplayView 构建派生重放视图；支持工具产物、Micro-compaction 与安全 Run 内摘要。完整步骤和边界见 [Compaction](compaction.md#p5-多层压缩)。

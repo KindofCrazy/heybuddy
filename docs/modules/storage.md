@@ -151,3 +151,8 @@ ProactiveRepository.publish() 将社交窗口、随机选定 next_review_at 和�
 # 本轮进展已聊过（schema 22）
 
 `storage/proactive.py::COVERAGE_SCHEMA` 追加 followup_state（pending/covered）、非负 covered_position 和有界 covered_sources JSON。候选、覆盖证据、未发送草稿的撤下、覆盖审计和源水位在 publish() 的同一事务中提交，已接受/不确定回执保持历史语义。新的覆盖必须来自更新的用户证据且目标快照一致；covered 后的普通更新不恢复复查，明确 new_plan 也必须更新于 covered_position。pending 查询和容量排除 covered，已有记录仍以有界历史候选提供给 Scout。具体执行、来源和故障路径见 [proactive.md](proactive.md) 与 `tests/test_followup_coverage.py`。
+
+
+## P5 扩展
+
+P5 migration 23 原子新增 harness_records、harness_events、tool_artifacts。记录按 Agent/Conversation/source 隔离并修订检查；子执行使用独立执行 Agent 和 Conversation，不进入原 Agent 证据查询。

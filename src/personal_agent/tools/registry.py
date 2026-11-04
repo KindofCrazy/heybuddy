@@ -5,9 +5,12 @@ import logging
 import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, JsonValue, TypeAdapter, ValidationError
 
+from personal_agent.core.execution import CURRENT_RUN, CURRENT_SCOPE
+from personal_agent.core.lifecycle import HookRegistry, LifecycleEvent
 from personal_agent.core.models import ToolCall, ToolDefinition, ToolError, ToolResult
 
 logger = logging.getLogger(__name__)
@@ -29,14 +32,24 @@ class ToolArguments(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
 
+class ArgumentParser(Protocol):
+    def model_json_schema(self) -> dict: ...
+    def model_validate_json(self, raw: str) -> object: ...
+
+
+class ToolPolicy(Protocol):
+    def __call__(self, name: str, arguments: object) -> bool: ...
+
+
 @dataclass(frozen=True)
-class Tool[Args: BaseModel]:
+class Tool[Args]:
     """Sync functions require an explicit no-side-effects contract, not cancellation support."""
 
     name: str
     description: str
-    arguments: type[Args]
+    arguments: ArgumentParser
     function: Callable[[Args], object | Awaitable[object]]
+    timeout_seconds: float | None = field(default=None, kw_only=True)
     side_effect_free: bool = field(default=False, kw_only=True)
     required_permission: str | None = field(default=None, kw_only=True)
 
@@ -47,6 +60,9 @@ class ToolRegistry:
             raise ValueError("Tool timeout must be positive and finite")
         self.timeout_seconds = timeout_seconds
         self._tools: dict[str, Tool] = {}
+        self.hooks = HookRegistry()
+        self.policy: ToolPolicy | None = None
+        self.result_handler = None
 
     def register(self, tool: Tool) -> None:
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", tool.name):
@@ -109,9 +125,24 @@ class ToolRegistry:
             logger.warning("argument_validation_failed type=%s", type(exc).__name__)
             return failure("invalid_arguments", "Tool argument validation failed.")
 
+        scope = CURRENT_SCOPE.get()
+        if scope is not None and not scope.budget.reserve_tool():
+            return failure("execution_budget", "Shared tool budget exhausted.")
+        if self.policy is not None:
+            try:
+                allowed = self.policy(call.name, arguments)
+            except Exception:
+                return failure("policy_failed", "Host execution policy could not be checked.")
+            if not allowed:
+                return failure("policy_denied", "Host execution policy denied this operation.")
+        denied = await self.hooks.emit(
+            LifecycleEvent("PreToolUse", CURRENT_RUN.get(), call_id=call.id, tool_name=call.name)
+        )
+        if denied:
+            return failure(denied, "Lifecycle policy denied this operation.")
         logger.info("tool_start name=%s call_id=%s", call.name, call.id)
         try:
-            async with asyncio.timeout(self.timeout_seconds):
+            async with asyncio.timeout(tool.timeout_seconds or self.timeout_seconds):
                 if inspect.iscoroutinefunction(tool.function):
                     value = await tool.function(arguments)
                 else:

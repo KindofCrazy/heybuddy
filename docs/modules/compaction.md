@@ -94,3 +94,22 @@ V0.7 的 [Reflection](reflection.md) 是独立手动流程：从原始 completed
 ## 取消后的提交屏障
 
 compact_step() 在 Provider 返回后重新检查 deadline.expired() 和当前 task.cancelling()。即使自定义 Provider 吞掉 CancelledError，超时或前台取消也不发布晚到摘要；旧 checkpoint 与原 Journal 保留。tests/test_compaction.py::test_swallowed_cancellation_never_publishes_checkpoint 对两种情况分别验证。
+
+
+## P5 多层压缩
+
+本节替代上文历史实现中“当前 Run 完全不可压缩”和“Provider 超限不补救”的阶段描述。原 Journal、完整 Run 历史摘要与 Memory 边界不变。
+
+`core/replay.py::CompactionPolicy/ReplayView` 管理当前 Run 的派生模型视图；`ContextContributor` 由 ContextBuilder 装配。原 pending/messages 不被覆盖为摘要，`storage/harness.py` 分别保存 tool_artifacts 和 run_summary 检查点。
+
+实际路径：Agent 每轮调用 ContextBuilder.prepare → ReplayView.project 将超过 16 KiB 的工具正文存为最多 1 MiB 的产物并提供预览 → 压力达到默认 80% 时进行 micro projection → 先按原路径摘要可压缩历史 Run → 仍有压力时 compact_current 对当前 Run 的已配对旧前缀做无工具摘要 → 重建请求并重新估算。进入减压后目标为输入上限的 60%，不能继续缩减时仍按硬上限明确停止或返回可容纳请求。`tool_output_get` 按来源、Conversation 和 Agent 分页取回正文，不能取回未成功保存的引用。
+
+Micro-compaction 默认保护最近三个工具结果，尚未被成功模型响应消费的正文不会清成只有引用的占位符。保留 ok/error、状态、退出码、hash 和来源字段；原始完整数据继续保存在 Journal。调用压缩后的模型请求成功返回时，ContextBuilder.mark_consumed 才推进已消费集合。
+
+Run 内摘要只覆盖完整工具配对前缀，保护原始用户请求及图片和最近两个完整交互。Provider 必须声明 safe_compaction；OpenAI Adapter 拒绝未知 namespace 和 item_reference，未声明能力的 Provider 不压缩当前 Run。检查点绑定来源 hash、边界和修订，不推进 context_summaries；结束后历史摘要仍基于原始消息。取消和过期响应不发布检查点，摘要无收益/非法/超限均明确报错。
+
+Provider 返回规范化 context_length_exceeded 时，Agent 在同 Run 内至多一次重新 prepare 并补发模型请求，使用不同审计轮次编号，共享原预算与工具次数。超时、连接错误、其他 API 错误不补发，不检查异常正文、不重跑工具、不恢复中断 Run。
+
+`summary_max_bytes` 是摘要 JSON 序列化 UTF-8 字节限制，summary_tokens 作为兼容配置别名，冲突拒绝。`/compact [focus]` 仅可信 CLI 在空闲时触发已结束历史压缩；focus 只作为摘要取舍数据。`/context status` 的 layers 记录产物数、清理数、Run 摘要数和正文节省量；根预算报告存于 Harness 状态。长输出不足、Provider opaque 数据依赖或必要状态太大时仍允许明确停止，不保证任何长任务都可无限运行。
+
+`tests/test_harness.py` 验证产物来源隔离、未消费保护、原 Journal 不变、安全 Run 摘要、Provider 边界、摘要发布失败与单次超限补救；原 tests/test_compaction.py 继续验证历史前缀、CAS、取消与 Provider 重放。

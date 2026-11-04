@@ -315,7 +315,10 @@ class QQAdapter:
                         "提醒参数无效，请使用 /remind in 10m 喝水，或带时区的 /remind at。",
                     )
             self.inbox.mark(row.get("sequences", row["sequence"]), "processed")
-        elif row["content"].lstrip().startswith("/"):
+        elif row["content"].lstrip().startswith("/") and not (
+            getattr(self.service, "harness", None) is not None
+            and row["content"].split(maxsplit=1)[0] == "/goal"
+        ):
             text = "QQ 暂不支持管理命令，请在本地 CLI 操作。"
         else:
             before = self._latest_run()
@@ -330,12 +333,24 @@ class QQAdapter:
                             raise QQError("qq_image_unsupported")
                         refs = await self.images.prepare(attachments)
                     row["execution_started"] = True
+                    scope_options = (
+                        {"source_scope": reminder_scope(self.inbox.scope)}
+                        if getattr(self.service, "harness", None) is not None
+                        else {}
+                    )
                     if refs:
                         result = await self.service.run(
-                            row["content"], permissions=frozenset(), images=refs
+                            row["content"],
+                            permissions=frozenset(),
+                            images=refs,
+                            **scope_options,
                         )
                     else:
-                        result = await self.service.run(row["content"], permissions=frozenset())
+                        result = await self.service.run(
+                            row["content"],
+                            permissions=frozenset(),
+                            **scope_options,
+                        )
             except QQError:
                 await self._reply(
                     row,

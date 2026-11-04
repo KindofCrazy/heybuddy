@@ -414,3 +414,12 @@ QQ 现支持图片、图文和 JPEG/PNG/GIF/WebP 表情包输入；动图只读�
 “我明天准备跑实验”继续是 [关心式 follow_up](docs/modules/proactive.md)，不创建提醒：没有具体时刻可在当天晚间窗口稳定抽样；有明确时刻时按重要性或概率考虑开始前关心。Attention、安静时段、新证据和预算仍可选择沉默，默认 Shadow 只生成草稿。运行测试和明确提醒的真实投递验证已获得用户授权，验证结果见交付记录。
 
 提前主动说“实验结果出来了”后，Scout 会逐项核对待跟进候选；匹配到真实新进展便保存“本轮已聊过”，清除原定问候，并撤下还未发送的旧草稿。事项仍可未完成，普通补充和旧历史不会重新激活这轮问候；明确的新计划可开启新一轮。这个语义识别由 Scout 完成，缺项、伪造引用或版本冲突会暂停后台，不沿用旧判断。明确设置的定时提醒独立处理。
+
+
+### P5 General Agent Harness
+
+共享 Runtime 已接入生命周期、多层压缩、受控工作文件、Todo/Task/Goal、Skills、MCP、子执行和固定 Workflow。现有 Memory 与角色边界保持独立。新能力及限制见 [Harness](docs/modules/harness.md)、[规划](docs/modules/planning.md)、[Skills/MCP](docs/modules/skills-mcp.md)、[执行](docs/modules/execution.md)、[Workflow](docs/modules/workflows.md) 和 [Compaction](docs/modules/compaction.md)。
+
+`/harness` 查看当前来源状态；`/goal 生成报告 | file:report.md` 建立可检查目标；`/compact` 显式压缩；`/workflow resume <id>` 在可信 CLI 显式恢复。官方 QQ/NapCat 可调用受控工具和 `/goal`，不开放远程配置或 Workflow Resume。只读 Observatory 提供 `/api/harness`。
+
+默认工作区和技能位于用户数据目录的 `HeyBuddy/workspace`、`HeyBuddy/skills`。可用 `AGENT_WORKSPACE_ROOT`、`AGENT_SKILLS_ROOT` 和 `AGENT_MCP_CONFIG` 配置宿主资源；`AGENT_HARNESS_ENABLED=false` 停止注册新能力。独立模型 Goal 评审默认关闭。`uv run python -m personal_agent.evaluation.harness` 执行固定离线机制探针，不使用真实模型。

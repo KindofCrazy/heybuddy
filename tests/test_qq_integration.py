@@ -112,12 +112,32 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             assert "add_numbers" not in {tool.name for tool in provider.tools[0]}
             clock = next(t for t in provider.tools[0] if t.name == "get_current_time")
             assert "UTC" not in clock.description
-            assert {tool.name for tool in provider.tools[0]} == {
+            names = {tool.name for tool in provider.tools[0]}
+            assert {
                 "get_current_time",
                 "archival_memory_search",
                 "recall_search",
                 "recall_get",
-            }
+                "workspace_read",
+                "workspace_write",
+                "task_create",
+                "skill_load",
+                "delegate",
+                "execution_start",
+                "workflow_start",
+            } <= names
+            assert (
+                not {
+                    "memory_update",
+                    "memory_edit",
+                    "deferred_create",
+                    "deferred_edit",
+                    "bash",
+                    "shell",
+                    "eval",
+                }
+                & names
+            )
             assert any("这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user")
             assert any("用户的项目是 HeyBuddy" in m.text for m in request if m.role == "user")
             identity = (

@@ -25,6 +25,12 @@ from personal_agent.scheduler.models import SchedulerPolicy
 class Settings(ContextBudget, QQSettings, NapCatSettings):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
+    harness_enabled: bool = True
+    goal_model_review: bool = False
+    workspace_root: Path | None = None
+    workspace_git_root: Path | None = None
+    skills_root: Path | None = None
+    mcp_config_path: Path | None = None
     api_key: SecretStr
     model: str = Field(min_length=1)
     base_url: HttpUrl | None = None
@@ -338,6 +344,13 @@ ENV_FIELDS = {
     "AGENT_COMPACTION_TRIGGER_RATIO": "trigger_ratio",
     "AGENT_RECENT_RUNS": "recent_runs",
     "AGENT_HISTORY_PAGE_RUNS": "page_runs",
+    "AGENT_SUMMARY_MAX_BYTES": "summary_max_bytes",
+    "AGENT_GOAL_MODEL_REVIEW": "goal_model_review",
+    "AGENT_HARNESS_ENABLED": "harness_enabled",
+    "AGENT_WORKSPACE_ROOT": "workspace_root",
+    "AGENT_WORKSPACE_GIT_ROOT": "workspace_git_root",
+    "AGENT_SKILLS_ROOT": "skills_root",
+    "AGENT_MCP_CONFIG": "mcp_config_path",
     "AGENT_SUMMARY_TOKENS": "summary_tokens",
     "AGENT_SUMMARY_OUTPUT_TOKENS": "summary_output_tokens",
     "AGENT_COMPACTION_INPUT_TOKENS": "compaction_input_tokens",

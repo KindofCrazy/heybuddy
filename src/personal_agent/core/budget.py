@@ -20,11 +20,26 @@ class ContextBudget(Model):
     trigger_ratio: float = Field(default=0.8, gt=0, lt=1)
     recent_runs: int = Field(default=2, ge=1, le=16)
     page_runs: int = Field(default=32, ge=2, le=64)
+    summary_max_bytes: int = Field(default=2048, ge=64, le=16384)
     summary_tokens: int = Field(default=2048, ge=64, le=16384)
     summary_output_tokens: int = Field(default=4096, ge=16)
     compaction_input_tokens: int = Field(default=16384, ge=2048)
     compaction_timeout: float = Field(default=30, gt=0, allow_inf_nan=False)
     max_compaction_steps: int = Field(default=16, ge=1, le=128)
+
+    @model_validator(mode="before")
+    @classmethod
+    def summary_alias(cls, values):
+        if isinstance(values, dict):
+            values = dict(values)
+            old, new = values.get("summary_tokens"), values.get("summary_max_bytes")
+            if old is not None and new is not None and old != new:
+                raise ValueError("Conflicting summary byte limits")
+            if old is not None or new is not None:
+                values["summary_tokens"] = values["summary_max_bytes"] = (
+                    new if new is not None else old
+                )
+        return values
 
     @property
     def input_limit(self) -> int:

@@ -47,3 +47,8 @@ Agent 接收宿主 max_tool_calls_per_response（默认 64）和 max_tool_calls_
 ## 图片输入参数
 
 `Agent.run(..., images=...)` 允许只带图片的空 caption，仍通过同一锁、ContextBuilder、Journal、Provider、工具权限和停止路径；不创建额外 Agent Loop 或图像工具授权。普通文本调用不变，图片引用在工具后的下一次请求继续保留。接口、存储及跨重启测试见[图片输入](images.md)。
+
+
+## P5 扩展
+
+P5 的 Agent.run 可接受 Host RunScope，共享 BudgetProvider；生命周期事件不替代强制落库。无工具候选经过可选 GoalGate，每 Run 明确上下文超限最多补救一次。完整路径见 [Harness](harness.md)。

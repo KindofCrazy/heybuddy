@@ -29,6 +29,17 @@ class OpenAIProvider:
         self.images = images
 
     @staticmethod
+    def safe_compaction(messages) -> bool:
+        for message in messages:
+            if isinstance(message, AssistantMessage):
+                for namespace, items in message.provider_data.items():
+                    if namespace != "openai" or any(
+                        item.get("type") == "item_reference" for item in items
+                    ):
+                        return False
+        return True
+
+    @staticmethod
     def _input(messages: list[Message], images: ImageReader | None = None) -> list[dict]:
         references = [ref for m in messages if isinstance(m, TextMessage) for ref in m.images]
         if len(references) > 128 or sum(ref.size_bytes for ref in references) > 33554432:
@@ -120,7 +131,11 @@ class OpenAIProvider:
             raise ProviderTimeout("OpenAI request timed out.") from None
         except APIStatusError as exc:
             raise ProviderError(
-                "OpenAI API error.", code="api_error", status_code=exc.status_code
+                "OpenAI API error.",
+                code="context_length_exceeded"
+                if getattr(exc, "code", None) == "context_length_exceeded"
+                else "api_error",
+                status_code=exc.status_code,
             ) from None
         except APIConnectionError:
             raise ProviderError("Could not connect to OpenAI.", code="connection_error") from None

@@ -11,6 +11,7 @@ from personal_agent.core.memory import CoreMemory
 from personal_agent.core.models import Message, RunResult, TextMessage, TokenUsage, ToolDefinition
 from personal_agent.core.outbound import ConversationNotices
 from personal_agent.core.prompts import REMINDER_RULES, VISUAL_RULES, with_conversation_prompt
+from personal_agent.core.replay import ReplayView
 from personal_agent.core.retrieval import ContextRetrieval, PreflightRetrieval, RetrievalResult
 from personal_agent.core.tracing import RunTrace
 from personal_agent.llm.base import Provider
@@ -77,6 +78,11 @@ class ContextBuilder:
         self.retriever = retriever
         self.character = character
         self.trace = trace
+        self.contributors = []
+        self.replay_factory = ReplayView
+        self.replay = self.replay_factory()
+        self.reactive = False
+        self.compact_focus = ""
         self.notices = notices
         if not 512 <= optional_history_tokens <= 32768:
             raise ValueError("Invalid optional history budget")
@@ -183,6 +189,13 @@ class ContextBuilder:
                 injected.append(
                     TextMessage(role="user", text=json.dumps(notices, ensure_ascii=False))
                 )
+        for contributor in self.contributors:
+            value = contributor.context()
+            if value is not None:
+                encoded = json.dumps(value, ensure_ascii=False)
+                if len(encoded.encode()) > 32768:
+                    raise ContextError("contribution_limit", "Extension context exceeds budget.")
+                injected.append(TextMessage(role="user", text=encoded))
         role_system = [m.text for m in character_messages if m.role == "system"]
         system = (
             TextMessage(
@@ -308,6 +321,8 @@ class ContextBuilder:
         """Create Run/user atomically; prepare history inside the failure-handled loop."""
         if self._active:
             raise HistoryError("Context already has an active run.")
+        self.replay = self.replay_factory()
+        self.reactive = False
         user = TextMessage(role="user", text=user_input, images=images or [])
         self._run_id = self._store.begin(user)
         self._active = True
@@ -327,12 +342,16 @@ class ContextBuilder:
             self._load()
         await self._retrieve()
         steps = 0
+        reducing = False
         while True:
             messages[:] = [
                 TextMessage(role="system", text=self.system_prompt),
                 *self._page.messages,
                 *self.pending_messages,
             ]
+            if self.replay.repository is not None:
+                current = self.replay.project(self.pending_messages)
+                messages[:] = [messages[0], *self._page.messages, *current]
             prefix = self._injections(messages)
             self._select_history(messages, tools, prefix)
             request = self._assemble(messages, prefix)
@@ -348,12 +367,37 @@ class ContextBuilder:
                         "conversation.",
                     )
                 return request
-            pressure = estimated > int(self.budget.input_limit * self.budget.trigger_ratio)
+            target_ratio = (
+                self.replay.policy.target_ratio
+                if self.reactive or reducing
+                else self.budget.trigger_ratio
+            )
+            pressure = estimated > int(self.budget.input_limit * target_ratio)
+            if pressure and self.replay.repository is not None:
+                reducing = True
+                target_ratio = self.replay.policy.target_ratio
+                current = self.replay.project(self.pending_messages, micro=True)
+                messages[:] = [messages[0], *self._page.messages, *current]
+                self._select_history(messages, tools, prefix)
+                request = self._assemble(messages, prefix)
+                estimated = estimate_request(request, tools)
+                pressure = estimated > int(self.budget.input_limit * target_ratio)
+                self._diagnostics["layers"] = dict(self.replay.metrics)
             if not self._page.has_more and not pressure:
                 return request
             target = self._store.compact_through(self.budget.recent_runs)
             boundary = self._summary.through_sequence if self._summary else 0
             if target <= boundary:
+                if (
+                    pressure
+                    and self.replay.repository is not None
+                    and steps < self.budget.max_compaction_steps
+                ):
+                    if await self.replay.compact_current(
+                        self.pending_messages, provider, self.budget, self.compact_focus
+                    ):
+                        steps += 1
+                        continue
                 if self._page.has_more or estimated > self.budget.input_limit:
                     self._diagnostics["last_compaction"] = "irreducible"
                     raise ContextError(
@@ -385,6 +429,21 @@ class ContextBuilder:
             self._diagnostics["last_compaction"] = "completed"
             self._load()
 
+    def mark_consumed(self) -> None:
+        self.replay.mark_consumed(self._pending)
+
+    async def compact(self, provider: Provider, focus: str = "") -> dict:
+        if self._active:
+            raise ContextError("compaction_active", "Manual compact requires an idle conversation.")
+        if self.budget is None:
+            raise ContextError("context_not_configured", "Configure context budget first.")
+        previous = self._store.summary()
+        through = self._store.compact_through(self.budget.recent_runs)
+        if through <= (previous.through_sequence if previous else 0):
+            return {"status": "nothing_to_compact"}
+        await compact_step(self._store, previous, through, self.budget, provider, focus=focus)
+        return {"status": "compacted"}
+
     def observe_usage(self, usage: TokenUsage | None) -> None:
         self._usage = usage
 
@@ -396,6 +455,9 @@ class ContextBuilder:
         self._load()
         return {
             **self._diagnostics,
+            "layers": dict(self.replay.metrics),
+            "run_summary_through": self.replay.through,
+            "run_summary_revision": (self.replay.checkpoint or {}).get("revision", 0),
             "configured": self.budget is not None,
             "context_window": self.budget.context_window if self.budget else None,
             "reserved_output_tokens": self.budget.reserved_output_tokens if self.budget else None,

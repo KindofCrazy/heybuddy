@@ -46,3 +46,13 @@
 [Memory Automation](modules/automation.md)：成功回答后的 Worthiness、原 Reflection、可信写入范围、持久状态与额外成本。
 
 [共用证据机制](modules/evidence.md) 说明纯投影、精确引文与各领域确认策略；当前架构审查及落实记录见 [Architecture Audit](reviews/architecture-audit.md)。
+
+
+## P5 Harness
+
+- [Harness 与生命周期](modules/harness.md)：共享装配、来源、权限、预算、事件与持久化。
+- [规划](modules/planning.md)：Todo、Task Graph 与 Goal 验收。
+- [执行](modules/execution.md)：工作文件、命令、子 Agent、后台与取消。
+- [Skills/MCP](modules/skills-mcp.md)：按需操作知识与真实协议接入。
+- [Workflow](modules/workflows.md)：固定步骤、显式 Resume 与离线评测。
+- [多层压缩](modules/compaction.md#p5-多层压缩)：产物、Micro-compaction、Run 内摘要与超限补救。

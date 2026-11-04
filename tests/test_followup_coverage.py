@@ -417,4 +417,4 @@ def test_schema_21_to_22_atomic_upgrade_and_failure_rollback(tmp_path, monkeypat
             }
     with SQLiteStore(path) as db:
         db.initialize()
-        assert db._connection.execute("PRAGMA user_version").fetchone()[0] == 22
+        assert db._connection.execute("PRAGMA user_version").fetchone()[0] == storage.SCHEMA_VERSION

@@ -32,6 +32,7 @@ from personal_agent.scheduler.cli import command as reminder_command
 from personal_agent.scheduler.models import ReminderError
 from personal_agent.scheduler.natural import respond as natural_reminder
 from personal_agent.sessions import SessionManager
+from personal_agent.tools.registry import ToolExecutionError
 
 
 async def chat(
@@ -97,6 +98,18 @@ async def _chat(
         if organization is not None:
             await organization.foreground()
         if not user_input:
+            continue
+        if service.harness is not None and user_input.split(maxsplit=1)[0] in {
+            "/goal",
+            "/compact",
+            "/harness",
+            "/workflow",
+        }:
+            try:
+                result = await service.run(user_input)
+                write(result.text)
+            except (ContextError, HistoryError, ToolExecutionError):
+                write("Harness command failed; inspect persisted state before continuing.")
             continue
         permissions: frozenset[str] = frozenset()
         if user_input.split(maxsplit=1)[0] == "/remind":
@@ -238,7 +251,7 @@ async def _chat(
         elif user_input == "/context status":
             try:
                 write(json.dumps(agent.context.diagnostics(), ensure_ascii=False))
-            except (ContextError, HistoryError):
+            except (ContextError, HistoryError, ToolExecutionError):
                 write("Context 错误 > 无法读取有界上下文状态；请检查数据库与预算配置。")
             continue
         elif user_input.startswith("/"):
@@ -379,6 +392,9 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2 if exc.code in {"qq_configuration", "qq_openid_required"} else 1
+    except (ToolExecutionError, ValueError):
+        print("Harness configuration or state is invalid; inspect local settings.", file=sys.stderr)
+        return 2
     except HistoryError:
         print(
             "存储错误：无法初始化或访问会话数据库，请检查权限或其他运行中的实例。", file=sys.stderr

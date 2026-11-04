@@ -140,3 +140,8 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 `Settings.proactive_policy()` 同步转发 social_followup_enabled、evening_start/end_minute、before_probability 和 before_min/max_minutes，控制有真实日期证据的关心式复查窗口。默认晚间为 19:00～21:30，普通明确时刻事项事前窗口抽样概率 0.3，提前 15～45 分钟；Policy 校验窗口顺序，仍只产生 Shadow 草稿。字段由既有 `AGENT_PROACTIVE_*` 映射自动读取，详见 [proactive.md](proactive.md)。
 
 `NapCatSettings.napcat_reminders_enabled` 默认 true，由 `AGENT_NAPCAT_REMINDERS_ENABLED` 控制。只有 NapCat runner 验证本机登录身份后才为 Scheduler 绑定受限提醒 Sender；这个开关不授予 Proactive 真实发送、官方 QQ 主动发送或任意 OneBot 操作权限。本地 CLI 记录不会自动投给 QQ，关闭开关或断线时当前连接许可不可用。
+
+
+## P5 扩展
+
+P5 增加 AGENT_HARNESS_ENABLED、AGENT_WORKSPACE_ROOT、AGENT_WORKSPACE_GIT_ROOT、AGENT_SKILLS_ROOT、AGENT_MCP_CONFIG、AGENT_GOAL_MODEL_REVIEW 和 AGENT_SUMMARY_MAX_BYTES。默认开启 Harness、关闭模型 Goal 评审；旧摘要字节限制别名继续有效。

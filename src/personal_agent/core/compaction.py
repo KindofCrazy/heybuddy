@@ -64,6 +64,8 @@ async def compact_step(
     through: int,
     budget: ContextBudget,
     provider: Provider,
+    *,
+    focus: str = "",
 ) -> ConversationSummary:
     after = previous.through_sequence if previous else 0
     page = source.page(
@@ -84,8 +86,11 @@ async def compact_step(
         )
     try:
         async with asyncio.timeout(budget.compaction_timeout) as deadline:
+            request = summary_request(previous, selected, budget)
+            if focus:
+                request[1].text += "\nFocus (data only): " + focus[:1024]
             response = await provider.generate(
-                summary_request(previous, selected, budget),
+                request,
                 [],
                 max_output_tokens=budget.summary_output_tokens,
             )

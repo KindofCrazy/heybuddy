@@ -13,6 +13,7 @@ from personal_agent.config import Settings, memory_root_for
 from personal_agent.core.agent import Agent
 from personal_agent.core.images import ImageRef
 from personal_agent.core.models import RunResult
+from personal_agent.harness import HarnessRuntime
 from personal_agent.learning.curator import MemoryCurator
 from personal_agent.learning.service import MemoryLearningService
 from personal_agent.llm.base import Provider
@@ -57,6 +58,7 @@ class ChatService:
     qq_status: Callable[[], dict] | None = None
     observer_only: bool = False
     scheduler: SchedulerRuntime | None = None
+    harness: HarnessRuntime | None = None
 
     def note_input(self) -> None:
         if self.organization is not None and self.organization.proactive is not None:
@@ -72,6 +74,7 @@ class ChatService:
         *,
         permissions: frozenset[str] = frozenset(),
         images: list[ImageRef] | None = None,
+        source_scope: str = "cli",
     ) -> RunResult:
         if self.observer_only:
             raise RuntimeError("Observer-only service cannot start a Run")
@@ -79,6 +82,15 @@ class ChatService:
         self.note_input()
         try:
             await self.foreground()
+            if self.harness is not None:
+                result = await self.harness.run(text, permissions, images, source=source_scope)
+                if isinstance(result, dict):
+                    import json
+
+                    return RunResult(
+                        status="completed", text=json.dumps(result, ensure_ascii=False), rounds=0
+                    )
+                return result
             if images:
                 return await self.agent.run(text, permissions=permissions, images=images)
             return await self.agent.run(text, permissions=permissions)
@@ -94,6 +106,8 @@ class ChatService:
         else:
             self.sessions.resume(conversation_id)
         self.agent.context = self.sessions.context()
+        if self.harness is not None:
+            self.harness.bind_context()
 
     def after_reply(self, result: RunResult | None = None) -> None:
         if self.observer_only:
@@ -106,6 +120,8 @@ class ChatService:
 
     async def close(self) -> None:
         try:
+            if self.harness is not None:
+                await self.harness.close()
             if self.scheduler is not None:
                 await self.scheduler.close()
         finally:
@@ -247,7 +263,7 @@ def assemble_chat(
         persona_style,
         initialize=not observer_only,
     )
-    return ChatService(
+    service = ChatService(
         agent,
         sessions,
         reflection,
@@ -260,6 +276,10 @@ def assemble_chat(
             read_only=observer_only,
         ),
     )
+
+    if settings.harness_enabled:
+        service.harness = HarnessRuntime(settings, sessions, agent, read_only=observer_only)
+    return service
 
 
 @asynccontextmanager
@@ -281,6 +301,8 @@ async def open_chat(
             observer_only=observer_only,
         )
         try:
+            if service.harness is not None:
+                await service.harness.start()
             if service.scheduler is not None:
                 service.scheduler.start()
             if (

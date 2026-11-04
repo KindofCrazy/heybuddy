@@ -111,3 +111,8 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 共享解析器还接受 Host 显式提供的 request_id、reference_at 与 source_scope，供 `scheduler/chat.py::reply()` 对已验证的 QQ/NapCat 私聊做受限创建；CLI 默认使用随机请求 ID、当前时钟和 local 来源。聊天 list/show/cancel 不调用 CLI 的 Agent 级管理分支，而在聊天入口额外限制来源和会话；不开放 status/events/simulate。
 
 `main._chat()` 在分派完管理命令、进入 Agent 前调用 `scheduler/natural.py::respond()`，用当前 Conversation、local 来源、独立输入 ID 和 Scheduler 时钟处理有限中文提醒。命中后直接显示 Host 结果，不保存用户 Run；未命中继续 service.run。缺项草稿、十五分钟过期、取消歧义与语法边界见 [scheduler.md](scheduler.md) 和 [calendar.md](calendar.md)。
+
+
+## P5 扩展
+
+P5 CLI 增加 /harness、/goal、/compact 和 /workflow resume；会话切换后重新绑定扩展上下文。QQ 只开放明确 /goal 与允许的模型工具，不开放远程 Resume。
