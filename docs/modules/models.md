@@ -54,3 +54,7 @@ V0.7.1 的 TokenUsage 新增可选非负 reasoning_tokens；总 output_tokens �
 ## P5 扩展
 
 P5 RunResult 增加可选 execution_id/goal_id，以及 goal_unverified、budget_exhausted。数据库 Run 状态映射仍是 completed/failed，执行任务状态独立存储。
+
+## 未来改进
+
+减少跨层 dict 的隐含约定，逐步用明确 JSON 数据模型表达决策和引用。保留 Provider 数据的普通 JSON 边界，避免引入 SDK 对象。

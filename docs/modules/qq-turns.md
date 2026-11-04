@@ -64,3 +64,7 @@ deadline 使用持久 UTC 接收时间以支持重启，等待使用 asyncio tim
 ## NapCat 主号输入状态
 
 仅 NapCat 的 `runner.receive()` 将已校验 input_status 交给 `QQAdapter.note_typing()`。内存 `extend_after` 以 receipt sequence 标记该条之后的延长截止，传入 `QQInbox.preview_turn()/claim_turn()` 和 `plan_turn()`，从而允许后续消息跨过原静默窗口合并；最大等待与所有硬边界保持有效。消费者在有效提示期间不采用 hybrid 提前 ready，状态变化会使正在等待的模型判断失效；结束提示缩短扩展到通常静默间隔。提示不创建消息/Run、不落库，不取消已领取的 Run。验证见 `tests/test_napcat_input_status.py`，配置见 [NapCat](napcat.md)。
+
+## 未来改进
+
+强化合并窗口、取消与迟到输入的状态测试，解释收件消息与内部 Run 的映射。不要把渠道重投递实现成自动重跑工具。

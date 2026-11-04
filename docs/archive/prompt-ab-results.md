@@ -1,8 +1,10 @@
 # V0.7.2 Prompt A/B 实测结果
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 Phase 1 在提交 `7ac3b6e1203cf58a1871ed8e16714e96bce912c8` 验证完成后冻结。Phase 2 使用同一 deepseek-flash、api.deepseek.com、1048576 context window、4096 普通输出预算、相同 Reflection 配置、相同工具实现/权限和合成数据。模型可能由服务商更新；该名称不是不可变模型版本。没有真实私人历史、没有真实 Apply。固定语料/评分哈希为 `b32e193d9902dc24b2584155592a3e36e13f31e0c1e599767269c176a24b1554`。
 
-先运行 12 个开发 Case 的 Phase 1 基线，每个重复两次，再按明确假设隔离比较 Retrieval、Worthiness、Synthesis 三组，其他 Prompt 保持基线。人工复核后先记录 retention.json，最后使用 4 个未用于调参的 Holdout Case 比较基线与最终组合，每个重复两次。完整匿名数值在 [summary.json](../evals/results/summary.json)，所有 Prompt 原文在 [快照目录](../evals/prompts/)，审计见 [Prompt Audit](prompt-audit.md)。
+先运行 12 个开发 Case 的 Phase 1 基线，每个重复两次，再按明确假设隔离比较 Retrieval、Worthiness、Synthesis 三组，其他 Prompt 保持基线。人工复核后先记录 retention.json，最后使用 4 个未用于调参的 Holdout Case 比较基线与最终组合，每个重复两次。完整匿名数值在 [summary.json](../../evals/results/summary.json)，所有 Prompt 原文在 [快照目录](../../evals/prompts)，审计见 [Prompt Audit](prompt-audit.md)。
 
 ## 配对结果
 

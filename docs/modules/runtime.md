@@ -1,69 +1,33 @@
-# Shared Chat Runtime
-
-`channels.napcat.runner.run_napcat()` 同样通过 `open_application()` 取得唯一 ChatService，并在小号身份核对后启动共享 QQ 消费者。只接收配置主号的好友消息，使用空 permissions；Luna、Memory、检索及维护服务仍在原 `assemble_chat()` 装配，不新增渠道角色或后台 Agent。实际路径与验证见 [NapCat](napcat.md)、`tests/test_napcat.py`。
-
-assemble_chat() 向 create_builtin_registry 显式传入 local_time=True，使 CLI/QQ 的时间工具与 ContextBuilder 时间注入使用同一宿主本地时钟和显示格式；该选择不改变默认离线 Harness 的 UTC 契约。
-
-生产工具装配关闭 add_numbers 演示，并启用 archival_memory_search 统一只读入口。CLI、QQ 和只读 Observatory 都沿用该装配，普通聊天通常提供四个工具。离线测试使用兼容注册表，不代表生产能力。tests/test_config_cli.py 和 test_qq_integration.py 检查实际装配的模型工具定义，tests/test_archival_memory.py 验证统一入口。
+# Runtime：共享装配与前后台交接
 
 ## 职责与架构组成
 
-`src/personal_agent/runtime.py` 的 `open_application()` 持有 SQLite 单进程锁、SessionManager、MemoryFS 与 Provider 生命周期。`open_chat()` 管理 SDK 客户端；`assemble_chat()` 复用现有 ContextBuilder、工具注册、Reflection、P1 Organizer、P2 Learning/Curator/Adaptive Retrieval、P3 Character Package/State，返回轻量 `ChatService`。渠道不各自装配学习或角色服务。
+`src/personal_agent/runtime.py` 是具体依赖的装配点。open_application 管 SQLiteStore、SessionManager、MemoryFS；open_chat 管 SDK/Provider 与服务启动关闭；assemble_chat 创建 Agent、Registry、检索、角色、Reflection、Learning/Curator、Organization、Proactive、Scheduler 和可选 HarnessRuntime。ChatService 提供统一 run/after_reply/select_conversation，不包含渠道协议。
 
 ## 代码实际运行路径
 
-1. `main.run_cli()` → `open_application()`：初始化 schema，恢复遗留 Run 的审计状态，再恢复已选 Conversation；不会重试工具。
-2. 初始化同一 Agent 的 MemoryFS，然后 `open_chat()` → `assemble_chat()` 加载角色、检索与普通工具，绑定现有 P1/P2/P3 服务。
-3. CLI `main._chat()` 在本地解析管理命令；普通文本通过 `ChatService.run()` → `foreground()` 取消并等待后台维护，再调用原有 `Agent.run()`。权限仅来自可信 Host 参数。
-4. 渠道展示回答后调用 `after_reply()`，沿用 `OrganizationRuntime.schedule()` 的空闲、累计数量和维护预算。它不逐条强制整理 Episode。
-5. 退出时 CLI 先关闭自己的输入桥；open_chat 最终关闭后台任务，再关闭 SDK、SQLite 与占用锁。
+1. open_application 打开 Store，取得占用锁，initialize 顺序迁移到 schema 23；非只读模式 recover_incomplete_runs 只更新中断审计状态。
+2. SessionManager 恢复当前会话，创建 Agent 级 MemoryFS，非只读模式 initialize；sessions.memory 交给 Context 编译。
+3. open_chat 创建 AsyncOpenAI，max_retries=0，通过 OpenAIProvider 和绑定 Agent 的 SQLiteImages 进入 assemble_chat。
+4. assemble_chat 加载角色、建立 Outbox 接续读取，注册内建/Memory/Recall 工具。生产不注册 add_numbers；基础检索使用 archival_memory_search 与独立 Recall，Harness 开启后还有工作、规划等工具，不能把旧的“四个工具”当完整生产列表。
+5. 创建维护服务和独立 Scheduler，再按设置创建 HarnessRuntime；此时尚未连接 MCP。persona.json 角色采用稳定编译路径，旧 Markdown 角色可装配 CharacterStateService。
+6. open_chat 依次启动 Harness/MCP、Scheduler；Shadow 启用时安排已有维护通道。随后 yield ChatService。
+7. ChatService.run 拒绝观察模式，设置 foreground_active、note_input，await foreground 抢占维护，再进入 Harness.run 或 Agent.run。Harness 管理命令结果可直接包装为 rounds=0 文本。finally 清除前台标记。
+8. 入口展示回答后调用 after_reply，schedule 当前会话；completed 才设置 after_answer。新输入取消维护并等待清理，不复制另一套 Agent Loop。
+9. ChatService.close 关闭 Harness 后台/MCP、Scheduler，finally 关闭 Organization；open_chat 再关闭 SDK，open_application 关闭 Store 和锁。
 
-QQ 入口 `channels.qq.runner.run_qq()` 也调用 `open_application()`，然后把同一 `ChatService` 交给 `QQAdapter`，只传净化后的文本和空权限。它不调用 `main._chat()` 的本地管理命令解析器。Luna 等 persona.json 角色只装配稳定提示词和历史角色标签，不创建 CharacterStateService；旧 Markdown 角色仍沿原路径恢复状态。P2 的 Learner、Curator、回执核对与 Adaptive Retrieval 也使用同一装配。`tests/test_qq_integration.py` 验证 CLI→退出→QQ 的历史、Memory、旧角色的 Character State、新 JSON 角色无状态服务，以及 QQ 抢占真实后台 Learning。
+会话切换只在两次前台之间由可信 select_conversation 执行，更新 SessionManager 与 Agent.context，再 bind_context 安装新会话贡献器。图片只传引用，由 Provider 读取绑定存储，不在入口创建独立视觉人格。
 
 ## 异常与边界
 
-Agent 的失败继续返回 `RunResult`；初始化失败沿原 CLI 安全错误路径返回。SDK retries 固定为 0。文件与 SQLite 的提交窗口、Reflection 审批和 P2 回执核对不变。`Agent.run()` 的现有锁串行处理前台 Run；渠道负责限制输入积压和外部回复失败。单个数据库只允许一个本地应用进程。
+observer_only 使用 SQLite 只读连接，initialize 只验证当前 schema，不迁移；不创建会话、Memory、不恢复执行或激活维护，Harness 不连接 MCP。ChatService.run 拒绝执行，after_reply 不调度；缺数据库/会话或版本不匹配需先由可信普通入口初始化。仍遵守数据库单实例锁。
+
+正常 Run 错误返回 RunResult；初始化失败向外传播到入口安全处理。工具副作用与 SQLite 不共同事务。MCP 单 Server unavailable 不阻断普通聊天。Scheduler 可接明确提醒 Sender，Proactive 仍只 Shadow，二者不能混淆。详细主循环见[消息主线](../architecture.md)。
 
 ## 阅读与验证
 
-运行 `uv run personal-agent`。`tests/test_config_cli.py` 验证 CLI、SDK 关闭与会话装配；`tests/test_p2_cli.py` 验证唯一 Learning 入口、共享检索器及只读管理状态。离线测试用 Fake Provider，不连接真实模型。
-# Observatory 接线
+使用 Fake Provider 调用 assemble_chat，在隔离数据库建立 SessionManager/MemoryFS，再调用 service.run；测试后 await service.close。`uv run pytest tests/test_config_cli.py tests/test_qq_integration.py tests/test_dashboard_lifecycle.py tests/test_harness.py` 验证共享装配、关闭、只读与来源边界。真实 `uv run personal-agent` 会启用配置的 Provider，不用它作为离线验证。
 
-`ChatService.run` 在 try/finally 设置 `foreground_active`，取消或失败也会清除。`qq_status` 是 QQ runner 绑定的无参数读取 callback，仅返回 Gateway/consumer 生命周期枚举。HTTP 不调用这两个执行入口；它只读取标记与持久元数据。
+## 未来改进
 
-`dashboard/app.py:create_app` 接受同一个 `ChatService`，只保留读取投影。QQ 的 `run_qq(..., dashboard=True)` 在 `open_application()` 内通过 `AsyncExitStack` 启动 HTTP，复用同一 SQLite 连接、Agent Scope 与 MemoryFS。独立 `web` 同样调用 `open_application()`，不安排后台维护；已有进程持有锁时拒绝启动。详情见 [dashboard.md](dashboard.md)，验证见 `tests/test_dashboard.py`。
-
-
-## Observatory 只读装配
-
-`assemble_chat`、`open_chat`、`open_application` 支持可信宿主参数 `observer_only=True`，仅独立 `web` 使用。复用原有数据库与服务装配，但不进行 Run/回执恢复、Memory 初始化/迁移、Learning 激活、Curator 调度或角色状态初始化，也不创建后台维护任务。`ChatService.run` 在此模式拒绝执行，`after_reply` 不调度。普通 CLI/QQ 默认行为不变。验证见 `tests/test_dashboard_lifecycle.py` 与 `tests/test_dashboard_boundaries.py`。
-
-## 渠道无关生命周期
-
-OrganizationRuntime 构造不创建 AsyncInput，QQ 与 observer-only Web 不占用终端线程。channels/lifecycle.py::stop_on_termination 供 QQ 与 Web 共用，Web 不再从 QQ runner 导入通用信号处理。生产 CLI 使用原 ChatService，不重新包裹而丢失宿主标记；维护与 Provider 的关闭 owner 为 open_chat。最小运行入口与测试仍为 run_cli、run_qq、run_web 和 tests/test_qq_integration.py/test_dashboard_lifecycle.py。
-
-## 共享图片输入
-
-`ChatService.run(..., images=...)` 将不可变图片引用传给同一 Agent。`open_chat()` 为 OpenAIProvider 注入绑定当前 Agent 的 SQLiteImages 读取器，不在 QQ Adapter 新建视觉模型/人格/学习器；包加载与维护配置不变。全路径及验证见[图片输入](images.md)。
-# Proactive Shadow 接线（schema 16）
-
-`assemble_chat()` 增加 `ProactiveRuntime`，复用 Provider/ContextBudget；启用时初始化增量水位，只读装配不写。`open_chat()` 在 Shadow 开启时启动现有维护任务，不创建独立模型循环。`ChatService.note_input()` 以及 QQ 收件后同步调用使等待中的 Attention 建议失效；`run()` 继续优先 await foreground() 抢占维护。`close()` 沿用维护任务退出，不产生主动投递。完整路径、配置和离线验证见 [proactive.md](proactive.md)。
-
-# Composer 与离线投递装配
-
-`assemble_chat()` 为当前 Agent 建立 OutboxRepository，在 Agent.context 构造前设置 SessionManager.notice_factory，并将 OutboundRuntime 接入 ProactiveRuntime.outbound。角色 callback 只读编译当前 Character，Composer 复用相同 model/维护预算。非 observer 装配执行 recover() 冻结未完成草稿/投递，不调用 Sender；默认上下文排除 Fake 回执。真实渠道 Adapter 仍无主动发送接线。完整调用路径、状态和验证见 [outbox.md](outbox.md)。
-
-## Review 修复后的只读启动与会话切换
-
-独立 Web 的 `open_application(observer_only=True)` 使用 `SQLiteStore(read_only=True)`，通过 SQLite `mode=ro` 和 `query_only` 拒绝数据库写入。`initialize()` 此时只验证 schema 17，不执行迁移；`SessionManager` 只加载已有 Agent 和已选 Conversation，不创建身份、不更新 client_state。数据库缺失、版本不符或尚无会话时返回 HistoryError，需先由普通 CLI 初始化。占用锁仍按单实例规则取得，不支持旁路访问正在运行的应用。
-
-可信 CLI 的 `/new`、`/resume` 调用 `ChatService.select_conversation()`，同时更新 SessionManager 和 Agent.context；前台运行中和 observer 模式拒绝切换。Context 的时间回调绑定创建时的 Conversation ID。验证：`tests/test_review_refactoring.py` 的完整 observer 启动覆盖缺失、旧 schema 和已有数据；会话切换沿 `tests/test_config_cli.py` 验证。
-
-# P4.4.1 明确提醒生命周期
-
-`assemble_chat()` 增加绑定当前 Agent 的 `SchedulerRuntime`，保存于 ChatService.scheduler；observer_only 只读装配不恢复或启动。`open_chat()` 在 yield 前 start()，独立有界 timer 不受 foreground/Idle/Attention 门控；ChatService.close() 撤销绑定，先取消并等待提醒定时器和在途发送，再 finally 关闭原维护 Runtime。库默认没有 Sender，只有 NapCat runner 在身份核对后为当前来源/会话绑定明确提醒的真实 Sender；Proactive 继续 Shadow。创建、取消、恢复、真实回执及验证详见 [scheduler.md](scheduler.md)。
-
-
-## P5 扩展
-
-P5 assemble_chat 装配 HarnessRuntime，open_chat 在进入服务前启动 MCP，ChatService.close 清理后台与连接。来源、阶段和真实调用顺序见 [Harness](harness.md)。
+显式声明装配依赖和关闭顺序，减少扩展遗漏清理。为 observer-only 与执行模式列出能力差异，并把来源验证与权限传递保持在可信边界。

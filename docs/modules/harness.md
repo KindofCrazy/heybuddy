@@ -35,3 +35,7 @@ Hook 默认单次 1 秒、单事件累计 2 秒；只有 PreToolUse 可阻断。
 可信 CLI：`/harness` 查看当前来源状态；`/goal` 查看目标；`/compact` 显式压缩；`/workflow resume <id>` 显式恢复。
 
 运行 `uv run pytest tests/test_harness.py` 验证 Hook 顺序、失败、来源隔离、共享预算及端到端装配。运行 `uv run python -m personal_agent.evaluation.harness` 执行固定合成场景；这是离线机制验证，不衡量真实模型能力。
+
+## 未来改进
+
+将来源绑定、预算和扩展依赖声明为明确类型，减少 ContextVar 与装配细节的隐含耦合。为主请求、子执行和后台分别呈现累计额度，但保持共享根预算。

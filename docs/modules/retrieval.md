@@ -47,3 +47,7 @@ Review Fix 的 `tests/test_review_timing_retrieval.py` 新增长耗时工具开�
 ## SQL 读取边界
 
 storage/retrieval.py::WorkingContextRepository 绑定 ThreadRepository/Agent 与 RetrievalPolicy，执行有界候选 SQL、元数据解码和完整 Run 来源核对；ContextRetriever 保留触发标记、关键词、Markdown 组合、Preflight 和去重策略。连接内共享读取使用 EpisodeRepository.read_episode/read_source 与 ThreadRepository.read_thread，避免重开事务或复制校验。Recall 的文本 FTS/展开接口不变，MemoryLookup 继续只读 Markdown。验证沿用 tests/test_working_context.py、test_preflight_baseline.py 和 test_memory_retrieval.py。
+
+## 未来改进
+
+分别评估 fast path、确定性召回和 Preflight 对证据命中与成本的贡献。为选入/省略项输出脱敏理由，避免只用关键词命中率证明回答质量。

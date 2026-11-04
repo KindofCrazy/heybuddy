@@ -44,3 +44,7 @@ tests/test_character_state.py 验证引用、no-op、Finalize 去重、Mood/Focu
 ## 独立依赖
 
 CharacterStateService(repository, package, provider, budget, ...) 直接接收 Provider。history_evidence/verify_quotes 只校验实际披露来源，状态策略仍负责角色包/Run 标签、时间、最小间隔与 TTL；不依赖 ReflectionService、Candidate 或长期记忆审批。构造时核对 package ID/fingerprint 与 Repository，来源读取继续校验 Agent。原 tests/test_character_state.py 与实际装配/评测入口均使用此接口。
+
+## 未来改进
+
+检验模拟状态的过期、证据归属和实际对话收益；若收益不足，应优先关闭冗余请求。禁止把模拟情绪变成真实关系事实。

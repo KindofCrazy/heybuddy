@@ -1,4 +1,6 @@
-# Skills 与 MCP
+# MCP：连接、工具发现与调用
+
+技能的完整加载过程已独立为 [Skills](skills.md)。本文重点说明外部工具协议接入，仍保留与装配有关的技能目录步骤。
 
 ## 职责与架构组成
 
@@ -25,3 +27,7 @@
 MCP 配置示例：`[{"name":"docs","command":"已审核可执行文件绝对路径","args":[],"allowed_tools":["search"],"env_names":[]}]`。真实配置放源码外或被忽略的本地目录。
 
 `tests/test_harness.py` 启动临时 stdio Server 和 loopback HTTP Server 验证真实发现/调用、Schema 拒绝、工具许可与关闭；不会访问远程服务或真实模型。
+
+## 未来改进
+
+持久展示每个 Server 的工具版本与 Schema hash，发现配置漂移时要求宿主核对。区分连接失败、调用未发出、完成未知三种状态，避免把可重连理解为可重试副作用。技能加载路径单独见 [Skills](skills.md)。

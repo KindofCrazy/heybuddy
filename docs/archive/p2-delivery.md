@@ -1,5 +1,7 @@
 # P2 Long-term Memory：交付与验证
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 ## 基准、提交与实际模块
 
 开始时 HEAD 为 `9574de630c9c88cf05a2ddb13f340212e17e99b4`，工作区干净。先检查当前实现与 P1 Review Fix 报告，再按五个里程碑实现；没有重做 P1、重排旧 Journal 或迁移现有 Markdown。最终 SHA 为本文所在提交，完整值见交付消息及 `git rev-parse HEAD`。

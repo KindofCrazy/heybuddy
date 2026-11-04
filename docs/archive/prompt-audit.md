@@ -1,5 +1,7 @@
 # Phase 2 Prompt Audit（Phase 1 后基线）
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 基线来自 Phase 1 提交 7ac3b6e1203cf58a1871ed8e16714e96bce912c8，原文固定在 evals/prompts/phase1-baseline.json。Ground Truth 与评分哈希在首次真实调用前写入 evals/manifest.json；之后不修改。模型均 deepseek-flash，同一参数、权限与合成数据，每开发场景重复两次；Holdout 尚不用于调整。
 
 Baseline 开发集完成 24 次运行。观察不是仅凭 Prompt 长短推断；以下问题来自实际 trace，候选分组独立比较，最后组合在 Holdout 验证。程序评分的词面局限单独披露，不以改答案或评分器制造提升。

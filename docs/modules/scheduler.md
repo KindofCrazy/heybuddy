@@ -88,3 +88,7 @@ QQ/NapCat 可以直接发送上方 in/at 示例，再用 `/remind list` 或 `/re
 `tests/test_scheduler.py` 覆盖到期/宽限过期、幂等和取消不复活、一次模拟和重启 uncertain、跨 Agent、只读观察器、非法时间及 schema 17→18 失败回滚。`tests/test_reminder_chat.py` 增加聊天创建/取消、零模型调用、消息去重、来源隔离、附件与远程管理拒绝、游标范围、被动确认失败及 schema 18→19 回滚。最小验证命令为 `uv run pytest tests/test_scheduler.py tests/test_reminder_chat.py tests/test_reminder_natural.py tests/test_reminder_delivery.py`；保留离线网络保护。
 
 `tests/test_reminder_natural.py` 覆盖中文时间、缺项和歧义、重启接续、取消、来源与 TTL、引用/否定/普通计划隔离、发布后清理失败及 schema 19→20 原子回滚。`tests/test_reminder_delivery.py` 通过 Fake Sender 和假 WS 回执覆盖真实 mode、私聊白名单、撤销、断线不补发、一次尝试和 schema 20→21 回滚；pytest 不登录真实账号。2026-10-31 用户允许运行验证，真实投递另用隔离数据库与一条固定测试消息，不触发 LLM；实际结果记于交付记录。
+
+## 未来改进
+
+扩充有限时间表达的歧义测试与澄清质量，保持明确提醒与普通计划分离。强化领取后崩溃、连接边界和回执未知的可解释状态，不通过自动重试掩盖不确定投递。

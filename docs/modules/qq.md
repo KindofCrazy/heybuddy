@@ -105,3 +105,7 @@ schema 13 原子追加 `qq_receipts`，沿用同一 SQLiteStore 和数据库锁�
 
 
 NapCat 通过 Host 显式注入独立 Humanizer 与经校验的收件输入状态；官方入口不注入这些选项，保持官方段数、字节和固定条间停顿。共享实现的逐条字数停顿、内存聚合扩展和验证见 [NapCat](napcat.md)、[聚合](qq-turns.md)。
+
+## 未来改进
+
+完善来源验证失败、重复收件与被动回复未知回执的诊断；继续通过共享 ChatService 执行，避免渠道复制 Agent Loop。

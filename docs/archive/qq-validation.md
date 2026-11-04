@@ -1,5 +1,7 @@
 # P4-MVP 交付与验证记录
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 日期：2026-10-28。开始 HEAD：`0dd3f434a2fc3280f9f30ed0a798ca0ae8679ad8`，开始工作区干净、分支 main，上游 origin/main。
 
 ## 里程碑
@@ -22,7 +24,7 @@
 - OpenID 白名单恰好一个平台身份，默认拒绝；未经授权的事件不调用 Agent 或写 Run。QQ 管理命令只给固定提示，普通输入显式空 Host 权限。原工具 Registry 再执行权限校验。
 - P1 Episode/Thread/Dirty Repair/Time-driven Runtime、P2 Priority/Batch/Curator/Adaptive Retrieval/Reconciliation、P3 Package/Context/State 继续复用同一服务；QQ 不理解其内部数据，不建立第二份人格或学习器。
 
-Transport 选择基于用户在目标机器人后台确认的 WebSocket 接收方式。核查腾讯文档/SDK 后采用轻量单分片 Gateway，理由与来源见 [QQ 模块](modules/qq.md)。不包含 Webhook、OpenClaw Runtime 或非官方客户端协议。
+Transport 选择基于用户在目标机器人后台确认的 WebSocket 接收方式。核查腾讯文档/SDK 后采用轻量单分片 Gateway，理由与来源见 [QQ 模块](../modules/qq.md)。不包含 Webhook、OpenClaw Runtime 或非官方客户端协议。
 
 ## 实际验证
 
@@ -52,7 +54,7 @@ Transport 选择基于用户在目标机器人后台确认的 WebSocket 接收�
 | 真实 QQ 消息发送 | 未执行 |
 | 真实端到端 Agent 回复 | 未执行；没有调用真实收费模型或评审 |
 
-只有已完成的真实步骤才记成功。测试流程、平台需要手动完成的权限/测试用户/IP 操作以及启动命令见 [接入指南](qq-setup.md)。准备好后运行 `uv run personal-agent qq --discover-openid`，取得并核对白名单，再运行 `uv run personal-agent qq`，用“你好”和“继续我们之前的 HeyBuddy 讨论”验证。
+只有已完成的真实步骤才记成功。测试流程、平台需要手动完成的权限/测试用户/IP 操作以及启动命令见 [接入指南](../qq-setup.md)。准备好后运行 `uv run personal-agent qq --discover-openid`，取得并核对白名单，再运行 `uv run personal-agent qq`，用“你好”和“继续我们之前的 HeyBuddy 讨论”验证。
 
 ## 已知限制
 

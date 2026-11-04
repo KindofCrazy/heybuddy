@@ -116,3 +116,7 @@ V0.7.2 的 chat() 先展示 completed 答案，再调用 MemoryAutomation.run()�
 ## P5 扩展
 
 P5 CLI 增加 /harness、/goal、/compact 和 /workflow resume；会话切换后重新绑定扩展上下文。QQ 只开放明确 /goal 与允许的模型工具，不开放远程 Resume。
+
+## 未来改进
+
+改善会话切换、来源状态和未完成任务的展示。减少入口分散的命令路由，但继续由可信入口决定管理权限，不让历史 slash 文本获得授权。

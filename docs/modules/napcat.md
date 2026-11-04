@@ -53,3 +53,7 @@ Windows 双击入口为根目录 `start-heybuddy.cmd` → `scripts/start-qq.ps1`
 `restart-heybuddy.cmd` 复用 `scripts/start-qq.ps1 -Restart` 的项目命名 Mutex。脚本先用 PID 文件和 `.venv` Python 路径确认进程，查找命令匹配 `-m personal_agent.main napcat` 的直接子进程，再以隐藏的独立 Python 运行 `scripts/request-stop.py`。该标准库 helper 附着目标控制台，核对全部成员仅在显式允许的服务 PID 集合和 helper 自身内，临时忽略自身 Ctrl+C 后调用 GenerateConsoleCtrlEvent。服务继续由原 `asyncio.run()`、runner 和 adapter 路径处理取消、关闭与数据库退出。
 
 发送失败或控制台中包含未核对的进程就拒绝信号。PS 等待全部已核对进程退出，30 秒未完成则停止重启，不 force-kill；成功后进入原启动和就绪检查。该入口只属于可信本地 Host，不注册为模型工具，不增加 Observatory 写接口。`tests/test_windows_restart.py` 使用独立隐藏控制台的合成 asyncio 服务，验证 Ctrl+C 能执行 finally 清理；测试不登录 QQ 或调用模型。
+
+## 未来改进
+
+增加连接重建、重复事件和主号绑定变化的离线演练。保持单主号私聊与明确提醒范围，不因 OneBot 能力丰富而开放任意操作。

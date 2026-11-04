@@ -33,3 +33,7 @@ P2 Review Fix：恢复后的 pending Curator 读取原 sources.memory 与已核�
 ## 纯读与发布边界
 
 due()/status() 不写 SQLite 或 Memory；poll() 是明确维护入口。调度时间、最近 Curator Job 和最近写入路径分别经 LearningRepository.schedule_curator/latest_job/recent_write_paths 访问，不在 Curator 直接执行 SQL。Curator 用 `async with learning.publication() as publish` 将来源准备和发布放在同一受控作用域，不访问 Learner 私有锁或执行方法。过期空检查、状态零写和有变化的测试见 tests/test_curator.py。
+
+## 未来改进
+
+为去重与拆分增加保留原证据的检查，量化整理后的可发现性。改进索引部分失败的诊断，保持人工内容与角色/相处记忆边界。

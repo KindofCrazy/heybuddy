@@ -46,3 +46,7 @@ TokenUsage.reasoning_tokens 可为空，兼容端点缺失 output_tokens_details
 ## P5 扩展
 
 P5 OpenAIProvider 仅通过 SDK 结构化错误码识别 context_length_exceeded；safe_compaction 拒绝未知 opaque namespace 和 item_reference。BudgetProvider 包装请求预算；MCP 使用独立协议 Adapter，不改变 Provider 消息模型。
+
+## 未来改进
+
+将安全压缩、图片和 usage 完整性作为明确能力契约，覆盖缺失 usage、截断与超限分类。保持副作用请求不自动重试。

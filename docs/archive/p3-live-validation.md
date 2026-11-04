@@ -1,8 +1,10 @@
 # P3 真实 API 效果检查（2026-10-28）
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 ## 结论与范围
 
-用户本轮明确授权真实 API 测试。使用现有可信环境配置的 deepseek-flash，未输出或提交 Key/.env/端点详情。基准提交为 664532a698f475f20f22b8fdd0ff7f15f7343a07；角色包、固定语料和 rubric 未修改。原始回答、合成 SQLite/Memory 和逐请求记录在被忽略的 .heybuddy/evaluations 下，只提交无正文的 [机器汇总](p3-live-results.json)。
+用户本轮明确授权真实 API 测试。使用现有可信环境配置的 deepseek-flash，未输出或提交 Key/.env/端点详情。基准提交为 664532a698f475f20f22b8fdd0ff7f15f7343a07；角色包、固定语料和 rubric 未修改。原始回答、合成 SQLite/Memory 和逐请求记录在被忽略的 .heybuddy/evaluations 下，只提交无正文的 [机器汇总](../p3-live-results.json)。
 
 统一 2048 总输出 tokens 的 E0/E1/E2 对比全部完成：各 13 场景、32 轮、33 次请求，合计 96 轮/99 次真实请求；工具场景每组多一次请求。角色的证据意识、反例兴趣和现实感官边界可观察到，但这次不能证明 E2 稳定优于 E1。模拟状态的真实生成和关闭通过独立两事件 smoke 验证，尚不代表长期使用质量。
 

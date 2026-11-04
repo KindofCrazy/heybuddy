@@ -23,3 +23,7 @@
 ## 阅读与验证
 
 最小使用是调用 `parse_time("明天上午九点", aware_received_at)` 查看 TimeParts，再用 `clock_hour()` 检查时段。对应的离线行为用例位于 `tests/test_reminder_natural.py` 与 `tests/test_social_timing.py`；2026-10-31 用户已允许运行测试，仍不进行真实模型验证。
+
+## 未来改进
+
+用固定时钟补充跨日、时区偏移与歧义语料，给无法确定的时间表达提供明确拒绝或澄清原因；不自动扩大成任意自然语言时间解析器。

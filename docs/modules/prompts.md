@@ -38,3 +38,7 @@ Markdown 中“系统会自动分”描述交谈的发送意图，不由提示�
 ## 阅读与验证
 
 最小读取：`from personal_agent.core.prompts import CONVERSATION_PROMPT`。`tests/test_conversation_prompt.py` 验证普通模式和两种角色只提供一份通用说明、保留单一 System 及完整正文 hash，并确认手动 Reflection 指令未受影响。历史评测快照不覆盖，当前默认提示词新增 conversation-style-context.json 快照；只验证接线，不声称自然度收益。构建后应核对 wheel 包含 prompts/conversation.md。
+
+## 未来改进
+
+为系统规则、交谈方式和低信任数据建立输入快照差异检查。先通过固定开发/保留集验证提示词修改，不能依据单次输出替换生产规则。

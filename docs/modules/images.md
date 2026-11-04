@@ -35,3 +35,7 @@ schema 15 原子追加 image_attachments 和 qq_receipts.attachments，旧消息
 `tests/test_qq_images.py` 用合成 JPEG/PNG/GIF/WebP、MockTransport 与 Fake Provider 验证 URL 边界、无鉴权泄漏、禁止跳转、字节/总超时、坏图、首帧、纯图片/图文、去重、未授权、不支持提示、连续工具调用的图片保留、跨 Agent/重启/损坏、上下文预算、角色管线、文本证据及 schema 14→15 原子回滚。命令：`uv run pytest tests/test_qq_images.py`；完整回归继续保留 conftest 禁网保护。
 
 协议依据：[DeepSeek 图像理解](https://api-docs.deepseek.com/zh-cn/guides/vision/)、[Responses API](https://api-docs.deepseek.com/zh-cn/guides/responses_api/)、[QQ C2C 事件](https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/c2c_message_create.html)。模型能力与真实平台投递须分别验证。
+
+## 未来改进
+
+增强分页、缓存失效与大小拒绝的诊断，补充损坏图片和重复引用测试。后续多模态能力仍需通过 Provider 能力声明，而非按模型名猜测。

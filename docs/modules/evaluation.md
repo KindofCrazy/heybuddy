@@ -8,7 +8,7 @@ P3 增加默认无需 Key/网络的 [Character Evaluation](character-evaluation.
 
 SmokeProvider 在请求前复用 Budget.reserve()，记录 episode/thread/main/compaction 阶段与独立 usage，reasoning 仅是 output 的子集。summary.json 不含正文，private-review.json、原始数据库/Memory 只存忽略目录供人工复核。固定预期检查短时间话题分段、跨本地午夜、跨天 Thread、闲聊无 Thread、检索、Journal/Memory 不变；不根据模型得分改预期。corpus_hash/prompt_hashes 用于复跑比较。
 
-该入口当前仅通过 FakeProvider 离线验证（tests/test_p1_smoke.py），没有执行真实模型；contract_pass 不能证明语义质量，报告始终带 semantic_review_required。完整复核清单与限制见 [P1 交付](../p1-delivery.md)。原 16 Case、Holdout、scorer、baseline/retained 快照不改。
+该入口当前仅通过 FakeProvider 离线验证（tests/test_p1_smoke.py），没有执行真实模型；contract_pass 不能证明语义质量，报告始终带 semantic_review_required。完整复核清单与限制见 [P1 交付](../archive/p1-delivery.md)。原 16 Case、Holdout、scorer、baseline/retained 快照不改。
 
 ## 职责与架构组成
 
@@ -36,7 +36,7 @@ uv run python -m personal_agent.evaluation --live --variant retained-holdout --s
 uv run python -m personal_agent.evaluation.reporting --output evals/results/summary.json
 ```
 
-上例显式限制 baseline-dev 为 128 requests/2M reserved tokens/$1.5；总实验额度见 manifest 与 [A/B 结果](../prompt-ab-results.md)。命令中价格是本次峰值 cache-miss 估算，复现前按真实服务商校对。`--model`、`--endpoint`、`--context-window` 可显式设置；`--cases` 逗号列表支持分组，`--concurrency 1` 可串行。重复 variant 时 reporting 会拒绝混合多次实验；通过 `--output` 为新 campaign 选独立的忽略目录，reporting 的 `--root` 选相同目录。
+上例显式限制 baseline-dev 为 128 requests/2M reserved tokens/$1.5；总实验额度见 manifest 与 [A/B 结果](../archive/prompt-ab-results.md)。命令中价格是本次峰值 cache-miss 估算，复现前按真实服务商校对。`--model`、`--endpoint`、`--context-window` 可显式设置；`--cases` 逗号列表支持分组，`--concurrency 1` 可串行。重复 variant 时 reporting 会拒绝混合多次实验；通过 `--output` 为新 campaign 选独立的忽略目录，reporting 的 `--root` 选相同目录。
 
 ## 异常与边界
 
@@ -141,3 +141,7 @@ Episode 尝试过合并重复规则、选择性摘要和明确删留示例；少
 ## 阅读与验证
 
 `tests/test_evaluation.py` 离线验证真实 Runtime/Automation 的 Fake 路径、检索工具、预算调用前拒绝、不可被好答案覆盖的安全失败、快照一致、Compaction 计量分离和不完整采集拒绝。默认 pytest 保持网络禁用，真实评测仅通过单独显式命令运行。
+
+## 未来改进
+
+把机制正确性、模型语义质量、成本与回归风险分开报告。固定 ground truth 与保留集，防止为了候选分数调整 scorer。

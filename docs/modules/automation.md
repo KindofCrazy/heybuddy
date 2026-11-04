@@ -57,6 +57,10 @@ CLI：`/memory automation off|suggest|auto|status|run|retry`；mode 切换仅当
 
 ## V0.7.2 Phase 2：Worthiness 选择与实际限制
 
-WORTHINESS_PROMPT 增加“新增信息”的判定：重复已提供的 Core/已读取记忆不触发；如果尚无法确认既有正文，交 Reflection 比较。重复场景的两次运行自动请求 5 → 2，不能据此声称通用精准率提高。最终 Holdout 总分持平，自动阶段耗时反而增加，详见 [评测报告](../prompt-ab-results.md)。
+WORTHINESS_PROMPT 增加“新增信息”的判定：重复已提供的 Core/已读取记忆不触发；如果尚无法确认既有正文，交 Reflection 比较。重复场景的两次运行自动请求 5 → 2，不能据此声称通用精准率提高。最终 Holdout 总分持平，自动阶段耗时反而增加，详见 [评测报告](../archive/prompt-ab-results.md)。
 
 原始来源预算包含 Provider JSON；单 Run 超 16KiB 时可在进入 Worthiness 前失败，保留普通答案与未处理历史，不截断成假成功。本次基线一次长假设回答触及此边界；这是已知可用性限制，没有为改善分数放松输入/输出预算。
+
+## 未来改进
+
+明确展示 P2 接管后兼容服务为何停用，减少两套状态混淆。逐步收敛重复编排接口，但保留原审批记录和失败显式重试契约。

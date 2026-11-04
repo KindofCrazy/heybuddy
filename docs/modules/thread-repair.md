@@ -26,3 +26,7 @@ schema 10 增加有界自动恢复：同源失败默认 300 秒起指数退避�
 ## 阅读与验证
 
 运行 `uv run pytest tests/test_thread_repair.py tests/test_threads.py`；`test_moved_or_detached_episode_is_never_old_thread_repair_evidence` 是最小例子。覆盖 X→Y、No Thread、保留成员/空 owner、分页/取消/恢复、失败 retry、source revision CAS 和 schema 7→8 回滚。该模块只提供一个有界修复步骤，自动 Idle 触发由 OrganizationRuntime 统一装配。
+
+## 未来改进
+
+增加来源修订连续发生时的修复收敛指标，解释 dirty 版本与已处理版本。用分页规模测试确认不需要全库读取即可最终一致。

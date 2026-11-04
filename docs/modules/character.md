@@ -4,11 +4,11 @@
 
 当前开发使用 OpenPersona 的 Luna persona.json，加上独立的通用交谈提示词，不运行角色状态学习。简单 JSON 角色的组成、完整执行路径、异常与验证见 [简化角色设定](persona.md)。开发示例显式选择 luna，库级默认仍关闭；Miru 角色卡已删除，Sherlock 包保留兼容，tests/test_qq_integration.py 对 Luna/Sherlock 验证同一生产入口。
 
-以下描述旧 Markdown 角色的兼容实现；persona.json 存在时优先使用新的简单路径。旧 Sherlock 的逐段改写与真实调用记录见 [历史记录](../holmes-miru-prompt-rewrite.md)，不作为当前 Luna 的效果结论。
+以下描述旧 Markdown 角色的兼容实现；persona.json 存在时优先使用新的简单路径。旧 Sherlock 的逐段改写与真实调用记录见 [历史记录](../archive/holmes-miru-prompt-rewrite.md)，不作为当前 Luna 的效果结论。
 
 ## 职责与组成
 
-旧 Markdown 角色采用单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。保留的 Sherlock 包只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。原 Miru 项目的路径、缓存与状态机制仅作历史参考，见 [Miru 角色系统说明](../miru-character-system.md)。
+旧 Markdown 角色采用单一 soul.md：作者直接描述身份、性格、说话方式、情绪反应和相处方式，运行时按固定次序组装。保留的 Sherlock 包只有 soul.md 和按需读取的 lore.md；旧四文件包继续只读兼容。原 Miru 项目的路径、缓存与状态机制仅作历史参考，见 [Miru 角色系统说明](../archive/miru-character-system.md)。
 
 - `character/models.py` 定义 CharacterPackage、Section、字节预算和短期状态。可选 profile 是 soul 解析出的普通字典，不是独立权威存储。
 - `character/loader.py::CharacterLoader.load()` 读取宿主选定的本地角色包，校验路径、编码、章节与大小，并计算内容指纹。
@@ -41,7 +41,7 @@
 
 角色文件只定义虚构身份和表达，不是工具、权限或事实的来源；这类实现说明留在开发文档，不再通过额外规则段落注入角色提示词。具体参数、精确编辑、分页和部分成功处理由工具说明提供，注册表与 MemoryFS 继续强制校验。删除文字不修改文件写入权限或动态数据的消息角色。
 
-共用 MEMORY_GUIDANCE 编译【记忆是什么】与【什么时候检索】，解释 Core、主题、原始历史及会话摘要的区别，以及上下文够用时直接回答、需细节时沿索引读取、需原话时检索历史。原生格式放在交谈方式之后，旧包兼容路径也追加同一说明；它不是新的记忆授权或存储副本。具体流程与工具清单见 [当前记忆系统与模型工具](../memory-and-tools.md)。
+共用 MEMORY_GUIDANCE 编译【记忆是什么】与【什么时候检索】，解释 Core、主题、原始历史及会话摘要的区别，以及上下文够用时直接回答、需细节时沿索引读取、需原话时检索历史。原生格式放在交谈方式之后，旧包兼容路径也追加同一说明；它不是新的记忆授权或存储副本。具体流程与工具清单见 [当前记忆系统与模型工具](memory.md)。
 
 最多 32 个当前/检索/近期 Run 参与标签由宿主重新校验 Agent 归属。same_character 可证明角色参与；other_character、unattributed 或缺失不能冒认共同经历。明确偏好和纠正可跨角色使用。原作、摘要和标签不能赋权。
 
@@ -60,3 +60,7 @@ print(compiler.compile("你好")[0].text)
 ```
 
 `tests/test_character_loader.py` 覆盖新旧包、损坏 soul 不回退、单一来源、指纹、大小及链接隔离；`test_character_behavior.py` 验证静态人格不随关键词切换、扩展章节、旧选择器及恶意包不能授予工具；`test_character_context.py` 覆盖消息顺序、工具多轮、总预算及磁盘 persona 保留；`test_character_state.py` 和 `test_character_relationship.py` 验证状态与真实来源。FakeProvider 只验证接线，不能证明自然程度提升。
+
+## 未来改进
+
+明确展示当前 persona.json 路径与旧 Markdown 兼容模式差异。评估减少兼容分支的迁移成本，保留现有包、来源声明和历史记录。

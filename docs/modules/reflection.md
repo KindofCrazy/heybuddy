@@ -106,7 +106,7 @@ TokenUsage 增加可选 reasoning_tokens；OpenAIProvider 在拒绝非 completed
 
 EXTRACT/CONSOLIDATE 明确区分有长期价值的纠正与一次性假设/虚构示例的免责声明；没有对应错误事实时，不把后者扩写成永久用户规则。提示词改善仍需真实提案审阅，不能用 Fake Provider 测试宣称语义质量保证。
 
-测试增加正常中文 JSON 超过旧 4096 字节但在独立上限内可接受、JSON 仍有硬上限、总 usage 超限继续拒绝、Provider 不完整原因与推理计数脱敏传递，以及 CLI 在 consolidation 失败后保留原记忆/进度。真实模型的诊断和复测结果见[真实验证记录](../reflection-live-validation.md)。
+测试增加正常中文 JSON 超过旧 4096 字节但在独立上限内可接受、JSON 仍有硬上限、总 usage 超限继续拒绝、Provider 不完整原因与推理计数脱敏传递，以及 CLI 在 consolidation 失败后保留原记忆/进度。真实模型的诊断和复测结果见[真实验证记录](../archive/reflection-live-validation.md)。
 
 
 ## V0.7.2 Phase 1 集成
@@ -117,7 +117,7 @@ V0.7.2 自动提案复用同一 ReflectionService；reflect(through=...) 限定�
 
 BASE/EXTRACT/SELECT/CONSOLIDATE 经过固定开发集对照后保留原版。候选偏好分数提升主要来自词面命中，未消除未经确认的偏好扩写，阶段费用反增；不是已证实的语义改善。最终 Holdout 另有一次 Consolidation 对已存在 human.md 返回 create，被 invalid_create 拒绝，普通答案/历史保留，无 Markdown 写入。Worthiness 正确也不代表整条提案必定正确，人工 review 和 Host 校验继续承担不同边界。
 
-所有候选/原版快照、失败说明及自动/普通费用分列见 [A/B 报告](../prompt-ab-results.md)。本轮没有为了消除 Holdout 失败而再调 Prompt 或修改评分标准。
+所有候选/原版快照、失败说明及自动/普通费用分列见 [A/B 报告](../archive/prompt-ab-results.md)。本轮没有为了消除 Holdout 失败而再调 Prompt 或修改评分标准。
 
 ## 共用机制与审批职责
 
@@ -130,3 +130,7 @@ Outbox/Context notices 不进入 Reflection 或 P2 的原始 Run 来源，不得
 ## 明确组合提示词
 
 公共证据规则由 `reflection/prompts.py::memory_rules(excluded_state)` 与 EXTRACTION_RULES 提供。Reflection 明确排除 temporary state；Learning 明确传入 one-off ephemeral context / ephemeral one-off context，不再通过替换 Reflection 文本推导规则。有效提示词保持原文，审批与自动学习权限不变。验证：`tests/test_reflection.py`、`tests/test_learning.py`。
+
+## 未来改进
+
+改进逐条 Diff、冲突和来源的审阅界面，降低审批负担。扩大部分发布与回执未知的恢复测试，继续只读 reconcile，不自动批准计划。

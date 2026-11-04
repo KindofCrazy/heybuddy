@@ -101,3 +101,7 @@ Review Fix：Proactive 只在一个尚未领取其他维护单元的周期入口
 `OrganizationRuntime._cycle()` 只建立共享 Provider 预算、循环有界步骤、处理超时并提交周期统计；`_step()` 每步先异步让出控制并检查前台抢占，再选择 Proactive、回执恢复、Learning、Curator 或角色工作；`_organization_step()` 处理 Thread、Episode 与无模型 Finalization。`_learning_capacity()` 明确检查完整 Learning 管线能否容纳，保留 Learning-first 与脏线程让行及 Proactive 仅使用新周期的顺序。
 
 `organization/cycle.py` 的 `CycleProgress` 保存单周期状态；`WorkResult.from_report()` 在服务边界把已有报告映射到完成、失败、停止、预算耗尽。只有 completed/finalized/repaired/repair_page 进入成功集合，待核对发布计为失败，空任务、stale、pending 和未知状态不再误记成功。模型与文件提交边界不变。验证：`tests/test_review_refactoring.py`、`tests/test_proactive.py`、`tests/test_organization_schedule.py`。
+
+## 未来改进
+
+评估 Episode 边界与 Thread 归属的语义稳定性，尤其是来源修订和短会话。为派生组织与真实事实提供更直观区分，不把摘要写成另一份长期事实库。

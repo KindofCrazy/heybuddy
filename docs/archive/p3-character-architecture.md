@@ -1,5 +1,7 @@
 # P3 Character Persona & Behavior
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 2026-10-28 已在用户授权下补做 [真实 API 效果检查](p3-live-validation.md)：deepseek-flash 的 E0/E1/E2 统一 2048 输出对比 96/96 轮完成，真实 Episode/State 两事件更新通过；记录了表现与缺陷，不能从单次固定夹具证明 E2 优势。下文的初始里程碑测试记录仍为当时的离线结果。
 
 ## 范围与基准
@@ -12,7 +14,7 @@
 
 实际注入顺序：Host System → Character Identity/Behavior System → 去掉旧 persona 身份的 Core 数据 → Working Summary/当前时间 → 有界 Lore/短期状态参考 → P1/P2 可选检索 → 近期与当前 Run。角色始终是同一 Agent.run() 的条件，不新增角色 Loop 或逐轮额外模型。旧 persona.md 保留原位，只有角色启用时的注入视图不含它；human.md、MEMORY.md、MemoryFS 工具和 P2 权限不改。角色包不是 P2 Writer 目标。
 
-包格式和实际读取路径见 [Character 模块](modules/character.md)。sherlock_bbc 的四份 Markdown 是原创适配，选择剧版中后期已开始珍视友谊、仍然自负与情感表达笨拙的方向。年龄约三十多岁是创作基线，不是推断演员年龄或声称剧集明确给定。用户不映射为 Watson；虚构 Lore 与真实共同经历分开。
+包格式和实际读取路径见 [Character 模块](../modules/character.md)。sherlock_bbc 的四份 Markdown 是原创适配，选择剧版中后期已开始珍视友谊、仍然自负与情感表达笨拙的方向。年龄约三十多岁是创作基线，不是推断演员年龄或声称剧集明确给定。用户不映射为 Watson；虚构 Lore 与真实共同经历分开。
 
 背景核对采用剧集发行方的 [PBS 剧版简介](https://www.pbs.org/show/sherlock/)、[A Study in Pink](https://www.pbs.org/wgbh/masterpiece/shows/sherlock/episodes/s1-e1/)、[The Sign of Three](https://www.pbs.org/wgbh/masterpiece/shows/sherlock/episodes/s3-e2/)、[The Final Problem](https://www.pbs.org/wgbh/masterpiece/shows/sherlock/episodes/s4-e3/)。只取简要背景关系，不复制对白。人物的内在动机与 Companion 适配是此项目的设计解释，不是剧集事实清单。
 
@@ -22,7 +24,7 @@
 
 ## Character State 生命周期
 
-实际状态与存储链路见 [State 模块](modules/character-state.md)。schema 12 追加 character_runs、character_states、character_state_sources：Host 标签记录实际角色归属，状态只保存一个当前有界模拟值，来源回执避免重付费。角色与包 hash 隔离；旧未标记 Run 不被默认为 Sherlock 经历。CharacterContextCompiler 读取状态视图，而不是把状态写回 Character Core、persona.md 或 P2 Memory。
+实际状态与存储链路见 [State 模块](../modules/character-state.md)。schema 12 追加 character_runs、character_states、character_state_sources：Host 标签记录实际角色归属，状态只保存一个当前有界模拟值，来源回执避免重付费。角色与包 hash 隔离；旧未标记 Run 不被默认为 Sherlock 经历。CharacterContextCompiler 读取状态视图，而不是把状态写回 Character Core、persona.md 或 P2 Memory。
 
 即时反应由 Main Agent 在 Recent Runs 中自然延续；后台只针对新/修订 Episode 的本角色真实来源，在 Idle、速率与共享预算允许时作一次建议。默认 900 秒最小间隔，一小时 Mood 归于中性，三小时 Focus 失效；从所引事件时间计算，旧反例不能因晚处理被重新激活。no-op、失败、取消和处理完成分别保存，状态和 completed 回执原子提交，CAS 拒绝晚到结果。
 
@@ -32,7 +34,7 @@
 
 ## Behavioral Signatures 与 Implicit Appraisal
 
-P2 human.md 中的互动偏好与明确纠正继续进入当前请求，角色包和 persona.md 不由 Learner 修改。真实 Run 由 Host 标记角色归属，当前/近期/检索窗口最多 32 个 Run 标签作为低信任引用提供：同角色可按证据描述共同经历，其他角色或未标记历史必须中性转述。Canon、示例与模拟心境不能当作用户事实。P2 语义文件仍按 Agent 共享，没有逐事实角色参与证明，因此这不是完全安全的多角色关系迁移；具体链路与测试见 [Character 关系引用](modules/character.md)。
+P2 human.md 中的互动偏好与明确纠正继续进入当前请求，角色包和 persona.md 不由 Learner 修改。真实 Run 由 Host 标记角色归属，当前/近期/检索窗口最多 32 个 Run 标签作为低信任引用提供：同角色可按证据描述共同经历，其他角色或未标记历史必须中性转述。Canon、示例与模拟心境不能当作用户事实。P2 语义文件仍按 Agent 共享，没有逐事实角色参与证明，因此这不是完全安全的多角色关系迁移；具体链路与测试见 [Character 关系引用](../modules/character.md)。
 
 behavior.md 的十二组情境签名分别覆盖证据挑战、失败与关心、无聊日常、科研新奇、代码/工具证据、自身错误、成果认可、熟悉用户的交流偏好、严肃简洁、不确定模式、Canon 与真实关系边界、任务结束与沉默。每组包含情境、角色解释、反应倾向、可观察行为及调节条件，是 LLM 在当前证据中采用的倾向，不是 Python if/else 人格规则引擎。
 
@@ -104,7 +106,7 @@ flowchart TD
 
 ## 离线评测与审阅
 
-执行 `uv run python -m personal_agent.evaluation.character` 可离线重现 E0/E1/E2；完整实现、七维 rubric 和可选显式付费命令见 [Character Evaluation](modules/character-evaluation.md)。13 场景覆盖闲聊、无聊、研究、无证据结论、反驳、自我纠错、挫折、共同项目、工具 Review、严肃语气、跨 Episode/Thread、Canon 边界和 20 轮漂移。原始合成请求和各组报告保存在忽略目录，不提交正文。
+执行 `uv run python -m personal_agent.evaluation.character` 可离线重现 E0/E1/E2；完整实现、七维 rubric 和可选显式付费命令见 [Character Evaluation](../modules/character-evaluation.md)。13 场景覆盖闲聊、无聊、研究、无证据结论、反驳、自我纠错、挫折、共同项目、工具 Review、严肃语气、跨 Episode/Thread、Canon 边界和 20 轮漂移。原始合成请求和各组报告保存在忽略目录，不提交正文。
 
 相同模型、工具、固定前文、检索结果、时间与状态来源夹具用 condition_hash 配对。E2 使用动态夹具验证注入/失效，真实状态更新质量和维护费用不在该夹具估计中。六个语义维度保留待人工 0–3 分，Cost & Latency 单列实测；不能从 Fake 输出得出 Sherlock 一致性收益，也不把 E2 默认解释为实验优胜。未来真实实验应盲评、重复与保留 Holdout，避免按分数改题。
 
@@ -112,7 +114,7 @@ flowchart TD
 
 最终全量 `uv run pytest --basetemp=.heybuddy/p3-final-all -q`：667 passed、2 skipped，125.70 秒。跳过是 Windows 环境下 Symlink 权限限制，Junction 隔离测试保留并通过。`uv run ruff check .`、`uv run ruff format --check .`、`uv build --offline`、普通 CLI 与评测 CLI --help 均通过；已核对旧迁移 1–11 的 AST/引用源文件不变，以及 wheel 内四个 Markdown 资源与源码一致。
 
-实际离线评测为 E0/E1/E2 各 13 场景、32 回答、33 次 Fake 请求（工具场景两次），总 99 次；没有真实 API 请求。各组输入估算分别为 436276、679731、687907 tokens，仅为当前估算器对合成窗口的读数，不是账单或 tokenizer 真值。无正文的 [离线结果](p3-offline-results.json) 保留用量估算、包/语料 hash、机械通过与待审阅语义维度；Fake 延迟不能代表真实模型延迟。
+实际离线评测为 E0/E1/E2 各 13 场景、32 回答、33 次 Fake 请求（工具场景两次），总 99 次；没有真实 API 请求。各组输入估算分别为 436276、679731、687907 tokens，仅为当前估算器对合成窗口的读数，不是账单或 tokenizer 真值。无正文的 [离线结果](../p3-offline-results.json) 保留用量估算、包/语料 hash、机械通过与待审阅语义维度；Fake 延迟不能代表真实模型延迟。
 
 初始 SHA：77674b61feb749b2050317df776d1ebf6af71bf8。最终 SHA 见交付回复及本报告所在 M6 提交（`git log -1 --format=%H`），避免文档对自身提交 hash 的循环引用。
 

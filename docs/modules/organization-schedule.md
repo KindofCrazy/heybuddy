@@ -44,3 +44,7 @@ OrganizerModel.ask() 在 Provider 返回后重验 deadline/task cancellation，�
 ## 查询与预算作用域
 
 ScheduleRepository.state() 在无持久行时只返回推导视图，diagnostics() 不再 ensure；observe() 提供 Dashboard 的有界只读投影。只有 schedule()/真实维护才初始化或推进元数据。cycle_providers() 是现有串行维护/手动命令共用的同步作用域，按 model 身份去重，finally 恢复 Provider；共享 MaintenanceBudget 和既有调度顺序不变。
+
+## 未来改进
+
+按阶段记录延迟、取消和预算消耗，检验维护是否饥饿或影响前台。通过固定时钟和重启演练验证持久 deadline 与进程内计时配合。

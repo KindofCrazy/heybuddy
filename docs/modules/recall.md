@@ -125,3 +125,7 @@ with SQLiteStore(Path(".heybuddy/heybuddy.sqlite3")) as store:
 `uv run pytest tests/test_recall_storage.py tests/test_recall_runtime.py` 覆盖旧库迁移与回填、事务回滚、新消息可见性、中文/英文/混合查询、跨会话与跨 Agent、长度与窗口限制、重启、索引损坏与重建、非法参数和注入输入。Fake Provider 模拟搜索 → 展开 → 回答，另外验证低信任历史不能授予记忆权限、结果不自动跨新会话注入、历史副作用不会重新执行。CLI 工具装配检查见 tests/test_config_cli.py。
 
 当前没有语义检索、重排序、结果分页、长消息内分页、自动索引健康扫描、后台回填、Recall 历史摘要或 Compaction。
+
+## 未来改进
+
+基于合成中文/英文混合语料评估短查询的漏检与成本，明确展示受限扫描范围。提供显式索引健康诊断，继续以原 messages 为证据权威源。

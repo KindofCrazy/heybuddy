@@ -1,5 +1,7 @@
 # P1 Review Fix：时间驱动、一致性与验证
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 ## 基准与里程碑
 
 开始时实际 HEAD 为 `4f7a6f8cf52e15d16df184c8c7eee845e58bb8a9`，main 工作区干净，与审查基准一致。确认原代码仍有 started_at Idle、单批后停止、无 Thread 周期、旧 owner dirty 无独立恢复路径及 Thread 命中遗漏未关联 Episode 等问题后实施，未重写 P1。最终 SHA 在本次交付消息及 Git HEAD 中记录，M5 为本文所在提交。

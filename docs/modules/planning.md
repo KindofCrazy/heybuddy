@@ -24,3 +24,7 @@ Goal 验证通过的是宿主建立的检查条件。`file:` 仅验证允许工�
 ## 阅读与验证
 
 示例：`/goal 生成资料报告 | file:report.md`；工具流程为 create → dependencies → claim → 工作工具 → complete。`tests/test_harness.py` 覆盖依赖环、重复认领、伪造回执、重启状态与跨来源 Goal 隔离。
+
+## 未来改进
+
+为 Goal 增加宿主注册的内容检查器，使文件存在检查与语义验收明确分开。统一解释 Task 回执、Goal 决策和后台等待的关系，减少模型把计划勾选当作完成。

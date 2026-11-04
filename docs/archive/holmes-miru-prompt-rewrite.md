@@ -1,5 +1,7 @@
 # 按 Miru 逐段改写 Holmes 提示词
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 本轮按用户明确要求改写主对话 Character Package 及其运行时段落，并进行一次授权真实调用。来源为本地 Miru 的 soul.md、agent_behavior.md、prompt.py。角色包仍是只读行为来源，不把后台 Learner/Curator 的提示词改成人格扮演，也不改变工具注册或权限。
 
 ## 段落对应

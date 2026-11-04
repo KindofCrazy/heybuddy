@@ -1,10 +1,12 @@
 # P2 Review Fix：Recovery / Retrieval / Curation
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 审查起点为 0fa3e0417c327c6588afbab48753b535d3fbf42b，工作区干净；比 Review 引用的 664532a 更新，包含 P3 及其真实评测工具。三个问题仍存在：ready() 全局等待未核对回执，Preflight 替换确定性结果，Curator 只取最近两个完成 Job 的来源。
 
 ## M1：确定性恢复
 
-实现和真实路径见 [Learning](modules/learning.md)。原 Job、Receipts、Hash 与 metrics.recovery 复用，无新 schema。启动最多核对一项，Idle 维护轮再检查一项；有 running Run 或正在学习时推迟。先记录检查次数与下次时间，保证重启不重置失败预算；只读检查 0 LLM 请求。
+实现和真实路径见 [Learning](../modules/learning.md)。原 Job、Receipts、Hash 与 metrics.recovery 复用，无新 schema。启动最多核对一项，Idle 维护轮再检查一项；有 running Run 或正在学习时推迟。先记录检查次数与下次时间，保证重启不重置失败预算；只读检查 0 LLM 请求。
 
 | 文件状态 | 恢复动作 |
 | --- | --- |

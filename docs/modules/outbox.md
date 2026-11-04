@@ -52,3 +52,7 @@ CLI 可读 `/proactive outbox`、`/proactive attempts`，原 run 一次只执行
 最小验证为 `uv run pytest tests/test_outbound.py tests/test_proactive.py`。PipelineProvider 离线返回一个用户计划、一条 notify 和一份 Luna 草稿，FakeSender 通过明确模拟许可接受；再用单独 FakeProvider 回答“还没做完”。不创建额外 Run 或长期记忆。
 
 `tests/test_outbound.py` 覆盖口吻和证据装配、生成/投递分离、幂等和终态去重、User/Agent/Conversation 隔离、禁用与撤销许可、输入/QQ epoch/角色/Revision/expiry 竞争、模拟上下文接续和 Journal/Recall/Scout 隔离、明确失败/取消/超时/吞超时、发送后写库失败、领取事务回滚、重启冻结、显式重新生成、收件人频率限制、CLI 模拟与 HTTP 只读，以及 schema 16→17 的原子迁移和失败回滚。完整项目回归仍运行 pytest、Ruff、构建和 CLI 启动检查。
+
+## 未来改进
+
+统一展示草稿过期、来源修订、已覆盖和完成未知的撤回原因。用投递前状态变化测试保证旧草稿不会复活；真实主动发送必须单独授权，不能把 Fake Sender 成功当真实送达。

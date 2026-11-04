@@ -1,5 +1,7 @@
 # OpenPersona 提示词组装与 heybuddy 适配
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 ## 上游实际做了什么
 
 OpenPersona 的 persona.json 是声明文件，不是一份原样发给模型的系统提示词。`lib/generator/index.js` 的流水线先 clone、validate，再 load、derived、prepare、render、emit。验证后 normalizeSoulInput() 把 soul.identity/aesthetic/character 的字段展开给模板；loadPhase() 相对声明文件读取 behaviorGuide 的 file 引用。生成器不在这条路径中调用模型重写指南。[生成器源码](https://github.com/acnlabs/OpenPersona/blob/main/lib/generator/index.js)
@@ -43,4 +45,4 @@ System
 
 heybuddy 明确将完整指南编入主对话一次，不依赖模型自行读取技能文件；无需同时注入上游 SKILL.md 和 injection.md，避免重复人格及不适用的宿主指令。通用闲聊规则继续放在末尾作为默认表达方式，任务需要与用户明确格式要求仍优先。既有记忆与工具说明保持原文，角色的状态写入、能力启用与主动聊天不在本次适配范围。
 
-对应实现和验证见 [简化角色模块](modules/persona.md)。组装本身不发起模型请求，也不新增依赖或运行时状态；离线测试验证完整注入、顺序、单一 System 与预算，不能证明实际对话一定更自然。单独授权的真实 API 对比记录保存在忽略目录，不随角色设定提交。
+对应实现和验证见 [简化角色模块](../modules/persona.md)。组装本身不发起模型请求，也不新增依赖或运行时状态；离线测试验证完整注入、顺序、单一 System 与预算，不能证明实际对话一定更自然。单独授权的真实 API 对比记录保存在忽略目录，不随角色设定提交。

@@ -27,3 +27,7 @@
 ## 阅读与验证
 
 `execution_start(operation="workspace_search", arguments={"query":"资料"})` 返回作业 ID；使用 execution_status/result/cancel 查询或取消。`tests/test_harness.py` 覆盖精确编辑、路径拒绝、进程归属、父子隔离、共享预算、通知确认和后台取消。
+
+## 未来改进
+
+增加来源内作业资源配额与更清晰的未知副作用状态。评测子执行带来的质量收益和预算成本，再决定是否需要扩展深度；当前仍为深度一只读。

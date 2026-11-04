@@ -1,5 +1,9 @@
 # Proactive Shadow：机会、唤醒与 Attention
 
+## 在消息主线中的位置
+
+本模块在回答之后的维护通道执行，不是 Agent._run 的工具循环。ChatService.after_reply 调度 OrganizationRuntime；新输入通过 foreground 抢占。建议阅读顺序是下文的增量 Scout → Wake/Attention → Composer/Outbox，再读覆盖判断细节。普通未来计划只产生关心候选，用户明确要求的提醒另走 Scheduler；目前关心式主动内容保持 Shadow，明确提醒的 NapCat 投递不改变此边界。
+
 ## 职责与架构组成
 
 P4.1/P4.2 为现有应用增加未来关注事项，不增加长期事实存储、模型工具权限或外部发送能力。`proactive/models.py` 定义 Host 策略、真实用户来源、候选变更和 Attention 建议；`scout.py::OpportunityScout` 提取机会；`attention.py::AttentionEngine` 判断沉默、稍后检查、建议交流或建议任务。`wake.py::WakeCoordinator` 从持久截止时间计算检查间隔和安静窗口。`proactive/runtime.py::ProactiveRuntime` 编排一次有界检查，`storage/proactive.py::ProactiveRepository` 绑定 Agent，保存进度、Proposal 和审计。
@@ -97,3 +101,7 @@ covered 只表示这轮原定的关心已被用户主动交谈满足。例如“
 `tests/test_social_timing.py` 增加晚间范围、非整分稳定抽样、重要/概率分支、晚开始事项、无日期/歧义回退、配置、窗口重启持久性、取消和停机错过窗口场景；旧生命周期 Fixture 显式关闭社交时间策略以独立验证原 CAS/权限契约。2026-10-31 用户已允许执行回归和明确提醒的真实投递验证，关心式跟进仍只生成 Shadow 草稿，不做真实模型语义评测。
 
 审查修复验证见 `tests/test_proactive_review_fixes.py`：长助手/Provider 正文不遮蔽短取消、用户证据超限不推进且重启保持暂停、显式 retry 与预算修正、默认整批 Learning 与 Proactive 轮换、不可容纳 Learning 时保留 Scout，以及 Thread 关联前后草稿继续可用和终态不重发。
+
+## 未来改进
+
+建立“本轮已主动聊过”的语义回归集，覆盖相关但未满足、已谈进展但事项未完成、新计划重新开启等情形。分开统计候选正确率、Attention 决策和草稿质量，先用离线样本验证；未来真实主动发送仍需新的明确授权。

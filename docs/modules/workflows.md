@@ -27,3 +27,7 @@
 模型工具调用：`workflow_start(name="working_report", arguments={"sources":["source.md"],"output":"report.md"})`。离线机制探针：`uv run python -m personal_agent.evaluation.harness`。
 
 `tests/test_harness.py` 覆盖报告产物、只读步骤显式恢复、已完成步骤不重跑、未知副作用不重复，以及输入/版本/当前权限边界。
+
+## 未来改进
+
+为注册流程提供版本迁移与恢复演练工具，验证 reconcile 对已完成、未开始和不确定结果的区分。增加步骤级来源和产物检查，不根据流程 completed 推导语义目标已经通过。

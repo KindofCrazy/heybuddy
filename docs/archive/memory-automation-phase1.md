@@ -1,8 +1,10 @@
 # V0.7.2 Phase 1 检查点
 
+> 历史归档：本文保留当时的设计与验证，不能作为当前实现说明。当前入口见[消息处理主线](../architecture.md)和[文档导航](../README.md)。
+
 本阶段在 V0.7.1 之上完成回答后 Worthiness 与原 Reflection 的自动衔接，没有修改已有 Main/Reflection/Compaction Prompt 或工具描述。新增 Worthiness 专用 Prompt，作为后续 Phase 2 的真实基线组成。
 
-默认 suggest：LLM 负责长期价值与内容整合，宿主控制 completed 源、调用/Token/时限、持久状态和批准。仅在可信配置给出精确 knowledge/ 路径及完整 Markdown SHA256 时，auto 才可发布小型 confirmed project/knowledge 新文件；不自动写任意新内容、Core 或纠正。范围与限制见[Automation 模块](modules/automation.md)。
+默认 suggest：LLM 负责长期价值与内容整合，宿主控制 completed 源、调用/Token/时限、持久状态和批准。仅在可信配置给出精确 knowledge/ 路径及完整 Markdown SHA256 时，auto 才可发布小型 confirmed project/knowledge 新文件；不自动写任意新内容、Core 或纠正。范围与限制见[Automation 模块](../modules/automation.md)。
 
 schema 5 增加 automation_batches，独立保留 Worthiness 决策、进入反思、计划链接和额外计量。成功阴性判断与审阅边界原子提交；这表示成功筛查而非保存知识。阳性待审不推进写入/审批状态。失败阻止自动重试；显式 retry 复用已成功的判断。已有 pending 计划时暂停并提示积压。
 

@@ -59,3 +59,7 @@ MemoryLearningService.publication() 持有同一 asyncio 锁，向 Curator 提�
 ## 提示词与策略依赖
 
 `learning/service.py` 从 `reflection/prompts.py` 导入公共证据约束和抽取规则，明确传入本流程对短期状态的保留策略，不依赖 Reflection 提示词的具体措辞替换。`learning/models.py` 同时定义 LearningPolicy 与 CuratorPolicy，供配置和服务共同读取。实际提示词文本、写入权限和证据校验保持不变；验证见 `tests/test_learning.py`、`tests/test_curator.py`。
+
+## 未来改进
+
+统一呈现优先学习、批处理和发布核对的状态，解释为何本次未写入。用纠正、重复和旧信息覆盖的长期回归集衡量学习收益，不能只统计写入条数。

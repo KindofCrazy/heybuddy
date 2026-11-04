@@ -24,3 +24,7 @@ EvidenceError 只携带固定 code；记忆调用边界转换为 ReflectionError
 最小纯调用：从已知 HistoryTurn 构造 `sources={(conversation_id, turn.run_id): turn}`，用 `verify_quotes([Evidence(...)], sources)` 校验精确引文；不存在的 Run 或越界 sequence 抛 EvidenceError。请求层用 FakeProvider 返回既定 JSON，通过 ReflectionModel.ask() 验证空工具与预算。
 
 `tests/test_reflection.py` 验证伪造引文、assistant-only、脱敏与预算；`test_learning.py` 验证多会话来源；`test_curator_evidence.py` 验证目标文件的来源范围；`test_character_state.py` 验证角色来源、取消与 TTL。它们是通过实际业务发布路径的回归，不需要真实 Key 或模型费用。
+
+## 未来改进
+
+统一来源引用的类型与错误枚举，增加跨领域的精确引文回归。明确“引文真实”与“语义结论可靠”是不同验收，不能仅凭字符串匹配自动提升事实。

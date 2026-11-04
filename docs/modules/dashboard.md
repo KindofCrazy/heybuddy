@@ -111,3 +111,7 @@ schema 16 新增 `/proactive` 页面和 `/api/proactive/status|proposals|decisio
 记忆页导航标明“归档记忆”，支持目录浏览和关键词搜索。`/api/memory/search` 复用 `memory/search.py:search_topics`，与 `archival_memory_search(query=...)` 的主题搜索使用相同索引发现、路径校验和有界扫描；在工作线程只读访问 MemoryFS，不调用模型或写数据库。query 限 256 字符，最多返回 5 条结果；显示 scope_limited 提示。`memory-workspace.js` 搜索结果通过 textContent 显示，点击后沿原文件阅读和来源接口打开正文，并用 generation 丢弃过期结果。归档主题仍是普通 Markdown，不新增第二份事实库；Core 文件继续可在目录中浏览。测试见 `tests/test_dashboard_archival.py`。
 
 `run_web()` → `open_application(observer_only=True)` 使用 SQLite mode=ro/query_only，schema 校验和 SessionManager 恢复均只读。缺失、旧版、尚无 Agent 或选中 Conversation 的数据库不自动初始化或迁移，沿启动 HistoryError 退出；先通过普通 CLI 初始化。保持同一数据库单实例锁规则。`tests/test_review_refactoring.py` 验证完整入口的数据库字节不变、total_changes 为零，并检查误入写接口仍被 SQLite 拒绝。
+
+## 未来改进
+
+按用户问题组织来源、预算、停止原因与部分成功状态，减少直接暴露存储字段。保持只读查询与前台执行隔离，并为大历史使用有界查询。
