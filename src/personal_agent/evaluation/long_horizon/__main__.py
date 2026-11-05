@@ -1,21 +1,58 @@
-"""Offline-only CLI; intentionally has no live provider construction path."""
+"""Offline by default; bounded model smoke requires explicit --live."""
 
 import argparse
 import asyncio
 import json
 from dataclasses import replace
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from personal_agent.evaluation.long_horizon.dataset import load
 from personal_agent.evaluation.long_horizon.models import Config
 from personal_agent.evaluation.long_horizon.report import default_output, evaluate, recompute
 
 
+async def run_live(args, dataset, output):
+    from openai import AsyncOpenAI
+
+    from personal_agent.config import load_settings
+    from personal_agent.evaluation.long_horizon.live import LiveConfig, evaluate_live
+    from personal_agent.llm.openai_provider import OpenAIProvider
+
+    settings = load_settings()  # Normal configuration loader; never dump secrets/settings.
+    config = LiveConfig(
+        model=settings.model,
+        endpoint_host=urlsplit(str(settings.base_url or "https://api.openai.com")).hostname,
+        context_window=settings.context_window,
+        repetitions=args.repetitions,
+        max_requests=args.max_requests,
+        max_tokens=args.max_tokens,
+        max_cost_cny=args.max_cost_cny,
+        input_price_cny=args.input_price_cny,
+        output_price_cny=args.output_price_cny,
+        price_source=args.price_source,
+    )
+    async with AsyncOpenAI(
+        api_key=settings.api_key.get_secret_value(),
+        base_url=str(settings.base_url) if settings.base_url else None,
+        max_retries=0,
+        timeout=10,
+    ) as client:
+        return await evaluate_live(
+            dataset,
+            output,
+            OpenAIProvider(client, settings.model),
+            config,
+            split=args.split,
+            scenario_id=args.scenario,
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--mode", choices=["routing"], default="routing")
-    parser.add_argument("--variant", choices=["rule"], default="rule")
+    parser.add_argument("--variant", choices=["rule", "model-assisted"], default="rule")
     parser.add_argument("--replay-mode", choices=["streaming"], default="streaming")
     parser.add_argument("--dataset", type=Path, default=Path("evals/long_horizon"))
     parser.add_argument("--scenario")
@@ -23,10 +60,31 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--live", action="store_true")
+    parser.add_argument("--repetitions", type=int, default=5)
+    parser.add_argument("--max-requests", type=int, default=5)
+    parser.add_argument("--max-tokens", type=int, default=20000)
+    parser.add_argument("--max-cost-cny", type=float, default=10)
+    parser.add_argument("--input-price-cny", type=float)
+    parser.add_argument("--output-price-cny", type=float)
+    parser.add_argument("--price-source")
     args = parser.parse_args()
+    if args.live and (args.variant != "model-assisted" or args.list or args.report):
+        parser.error("--live requires --variant model-assisted and cannot list/re-score")
+    if args.variant == "model-assisted" and not args.live:
+        parser.error("Model requests require explicit --live")
+    if args.live and any(
+        value is None for value in (args.input_price_cny, args.output_price_cny, args.price_source)
+    ):
+        parser.error("Live smoke requires verified CNY input/output prices and a source")
     try:
         if args.report:
-            result = recompute(args.report)
+            if (args.report / "live-trace.json").is_file():
+                from personal_agent.evaluation.long_horizon.live import recompute_live
+
+                result = recompute_live(args.report)
+            else:
+                result = recompute(args.report)
         else:
             dataset = replace(load(args.dataset), config=Config(seed=args.seed))
             if args.list:
@@ -43,7 +101,9 @@ def main() -> int:
                 return 0
             output = args.output or default_output()
             result = asyncio.run(
-                evaluate(dataset, output, split=args.split, scenario_id=args.scenario)
+                run_live(args, dataset, output)
+                if args.live
+                else evaluate(dataset, output, split=args.split, scenario_id=args.scenario)
             )
             print(json.dumps({"result_dir": str(output)}))
         print(json.dumps(result, ensure_ascii=False))

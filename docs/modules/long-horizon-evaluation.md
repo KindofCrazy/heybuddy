@@ -2,15 +2,16 @@
 
 ## 职责与架构组成
 
-`evaluation/long_horizon/` 是独立的合成评测入口，不改变生产 Agent、Router、Learning 或 Prompt。当前唯一实验类型是 **Offline Contract Test**，只验证机制与固定规则表现，不构成 Real Model Evaluation 或 Memory Learning 效果验证。
+`evaluation/long_horizon/` 是独立的合成评测入口，不改变生产 Agent、Router、Learning 或 Prompt。默认实验类型是 **Offline Contract Test**；显式 `--live --variant model-assisted` 可运行有界 **Real Model Evaluation** 接线 smoke。两者分别报告，均不宣称验证 Memory Learning 效果。
 
 - `models.py`：严格 Pydantic Schema，拒绝额外字段、无时区时间、重复 ID、逆序时间和不存在的证据引用。
 - `dataset.py`：加载冻结 Corpus、Gold、Split、Config，验证 `manifest.json` 的规范化 JSON SHA-256。Split 必须恰好划分语料，不可重叠或漏项。
-- `routing_eval.py`：`RoutingAdapter.route()` 调用生产 `ThreadRouter.route()`，关闭模型选择并提供拒绝任何模型请求的 Provider，核对持久绑定。
+- `routing_eval.py`：`RoutingAdapter.route()` 调用生产 `ThreadRouter.route()`，默认关闭模型选择并提供拒绝任何模型请求的 Provider；Live 宿主可显式传入计量 Provider 开启模型选择，均核对持久绑定。
 - `replay.py`：每 Scenario 新建临时 SQLiteStore、固定合成 Agent 和真实 MemoryFS；Conversation 按 conversation_key 创建，来源传入原 RoutingRepository。
 - `metrics.py`：基于同话题/同 Thread 的 Pairwise 关系评分，不比较 UUID 与逻辑话题标识。
 - `report.py`：私有完整 Bundle、可重算指标、无对话正文的公开 Summary、运行状态与完整性检查。
-- `__main__.py`：离线 CLI，未知 Variant、Oracle-history、`--live` 均拒绝。
+- `live.py`：LiveConfig、MeteredProvider、LiveRoutingAdapter、独立 LiveBundle、真实调用计量与重算。
+- `__main__.py`：默认离线 CLI；模型 Variant 需要显式 `--live` 和输入/输出价格及来源，无授权时在加载 Settings 前拒绝；Oracle-history 继续拒绝。
 
 沿用 SQLiteStore 的 schema 24、Journal 校验与数据库锁，以及 MemoryFS 的原有隐私/发布语义。未复用 `evaluation/p1.py::seed()`，因为该函数先结束 Run，不满足在线 Router 的绑定时机；也未复用现有行为评测评分器，其自动学习契约与 Pairwise 话题评价不同。
 
@@ -46,7 +47,28 @@ Precision 分母为 TP+FP，Recall 为 TP+FN，F1 分母为 2TP+FP+FN；零分�
 
 规则预测错误属于正常评分结果，不导致 Benchmark 失败。执行异常返回 failed ReplayResult，记录阶段和安全错误类型；未结束 Run 标记 interrupted，取消标记 cancelled 并向上传播，不自动重试。Campaign 保存 failed/cancelled 状态，不发布成功 Summary。进程硬退出保留 running，重新评分拒绝；缺失 Turn/Checkpoint、文件或 Hash 不符均明确失败。原子 JSON 发布不宣称跨文件事务、断电保证或抵御本机恶意篡改。
 
-seed 是保留参数，当前规则路径没有随机采样；Thread/Run UUID、临时目录和耗时每次不同，复现比较应使用 Turn 顺序、规范化 Thread 分区与指标。生产 Thread 创建时间仍是墙钟时间；固定输入按顺序创建，当前规则不使用时间阈值。真实模型、Oracle-history、长期 QA、Memory Apply/语义评分、网络和完整 Memory Benchmark 均未实现。
+seed 是保留参数，当前规则路径没有随机采样；Thread/Run UUID、临时目录和耗时每次不同，复现比较应使用 Turn 顺序、规范化 Thread 分区与指标。生产 Thread 创建时间仍是墙钟时间；固定输入按顺序创建，当前规则不使用时间阈值。Oracle-history、长期 QA、Memory Apply/语义评分和完整 Memory Benchmark 均未实现。网络仅在显式 Live 入口开放给既有配置的 Provider。
+
+## 有界真实模型 smoke 的实际路径
+
+1. `__main__.main()` 先检查 Live 开关、Variant 与计价参数。`run_live()` 才用既有 `load_settings()` 读取配置、构造 LiveConfig 和 `AsyncOpenAI(max_retries=0, timeout=10)`，复用生产 OpenAIProvider；不展示密钥或 `.env` 原文。只保存 model、endpoint hostname、显式 context window。
+2. `live.evaluate_live()` 选择带 routing 标签的 Scenario，不跑 ML001。共享根预算下，每次重复先跑 rule 基线再跑 model-assisted，每 Scenario 仍新建隔离环境。最多 5 次重复、5 次请求、20000 预留 tokens、10 元人民币；单次估算输入最多 2048，输出沿用生产 1024，总时限 120 秒。
+3. `LiveRoutingAdapter` 只启用真实 ThreadRouter 的 model_selection。原规则优先级与 Prompt 不变，因此现有四个 Fixture 每轮只在 TR004 触发一个模型分支。不会强迫所有 Turn 请求模型。Gold 不交给 Adapter/Provider，助手回复冻结。
+4. `MeteredProvider.generate()` 在外部发送前检查输入与预算、通过既有 Budget.reserve 预留额度，并原子写 `live-progress.json`。完成后保存实际 usage、纯可见回复与耗时；不保存 Provider 原始 reasoning。输入/输出按所提供 CNY 单价计算费用上界估算；缓存/空闲折扣不主动推测，reasoning 不重复加入 output。
+5. 请求错误、超时/取消、缺失 usage、工具调用或实际 token/费用越界设置停止标记。即使原 Router 把 ProviderError/超时转成 selection_unavailable，Adapter 仍检查停止标记并终止 Campaign。输出 JSON 非法但 Provider 请求完整时，保存 selection_unavailable 为决策失败统计；不将它算作模型选择成功，也不自动重试。
+6. 完整结束时写 `live-trace.json`、Hash、Public Summary 和 completed 状态；失败保存 progress 和 failed/cancelled 状态，不发布成功 Summary。进程硬退出留 running，不自动恢复或重发。实际 Usage 缺失标 unknown，停止后续调用，不宣称已经撤销费用。
+7. Live Summary 按 Variant/重复/Scenario 保存指标，分离规则与模型决策 support、clarify 与 selection_unavailable。记录 Corpus/Gold/Config/LiveConfig Hash、Git HEAD/dirty、评测和关键生产实现的 code_hash 及真实 Prompt Hash。`--report` 自动识别 Live Trace，在不加载配置/不调用模型的情况下核对完整性、调用数、Usage/成本和预算并重算。
+
+配置预算是请求前估算与请求后核对，不是服务商账单硬封顶；输入估算不等于 tokenizer，报告金额不冒充服务商账单。所有重复只是同一组小样本的稳定性 smoke，正式语义能力 Benchmark 留待下一阶段。
+
+已核实 2026-11-05 当前配置为 DeepSeek 官方端点的 deepseek-flash；本轮按高峰未缓存输入 2 元/百万 tokens、输出 8 元/百万 tokens 预留，来源为 [DeepSeek 官方价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)。最高预留约 0.06144 元。价格不会隐式套用于其他模型/端点，运行者须明确提供核实过的计价参数。
+
+```powershell
+uv run python -m personal_agent.evaluation.long_horizon --live --variant model-assisted --repetitions 5 --max-requests 5 --max-tokens 20000 --max-cost-cny 10 --input-price-cny 2 --output-price-cny 8 --price-source https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ --output .heybuddy/evaluations/lh-live-smoke
+uv run python -m personal_agent.evaluation.long_horizon --report .heybuddy/evaluations/lh-live-smoke
+```
+
+`tests/test_long_horizon_live.py` 仍为 Offline Contract Test，使用 Fake Provider 和 MockTransport 覆盖真实 SDK/Provider 映射、共享预算、缺失 Usage、错误/不完整回执、取消、失败报告、Gold 与公开摘要隔离及指标重算；不发起付费 API 请求。
 
 ## 阅读与验证
 
@@ -62,6 +84,6 @@ uv run pytest tests/test_long_horizon.py tests/test_thread_routing.py tests/test
 
 输出目录必须是全新目录。`tests/test_long_horizon.py` 覆盖 Schema/冻结校验、真实路由生命周期、重放顺序、隔离、Gold 不进入路由、Pairwise 错误评分、歧义/零分母、取消/异常、不完整报告和公开摘要隐私，沿用 conftest 的无凭据、禁止外网保护。
 
-下一阶段应先冻结更丰富的人工标注语料与独立 Holdout，加入显式 action 定义和跨来源样例，明确弃权的 coverage 约束；再实现独立 Oracle-history 实验、固定模型配置/预算/调用记录及人工语义复核，得到授权后才运行 Real Model Evaluation。
+下一阶段应先冻结更丰富的人工标注语料与独立 Holdout，加入显式 action 定义和跨来源样例，明确弃权的 coverage 约束；再实现独立 Oracle-history 实验与人工语义复核，正式能力 Benchmark 的付费预算另行授权。
 
-真实模型接入范围、当前语料的模型分支覆盖与两阶段调用预算见[真实模型评测方案](../long-horizon-live-evaluation-plan.md)；该文档是待实施方案，不代表已授权或已运行付费调用。
+当前语料的模型分支覆盖与两阶段预算依据见[真实模型评测方案](../long-horizon-live-evaluation-plan.md)；首轮 smoke 已授权接入验证，第二轮正式 Benchmark 仍待后续建设。
