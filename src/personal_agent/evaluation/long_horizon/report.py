@@ -127,6 +127,12 @@ def evaluation_code_hash() -> str:
         package / "organization/router.py",
         package / "storage/routing.py",
         package / "llm/openai_provider.py",
+        package / "organization/episodes.py",
+        package / "organization/threads.py",
+        package / "organization/provider.py",
+        package / "storage/episodes.py",
+        package / "storage/threads.py",
+        package / "storage/thread_repair.py",
     ]
     return digest({p.relative_to(package).as_posix(): p.read_text(encoding="utf-8") for p in paths})
 

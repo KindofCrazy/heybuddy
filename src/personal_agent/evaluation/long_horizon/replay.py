@@ -22,8 +22,11 @@ class OracleHistoryAdapter(Protocol):
     def prepare_history(self, store: SQLiteStore, scenario: Scenario, turn_index: int) -> None: ...
 
 
-async def replay(scenario: Scenario, *, adapter: RoutingAdapter | None = None) -> ReplayResult:
+async def replay(
+    scenario: Scenario, *, adapter: RoutingAdapter | None = None, maintenance=None
+) -> ReplayResult:
     predictions, snapshots = [], []
+    maintenance_records = []
     stage, run_id = "setup", None
     adapter = adapter or RoutingAdapter()
     try:
@@ -82,6 +85,15 @@ async def replay(scenario: Scenario, *, adapter: RoutingAdapter | None = None) -
                             )
                         run_id = None
                         predictions.append(prediction)
+                        if maintenance is not None:
+                            stage = "maintenance"
+                            record = await maintenance.after_completed(
+                                RoutingRepository(store, agent.id, conversation.id, turn.source),
+                                turn,
+                                len(predictions),
+                            )
+                            if record is not None:
+                                maintenance_records.append(record)
                         stage = "checkpoint"
                         for checkpoint in scenario.checkpoints:
                             if checkpoint.after_turn_id == turn.turn_id:
@@ -112,12 +124,14 @@ async def replay(scenario: Scenario, *, adapter: RoutingAdapter | None = None) -
             snapshots=snapshots,
             error_stage=stage,
             error_code=type(error).__name__,
+            maintenance=maintenance_records,
         )
     result = ReplayResult(
         scenario_id=scenario.scenario_id,
         status="completed",
         predictions=predictions,
         snapshots=snapshots,
+        maintenance=maintenance_records,
     )
     result.validate_for(scenario)
     return result

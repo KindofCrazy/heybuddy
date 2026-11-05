@@ -23,9 +23,14 @@ class RouteChoice(Model):
 
 
 class ThreadRouter:
-    def __init__(self, repository, *, model_selection: bool = False) -> None:
+    def __init__(
+        self, repository, *, model_selection: bool = False, defer_weak_rules: bool = False
+    ) -> None:
+        if defer_weak_rules and not model_selection:
+            raise ValueError("Deferring weak routing rules requires model selection")
         self.repository = repository
         self.model_selection = model_selection
+        self.defer_weak_rules = defer_weak_rules
         self.metrics = {}
 
     async def route(self, run_id: str, text: str, provider):
@@ -59,10 +64,11 @@ class ThreadRouter:
             reason = "chat"
         elif unique and (RESUME.search(text) or not active or ranked[0][1].id != active.id):
             target, reason = ranked[0][1], "title_match"
-        elif CHANGE.search(text):
+        elif CHANGE.search(text) and not self.defer_weak_rules:
             target, reason = None, "new_topic"
         elif (
             active
+            and not self.defer_weak_rules
             and not RESUME.search(text)
             and (CONTINUE.search(text.strip()) or len(text.strip()) < 12)
         ):

@@ -179,8 +179,9 @@ class ReplayResult(Schema):
     status: Literal["completed", "failed", "cancelled"]
     predictions: list[Prediction]
     snapshots: list[Snapshot]
-    error_stage: Literal["setup", "routing", "journal", "checkpoint"] | None = None
+    error_stage: Literal["setup", "routing", "journal", "checkpoint", "maintenance"] | None = None
     error_code: str | None = None
+    maintenance: list[dict] = Field(default_factory=list)
 
     def validate_for(self, scenario: Scenario) -> None:
         if self.scenario_id != scenario.scenario_id or self.status != "completed":

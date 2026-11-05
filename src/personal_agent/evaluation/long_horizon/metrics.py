@@ -1,11 +1,12 @@
 """UUID-independent pairwise scoring; no inferred action equivalences."""
 
+from collections import defaultdict
 from itertools import combinations
 from statistics import mean
 
 from personal_agent.evaluation.long_horizon.models import Prediction, ScenarioGold
 
-SCORER_VERSION = "routing-relations-v1"
+SCORER_VERSION = "routing-identity-v2"
 
 
 def rate(numerator: int, support: int) -> dict:
@@ -98,6 +99,11 @@ def score(predictions: list[Prediction], gold: ScenarioGold) -> dict:
     predicted = [g for g in gold.routing if by_id[g.turn_id].ambiguity_flag]
     misses = sum(not by_id[g.turn_id].ambiguity_flag for g in required)
     unnecessary = sum(by_id[g.turn_id].ambiguity_flag for g in forbidden)
+    topic_threads = defaultdict(set)
+    thread_topics = defaultdict(set)
+    for g in eligible:
+        topic_threads[g.gold_topic_id].add(by_id[g.turn_id].actual_thread_id)
+        thread_topics[by_id[g.turn_id].actual_thread_id].add(g.gold_topic_id)
     return {
         "scorer_version": SCORER_VERSION,
         "pairwise": pair_scores(tp, fp, fn, len(pairs)),
@@ -119,8 +125,8 @@ def score(predictions: list[Prediction], gold: ScenarioGold) -> dict:
         "routing_coverage": rate(len(eligible), sum(not g.ambiguity for g in gold.routing)),
         **relation_metrics(predictions, gold),
         "action_accuracy": None,
-        "fragmentation": None,
-        "cross_thread_contamination": None,
+        "fragmentation": identity_groups(topic_threads),
+        "cross_thread_contamination": identity_groups(thread_topics),
         "resume_qa_accuracy": None,
     }
 
@@ -145,6 +151,8 @@ def aggregate(rows: list[dict]) -> dict:
         "reference_relation_accuracy": aggregate_rate(
             [r["reference_relation_accuracy"] for r in rows]
         ),
+        "fragmentation": aggregate_identity(rows, "fragmentation"),
+        "cross_thread_contamination": aggregate_identity(rows, "cross_thread_contamination"),
         "error_propagation": {
             "adjacent_failure_rate": aggregate_rate(
                 [r["error_propagation"]["adjacent_failure_rate"] for r in rows]
@@ -166,4 +174,18 @@ def aggregate_rate(rows: list[dict]) -> dict:
     return {
         "micro": rate(sum(r["numerator"] for r in rows), sum(r["support"] for r in rows)),
         "macro": {"value": mean(values) if values else None, "scenario_support": len(values)},
+    }
+
+
+def identity_groups(groups: dict) -> dict:
+    return {
+        "mean_extra_assignments": rate(sum(len(v) - 1 for v in groups.values()), len(groups)),
+        "affected_group_rate": rate(sum(len(v) > 1 for v in groups.values()), len(groups)),
+    }
+
+
+def aggregate_identity(rows: list[dict], key: str) -> dict:
+    return {
+        name: aggregate_rate([r[key][name] for r in rows])
+        for name in ("mean_extra_assignments", "affected_group_rate")
     }

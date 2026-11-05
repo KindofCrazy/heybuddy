@@ -66,6 +66,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--preflight", action="store_true")
+    parser.add_argument(
+        "--ablation", choices=["baseline", "state", "identity", "fewshot", "deferred", "all"]
+    )
+    parser.add_argument(
+        "--scripted-action", choices=["continue", "clarify", "new"], default="continue"
+    )
     parser.add_argument("--planning-input-cap", type=int, default=4096)
     parser.add_argument("--mode", choices=["routing"], default="routing")
     parser.add_argument("--variant", choices=["rule", "model-assisted"], default="rule")
@@ -90,6 +96,10 @@ def main() -> int:
     parser.add_argument("--output-price-cny", type=float)
     parser.add_argument("--price-source")
     args = parser.parse_args()
+    if args.ablation and (
+        args.live or args.preflight or args.report or args.list or args.variant != "rule"
+    ):
+        parser.error("--ablation is an independent offline contract experiment")
     if args.budget_profile != "smoke" and not args.live:
         parser.error("Explicit dev budget requires --live")
     if args.preflight and (args.live or args.report or args.list or args.variant != "rule"):
@@ -104,7 +114,11 @@ def main() -> int:
         parser.error("Live smoke requires verified CNY input/output prices and a source")
     try:
         if args.report:
-            if (args.report / "live-trace.json").is_file():
+            if (args.report / "ablation-trace.json").is_file():
+                from personal_agent.evaluation.long_horizon.ablation import recompute_ablation
+
+                result = recompute_ablation(args.report)
+            elif (args.report / "live-trace.json").is_file():
                 from personal_agent.evaluation.long_horizon.live import recompute_live
 
                 result = recompute_live(args.report)
@@ -125,6 +139,21 @@ def main() -> int:
                 )
                 return 0
             output = args.output or default_output()
+            if args.ablation:
+                from personal_agent.evaluation.long_horizon.ablation import evaluate_ablation
+
+                result = asyncio.run(
+                    evaluate_ablation(
+                        dataset,
+                        output,
+                        arm=args.ablation,
+                        split=args.split,
+                        scenario_id=args.scenario,
+                        action=args.scripted_action,
+                    )
+                )
+                print(json.dumps({"result_dir": str(output), **result}, ensure_ascii=False))
+                return 0
             if args.preflight:
                 from personal_agent.evaluation.long_horizon.preflight import preflight
                 from personal_agent.evaluation.long_horizon.report import (

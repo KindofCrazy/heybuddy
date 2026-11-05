@@ -13,11 +13,14 @@ class NetworkForbidden:
 
 
 class RoutingAdapter:
-    def __init__(self, *, provider=None, model_selection: bool = False) -> None:
+    def __init__(
+        self, *, provider=None, model_selection: bool = False, defer_weak_rules: bool = False
+    ) -> None:
         if model_selection and provider is None:
             raise ValueError("Model selection requires an explicit evaluation Provider")
         self.provider = provider or NetworkForbidden()
         self.model_selection = model_selection
+        self.defer_weak_rules = defer_weak_rules
 
     async def route(
         self,
@@ -29,7 +32,9 @@ class RoutingAdapter:
         previous = repository.active()
         with repository.store.reading() as db:
             known = {r[0] for r in db.execute("SELECT id FROM topic_threads")}
-        router = ThreadRouter(repository, model_selection=self.model_selection)
+        router = ThreadRouter(
+            repository, model_selection=self.model_selection, defer_weak_rules=self.defer_weak_rules
+        )
         start = perf_counter()
         result = await router.route(run_id, turn.user_message, self.provider)
         elapsed = (perf_counter() - start) * 1000

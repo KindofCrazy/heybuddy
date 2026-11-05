@@ -2,6 +2,8 @@
 
 更长语料、开发集/Holdout、新澄清/证据关系指标与离线预算预检见 [Thread Routing Benchmark v1 草案](long-horizon-benchmark-v1.md)。旧的五个 Fixture 与 Hash 保留。
 
+当前扩展见 [v2 草案](long-horizon-benchmark-v2.md)：30 场景、状态维护接线、碎片化/污染指标与离线消融。下文描述 Phase 1 原始路径；v2 引入一个默认关闭的 Router 弱规则实验参数，不改变默认生产行为。
+
 ## 职责与架构组成
 
 `evaluation/long_horizon/` 是独立的合成评测入口，不改变生产 Agent、Router、Learning 或 Prompt。默认实验类型是 **Offline Contract Test**；显式 `--live --variant model-assisted` 可运行有界 **Real Model Evaluation** 接线 smoke。两者分别报告，均不宣称验证 Memory Learning 效果。
