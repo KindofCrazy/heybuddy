@@ -28,6 +28,20 @@
 
 `--pilot-preflight` 使用固定 continue/clarify/new 和提取式 Organizer，无 Settings/Key/网络。interval=6 的三条固定路径累计预留估算约为 6.56352、6.56352、7.314798 元；真实选择和 Episode 分组可能不同，不能当作必然费用上界。首轮 scope 和规则不因模型得分而修改。
 
+## 独立的协议 JSON 输出实验
+
+首次 strict-text Pilot 在第一个 state 场景的 T06 维护中收到带 Markdown 围栏的 ThreadRepair，严格解析失败，原实验停止并保留失败轨迹。三个 baseline 场景已完成，共 19 次真实请求，输入 16140、输出 1569，reasoning 为 0；实际用量费用上界 0.044832 元，累计预留成本为 0.37589 元。未得到完整 state/identity/fewshot 结果，不计算四组整体能力结论。
+
+无正文回执见 [首次失败记录](../../evals/results/long-horizon-v2-live-pilot-20261105.json)，原始私有 metadata/progress/status 保留在 `.heybuddy/evaluations/lh-v2-live-pilot-20261105/`。第一次维护的部分摘要提案已做有限来源核对，但尚无完整维护快照，不能作为摘要准确率。
+
+经核对服务商支持后，新增显式 `routing-pilot-v2-json`，用 `JsonPilotConfig` 和独立 Trace 版本 live-pilot-v2-json-1，所有组由专用 `OpenAIProvider(json_mode=True)` 发送 text.format=json_object。Prompt、语料、Gold、维护时点和生产严格解析不改变；不把去围栏当成原实验成功，不执行 SDK 重试或恢复旧 Run。四组从各自新隔离环境重放，不把两次条件混算。
+
+JSON profile 必须提供 `--prior-attempt`，`prior_attempt()` 先核对原失败 metadata/progress/status 的冻结范围、完整 Usage、调用和预留记账，密封其 Hash，按原累计预留额扣除预算。JsonPilotConfig 再校验两次预留合计不超过 10 元、400 请求、2000000 tokens；本次剩余上限为 9.62411 元、381 请求、1907287 tokens，不按更便宜的实际费用退回差额。旧失败回执不改写，独立结果标明 JSON 条件和前次来源。空输出、非法 Schema、预算和 API 错误仍停止，不自动补救。
+
+```powershell
+uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_horizon_v2 --live --variant model-assisted --budget-profile routing-pilot-v2-json --prior-attempt .heybuddy/evaluations/lh-v2-live-pilot-20261105 --input-price-cny 2 --output-price-cny 8 --price-source https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ --output .heybuddy/evaluations/lh-v2-live-pilot-json-20261105
+```
+
 ## 摘要语义审阅
 
 九个检查点为三个场景各第 6/12/18 Turn 后。审阅者是开发 Agent，不是独立人类或另一个付费评审模型；公开审阅记录必须注明此限制。baseline 没有状态，标为不适用；其他组检查所有实际碎片，不能只看首次 Thread 或根据未来 Gold 给 Router 修复历史。

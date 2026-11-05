@@ -6,7 +6,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from personal_agent.evaluation.long_horizon.ablation import RoutingProbe
 from personal_agent.evaluation.long_horizon.dataset import Dataset, digest
@@ -51,6 +51,75 @@ class PilotConfig(LiveConfig):
         if stage in {"episode", "thread"}:
             return 32768, 4096
         raise ValueError("Unknown pilot stage")
+
+
+class JsonPilotConfig(PilotConfig):
+    profile: Literal["routing-pilot-v2-json"] = "routing-pilot-v2-json"
+    json_mode: Literal[True] = True
+    prior_reserved_cost_cny: float = Field(gt=0, le=10, allow_inf_nan=False)
+    prior_reserved_tokens: int = Field(ge=1, le=2_000_000)
+    prior_requests: int = Field(ge=1, le=400)
+    prior_attempt_hash: str = Field(pattern="^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def shared_attempt_budget(self):
+        if (
+            self.max_cost_cny + self.prior_reserved_cost_cny > 10 + 1e-9
+            or self.max_tokens + self.prior_reserved_tokens > 2_000_000
+            or self.max_requests + self.prior_requests > 400
+        ):
+            raise ValueError("Combined pilot attempts exceed the authorized root budget")
+        return self
+
+
+def prior_attempt(path: Path, data: Dataset) -> dict:
+    """Seal the failed attempt and carry its full reservations, never just its cheaper usage."""
+    require_private_directory(path)
+    saved = {
+        name: json.loads((path / f"pilot-{name}.json").read_text(encoding="utf-8"))
+        for name in ("metadata", "progress")
+    }
+    saved["status"] = json.loads((path / "status.json").read_text(encoding="utf-8"))
+    metadata, progress, status = saved["metadata"], saved["progress"], saved["status"]
+    if (
+        status["status"] != "failed"
+        or metadata["hashes"] != data.hashes
+        or metadata["pilot_config"]["profile"] != "routing-pilot-v2"
+        or metadata["scenario_ids"] != SCENARIOS
+        or metadata["arms"] != ARMS
+        or status["usage"] != progress["usage"]
+        or not status["usage"]["usage_complete"]
+    ):
+        raise ValueError("Prior pilot cannot establish a complete shared budget ledger")
+    old_config = PilotConfig.model_validate(metadata["pilot_config"])
+    totals = usage_for(progress["calls"], old_config)
+    reserved_tokens = sum(
+        c["estimated_input_tokens"] + c["output_limit"] for c in progress["calls"]
+    )
+    reserved_cost = (
+        sum(
+            c["estimated_input_tokens"] * old_config.input_price_cny
+            + c["output_limit"] * old_config.output_price_cny
+            for c in progress["calls"]
+        )
+        / 1_000_000
+    )
+    if (
+        totals["actual_requests"] != status["usage"]["actual_requests"]
+        or reserved_tokens != status["usage"]["reserved_tokens"]
+        or abs(reserved_cost - status["usage"]["reserved_cost_cny"]) > 1e-9
+        or any(
+            totals[k] != status["usage"][k]
+            for k in ("input_tokens", "output_tokens", "cost_cny_upper_estimate")
+        )
+    ):
+        raise ValueError("Prior pilot budget accounting mismatch")
+    return {
+        "prior_reserved_cost_cny": reserved_cost,
+        "prior_reserved_tokens": reserved_tokens,
+        "prior_requests": totals["actual_requests"],
+        "prior_attempt_hash": digest(saved),
+    }
 
 
 def protocol() -> dict:
@@ -130,9 +199,9 @@ class PilotTrial(Schema):
 
 
 class PilotBundle(Schema):
-    version: Literal["live-pilot-v2-1"] = "live-pilot-v2-1"
+    version: Literal["live-pilot-v2-1", "live-pilot-v2-json-1"] = "live-pilot-v2-1"
     dataset: Bundle
-    pilot_config: PilotConfig
+    pilot_config: JsonPilotConfig | PilotConfig
     pilot_protocol: dict
     identity_policy: str = IDENTITY_POLICY
     fewshot: str = FEWSHOT
@@ -169,6 +238,10 @@ def summarize(bundle: PilotBundle) -> dict:
     ]:
         raise ValueError("Pilot trial coverage incomplete")
     config = bundle.pilot_config
+    if bundle.version != (
+        "live-pilot-v2-json-1" if isinstance(config, JsonPilotConfig) else "live-pilot-v2-1"
+    ):
+        raise ValueError("Pilot output format version mismatch")
     totals = usage_for(bundle.calls, config)
     for key in ("actual_requests", "input_tokens", "output_tokens", "cost_cny_upper_estimate"):
         if abs(bundle.usage[key] - totals[key]) > 1e-9:
@@ -206,6 +279,8 @@ def summarize(bundle: PilotBundle) -> dict:
             or c["usage"]["output_tokens"] > output
             or c["request_options"] != {"max_output_tokens": output, "reasoning_effort": "none"}
             or c["prompt_hash"] != digest(c["messages"][0]["text"])
+            or c.get("output_format")
+            != ("json_object" if isinstance(config, JsonPilotConfig) else None)
         ):
             raise ValueError("Pilot call limits/options mismatch")
     arms = {}
@@ -352,6 +427,9 @@ async def evaluate_pilot(
                     if result.status != "completed" or root.stopped:
                         raise LiveStopped(root.stopped or result.error_code)
         bundle = PilotBundle(
+            version="live-pilot-v2-json-1"
+            if isinstance(config, JsonPilotConfig)
+            else "live-pilot-v2-1",
             dataset=saved,
             pilot_config=config,
             pilot_protocol=plan,

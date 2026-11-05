@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 from pydantic import ValidationError
 
@@ -12,13 +13,17 @@ from personal_agent.evaluation.long_horizon.dataset import digest, load
 from personal_agent.evaluation.long_horizon.live import LiveStopped, MeteredProvider
 from personal_agent.evaluation.long_horizon.pilot import (
     ARMS,
+    JsonPilotConfig,
     PilotConfig,
     evaluate_pilot,
+    prior_attempt,
     protocol,
     recompute_pilot,
     validate_scope,
 )
 from personal_agent.evaluation.long_horizon.state import ExtractiveContractProvider
+from personal_agent.llm.openai_provider import OpenAIProvider
+from tests.test_provider import make_client, response_body, text_item
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -164,3 +169,64 @@ def test_pilot_preflight_gate_never_loads_settings(monkeypatch):
         monkeypatch.setattr("sys.argv", ["benchmark", "--pilot-preflight", *options])
         with pytest.raises(SystemExit):
             main()
+
+
+async def test_json_pilot_wire_format_all_stages_and_old_provider_unchanged(tmp_path):
+    options = {
+        **config().model_dump(mode="json"),
+        "profile": "routing-pilot-v2-json",
+        "max_cost_cny": 9.9,
+        "max_tokens": 1_999_999,
+        "max_requests": 399,
+        "prior_reserved_cost_cny": 0.1,
+        "prior_reserved_tokens": 1,
+        "prior_requests": 1,
+        "prior_attempt_hash": "1" * 64,
+    }
+    chosen = JsonPilotConfig(**options)
+    requests = []
+
+    async def handle(request):
+        payload = json.loads(request.content)
+        assert payload["text"] == {"format": {"type": "json_object"}}
+        assert payload["reasoning"] == {"effort": "none"}
+        requests.append(payload)
+        messages = [TextMessage(role=m["role"], text=m["content"]) for m in payload["input"]]
+        response = await Mixed().generate(
+            messages, [], max_output_tokens=payload["max_output_tokens"], reasoning_effort="none"
+        )
+        body = response_body([text_item(response.text)])
+        body["usage"] = {
+            "input_tokens": 120,
+            "output_tokens": 80,
+            "total_tokens": 200,
+            "output_tokens_details": {"reasoning_tokens": 0},
+        }
+        return httpx.Response(200, json=body)
+
+    async with make_client(handle) as client:
+        report = await evaluate_pilot(
+            load(ROOT / "evals/long_horizon_v2"),
+            tmp_path / "json",
+            OpenAIProvider(client, "deepseek-flash", json_mode=True),
+            chosen,
+        )
+    assert report["pilot_config"]["json_mode"]
+    assert {r["max_output_tokens"] for r in requests} == {1024, 4096}
+    assert recompute_pilot(tmp_path / "json") == report
+    with pytest.raises(ValidationError):
+        JsonPilotConfig(**{**options, "max_cost_cny": 10})
+
+
+async def test_prior_attempt_preserves_reservations_and_validates_accounting(tmp_path):
+    output = tmp_path / "previous"
+    data = load(ROOT / "evals/long_horizon_v2")
+    with pytest.raises(LiveStopped):
+        await evaluate_pilot(data, output, Mixed(), config(max_requests=1))
+    ledger = prior_attempt(output, data)
+    assert ledger["prior_requests"] == 1 and ledger["prior_reserved_cost_cny"] > 0
+    status = json.loads((output / "status.json").read_text(encoding="utf-8"))
+    status["usage"]["reserved_cost_cny"] = 0
+    (output / "status.json").write_text(json.dumps(status), encoding="utf-8")
+    with pytest.raises(ValueError):
+        prior_attempt(output, data)

@@ -23,7 +23,13 @@ async def run_live(args, dataset, output):
         evaluate_live,
         validate_live_scope,
     )
-    from personal_agent.evaluation.long_horizon.pilot import PilotConfig, evaluate_pilot, protocol
+    from personal_agent.evaluation.long_horizon.pilot import (
+        JsonPilotConfig,
+        PilotConfig,
+        evaluate_pilot,
+        prior_attempt,
+        protocol,
+    )
     from personal_agent.evaluation.long_horizon.pilot import validate_scope as validate_pilot_scope
     from personal_agent.llm.openai_provider import OpenAIProvider
 
@@ -33,12 +39,22 @@ async def run_live(args, dataset, output):
         "routing-dev-v1": DevLiveConfig,
         "routing-dev-v1-no-thinking": NoThinkingDevConfig,
         "routing-pilot-v2": PilotConfig,
+        "routing-pilot-v2-json": JsonPilotConfig,
     }[args.budget_profile]
     overrides = {
         k: getattr(args, k)
         for k in ("repetitions", "max_requests", "max_tokens", "max_cost_cny")
         if getattr(args, k) is not None
     }
+    if kind is JsonPilotConfig:
+        ledger = prior_attempt(args.prior_attempt, dataset)
+        overrides = {
+            "max_requests": 400 - ledger["prior_requests"],
+            "max_tokens": 2_000_000 - ledger["prior_reserved_tokens"],
+            "max_cost_cny": round(10 - ledger["prior_reserved_cost_cny"], 6),
+            **overrides,
+            **ledger,
+        }
     config = kind(
         model=settings.model,
         endpoint_host=urlsplit(str(settings.base_url or "https://api.openai.com")).hostname,
@@ -62,7 +78,9 @@ async def run_live(args, dataset, output):
         return await (evaluate_pilot if pilot else evaluate_live)(
             dataset,
             output,
-            OpenAIProvider(client, settings.model),
+            OpenAIProvider(client, settings.model, json_mode=True)
+            if isinstance(config, JsonPilotConfig)
+            else OpenAIProvider(client, settings.model),
             config,
             split=args.split,
             scenario_id=args.scenario,
@@ -93,7 +111,13 @@ def main() -> int:
     parser.add_argument("--live", action="store_true")
     parser.add_argument(
         "--budget-profile",
-        choices=["smoke", "routing-dev-v1", "routing-dev-v1-no-thinking", "routing-pilot-v2"],
+        choices=[
+            "smoke",
+            "routing-dev-v1",
+            "routing-dev-v1-no-thinking",
+            "routing-pilot-v2",
+            "routing-pilot-v2-json",
+        ],
         default="smoke",
     )
     parser.add_argument("--repetitions", type=int)
@@ -103,7 +127,10 @@ def main() -> int:
     parser.add_argument("--input-price-cny", type=float)
     parser.add_argument("--output-price-cny", type=float)
     parser.add_argument("--price-source")
+    parser.add_argument("--prior-attempt", type=Path)
     args = parser.parse_args()
+    if bool(args.prior_attempt) != (args.live and args.budget_profile == "routing-pilot-v2-json"):
+        parser.error("The JSON pilot requires --prior-attempt; other profiles cannot use it")
     if args.ablation and (
         args.live
         or args.preflight

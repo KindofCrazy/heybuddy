@@ -176,6 +176,8 @@ class MeteredProvider:
             provider_diagnostics=None,
             request_options={"max_output_tokens": max_output_tokens, **options},
         )
+        if getattr(self.config, "json_mode", False):
+            record["output_format"] = "json_object"
         self.calls.append(record)
         start = perf_counter()
         usage = None

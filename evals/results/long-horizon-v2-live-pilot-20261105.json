@@ -1,0 +1,288 @@
+{
+  "evaluation_type": "Real Model Evaluation",
+  "status": "failed",
+  "date": "2026-11-05",
+  "annotation_status": "agent-authored provisional gold",
+  "output_mode": "default text",
+  "provenance": {
+    "git_commit": "8dee6b02ecf38bc72e329a74979e73d3ddc26e4d",
+    "git_dirty": false,
+    "code_hash": "500b77bbf080707ef117dbc948df2e341dcd216683815ca7007b9ab56d9fd42a",
+    "hashes": {
+      "corpus_hash": "cb55f0cbe989d95cd38ff5cb7635b5b638c43ee35c2043bb76b2b2f4c011d2e6",
+      "gold_hash": "1227ee8194250632473a632f7a09c1e231919d40fe18ff5364b06d5f43061141",
+      "splits_hash": "7702335e8b49682bcb30069e10bf04d95a000674f1b7bea0235aa368e1efa109",
+      "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+      "protocol_hash": "ca9bb6427213b3f08d661390b0b1f742ab2a013d27d3ed86bb732a026fad0350"
+    },
+    "pilot_protocol_hash": "7a9f29b538e5afe4b545ce440974ec88d7ac0eb4bc6d27f2b36967d82d8c3151"
+  },
+  "pilot_config": {
+    "variant": "model-assisted",
+    "replay_mode": "streaming",
+    "network": true,
+    "model": "deepseek-flash",
+    "endpoint_host": "api.deepseek.com",
+    "context_window": 1048576,
+    "repetitions": 1,
+    "max_requests": 400,
+    "max_tokens": 2000000,
+    "max_input_tokens": 32768,
+    "max_cost_cny": 10.0,
+    "input_price_cny": 2.0,
+    "output_price_cny": 8.0,
+    "price_source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "output_limit": 1024,
+    "timeout_seconds": 3600,
+    "profile": "routing-pilot-v2",
+    "reasoning_effort": "none"
+  },
+  "pilot_config_hash": "e0f6c1f50028acf2e1257dbe49c6368f8399366159f182cccd9141f768ecd6d6",
+  "sealed_attempt_hash": "13003c6dfa59cebafc6708a56e2f03617965cf38d98075d635b032f2dc5a672d",
+  "usage": {
+    "currency": "CNY",
+    "actual_requests": 19,
+    "reserved_tokens": 92713,
+    "reserved_cost_cny": 0.37589000000000006,
+    "usage_complete": true,
+    "input_tokens": 16140,
+    "output_tokens": 1569,
+    "cost_cny_upper_estimate": 0.044832
+  },
+  "completed_trials": [
+    {
+      "arm": "baseline",
+      "scenario_id": "LH019"
+    },
+    {
+      "arm": "baseline",
+      "scenario_id": "LH021"
+    },
+    {
+      "arm": "baseline",
+      "scenario_id": "LH022"
+    }
+  ],
+  "usage_by_stage": {
+    "routing": {
+      "requests": 15,
+      "input_tokens": 7060,
+      "output_tokens": 430
+    },
+    "episode": {
+      "requests": 1,
+      "input_tokens": 3284,
+      "output_tokens": 825
+    },
+    "thread": {
+      "requests": 3,
+      "input_tokens": 5796,
+      "output_tokens": 314
+    }
+  },
+  "failure": {
+    "scenario_id": "LH019",
+    "arm": "state",
+    "after_completed_turns": 6,
+    "stage": "maintenance",
+    "substage": "thread repair",
+    "cause": "Markdown fenced output is not a strict JSON document",
+    "api_call_status": "completed",
+    "partial_replay_error_code": "ValueError"
+  },
+  "completed_baseline_only": {
+    "scorer_version": "routing-identity-v2",
+    "aggregate": {
+      "scorer_version": "routing-identity-v2",
+      "micro": {
+        "precision": 0.9090909090909091,
+        "recall": 0.47101449275362317,
+        "f1": 0.6205250596658711,
+        "tp": 130,
+        "fp": 13,
+        "fn": 146,
+        "pair_support": 397,
+        "precision_support": 143,
+        "recall_support": 276
+      },
+      "macro": {
+        "precision": {
+          "value": 0.8716623600344531,
+          "scenario_support": 3
+        },
+        "recall": {
+          "value": 0.5311754331362174,
+          "scenario_support": 3
+        },
+        "f1": {
+          "value": 0.6273218038444484,
+          "scenario_support": 3
+        }
+      },
+      "scenario_support": 3,
+      "clarification": {
+        "required_recall": {
+          "micro": {
+            "numerator": 3,
+            "support": 4,
+            "rate": 0.75
+          },
+          "macro": {
+            "value": 0.75,
+            "scenario_support": 1
+          }
+        },
+        "miss_rate": {
+          "micro": {
+            "numerator": 1,
+            "support": 4,
+            "rate": 0.25
+          },
+          "macro": {
+            "value": 0.25,
+            "scenario_support": 1
+          }
+        },
+        "unnecessary_rate": {
+          "micro": {
+            "numerator": 0,
+            "support": 50,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 3
+          }
+        },
+        "precision": {
+          "micro": {
+            "numerator": 3,
+            "support": 3,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 1
+          }
+        }
+      },
+      "routing_coverage": {
+        "micro": {
+          "numerator": 50,
+          "support": 50,
+          "rate": 1.0
+        },
+        "macro": {
+          "value": 1.0,
+          "scenario_support": 3
+        }
+      },
+      "reference_relation_accuracy": {
+        "micro": {
+          "numerator": 80,
+          "support": 112,
+          "rate": 0.7142857142857143
+        },
+        "macro": {
+          "value": 0.7261437908496732,
+          "scenario_support": 3
+        }
+      },
+      "fragmentation": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 8,
+            "support": 5,
+            "rate": 1.6
+          },
+          "macro": {
+            "value": 1.5,
+            "scenario_support": 3
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 4,
+            "support": 5,
+            "rate": 0.8
+          },
+          "macro": {
+            "value": 0.8333333333333334,
+            "scenario_support": 3
+          }
+        }
+      },
+      "cross_thread_contamination": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 2,
+            "support": 11,
+            "rate": 0.18181818181818182
+          },
+          "macro": {
+            "value": 0.21428571428571427,
+            "scenario_support": 3
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 2,
+            "support": 11,
+            "rate": 0.18181818181818182
+          },
+          "macro": {
+            "value": 0.21428571428571427,
+            "scenario_support": 3
+          }
+        }
+      },
+      "error_propagation": {
+        "adjacent_failure_rate": {
+          "micro": {
+            "numerator": 19,
+            "support": 19,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 2
+          }
+        },
+        "failure_turns": 22,
+        "evaluated_turn_support": 47,
+        "max_consecutive_failed_turns": 11,
+        "failure_streaks_ge2": 2
+      }
+    }
+  },
+  "state_semantic_review": {
+    "reviewer": "development agent; not independent human review",
+    "status": "incomplete",
+    "reviewed_checkpoint": "S19-06",
+    "findings": [
+      {
+        "source_turn_ids": [
+          "LH019_T01",
+          "LH019_T02",
+          "LH019_T03",
+          "LH019_T06"
+        ],
+        "observation": "Deployment proposal and first repair preserve planned backup, migration and added rollback; no claim that deployment is completed."
+      },
+      {
+        "source_turn_ids": [
+          "LH019_T04",
+          "LH019_T05"
+        ],
+        "observation": "Photo proposal preserves ten landscape images and stays separate from deployment; final repair response failed formatting."
+      }
+    ],
+    "limitation": "Only supplied proposals inspected; no complete maintenance checkpoint snapshot or later checkpoints. No semantic accuracy score."
+  },
+  "four_arm_metrics": null,
+  "holdout_evaluated": false,
+  "limitations": [
+    "No complete state/identity/fewshot evaluation; baseline is reported separately, no four-arm efficacy conclusion.",
+    "Original strict parser, prompt, gold and failed archive preserved; no stripping, repair or SDK retry."
+  ]
+}

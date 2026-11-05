@@ -8,6 +8,8 @@ Episode 质量复核新增一条明确调用路径：Host 的 `OrganizationPolic
 
 `generate()` 可选关键字 `reasoning_effort` 接受 `none` / `minimal` / `low`，默认 Python None 表示完全不发送该字段。OpenAIProvider 仅对该次请求映射为 `reasoning={"effort": value}`，不修改实例或主对话默认设置；Automation、维护预算和评测 Provider 包装器按需透传，未指定时保持旧请求形状。QQ 完整性判断默认显式请求 none，可配置 minimal / low 或 default（不传参数）；它与普通主对话和 Compaction 独立。支持档位依模型/端点而定，不按名称猜测，也不在错误后重试其他档位；不支持时返回 ProviderError，由判断器回退时间聚合。[官方 reasoning 文档](https://developers.openai.com/api/docs/guides/reasoning)说明各模型支持范围不同，低 effort 不等于关闭推理。`include=reasoning.encrypted_content` 是返回数据选择，并非推理开关。MockTransport 验证位于 `tests/test_provider.py`。
 
+Host 可显式构造 `OpenAIProvider(..., json_mode=True)`，由该 Adapter 在请求中增加 `text={"format":{"type":"json_object"}}`。默认不发送此字段，普通 Runtime 不开启。首个使用者是独立 v2 JSON Pilot；它控制格式，不保证符合具体业务 Schema，也不剥除围栏、修补正文或触发重试，整理器仍执行原有严格校验。具体服务是否支持需由 Host 核实；DeepSeek 的 [Responses 兼容表](https://api-docs.deepseek.com/zh-cn/guides/responses_api/)明确支持 text.format。`tests/test_long_horizon_pilot.py` 用 MockTransport 检查路由和维护的实际 wire 字段及共享预算，原 Provider 测试继续核对默认请求形状。
+
 ## 机制流程
 
 1. 接收统一消息和允许工具，将它们转换为目标模型服务的协议。

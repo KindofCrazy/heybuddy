@@ -23,10 +23,18 @@ from personal_agent.llm.base import ProviderError, ProviderTimeout, ReasoningEff
 
 
 class OpenAIProvider:
-    def __init__(self, client: AsyncOpenAI, model: str, images: ImageReader | None = None) -> None:
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        model: str,
+        images: ImageReader | None = None,
+        *,
+        json_mode: bool = False,
+    ) -> None:
         self.client = client
         self.model = model
         self.images = images
+        self.json_mode = json_mode
 
     @staticmethod
     def safe_compaction(messages) -> bool:
@@ -117,6 +125,8 @@ class OpenAIProvider:
         )
         if reasoning_effort is not None:
             options["reasoning"] = {"effort": reasoning_effort}
+        if self.json_mode:
+            options["text"] = {"format": {"type": "json_object"}}
         try:
             response = await self.client.responses.create(
                 model=self.model,
