@@ -1,0 +1,814 @@
+{
+  "evaluation_type": "Real Model Evaluation",
+  "status": "failed",
+  "date": "2026-11-05",
+  "purpose": "one-pass dev test stopped at an incomplete provider response",
+  "annotation_status": "agent-authored provisional gold",
+  "provenance": {
+    "git_commit": "9b301f47cb0804a9df10d5a584a17da2a66fba32",
+    "git_dirty": true,
+    "code_hash": "67cc353e238543bc7d8c6212fc25204d4911c863955befd2795756ebac95e8bd",
+    "hashes": {
+      "corpus_hash": "4dba2c8666f17df06ff45b626061530d8458ca27fc9a706b38cc54adbebe8262",
+      "gold_hash": "d641386531d9c83b4eb7f1f7a9c66be09524dffe6dbf73fe72e155914aee03b4",
+      "splits_hash": "99c214693a5ff141e88d9f0eba135c915f04680e3937e02e9d1ead4eec433326",
+      "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+      "protocol_hash": "a6506236161e4ca7a3c1b4be2d11511d4afc94d9ea12be0d2224b83a5077f1b2",
+      "live_config_hash": "22b6d34e46396a0d1c536dd5ff516a753437ddb482a040dc933a24de69683049"
+    }
+  },
+  "live_config": {
+    "variant": "model-assisted",
+    "replay_mode": "streaming",
+    "network": true,
+    "model": "deepseek-flash",
+    "endpoint_host": "api.deepseek.com",
+    "context_window": 1048576,
+    "repetitions": 1,
+    "max_requests": 136,
+    "max_tokens": 696320,
+    "max_input_tokens": 4096,
+    "max_cost_cny": 3.0,
+    "input_price_cny": 2.0,
+    "output_price_cny": 8.0,
+    "price_source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "output_limit": 1024,
+    "timeout_seconds": 1800,
+    "profile": "routing-dev-v1"
+  },
+  "planned": {
+    "split": "dev",
+    "scenarios_per_variant": 8,
+    "variants": [
+      "rule",
+      "model-assisted"
+    ],
+    "trials": 16,
+    "turns": 288
+  },
+  "completed": {
+    "rule_scenarios": 8,
+    "rule_turns": 144,
+    "model_scenarios": 0,
+    "model_turns": 6
+  },
+  "holdout": {
+    "routing_run": false
+  },
+  "rule_baseline": {
+    "aggregate": {
+      "scorer_version": "routing-relations-v1",
+      "micro": {
+        "precision": 0.47286012526096033,
+        "recall": 0.8762088974854932,
+        "f1": 0.6142372881355932,
+        "tp": 453,
+        "fp": 505,
+        "fn": 64,
+        "pair_support": 1091,
+        "precision_support": 958,
+        "recall_support": 517
+      },
+      "macro": {
+        "precision": {
+          "value": 0.4675697164378502,
+          "scenario_support": 8
+        },
+        "recall": {
+          "value": 0.882260101010101,
+          "scenario_support": 8
+        },
+        "f1": {
+          "value": 0.6042239249912518,
+          "scenario_support": 8
+        }
+      },
+      "scenario_support": 8,
+      "clarification": {
+        "required_recall": {
+          "micro": {
+            "numerator": 0,
+            "support": 7,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 6
+          }
+        },
+        "miss_rate": {
+          "micro": {
+            "numerator": 7,
+            "support": 7,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 6
+          }
+        },
+        "unnecessary_rate": {
+          "micro": {
+            "numerator": 1,
+            "support": 137,
+            "rate": 0.0072992700729927005
+          },
+          "macro": {
+            "value": 0.0078125,
+            "scenario_support": 8
+          }
+        },
+        "precision": {
+          "micro": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 1
+          }
+        }
+      },
+      "routing_coverage": {
+        "micro": {
+          "numerator": 136,
+          "support": 137,
+          "rate": 0.9927007299270073
+        },
+        "macro": {
+          "value": 0.9921875,
+          "scenario_support": 8
+        }
+      },
+      "reference_relation_accuracy": {
+        "micro": {
+          "numerator": 200,
+          "support": 335,
+          "rate": 0.5970149253731343
+        },
+        "macro": {
+          "value": 0.6000211712592014,
+          "scenario_support": 8
+        }
+      },
+      "error_propagation": {
+        "adjacent_failure_rate": {
+          "micro": {
+            "numerator": 100,
+            "support": 100,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 8
+          }
+        },
+        "failure_turns": 116,
+        "evaluated_turn_support": 128,
+        "max_consecutive_failed_turns": 16,
+        "failure_streaks_ge2": 14
+      }
+    },
+    "scenarios": {
+      "LH001": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.47058823529411764,
+          "recall": 1.0,
+          "f1": 0.64,
+          "tp": 64,
+          "fp": 72,
+          "fn": 0,
+          "pair_support": 136,
+          "precision_support": 136,
+          "recall_support": 64
+        },
+        "eligible_turns": 17,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 1,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 1,
+        "clarification_rate": 0.0,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "miss_rate": {
+            "numerator": 1,
+            "support": 1,
+            "rate": 1.0
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 17,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 17,
+          "support": 17,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 28,
+          "support": 42,
+          "rate": 0.6666666666666666
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 12,
+            "support": 12,
+            "rate": 1.0
+          },
+          "failure_turns": 14,
+          "evaluated_turn_support": 16,
+          "max_consecutive_failed_turns": 8,
+          "failure_streaks_ge2": 2
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH002": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.47058823529411764,
+          "recall": 1.0,
+          "f1": 0.64,
+          "tp": 64,
+          "fp": 72,
+          "fn": 0,
+          "pair_support": 136,
+          "precision_support": 136,
+          "recall_support": 64
+        },
+        "eligible_turns": 17,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 1,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 1,
+        "clarification_rate": 0.0,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "miss_rate": {
+            "numerator": 1,
+            "support": 1,
+            "rate": 1.0
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 17,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 17,
+          "support": 17,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 28,
+          "support": 43,
+          "rate": 0.6511627906976745
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 13,
+            "support": 13,
+            "rate": 1.0
+          },
+          "failure_turns": 15,
+          "evaluated_turn_support": 16,
+          "max_consecutive_failed_turns": 9,
+          "failure_streaks_ge2": 2
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH003": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.4852941176470588,
+          "recall": 1.0,
+          "f1": 0.6534653465346535,
+          "tp": 66,
+          "fp": 70,
+          "fn": 0,
+          "pair_support": 136,
+          "precision_support": 136,
+          "recall_support": 66
+        },
+        "eligible_turns": 17,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 1,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 1,
+        "clarification_rate": 0.0,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "miss_rate": {
+            "numerator": 1,
+            "support": 1,
+            "rate": 1.0
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 17,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 17,
+          "support": 17,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 28,
+          "support": 43,
+          "rate": 0.6511627906976745
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 13,
+            "support": 13,
+            "rate": 1.0
+          },
+          "failure_turns": 15,
+          "evaluated_turn_support": 16,
+          "max_consecutive_failed_turns": 9,
+          "failure_streaks_ge2": 2
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH004": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.4852941176470588,
+          "recall": 1.0,
+          "f1": 0.6534653465346535,
+          "tp": 66,
+          "fp": 70,
+          "fn": 0,
+          "pair_support": 136,
+          "precision_support": 136,
+          "recall_support": 66
+        },
+        "eligible_turns": 17,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 1,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 1,
+        "clarification_rate": 0.0,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "miss_rate": {
+            "numerator": 1,
+            "support": 1,
+            "rate": 1.0
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 17,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 17,
+          "support": 17,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 28,
+          "support": 43,
+          "rate": 0.6511627906976745
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 13,
+            "support": 13,
+            "rate": 1.0
+          },
+          "failure_turns": 15,
+          "evaluated_turn_support": 16,
+          "max_consecutive_failed_turns": 9,
+          "failure_streaks_ge2": 2
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH005": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.3157894736842105,
+          "recall": 0.4444444444444444,
+          "f1": 0.36923076923076925,
+          "tp": 24,
+          "fp": 52,
+          "fn": 30,
+          "pair_support": 153,
+          "precision_support": 76,
+          "recall_support": 54
+        },
+        "eligible_turns": 18,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 0,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 0,
+        "clarification_rate": null,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          },
+          "miss_rate": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 18,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 18,
+          "support": 18,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 19,
+          "support": 42,
+          "rate": 0.4523809523809524
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 14,
+            "support": 14,
+            "rate": 1.0
+          },
+          "failure_turns": 15,
+          "evaluated_turn_support": 17,
+          "max_consecutive_failed_turns": 15,
+          "failure_streaks_ge2": 1
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH006": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.47058823529411764,
+          "recall": 1.0,
+          "f1": 0.64,
+          "tp": 64,
+          "fp": 72,
+          "fn": 0,
+          "pair_support": 136,
+          "precision_support": 136,
+          "recall_support": 64
+        },
+        "eligible_turns": 17,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 1,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 1,
+        "clarification_rate": 0.0,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "miss_rate": {
+            "numerator": 1,
+            "support": 1,
+            "rate": 1.0
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 17,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 17,
+          "support": 17,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 28,
+          "support": 43,
+          "rate": 0.6511627906976745
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 13,
+            "support": 13,
+            "rate": 1.0
+          },
+          "failure_turns": 15,
+          "evaluated_turn_support": 16,
+          "max_consecutive_failed_turns": 9,
+          "failure_streaks_ge2": 2
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH007": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.5567010309278351,
+          "recall": 0.6136363636363636,
+          "f1": 0.5837837837837838,
+          "tp": 54,
+          "fp": 43,
+          "fn": 34,
+          "pair_support": 153,
+          "precision_support": 97,
+          "recall_support": 88
+        },
+        "eligible_turns": 18,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 0,
+        "prediction_abstentions": 0,
+        "clarified": 0,
+        "clarification_support": 0,
+        "clarification_rate": null,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          },
+          "miss_rate": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          },
+          "unnecessary_rate": {
+            "numerator": 0,
+            "support": 18,
+            "rate": 0.0
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 0,
+            "rate": null
+          }
+        },
+        "routing_coverage": {
+          "numerator": 18,
+          "support": 18,
+          "rate": 1.0
+        },
+        "reference_relation_accuracy": {
+          "numerator": 18,
+          "support": 45,
+          "rate": 0.4
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 15,
+            "support": 15,
+            "rate": 1.0
+          },
+          "failure_turns": 16,
+          "evaluated_turn_support": 17,
+          "max_consecutive_failed_turns": 16,
+          "failure_streaks_ge2": 1
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      },
+      "LH008": {
+        "scorer_version": "routing-relations-v1",
+        "pairwise": {
+          "precision": 0.4857142857142857,
+          "recall": 1.0,
+          "f1": 0.6538461538461539,
+          "tp": 51,
+          "fp": 54,
+          "fn": 0,
+          "pair_support": 105,
+          "precision_support": 105,
+          "recall_support": 51
+        },
+        "eligible_turns": 15,
+        "gold_turns": 18,
+        "ambiguous_gold_turns": 2,
+        "prediction_abstentions": 1,
+        "clarified": 0,
+        "clarification_support": 2,
+        "clarification_rate": 0.0,
+        "clarification": {
+          "required_recall": {
+            "numerator": 0,
+            "support": 2,
+            "rate": 0.0
+          },
+          "miss_rate": {
+            "numerator": 2,
+            "support": 2,
+            "rate": 1.0
+          },
+          "unnecessary_rate": {
+            "numerator": 1,
+            "support": 16,
+            "rate": 0.0625
+          },
+          "precision": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          }
+        },
+        "routing_coverage": {
+          "numerator": 15,
+          "support": 16,
+          "rate": 0.9375
+        },
+        "reference_relation_accuracy": {
+          "numerator": 23,
+          "support": 34,
+          "rate": 0.6764705882352942
+        },
+        "error_propagation": {
+          "definition": "adjacent annotated relation failures; association, not causation",
+          "adjacent_failure_rate": {
+            "numerator": 7,
+            "support": 7,
+            "rate": 1.0
+          },
+          "failure_turns": 11,
+          "evaluated_turn_support": 14,
+          "max_consecutive_failed_turns": 6,
+          "failure_streaks_ge2": 2
+        },
+        "action_accuracy": null,
+        "fragmentation": null,
+        "cross_thread_contamination": null,
+        "resume_qa_accuracy": null
+      }
+    },
+    "matches_previous_offline_baseline": true
+  },
+  "model_assisted": {
+    "overall_metrics": null,
+    "reason": "incomplete replay; no full model scores",
+    "failed_scenario": "LH001",
+    "failed_turn": "LH001_T07"
+  },
+  "errors_by_stage": {
+    "routing": {
+      "incomplete_response": 1
+    }
+  },
+  "calls": [
+    {
+      "scenario_id": "LH001",
+      "turn_id": "LH001_T02",
+      "status": "completed",
+      "error_code": null,
+      "usage": {
+        "input_tokens": 322,
+        "output_tokens": 102,
+        "reasoning_tokens": 67
+      },
+      "latency_ms": 2389.6486000012374,
+      "output_limit": 1024
+    },
+    {
+      "scenario_id": "LH001",
+      "turn_id": "LH001_T04",
+      "status": "completed",
+      "error_code": null,
+      "usage": {
+        "input_tokens": 421,
+        "output_tokens": 187,
+        "reasoning_tokens": 166
+      },
+      "latency_ms": 1609.5553999912227,
+      "output_limit": 1024
+    },
+    {
+      "scenario_id": "LH001",
+      "turn_id": "LH001_T05",
+      "status": "completed",
+      "error_code": null,
+      "usage": {
+        "input_tokens": 481,
+        "output_tokens": 183,
+        "reasoning_tokens": 144
+      },
+      "latency_ms": 1441.5507999947295,
+      "output_limit": 1024
+    },
+    {
+      "scenario_id": "LH001",
+      "turn_id": "LH001_T07",
+      "status": "failed",
+      "error_code": "incomplete_response",
+      "usage": {
+        "input_tokens": 472,
+        "output_tokens": 1024,
+        "reasoning_tokens": 1024
+      },
+      "latency_ms": 6698.743999993894,
+      "output_limit": 1024
+    }
+  ],
+  "usage": {
+    "currency": "CNY",
+    "actual_requests": 4,
+    "reserved_tokens": 10541,
+    "reserved_cost_cny": 0.04565799999999999,
+    "usage_complete": true,
+    "input_tokens": 1696,
+    "output_tokens": 1496,
+    "cost_cny_upper_estimate": 0.01536
+  },
+  "stop_evidence": {
+    "code": "incomplete_response",
+    "output_limit": 1024,
+    "reported_output_tokens": 1024,
+    "reported_reasoning_tokens": 1024,
+    "provider_incomplete_reason": "not retained by meter; no exact enum inferred"
+  },
+  "retry_count": 0,
+  "budget_increased": false,
+  "next_step": "Revisit routing reasoning/output allocation as a separately configured experiment; do not retry or change gold in this result"
+}

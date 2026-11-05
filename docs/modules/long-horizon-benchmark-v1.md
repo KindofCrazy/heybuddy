@@ -76,6 +76,16 @@ uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_hor
 
 参数中的单价按当前 DeepSeek 官方价表复核，仍按较高的未缓存输入/输出价估算，金额不冒充服务商账单。Gold 的 agent-authored provisional 状态保留；一次开发集实验不构成独立泛化结论。
 
+### 2026-11-05 开发集真实测试回执
+
+提交 `9b301f4` 上按授权参数实际尝试一次开发集实验，运行状态为 failed，不能报告模型整体分数。规则 Variant 的 8 场景/144 Turn 全部完成，指标与之前离线基线一致。模型辅助 Variant 在首个场景 LH001 的第 7 Turn 停止，此前完成 6 Turn；其余模型场景没有运行，Holdout 没有运行。
+
+共 4 次真实模型请求：前 3 次完成，第 4 次返回 incomplete_response。该请求实际 output_tokens=1024、reasoning_tokens=1024，等于配置的输出上限，未取得完整路由结果。原 MeteredProvider 没有保留 ProviderDiagnostics 的 incomplete_reason 枚举，因此这里只记录可核对的用量与错误码，不反推或伪造服务商细分原因。该现象提示需要检查路由选择的推理/输出额度，不能直接解释为模型选错话题。
+
+总 Usage 完整：输入 1696、输出 1496 tokens；按本次较高单价估算费用上界 0.01536 元，没有耗尽 3 元总预算。按预先定义的错误停止规则终止，不自动重试、提高输出额度、修改 Prompt 或改 Gold。部分模型轨迹不计算完整开发集 F1；未完成结果的成功重算入口明确拒绝。
+
+无原始正文汇总见 [开发集真实失败回执](../../evals/results/long-horizon-v1-live-dev-20261105.json)。完整私有元数据、逐步回执与部分 Trace 保留在 `.heybuddy/evaluations/lh-v1-live-dev-20261105/`。下一步应先独立核对路由选择的推理/输出配置，再制定新的受控实验，不能把重新运行冒充本轮续跑成功。
+
 ## 阅读与验证
 
 ```powershell
