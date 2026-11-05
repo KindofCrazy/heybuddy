@@ -26,6 +26,8 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     harness_enabled: bool = True
+    thread_routing_enabled: bool = True
+    thread_router_model_selection: bool = False
     goal_model_review: bool = False
     workspace_root: Path | None = None
     workspace_git_root: Path | None = None
@@ -346,6 +348,8 @@ ENV_FIELDS = {
     "AGENT_HISTORY_PAGE_RUNS": "page_runs",
     "AGENT_SUMMARY_MAX_BYTES": "summary_max_bytes",
     "AGENT_GOAL_MODEL_REVIEW": "goal_model_review",
+    "AGENT_THREAD_ROUTING_ENABLED": "thread_routing_enabled",
+    "AGENT_THREAD_ROUTER_MODEL_SELECTION": "thread_router_model_selection",
     "AGENT_HARNESS_ENABLED": "harness_enabled",
     "AGENT_WORKSPACE_ROOT": "workspace_root",
     "AGENT_WORKSPACE_GIT_ROOT": "workspace_git_root",

@@ -58,3 +58,7 @@ storage/retrieval.py::WorkingContextRepository 绑定 ThreadRepository/Agent 与
 ## 未来改进
 
 分别评估 fast path、确定性召回和 Preflight 对证据命中与成本的贡献。为选入/省略项输出脱敏理由，避免只用关键词命中率证明回答质量。
+
+## 路由启用时
+
+ContextRetriever 优先读取 CURRENT_THREAD 的状态/关联 Episode；可选历史 Run 也须符合当前 Thread/Conversation/source，禁止词面相关的其他 Thread 原文混入工作上下文。已路由时不再让 Memory Preflight 另选 Thread/Episode；Router 已发模型请求时，本 Run 也跳过额外 Memory Preflight。Memory 仍为 Agent 级只读知识，Recall 工具保留显式历史查询入口。关闭路由恢复旧检索路径。验证见 `tests/test_thread_routing.py`、`tests/test_qq_integration.py`。

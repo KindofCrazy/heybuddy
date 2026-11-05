@@ -48,3 +48,7 @@ OpenAIProvider.safe_compaction 拒绝未知 namespace/item_reference 等无法�
 - 按工具类型明确必须保留的证据字段，减少统一清理的语义损失。
 - 测量任务完成率、事实保留和多次摘要漂移，不能只看字节节省。
 - 分层记录压缩成本与节省量，再用证据调整水位与保留策略。
+
+## Thread 摘要隔离（schema 24）
+
+默认 Harness 通过 SQLiteThreadHistory 使用独立 `thread_context_summaries`，键为 Thread/Conversation/source；`storage.context.page/compact_through/save_summary` 在读取 payload 前过滤 Run 绑定。不同 Thread 的 sequence 可以交错，压缩前缀仅在该 Thread 的完整 Run 序列中连续。CAS、checksum、来源 hash、近期保护与多层压缩规则沿用；不会注入旧 Conversation 混合摘要。可信纠正绑定会事务失效原/新 Thread 在该来源的摘要，之后从原 Journal 重建，不自动调用模型。测试：`tests/test_thread_routing.py`。

@@ -3,10 +3,12 @@
 import sqlite3
 from datetime import datetime
 
+from personal_agent.core.execution import CURRENT_SCOPE
 from personal_agent.core.retrieval import RetrievalItem, RetrievalPolicy, RetrievalResult
 from personal_agent.organization.models import Episode, Thread
 from personal_agent.storage.episodes import EpisodeRepository
 from personal_agent.storage.recall import query_budget
+from personal_agent.storage.routing import owners
 from personal_agent.storage.threads import ThreadRepository
 
 
@@ -73,6 +75,7 @@ class WorkingContextRepository:
         *,
         thread_id: str | None = None,
         episode_ids: list[str] | None = None,
+        strict_thread: bool = False,
     ) -> RetrievalResult:
         with self.repository.store._transaction() as db, query_budget(db):
             # Match metadata in SQL, not a full Python deserialization scan. Literal
@@ -114,6 +117,13 @@ class WorkingContextRepository:
                 if episode_ids is not None
                 else self._candidates(db, thread, terms)
             )
+            if strict_thread and thread:
+                episodes = [
+                    e
+                    for e in episodes
+                    if e.thread_id == thread.id
+                    and not (set(owners(db, e.run_ids).values()) - {thread.id})
+                ]
             if thread:
                 items[0].reference["newer_unlinked_evidence"] = any(
                     e.thread_id is None and e.ended_at > thread.last_active_at for e in episodes
@@ -158,6 +168,18 @@ class WorkingContextRepository:
                     ),
                 ).fetchall()
                 for row in rows:
+                    if strict_thread:
+                        scope = CURRENT_SCOPE.get()
+                        if (
+                            scope is None
+                            or not db.execute(
+                                "SELECT 1 FROM run_threads WHERE run_id=? "
+                                "AND thread_id=? AND source=? "
+                                "AND conversation_id=?",
+                                (row["id"], thread.id, scope.source, scope.conversation_id),
+                            ).fetchone()
+                        ):
+                            continue
                     if row["id"] in selected or used >= self.policy.raw_run_limit:
                         continue
                     source = self.episodes.read_source(db, row, self.policy.max_run_bytes)

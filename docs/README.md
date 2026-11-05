@@ -4,7 +4,7 @@
 
 每个模块专题提供两种阅读方式：“机制流程”讲触发条件、处理步骤、决策与结果；后面的实际运行路径讲源码如何实现这些步骤。两者互相补充，未来改进单独列出，不混入当前机制。
 
-当前文档基线是 P5、SQLite schema 23。模块说明用实际源码路径和符号定位；“未来改进”是待讨论建议，不改变当前能力和授权。少数保留的版本章节用于解释兼容路径，旧交付结果统一见[历史归档](archive/README.md)。
+当前文档基线是 P5、SQLite schema 24。模块说明用实际源码路径和符号定位；“未来改进”是待讨论建议，不改变当前能力和授权。少数保留的版本章节用于解释兼容路径，旧交付结果统一见[历史归档](archive/README.md)。
 
 ## 主请求与执行
 
@@ -13,6 +13,7 @@
 | [runtime](modules/runtime.md) | 应用装配和前后台交接 |
 | [agent](modules/agent.md) | 模型循环、响应与停止 |
 | [harness](modules/harness.md) | 来源、共享预算、扩展装配 |
+| [thread-routing](modules/thread-routing.md) | 在线 Thread 选择、来源重放与独立压缩 |
 | [context](modules/context.md) | 输入编译与有界历史 |
 | [compaction](modules/compaction.md) | 工具产物、micro、历史和 Run 内摘要 |
 | [models](modules/models.md) | 内部消息、调用、结果 |

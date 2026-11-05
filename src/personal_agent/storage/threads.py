@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from personal_agent.core.history import HistoryError
 from personal_agent.organization.models import Episode, Thread, ThreadDecision
 from personal_agent.storage.episodes import EpisodeRepository
+from personal_agent.storage.routing import owners
 
 if TYPE_CHECKING:
     from personal_agent.storage.sqlite import SQLiteStore
@@ -166,6 +167,15 @@ class ThreadRepository:
                 (self.agent_id, revision, state, code, json.dumps(metrics or {})),
             )
 
+    def fixed_assignments(self, episodes: list[Episode]) -> dict[str, str]:
+        with self.store.reading() as db:
+            fixed = {}
+            for episode in episodes:
+                routed = owners(db, episode.run_ids)
+                if len(routed) == len(episode.run_ids) and len(set(routed.values())) == 1:
+                    fixed[episode.id] = next(iter(routed.values()))
+            return fixed
+
     def publish(
         self,
         revision: int,
@@ -194,6 +204,16 @@ class ThreadRepository:
                 thread_id = group.thread_id or str(uuid4())
                 for eid in group.episode_ids:
                     new_targets[eid] = thread_id
+            for episode in episodes:
+                routed = owners(db, episode.run_ids)
+                if routed and (
+                    len(routed) != len(episode.run_ids)
+                    or len(set(routed.values())) != 1
+                    or new_targets.get(episode.id) != next(iter(routed.values()))
+                ):
+                    raise HistoryError(
+                        "Online Thread membership cannot be reassigned by organization."
+                    )
             affected = {e.thread_id for e in episodes if e.thread_id}
             for old in affected:
                 db.execute("UPDATE topic_threads SET dirty=1 WHERE id=?", (old,))

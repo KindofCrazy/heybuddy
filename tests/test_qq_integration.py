@@ -138,7 +138,14 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
                 }
                 & names
             )
-            assert any("这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user")
+            # Raw replay is bound to the current channel source; Recall remains available.
+            assert not any(
+                "这个反例推翻了之前的假设。" == m.text for m in request if m.role == "user"
+            )
+            assert any(
+                getattr(m.content, "text", "") == "这个反例推翻了之前的假设。"
+                for m in db.load_messages(conversation_id)
+            )
             assert any("用户的项目是 HeyBuddy" in m.text for m in request if m.role == "user")
             identity = (
                 f"你是 {sessions.character.package.persona['姓名']}"

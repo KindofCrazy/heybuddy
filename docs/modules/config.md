@@ -156,3 +156,7 @@ P5 增加 AGENT_HARNESS_ENABLED、AGENT_WORKSPACE_ROOT、AGENT_WORKSPACE_GIT_ROO
 ## 未来改进
 
 提供脱敏的生效配置与来源诊断，明确环境覆盖和组合预算错误。增强路径配置间的冲突检查，不把凭据值输出到日志或页面。
+
+## Thread Router
+
+`AGENT_THREAD_ROUTING_ENABLED` 默认 true，要求 Harness 开启。`AGENT_THREAD_ROUTER_MODEL_SELECTION` 默认 false；开启后仅在规则无法确定时最多一次无工具模型选择，10 秒超时，最多 12 个候选卡、当前输入前 4000 字符、4 条各 500 字符的临近文本，输出最多 1024 tokens/4096 bytes，计入根 ExecutionBudget。规则包含 Host 手选、显式 ID、唯一标题匹配、显式换话题、短回复接续及闲聊；仅最近 24 个 Thread 自动候选，更旧的 Thread 可按 ID 选择。无模型时并不声称语义理解任意话题切换。失败降级保留当前 Thread，不重试；明确歧义先追问，本轮禁止工具。关闭开关停止新路由并保留状态，回到 Conversation 兼容路径。

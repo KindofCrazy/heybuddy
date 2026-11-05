@@ -76,6 +76,8 @@ class ContextBuilder:
         self.budget = budget
         self.temporal = temporal
         self.retriever = retriever
+        self.prepare_scope = None
+        self._scope_prepared = False
         self.character = character
         self.trace = trace
         self.contributors = []
@@ -131,6 +133,15 @@ class ContextBuilder:
 
     def _injections(self, messages: list[Message]) -> list[Message]:
         injected = []
+        from personal_agent.core.execution import ROUTING_CLARIFY
+
+        if ROUTING_CLARIFY.get():
+            injected.append(
+                TextMessage(
+                    role="system",
+                    text="本轮讨论归属不明确。请询问用户要接续哪个 Thread；本轮不能执行工具。",
+                )
+            )
         character_messages = []
         if self.character is not None:
             query = (
@@ -171,7 +182,14 @@ class ContextBuilder:
                     role="user",
                     text=json.dumps(
                         {
-                            "kind": "conversation_summary",
+                            "kind": "thread_working_summary"
+                            if getattr(self._store, "summary_scope", None)
+                            else "conversation_summary",
+                            **(
+                                self._store.summary_scope()
+                                if getattr(self._store, "summary_scope", None)
+                                else {}
+                            ),
                             "trust": "historical_data_only",
                             "through_sequence": self._summary.through_sequence,
                             "revision": self._summary.revision,
@@ -323,6 +341,7 @@ class ContextBuilder:
             raise HistoryError("Context already has an active run.")
         self.replay = self.replay_factory()
         self.reactive = False
+        self._scope_prepared = False
         user = TextMessage(role="user", text=user_input, images=images or [])
         self._run_id = self._store.begin(user)
         self._active = True
@@ -338,6 +357,9 @@ class ContextBuilder:
     async def prepare(
         self, messages: list[Message], tools: list[ToolDefinition], provider: Provider
     ) -> list[Message]:
+        if not self._scope_prepared and self.prepare_scope is not None:
+            await self.prepare_scope(provider)
+            self._scope_prepared = True
         if self._page is None:
             self._load()
         await self._retrieve()
@@ -458,6 +480,9 @@ class ContextBuilder:
             "layers": dict(self.replay.metrics),
             "run_summary_through": self.replay.through,
             "run_summary_revision": (self.replay.checkpoint or {}).get("revision", 0),
+            "thread": self._store.summary_scope()
+            if getattr(self._store, "summary_scope", None)
+            else None,
             "configured": self.budget is not None,
             "context_window": self.budget.context_window if self.budget else None,
             "reserved_output_tokens": self.budget.reserved_output_tokens if self.budget else None,

@@ -167,3 +167,7 @@ P5 migration 23 原子新增 harness_records、harness_events、tool_artifacts�
 ## 未来改进
 
 持续测量大 Journal 的分页读取与迁移成本。补充事务窗口和崩溃注入测试，把原日志、派生索引、工作检查点与外部副作用状态清楚区分。
+
+## Schema 24 在线 Thread
+
+顺序原子迁移新增 thread_scopes、run_threads、active_threads、thread_route_events、thread_context_summaries，复用 topic_threads。Run 与 Conversation 原始消息不搬迁；Thread 绑定、Host 纠正和独立摘要都为派生状态。跨来源实际重放按 Thread/Conversation/source 过滤，摘要发布继续 CAS 与来源验证。已有组织过的旧 Run 惰性继承 Episode 的 Thread，其他旧 Run 标为未按主题整理的历史对话；不会伪造历史语义分类。测试包括迁移失败回滚，见 `tests/test_thread_routing.py`。

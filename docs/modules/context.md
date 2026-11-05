@@ -47,3 +47,7 @@ Memory 每轮刷新，检索通常每 Run 一次。参考数据以低信任 user
 - 统一记录每层来源、大小和省略原因，使模型输入可解释。
 - 为贡献器提供显式 Protocol、总额度和优先级。
 - 评估 Memory 改变后是否需要有界刷新本 Run 的检索快照。
+
+## Thread 路由后的上下文
+
+生产 Harness 默认将 History Protocol 实现换成 `storage/thread_history.py::SQLiteThreadHistory`。`begin()` 仍原子保存原 Conversation Run；首次 `prepare()` 先 await Host 注入的 `prepare_scope(provider)`，确定 Thread 后才 `_load()`、`_retrieve()`。同一 Run 后续模型轮次只刷新贡献器，不重新路由。`active_thread` 与 `thread_working_summary` 都作为低信任 user JSON 插入 messages，原 Run 则按内部 Message 序列重放。线程摘要仅覆盖本 Thread 的完整已结束 Run，不混用 Conversation 旧摘要；原日志仍完整。具体边界和验证见 [Thread Router](thread-routing.md)。

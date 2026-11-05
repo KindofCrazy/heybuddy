@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from personal_agent.core.history import HistoryError
 from personal_agent.organization.models import Batch, Episode, OrganizationPolicy, Source
 from personal_agent.storage import context
+from personal_agent.storage.routing import owners
 
 if TYPE_CHECKING:
     from personal_agent.storage.sqlite import SQLiteStore
@@ -223,6 +224,7 @@ class EpisodeRepository:
                 started_at=row["started_at"],
                 ended_at=row["ended_at"],
                 turn=turn,
+                context_thread_id=owners(db, [row["id"]]).get(row["id"]),
                 skip_reason=reason,
                 payload_bytes=stats[1],
                 message_count=stats[0],
@@ -351,6 +353,12 @@ class EpisodeRepository:
                 )
                 self._write(db, finalized, existing=True)
             for episode in episodes:
+                routed = owners(db, episode.run_ids)
+                if routed and (
+                    len(routed) != len(episode.run_ids)
+                    or set(routed.values()) != {episode.thread_id}
+                ):
+                    raise HistoryError("Episode must preserve complete online Thread membership.")
                 self._write(db, episode, existing=bool(previous and episode.id == previous.id))
             for record in batch.records:
                 if record.skip_reason:

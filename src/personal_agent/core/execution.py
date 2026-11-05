@@ -75,6 +75,9 @@ class RunScope:
 
 
 CURRENT_SCOPE: ContextVar[RunScope | None] = ContextVar("execution_scope", default=None)
+CURRENT_THREAD: ContextVar[str | None] = ContextVar("logical_thread", default=None)
+ROUTING_MODEL_USED: ContextVar[bool] = ContextVar("routing_model_used", default=False)
+ROUTING_CLARIFY: ContextVar[bool] = ContextVar("routing_clarify", default=False)
 CURRENT_RUN: ContextVar[str | None] = ContextVar("execution_run", default=None)
 
 

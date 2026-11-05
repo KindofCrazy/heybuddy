@@ -2,11 +2,15 @@
 
 ## 当前实现范围与历史阶段说明
 
-当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 23，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
+当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 24，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
 
 ## P5 General Agent Harness 明确授权
 
-2026-11-04 用户明确要求实现 P5 M1–M5：通用生命周期、有来源和共享预算的执行、多层 Context Compaction、受控工作文件与白名单命令、Todo/Task/Goal、只读 Skills、真实 MCP Client、深度一只读子执行、后台作业及注册式 Workflow。官方 QQ 白名单私聊和绑定主号 NapCat 默认可用受控工具；高风险与无法确认安全的命令直接拒绝，不开放任意 Shell、模型生成代码或配置管理。允许当前 Run 在已完成工具交互的安全边界压缩，保留原请求、近期交互、完整原 Journal 和必要 Provider 数据；明确上下文超限可补救一次，不重跑工具。默认离线测试，不调用付费模型。M2–M4 重启只展示 interrupted 状态，M5 Resume 仅由可信 CLI/Host 显式触发并核对未知副作用；不新增 QQ 主动完成通知、Teams 或周期自主任务。该授权优先于历史阶段对通用 Task、子 Agent 和当前 Run 压缩的限制。MemoryFS、Reflection 手动审批与角色边界继续保留。当前 SQLite schema 23。
+2026-11-04 用户明确要求实现 P5 M1–M5：通用生命周期、有来源和共享预算的执行、多层 Context Compaction、受控工作文件与白名单命令、Todo/Task/Goal、只读 Skills、真实 MCP Client、深度一只读子执行、后台作业及注册式 Workflow。官方 QQ 白名单私聊和绑定主号 NapCat 默认可用受控工具；高风险与无法确认安全的命令直接拒绝，不开放任意 Shell、模型生成代码或配置管理。允许当前 Run 在已完成工具交互的安全边界压缩，保留原请求、近期交互、完整原 Journal 和必要 Provider 数据；明确上下文超限可补救一次，不重跑工具。默认离线测试，不调用付费模型。M2–M4 重启只展示 interrupted 状态，M5 Resume 仅由可信 CLI/Host 显式触发并核对未知副作用；不新增 QQ 主动完成通知、Teams 或周期自主任务。该授权优先于历史阶段对通用 Task、子 Agent 和当前 Run 压缩的限制。MemoryFS、Reflection 手动审批与角色边界继续保留。当前 SQLite schema 24。
+
+## Thread 在线路由明确授权
+
+2026-11-05 用户授权将既有 Thread 用作逻辑会话，不新增 ContextRoute 或并发 Worker。Conversation 保留原始 Journal 和来源；每 Run 在首次 prepare 路由一次，历史重放与工作摘要按 Thread/Conversation/source 隔离。在线 Thread 可先无 current_state，Episode 仍事后整理，切换 Thread 必须分段；后台不能改写已路由归属。可信 CLI 可以纠正绑定并失效摘要，不能改原始消息。模型路由默认关闭，Host 可显式开启一次无工具选择并计入根预算；不明确时先追问并拒绝本轮工具。关闭路由保留历史兼容模式，不删除状态。下文旧 Conversation Summary 与会话选择描述仅适用于关闭此能力的兼容路径。
 
 ## NapCat 一对一渠道明确授权
 

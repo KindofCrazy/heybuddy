@@ -1,6 +1,6 @@
 # HeyBuddy
 
-一个本地运行、核心 Harness 自行实现的个人 Agent：Python 3.13、asyncio 手写循环、SQLite schema 23、普通 Markdown 长期记忆。当前支持共享执行预算、工具、Hooks、只读 Skills、MCP、规划、受控工作区、深度一只读子执行、后台作业、注册式 Workflow 和多层上下文压缩。角色库默认 none，当前开发配置选择 Luna。
+一个本地运行、核心 Harness 自行实现的个人 Agent：Python 3.13、asyncio 手写循环、SQLite schema 24、普通 Markdown 长期记忆。当前支持共享执行预算、工具、Hooks、只读 Skills、MCP、规划、受控工作区、深度一只读子执行、后台作业、注册式 Workflow 和多层上下文压缩。角色库默认 none，当前开发配置选择 Luna。
 
 ## 先读这里
 
@@ -11,6 +11,7 @@
 | 关注点 | 文档 |
 | --- | --- |
 | 执行循环与停止条件 | [Agent](docs/modules/agent.md)、[Harness](docs/modules/harness.md)、[Planning](docs/modules/planning.md) |
+| 逻辑会话与路由 | [Thread Router](docs/modules/thread-routing.md) |
 | 模型输入与压缩 | [Context](docs/modules/context.md)、[Compaction](docs/modules/compaction.md)、[检索](docs/modules/retrieval.md) |
 | 执行能力 | [Tool Use](docs/modules/tools.md)、[Hooks](docs/modules/hooks.md)、[Skills](docs/modules/skills.md)、[MCP](docs/modules/skills-mcp.md) |
 | 长期理解与后台维护 | [Memory](docs/modules/memory.md)、[Learning](docs/modules/learning.md)、[Proactive](docs/modules/proactive.md) |
@@ -67,10 +68,10 @@ uv run personal-agent --help
 
 | 输入 | 行为 |
 | --- | --- |
-| 普通文本 | 在当前 Conversation 中运行 Agent |
-| `/new` | 在同一 Agent 下新建并切换到空会话 |
-| `/sessions` | 列出会话 ID、更新时间，并标记当前会话 |
-| `/resume <conversation_id>` | 根据完整 ID 恢复已有会话 |
+| 普通文本 | 在线选择 Thread 并串行运行 Agent，原文保留在 Conversation 日志 |
+| `/new` | 新建并选择空 Thread；关闭路由时新建 Conversation |
+| `/sessions` | 列出 Thread ID 和标题，标记当前 Thread；关闭路由时列出 Conversation |
+| `/resume <id>` | 选择已有 Thread；关闭路由时选择 Conversation |
 | `/memory read <请求>` | 本轮允许读取固定 Core 块和内容摘要 |
 | `/memory edit <请求>` | 本轮允许 Core 与 Deferred 创建/编辑及索引补链 |
 | `/memory check` | 本地检查缺失索引/链接、悬空/无效链接，不调用模型 |
@@ -106,3 +107,5 @@ uv run ruff format --check .
 ```
 
 测试保留网络禁用保护，使用 Fake Provider、MockTransport 与隔离数据；不调用付费模型。变更打包或入口时另运行 `uv build` 与 CLI 启动检查。不要把真实数据库、Memory、凭据或本地配置提交到 Git。
+
+默认开启 Thread 在线路由：同一原始 Conversation 中可切换逻辑讨论，独立重放和压缩。`/new`、`/sessions`、`/resume <id>` 分别新建、列出、选择 Thread；`/thread new [title]|list|use <id>|correct <run_id> <thread_id>` 为可信 CLI 管理入口。关闭 `AGENT_THREAD_ROUTING_ENABLED` 可使用旧 Conversation 模式。语义模型选择默认关闭，开启方法与边界见 [Thread Router](docs/modules/thread-routing.md)。

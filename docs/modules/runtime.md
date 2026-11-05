@@ -13,7 +13,7 @@
 
 ## 代码实际运行路径
 
-1. open_application 打开 Store，取得占用锁，initialize 顺序迁移到 schema 23；非只读模式 recover_incomplete_runs 只更新中断审计状态。
+1. open_application 打开 Store，取得占用锁，initialize 顺序迁移到 schema 24；非只读模式 recover_incomplete_runs 只更新中断审计状态。
 2. SessionManager 恢复当前会话，创建 Agent 级 MemoryFS，非只读模式 initialize；sessions.memory 交给 Context 编译。
 3. open_chat 创建 AsyncOpenAI，max_retries=0，通过 OpenAIProvider 和绑定 Agent 的 SQLiteImages 进入 assemble_chat。
 4. assemble_chat 加载角色、建立 Outbox 接续读取，注册内建/Memory/Recall 工具。生产不注册 add_numbers；基础检索使用 archival_memory_search 与独立 Recall，Harness 开启后还有工作、规划等工具，不能把旧的“四个工具”当完整生产列表。
@@ -38,3 +38,5 @@ observer_only 使用 SQLite 只读连接，initialize 只验证当前 schema，�
 ## 未来改进
 
 显式声明装配依赖和关闭顺序，减少扩展遗漏清理。为 observer-only 与执行模式列出能力差异，并把来源验证与权限传递保持在可信边界。
+
+默认 Harness 的首次 Context.prepare 通过 ThreadRouter 选择逻辑 Thread，再读取 Thread 范围的历史与独立摘要；Conversation 保持底层来源日志，未新建并发执行器。详见 [Thread Router](thread-routing.md)。

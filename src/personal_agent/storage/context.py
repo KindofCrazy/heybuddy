@@ -45,10 +45,23 @@ SCHEMA = (
 )
 
 
-def summary(db: sqlite3.Connection, conversation_id: str) -> ConversationSummary | None:
-    row = db.execute(
-        "SELECT * FROM context_summaries WHERE conversation_id=?", (conversation_id,)
-    ).fetchone()
+def summary(
+    db: sqlite3.Connection,
+    conversation_id: str,
+    *,
+    thread_id: str | None = None,
+    source: str = "cli",
+) -> ConversationSummary | None:
+    if thread_id is None:
+        row = db.execute(
+            "SELECT * FROM context_summaries WHERE conversation_id=?", (conversation_id,)
+        ).fetchone()
+    else:
+        row = db.execute(
+            "SELECT text,through_sequence,through_run_id,revision,updated_at,checksum "
+            "FROM thread_context_summaries WHERE thread_id=? AND conversation_id=? AND source=?",
+            (thread_id, conversation_id, source),
+        ).fetchone()
     if row is None:
         return None
     try:
@@ -73,6 +86,15 @@ def summary(db: sqlite3.Connection, conversation_id: str) -> ConversationSummary
         ).fetchone()
         if boundary is None:
             raise ValueError
+        if (
+            thread_id is not None
+            and not db.execute(
+                "SELECT 1 FROM run_threads WHERE run_id=? AND thread_id=? "
+                "AND source=? AND conversation_id=?",
+                (value.through_run_id, thread_id, source, conversation_id),
+            ).fetchone()
+        ):
+            raise ValueError
         return value
     except (ValidationError, ValueError, UnicodeError):
         raise HistoryError("Conversation summary or boundary is invalid.") from None
@@ -87,20 +109,29 @@ def page(
     max_runs: int = 32,
     max_bytes: int = 262144,
     completed_only: bool = False,
+    thread_id: str | None = None,
+    source: str = "cli",
 ) -> HistoryPage:
     if not 1 <= max_runs <= 64 or not 1 <= max_bytes <= 2_097_152 or after < 0:
         raise ValueError("Invalid history page budget")
     status_filter = (
         "r.status='completed'" if completed_only else "r.status IN ('completed','failed')"
     )
+    scoped = (
+        " AND EXISTS (SELECT 1 FROM run_threads rt WHERE rt.run_id=c.run_id "
+        "AND rt.thread_id=? AND rt.source=?)"
+        if thread_id is not None
+        else ""
+    )
     rows = db.execute(
         "SELECT c.* FROM context_runs c JOIN runs r ON c.run_id=r.id "
         "WHERE c.conversation_id=? AND c.last_sequence>? AND c.last_sequence<=? "
-        f"AND {status_filter} ORDER BY c.last_sequence LIMIT ?",
+        f"AND {status_filter}" + scoped + " ORDER BY c.last_sequence LIMIT ?",
         (
             conversation_id,
             after,
             through if through is not None else 9223372036854775807,
+            *((thread_id, source) if thread_id is not None else ()),
             max_runs + 1,
         ),
     ).fetchall()
@@ -159,12 +190,26 @@ def page(
     return HistoryPage(turns=turns, has_more=more)
 
 
-def compact_through(db: sqlite3.Connection, conversation_id: str, recent_runs: int) -> int:
+def compact_through(
+    db: sqlite3.Connection,
+    conversation_id: str,
+    recent_runs: int,
+    *,
+    thread_id: str | None = None,
+    source: str = "cli",
+) -> int:
+    scoped = (
+        " AND EXISTS (SELECT 1 FROM run_threads rt WHERE rt.run_id=c.run_id "
+        "AND rt.thread_id=? AND rt.source=?)"
+        if thread_id is not None
+        else ""
+    )
     row = db.execute(
         "SELECT c.last_sequence FROM context_runs c JOIN runs r ON c.run_id=r.id "
         "WHERE c.conversation_id=? AND r.status IN ('completed','failed') "
-        "ORDER BY c.last_sequence DESC LIMIT 1 OFFSET ?",
-        (conversation_id, recent_runs),
+        + scoped
+        + " ORDER BY c.last_sequence DESC LIMIT 1 OFFSET ?",
+        (conversation_id, *((thread_id, source) if thread_id is not None else ()), recent_runs),
     ).fetchone()
     return row[0] if row else 0
 
@@ -175,16 +220,26 @@ def save_summary(
     text: str,
     previous: ConversationSummary | None,
     turns: list[HistoryTurn],
+    *,
+    thread_id: str | None = None,
+    source: str = "cli",
 ) -> ConversationSummary:
     if not text.strip() or len(text.encode()) > 65536 or not turns:
         raise HistoryError("Invalid summary checkpoint.")
-    current = summary(db, conversation_id)
+    current = summary(db, conversation_id, thread_id=thread_id, source=source)
     if current != previous:
         raise HistoryError("Summary checkpoint conflict.")
     after = previous.through_sequence if previous else 0
     through = turns[-1].last_sequence
     fresh = page(
-        db, conversation_id, after, through=through, max_runs=len(turns), max_bytes=2_097_152
+        db,
+        conversation_id,
+        after,
+        through=through,
+        max_runs=len(turns),
+        max_bytes=2_097_152,
+        thread_id=thread_id,
+        source=source,
     )
     if fresh.has_more or fresh.turns != turns or through <= after:
         raise HistoryError("Summary source changed or skipped replayable Runs.")
@@ -197,6 +252,25 @@ def save_summary(
         updated_at=datetime.now(UTC).isoformat(),
         checksum=summary_checksum(text, through, turns[-1].run_id, revision),
     )
+    if thread_id is not None:
+        db.execute(
+            "INSERT INTO thread_context_summaries VALUES(?,?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(thread_id,conversation_id,source) DO UPDATE SET text=excluded.text,"
+            "through_sequence=excluded.through_sequence,through_run_id=excluded.through_run_id,"
+            "revision=excluded.revision,updated_at=excluded.updated_at,checksum=excluded.checksum",
+            (
+                thread_id,
+                conversation_id,
+                source,
+                text,
+                through,
+                value.through_run_id,
+                revision,
+                value.updated_at,
+                value.checksum,
+            ),
+        )
+        return value
     db.execute(
         "INSERT INTO context_summaries VALUES (?,?,?,?,?,?,?) ON CONFLICT(conversation_id) "
         "DO UPDATE SET text=excluded.text,through_sequence=excluded.through_sequence,"

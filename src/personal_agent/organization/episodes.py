@@ -184,6 +184,7 @@ class EpisodeOrganizer:
                             previous_sources[-1].started_at, sources[0].started_at, self.policy
                         )
                         != "required"
+                        and previous_sources[-1].context_thread_id == sources[0].context_thread_id
                         and sum(s.payload_bytes for s in [*previous_sources, *sources])
                         <= self.policy.source_bytes
                     ):
@@ -203,7 +204,7 @@ class EpisodeOrganizer:
                         raise OrganizationError("invalid_source_time")
                     if last:
                         kind = gap_kind(last.started_at, source.started_at, self.policy)
-                        if barrier:
+                        if barrier or last.context_thread_id != source.context_thread_id:
                             kind = "required"
                         boundaries.append(
                             {
@@ -251,7 +252,8 @@ class EpisodeOrganizer:
                                 stream_id=stream_id,
                                 started_at=first.started_at,
                                 ended_at=last.ended_at,
-                                thread_id=previous.thread_id if reused else None,
+                                thread_id=first.context_thread_id
+                                or (previous.thread_id if reused else None),
                                 revision=previous.revision + 1 if reused else 1,
                                 status="finalized" if stable else "provisional",
                             )

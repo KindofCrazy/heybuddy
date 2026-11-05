@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from personal_agent.core.execution import CURRENT_RUN
+from personal_agent.core.execution import CURRENT_RUN, CURRENT_THREAD
 from personal_agent.core.models import Model, TextMessage
 from personal_agent.tools.registry import Tool, ToolArguments, ToolExecutionError
 
@@ -64,6 +64,7 @@ class PlanningService:
         return self.repository.put(
             "task",
             dict(
+                thread_id=CURRENT_THREAD.get(),
                 title=args.title,
                 goal=args.goal,
                 status="pending",
@@ -149,13 +150,18 @@ class PlanningService:
             )
         if any(not check or len(check) > 512 for check in checks or []):
             raise ToolExecutionError("invalid_goal", "Invalid goal check reference.")
-        active = [g for g in self.repository.list("goal") if g["status"] == "active"]
+        active = [
+            g
+            for g in self.repository.list("goal")
+            if g["status"] == "active" and g.get("thread_id") in {None, CURRENT_THREAD.get()}
+        ]
         for old in active:
             old["status"] = "cancelled"
             self.repository.put("goal", old, identifier=old["id"])
         return self.repository.put(
             "goal",
             dict(
+                thread_id=CURRENT_THREAD.get(),
                 condition=condition[:4000],
                 checks=checks or [],
                 status="active",
@@ -180,7 +186,11 @@ class PlanningService:
         return bool(checker and checker(value))
 
     async def evaluate(self, candidate: str, context) -> str:
-        active = [g for g in self.repository.list("goal") if g["status"] == "active"]
+        active = [
+            g
+            for g in self.repository.list("goal")
+            if g["status"] == "active" and g.get("thread_id") in {None, CURRENT_THREAD.get()}
+        ]
         if not active:
             return "passed"
         goal = active[-1]
@@ -244,13 +254,22 @@ class PlanningService:
             kind="execution_state",
             trust="host_state_data_only",
             todos=self.repository.list("todo", 1),
-            tasks=self.repository.list("task", 20),
-            goals=self.repository.list("goal", 5),
+            tasks=[
+                t
+                for t in self.repository.list("task", 20)
+                if t.get("thread_id") in {None, CURRENT_THREAD.get()}
+            ],
+            goals=[
+                g
+                for g in self.repository.list("goal", 5)
+                if g.get("thread_id") in {None, CURRENT_THREAD.get()}
+            ],
             feedback=next(
                 (
                     g.get("decision")
                     for g in reversed(self.repository.list("goal", 5))
                     if g["status"] == "active"
+                    and g.get("thread_id") in {None, CURRENT_THREAD.get()}
                 ),
                 None,
             ),

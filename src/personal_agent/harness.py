@@ -6,12 +6,22 @@ from pathlib import Path
 
 from pydantic import Field
 
-from personal_agent.core.execution import CURRENT_SCOPE, ExecutionBudget, RunScope
+from personal_agent.core.execution import (
+    CURRENT_SCOPE,
+    CURRENT_THREAD,
+    ROUTING_CLARIFY,
+    ROUTING_MODEL_USED,
+    ExecutionBudget,
+    RunScope,
+)
 from personal_agent.core.replay import ReplayView
 from personal_agent.execution.service import ExecutionService
+from personal_agent.organization.router import ThreadRouter
 from personal_agent.planning.service import PlanningService
 from personal_agent.skills.loader import SkillLoader
 from personal_agent.storage.harness import HarnessRepository
+from personal_agent.storage.routing import RoutingRepository
+from personal_agent.storage.thread_history import SQLiteThreadHistory
 from personal_agent.subagents.service import SubagentService
 from personal_agent.tools.mcp import MCPManager, MCPServerConfig
 from personal_agent.tools.registry import Tool, ToolArguments
@@ -30,6 +40,10 @@ class HarnessRuntime:
         self.sessions, self.agent = sessions, agent
         self.repository = HarnessRepository(sessions.store)
         self.read_only = read_only
+        self.routing_enabled = settings.thread_routing_enabled
+        self.routing_model_selection = settings.thread_router_model_selection
+        self.current_router = None
+        self.starting_goal_id = None
         self.last_budget = {}
         self.max_tool_calls = settings.max_tool_calls_per_run
         data_root = os.environ.get("LOCALAPPDATA")
@@ -130,7 +144,47 @@ class HarnessRuntime:
         self.agent.scope_factory = lambda permissions: self.scope("cli", permissions)
         self.bind_context()
 
+    def routing(self):
+        scope = CURRENT_SCOPE.get()
+        return RoutingRepository(
+            self.sessions.store,
+            self.sessions.agent.id,
+            self.sessions.current.id,
+            scope.source if scope else "cli",
+        )
+
     def bind_context(self) -> None:
+        if self.routing_enabled:
+            context = self.agent.context
+            if not isinstance(context._store, SQLiteThreadHistory):
+                context._store = SQLiteThreadHistory(self.sessions.store, self.sessions.current.id)
+
+            async def prepare_scope(provider):
+                repository = self.routing()
+                router = ThreadRouter(repository, model_selection=self.routing_model_selection)
+                thread = await router.route(
+                    context.run_id, context.pending_messages[0].text, provider
+                )
+                context._store.thread_id, context._store.source = thread.id, repository.source
+                CURRENT_THREAD.set(thread.id)
+                ROUTING_MODEL_USED.set(bool(router.metrics.get("extra_requests")))
+                ROUTING_CLARIFY.set(bool(router.metrics.get("ambiguous")))
+                context._diagnostics["routing"] = {**router.metrics, "thread_id": thread.id}
+                self.current_router = router
+                if self.starting_goal_id:
+                    goal = self.repository.get(self.starting_goal_id, "goal")
+                    for old in self.repository.list("goal"):
+                        if (
+                            old["id"] != goal["id"]
+                            and old["status"] == "active"
+                            and old.get("thread_id") == thread.id
+                        ):
+                            old["status"] = "cancelled"
+                            self.repository.put("goal", old, identifier=old["id"])
+                    goal["thread_id"] = thread.id
+                    self.repository.put("goal", goal, identifier=goal["id"])
+
+            context.prepare_scope = prepare_scope
         self.agent.context.replay_factory = lambda: ReplayView(
             self.repository if CURRENT_SCOPE.get() else None
         )
@@ -152,6 +206,17 @@ class HarnessRuntime:
                 self.repository.put("run_scope", dict(run_id=run_id, root_id=scope.root_id))
 
         self.agent.context.on_begin = on_begin
+        if self.routing_enabled:
+
+            class RoutingContext:
+                def context(inner):
+                    return (
+                        self.current_router.context()
+                        if self.current_router and CURRENT_SCOPE.get()
+                        else None
+                    )
+
+            self.agent.context.contributors.append(RoutingContext())
 
     async def start(self) -> None:
         if not self.read_only:
@@ -179,6 +244,12 @@ class HarnessRuntime:
         )
 
     async def command(self, text: str, *, trusted: bool) -> dict:
+        if self.routing_enabled:
+            active = self.routing().active()
+            CURRENT_THREAD.set(active.id if active else None)
+            if text.startswith("/compact"):
+                self.agent.context._store.thread_id = active.id if active else None
+                self.agent.context._store.source = self.routing().source
         parts = text.split(maxsplit=2)
         if parts[0] == "/goal":
             if len(parts) == 1 or parts[1] == "status":
@@ -186,7 +257,10 @@ class HarnessRuntime:
             if parts[1] == "cancel":
                 cancelled = []
                 for goal in self.repository.list("goal"):
-                    if goal["status"] == "active":
+                    if goal["status"] == "active" and goal.get("thread_id") in {
+                        None,
+                        CURRENT_THREAD.get(),
+                    }:
                         cancelled.append(goal["id"])
                         goal["status"] = "cancelled"
                         self.repository.put("goal", goal, identifier=goal["id"])
@@ -198,9 +272,16 @@ class HarnessRuntime:
                 return {"status": "cancelled"}
             # /goal <condition> | <successful receipt IDs, comma-separated>
             condition, _, evidence = text.removeprefix("/goal").strip().partition("|")
-            return self.planning.goal(
-                condition, [s.strip() for s in evidence.split(",") if s.strip()]
-            )
+            goal_thread = CURRENT_THREAD.set(None) if self.routing_enabled else None
+            try:
+                goal = self.planning.goal(
+                    condition, [s.strip() for s in evidence.split(",") if s.strip()]
+                )
+            finally:
+                if goal_thread is not None:
+                    CURRENT_THREAD.reset(goal_thread)
+            self.starting_goal_id = goal["id"]
+            return goal
         if not trusted:
             return {"error": "host_only_command"}
         if parts[0] == "/harness":
@@ -217,6 +298,8 @@ class HarnessRuntime:
     async def run(self, text, permissions, images=None, *, source="cli"):
         scope = self.scope(source, permissions)
         token = CURRENT_SCOPE.set(scope)
+        thread_token = CURRENT_THREAD.set(None)
+        self.starting_goal_id = None
         self.subagents.foreground.clear()
         try:
             self.bind_context()
@@ -240,4 +323,6 @@ class HarnessRuntime:
             return result
         finally:
             self.subagents.foreground.set()
+            self.starting_goal_id = None
+            CURRENT_THREAD.reset(thread_token)
             CURRENT_SCOPE.reset(token)

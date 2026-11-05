@@ -9,7 +9,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, JsonValue, TypeAdapter, ValidationError
 
-from personal_agent.core.execution import CURRENT_RUN, CURRENT_SCOPE
+from personal_agent.core.execution import CURRENT_RUN, CURRENT_SCOPE, ROUTING_CLARIFY
 from personal_agent.core.lifecycle import HookRegistry, LifecycleEvent
 from personal_agent.core.models import ToolCall, ToolDefinition, ToolError, ToolResult
 
@@ -126,6 +126,8 @@ class ToolRegistry:
             return failure("invalid_arguments", "Tool argument validation failed.")
 
         scope = CURRENT_SCOPE.get()
+        if ROUTING_CLARIFY.get():
+            return failure("routing_ambiguous", "Clarify the target discussion before using tools.")
         if scope is not None and not scope.budget.reserve_tool():
             return failure("execution_budget", "Shared tool budget exhausted.")
         if self.policy is not None:

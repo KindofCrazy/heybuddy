@@ -3,6 +3,7 @@
 import re
 from time import monotonic
 
+from personal_agent.core.execution import CURRENT_THREAD, ROUTING_MODEL_USED
 from personal_agent.core.retrieval import RetrievalPolicy, RetrievalResult
 from personal_agent.memory.retrieval import (
     DEPENDENCY,
@@ -64,13 +65,20 @@ class ContextRetriever:
         thread_id: str | None = None,
         episode_ids: list[str] | None = None,
     ) -> RetrievalResult:
+        routed = CURRENT_THREAD.get()
+        if routed:
+            thread_id, episode_ids = routed, None
         if not thread_id and episode_ids is None and not HISTORY.search(user_input[:1024]):
             return RetrievalResult()
         terms = keywords(user_input) or (["history"] if thread_id or episode_ids else [])
         if not terms:
             return RetrievalResult(path="recall_fallback")
         return self.history.history(
-            terms, exclude_run_ids, thread_id=thread_id, episode_ids=episode_ids
+            terms,
+            exclude_run_ids,
+            thread_id=thread_id,
+            episode_ids=episode_ids,
+            strict_thread=bool(routed),
         )
 
     def retrieve(self, user_input: str, exclude_run_ids: frozenset[str]) -> RetrievalResult:
@@ -111,7 +119,7 @@ class ContextRetriever:
                 + [r for r in catalog if r["path"] not in {row["path"] for _, row in ranked}]
             )
             candidates = candidates[: max(1, self.lookup.policy.candidates - 4)]
-            for thread in self.repository.list(limit=2):
+            for thread in [] if CURRENT_THREAD.get() else self.repository.list(limit=2):
                 candidates.append(
                     {
                         "id": "thread:" + thread.id,
@@ -120,8 +128,11 @@ class ContextRetriever:
                         "source_id": thread.id,
                     }
                 )
-            candidates.extend(self.history.recent_episode_choices())
-        result.candidates = candidates[: self.lookup.policy.candidates]
+            if not CURRENT_THREAD.get():
+                candidates.extend(self.history.recent_episode_choices())
+        result.candidates = (
+            [] if ROUTING_MODEL_USED.get() else candidates[: self.lookup.policy.candidates]
+        )
         result.metrics = {
             "mode": "lexical" if result.items else "recall_fallback",
             "memory_files": len(memories),

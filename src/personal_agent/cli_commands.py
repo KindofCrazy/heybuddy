@@ -21,6 +21,36 @@ def session_command(service: "ChatService", text: str, write: Callable[[str], No
         raise HistoryError("Session commands require persistent sessions.")
     try:
         parts = text.split()
+        harness = getattr(service, "harness", None)
+        if (
+            harness is not None
+            and harness.routing_enabled
+            and (parts and parts[0] in {"/new", "/sessions", "/resume", "/thread"})
+        ):
+            repository = harness.routing()
+            if parts == ["/new"] or parts[:2] == ["/thread", "new"]:
+                thread = repository.create(" ".join(parts[2:]) if len(parts) > 2 else "新讨论")
+                write(f"Thread: {thread.id} | {thread.title}")
+            elif parts == ["/sessions"] or parts == ["/thread", "list"]:
+                active = repository.active()
+                for thread in repository.candidates():
+                    marker = "*" if active and active.id == thread.id else " "
+                    write(f"{marker} {thread.id} | {thread.title}")
+            elif (
+                len(parts) == 2
+                and parts[0] == "/resume"
+                or len(parts) == 3
+                and parts[:2] == ["/thread", "use"]
+            ):
+                thread = repository.select(parts[-1])
+                write(f"Thread: {thread.id} | {thread.title}")
+            elif len(parts) == 4 and parts[:2] == ["/thread", "correct"]:
+                repository.correct(parts[2], parts[3])
+                write("Thread binding corrected; affected summaries invalidated.")
+            else:
+                write("/thread list|new [title]|use <id>|correct <run_id> <thread_id>")
+            service.agent.context._page = None
+            return
         if parts == ["/new"]:
             service.select_conversation()
             write(sessions.status())

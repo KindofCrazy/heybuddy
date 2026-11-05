@@ -112,3 +112,7 @@ Review Fix：Proactive 只在一个尚未领取其他维护单元的周期入口
 ## 未来改进
 
 评估 Episode 边界与 Thread 归属的语义稳定性，尤其是来源修订和短会话。为派生组织与真实事实提供更直观区分，不把摘要写成另一份长期事实库。
+
+## 在线 Thread 与事后整理兼容（schema 24）
+
+默认 Harness 在每个 Run 开始读取历史前选定或创建 Thread；Thread 可先没有 current_state。`EpisodeRepository.read_source()` 携带 context_thread_id，`EpisodeOrganizer.organize()` 将 Thread 变化视作 required 分段边界，provisional 只可与相同 Thread 的来源合并。发布事务重新核查实际 Run 归属，防止模型跨线程合段。`ThreadRepository.fixed_assignments()` 给整理器提供固定 Episode→Thread 映射，publish 再次拒绝移动或丢弃已路由 Episode；允许有证据地更新原 Thread 的标题、状态和 current_state。未路由旧 Episode 仍按原聚类规则处理。可信绑定纠正若导致旧 Episode 混合，先解除关联并保留审计，不把摘要默认为新 Thread 的证据。见 [Thread Router](thread-routing.md) 及 `tests/test_thread_routing.py`。

@@ -40,6 +40,8 @@ THREAD_PROMPT = (
     "greetings or technical terms. Do not inherit the language of this prompt or an existing "
     "Thread title/state when it differs from that discussion. Preserve technical names and "
     "identifiers in their original form. "
+    "Episodes in fixed_thread_assignments MUST retain those exact thread IDs; summarize each "
+    "fixed Thread separately and never move or drop these Episodes. "
     "Assign EVERY supplied Episode ID exactly once: groups or no_thread. "
     "An Episode can have at most one Thread. Prefer a supplied existing thread_id for the same "
     "ongoing topic across days; null creates a new Thread only for a sustained topic/project, "
@@ -173,6 +175,7 @@ class ThreadOrganizer:
                     {
                         "episodes": [e.model_dump(mode="json") for e in episodes],
                         "existing_threads": [t.model_dump(mode="json") for t in candidates],
+                        "fixed_thread_assignments": self.repository.fixed_assignments(episodes),
                     },
                 )
                 self.repository.publish(

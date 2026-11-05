@@ -4,7 +4,15 @@ from time import perf_counter
 
 from personal_agent.core.budget import ContextError
 from personal_agent.core.context import ContextBuilder
-from personal_agent.core.execution import CURRENT_RUN, CURRENT_SCOPE, BudgetProvider, RunScope
+from personal_agent.core.execution import (
+    CURRENT_RUN,
+    CURRENT_SCOPE,
+    CURRENT_THREAD,
+    ROUTING_CLARIFY,
+    ROUTING_MODEL_USED,
+    BudgetProvider,
+    RunScope,
+)
 from personal_agent.core.history import HistoryError
 from personal_agent.core.images import ImageRef
 from personal_agent.core.lifecycle import HookRegistry, LifecycleEvent
@@ -83,6 +91,9 @@ class Agent:
                 effective_scope = self.scope_factory(permissions)
             scope_token = CURRENT_SCOPE.set(effective_scope)
             run_token = CURRENT_RUN.set(None)
+            thread_token = CURRENT_THREAD.set(None)
+            routing_token = ROUTING_MODEL_USED.set(False)
+            clarify_token = ROUTING_CLARIFY.set(False)
             outcome = "interrupted"
             original_provider = self.provider
             if CURRENT_SCOPE.get() is not None:
@@ -121,6 +132,9 @@ class Agent:
                 finally:
                     self.provider = original_provider
                     CURRENT_RUN.reset(run_token)
+                    CURRENT_THREAD.reset(thread_token)
+                    ROUTING_MODEL_USED.reset(routing_token)
+                    ROUTING_CLARIFY.reset(clarify_token)
                     CURRENT_SCOPE.reset(scope_token)
 
     def _abort_context(self, *, cancelled: bool = False) -> None:
@@ -162,6 +176,8 @@ class Agent:
                     else []
                 )
                 request = await self.context.prepare(messages, definitions, self.provider)
+                if ROUTING_CLARIFY.get():
+                    definitions = []
                 options = (
                     {"max_output_tokens": self.context.budget.reserved_output_tokens}
                     if self.context.budget

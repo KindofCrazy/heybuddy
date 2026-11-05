@@ -46,3 +46,7 @@ Hook 默认单次 1 秒、单事件累计 2 秒；只有 PreToolUse 可阻断。
 ## 未来改进
 
 将来源绑定、预算和扩展依赖声明为明确类型，减少 ContextVar 与装配细节的隐含耦合。为主请求、子执行和后台分别呈现累计额度，但保持共享根预算。
+
+## Thread 工作上下文
+
+`HarnessRuntime.bind_context()` 安装 prepare_scope 回调与 SQLiteThreadHistory。Agent 已保存 Run 并绑定来源后，首次 ContextBuilder.prepare 使用同一 BudgetProvider 执行 ThreadRouter；再设置 CURRENT_THREAD 和路由贡献器，读取本 Thread 工作页。Planning 的 Task/Goal 创建时携带 Thread ID，上下文与 Goal 判定只读取当前 Thread 或未绑定的兼容状态。原 Journal 与强制权限仍走核心路径。详见 [Thread Router](thread-routing.md)。

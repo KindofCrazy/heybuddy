@@ -98,6 +98,7 @@ class Source(Model):
     started_at: AwareDatetime
     ended_at: AwareDatetime | None
     turn: HistoryTurn | None = None
+    context_thread_id: str | None = None
     skip_reason: str | None = None
     payload_bytes: int = 0
     message_count: int = 0
@@ -114,7 +115,7 @@ class Batch(Model):
 class Thread(Model):
     id: str
     title: str = Field(min_length=1, max_length=120)
-    current_state: str = Field(min_length=1, max_length=2000)
+    current_state: str | None = Field(default=None, min_length=1, max_length=2000)
     last_active_at: AwareDatetime
     status: Literal["active", "paused", "closed"] = "active"
     memory_ref: str | None = None

@@ -127,3 +127,7 @@ P5 CLI 增加 /harness、/goal、/compact 和 /workflow resume；会话切换后
 ## 未来改进
 
 改善会话切换、来源状态和未完成任务的展示。减少入口分散的命令路由，但继续由可信入口决定管理权限，不让历史 slash 文本获得授权。
+
+## 默认 Thread 选择
+
+Harness 与 Thread 路由启用时，`cli_commands.session_command()` 将 `/new`、`/sessions`、`/resume` 解释为 Thread 新建、列出与选择，保持原 Conversation ID。等价显式入口为 `/thread new [title]`、`/thread list`、`/thread use <id>`。`/thread correct <run_id> <thread_id>` 只可纠正已终结且同来源的 Run，事务失效受影响摘要；不重放工具。手选 Thread 对下一 Run 优先，空标题在收到第一条实际输入后初始化。Episode/Thread organize、repair、show 仍走原维护入口。关闭路由或库级 SessionManager 继续旧 Conversation 命令。测试：`tests/test_thread_routing.py`。

@@ -111,6 +111,19 @@ async def _chat(
             except (ContextError, HistoryError, ToolExecutionError):
                 write("Harness command failed; inspect persisted state before continuing.")
             continue
+        if (
+            service.harness is not None
+            and service.harness.routing_enabled
+            and user_input.split()[:2]
+            in [
+                ["/thread", "list"],
+                ["/thread", "new"],
+                ["/thread", "use"],
+                ["/thread", "correct"],
+            ]
+        ):
+            session_command(service, user_input, write)
+            continue
         permissions: frozenset[str] = frozenset()
         if user_input.split(maxsplit=1)[0] == "/remind":
             if service.scheduler is None or sessions is None:
