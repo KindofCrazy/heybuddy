@@ -1,0 +1,21 @@
+{
+  "version": "routing-v1-draft1",
+  "splits": {
+    "dev": [
+      "LH001",
+      "LH002",
+      "LH003",
+      "LH004",
+      "LH005",
+      "LH006",
+      "LH007",
+      "LH008"
+    ],
+    "holdout": [
+      "LH009",
+      "LH010",
+      "LH011",
+      "LH012"
+    ]
+  }
+}

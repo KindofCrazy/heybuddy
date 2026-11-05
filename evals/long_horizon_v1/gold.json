@@ -1,0 +1,2780 @@
+{
+  "version": "routing-v1-draft1",
+  "scenarios": [
+    {
+      "scenario_id": "LH001",
+      "routing": [
+        {
+          "turn_id": "LH001_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH001_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01"
+          ]
+        },
+        {
+          "turn_id": "LH001_T03",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T02"
+          ]
+        },
+        {
+          "turn_id": "LH001_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T03"
+          ]
+        },
+        {
+          "turn_id": "LH001_T05",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T03"
+          ]
+        },
+        {
+          "turn_id": "LH001_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T05",
+            "LH001_T03"
+          ]
+        },
+        {
+          "turn_id": "LH001_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T03",
+            "LH001_T06"
+          ]
+        },
+        {
+          "turn_id": "LH001_T08",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T07",
+            "LH001_T06"
+          ]
+        },
+        {
+          "turn_id": "LH001_T09",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T06",
+            "LH001_T08"
+          ]
+        },
+        {
+          "turn_id": "LH001_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T09",
+            "LH001_T08"
+          ]
+        },
+        {
+          "turn_id": "LH001_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T08",
+            "LH001_T10"
+          ]
+        },
+        {
+          "turn_id": "LH001_T12",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH001_T11",
+            "LH001_T10"
+          ]
+        },
+        {
+          "turn_id": "LH001_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T10",
+            "LH001_T11"
+          ]
+        },
+        {
+          "turn_id": "LH001_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T13",
+            "LH001_T11"
+          ]
+        },
+        {
+          "turn_id": "LH001_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T11",
+            "LH001_T14"
+          ]
+        },
+        {
+          "turn_id": "LH001_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T15",
+            "LH001_T14"
+          ]
+        },
+        {
+          "turn_id": "LH001_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T04",
+            "LH001_T14",
+            "LH001_T16"
+          ]
+        },
+        {
+          "turn_id": "LH001_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH001_T01",
+            "LH001_T16",
+            "LH001_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH002",
+      "routing": [
+        {
+          "turn_id": "LH002_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH002_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01"
+          ]
+        },
+        {
+          "turn_id": "LH002_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T02"
+          ]
+        },
+        {
+          "turn_id": "LH002_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T02"
+          ]
+        },
+        {
+          "turn_id": "LH002_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T02",
+            "LH002_T04"
+          ]
+        },
+        {
+          "turn_id": "LH002_T06",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T05",
+            "LH002_T04"
+          ]
+        },
+        {
+          "turn_id": "LH002_T07",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T04",
+            "LH002_T06"
+          ]
+        },
+        {
+          "turn_id": "LH002_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T07",
+            "LH002_T06"
+          ]
+        },
+        {
+          "turn_id": "LH002_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH002_T06",
+            "LH002_T08"
+          ]
+        },
+        {
+          "turn_id": "LH002_T10",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T06",
+            "LH002_T08"
+          ]
+        },
+        {
+          "turn_id": "LH002_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T10",
+            "LH002_T08"
+          ]
+        },
+        {
+          "turn_id": "LH002_T12",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T08",
+            "LH002_T11"
+          ]
+        },
+        {
+          "turn_id": "LH002_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T12",
+            "LH002_T11"
+          ]
+        },
+        {
+          "turn_id": "LH002_T14",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T11",
+            "LH002_T13"
+          ]
+        },
+        {
+          "turn_id": "LH002_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T14",
+            "LH002_T13"
+          ]
+        },
+        {
+          "turn_id": "LH002_T16",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T13",
+            "LH002_T15"
+          ]
+        },
+        {
+          "turn_id": "LH002_T17",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T01",
+            "LH002_T15",
+            "LH002_T16"
+          ]
+        },
+        {
+          "turn_id": "LH002_T18",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH002_T03",
+            "LH002_T16",
+            "LH002_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH003",
+      "routing": [
+        {
+          "turn_id": "LH003_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH003_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01"
+          ]
+        },
+        {
+          "turn_id": "LH003_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T02"
+          ]
+        },
+        {
+          "turn_id": "LH003_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T03",
+            "LH003_T02"
+          ]
+        },
+        {
+          "turn_id": "LH003_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T02",
+            "LH003_T04"
+          ]
+        },
+        {
+          "turn_id": "LH003_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T03",
+            "LH003_T04",
+            "LH003_T05"
+          ]
+        },
+        {
+          "turn_id": "LH003_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T05",
+            "LH003_T06"
+          ]
+        },
+        {
+          "turn_id": "LH003_T08",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T07",
+            "LH003_T06"
+          ]
+        },
+        {
+          "turn_id": "LH003_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH003_T08",
+            "LH003_T06"
+          ]
+        },
+        {
+          "turn_id": "LH003_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T03",
+            "LH003_T06",
+            "LH003_T08"
+          ]
+        },
+        {
+          "turn_id": "LH003_T11",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T03",
+            "LH003_T10",
+            "LH003_T08"
+          ]
+        },
+        {
+          "turn_id": "LH003_T12",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T08",
+            "LH003_T11"
+          ]
+        },
+        {
+          "turn_id": "LH003_T13",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T12",
+            "LH003_T11"
+          ]
+        },
+        {
+          "turn_id": "LH003_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T03",
+            "LH003_T11",
+            "LH003_T13"
+          ]
+        },
+        {
+          "turn_id": "LH003_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T13",
+            "LH003_T14"
+          ]
+        },
+        {
+          "turn_id": "LH003_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T15",
+            "LH003_T14"
+          ]
+        },
+        {
+          "turn_id": "LH003_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T03",
+            "LH003_T14",
+            "LH003_T16"
+          ]
+        },
+        {
+          "turn_id": "LH003_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH003_T01",
+            "LH003_T16",
+            "LH003_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH004",
+      "routing": [
+        {
+          "turn_id": "LH004_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH004_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01"
+          ]
+        },
+        {
+          "turn_id": "LH004_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T02"
+          ]
+        },
+        {
+          "turn_id": "LH004_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T03",
+            "LH004_T02"
+          ]
+        },
+        {
+          "turn_id": "LH004_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T02",
+            "LH004_T04"
+          ]
+        },
+        {
+          "turn_id": "LH004_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T03",
+            "LH004_T04",
+            "LH004_T05"
+          ]
+        },
+        {
+          "turn_id": "LH004_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T05",
+            "LH004_T06"
+          ]
+        },
+        {
+          "turn_id": "LH004_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T03",
+            "LH004_T06",
+            "LH004_T07"
+          ]
+        },
+        {
+          "turn_id": "LH004_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH004_T07",
+            "LH004_T08"
+          ]
+        },
+        {
+          "turn_id": "LH004_T10",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T07",
+            "LH004_T08"
+          ]
+        },
+        {
+          "turn_id": "LH004_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T10",
+            "LH004_T08"
+          ]
+        },
+        {
+          "turn_id": "LH004_T12",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T03",
+            "LH004_T08",
+            "LH004_T11"
+          ]
+        },
+        {
+          "turn_id": "LH004_T13",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T11",
+            "LH004_T12"
+          ]
+        },
+        {
+          "turn_id": "LH004_T14",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T13",
+            "LH004_T12"
+          ]
+        },
+        {
+          "turn_id": "LH004_T15",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T03",
+            "LH004_T12",
+            "LH004_T14"
+          ]
+        },
+        {
+          "turn_id": "LH004_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T14",
+            "LH004_T15"
+          ]
+        },
+        {
+          "turn_id": "LH004_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T03",
+            "LH004_T15",
+            "LH004_T16"
+          ]
+        },
+        {
+          "turn_id": "LH004_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH004_T01",
+            "LH004_T16",
+            "LH004_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH005",
+      "routing": [
+        {
+          "turn_id": "LH005_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH005_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01"
+          ]
+        },
+        {
+          "turn_id": "LH005_T03",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T02"
+          ]
+        },
+        {
+          "turn_id": "LH005_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T03"
+          ]
+        },
+        {
+          "turn_id": "LH005_T05",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T04",
+            "LH005_T03"
+          ]
+        },
+        {
+          "turn_id": "LH005_T06",
+          "gold_topic_id": "social",
+          "acceptable_actions": [
+            "chat"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T05"
+          ]
+        },
+        {
+          "turn_id": "LH005_T07",
+          "gold_topic_id": "social",
+          "acceptable_actions": [
+            "chat"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T06",
+            "LH005_T05"
+          ]
+        },
+        {
+          "turn_id": "LH005_T08",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T03",
+            "LH005_T07"
+          ]
+        },
+        {
+          "turn_id": "LH005_T09",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T08",
+            "LH005_T07"
+          ]
+        },
+        {
+          "turn_id": "LH005_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T04",
+            "LH005_T05",
+            "LH005_T09"
+          ]
+        },
+        {
+          "turn_id": "LH005_T11",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T04",
+            "LH005_T10",
+            "LH005_T09"
+          ]
+        },
+        {
+          "turn_id": "LH005_T12",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T09",
+            "LH005_T11"
+          ]
+        },
+        {
+          "turn_id": "LH005_T13",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T12",
+            "LH005_T11"
+          ]
+        },
+        {
+          "turn_id": "LH005_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T04",
+            "LH005_T11",
+            "LH005_T13"
+          ]
+        },
+        {
+          "turn_id": "LH005_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T13",
+            "LH005_T14"
+          ]
+        },
+        {
+          "turn_id": "LH005_T16",
+          "gold_topic_id": "social",
+          "acceptable_actions": [
+            "chat"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T06",
+            "LH005_T07",
+            "LH005_T15"
+          ]
+        },
+        {
+          "turn_id": "LH005_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T04",
+            "LH005_T14",
+            "LH005_T16"
+          ]
+        },
+        {
+          "turn_id": "LH005_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH005_T01",
+            "LH005_T15",
+            "LH005_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH006",
+      "routing": [
+        {
+          "turn_id": "LH006_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH006_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01"
+          ]
+        },
+        {
+          "turn_id": "LH006_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T02"
+          ]
+        },
+        {
+          "turn_id": "LH006_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T02"
+          ]
+        },
+        {
+          "turn_id": "LH006_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T02",
+            "LH006_T04"
+          ]
+        },
+        {
+          "turn_id": "LH006_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T04",
+            "LH006_T05"
+          ]
+        },
+        {
+          "turn_id": "LH006_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T05",
+            "LH006_T06"
+          ]
+        },
+        {
+          "turn_id": "LH006_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T06",
+            "LH006_T07"
+          ]
+        },
+        {
+          "turn_id": "LH006_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH006_T07",
+            "LH006_T08"
+          ]
+        },
+        {
+          "turn_id": "LH006_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T08",
+            "LH006_T07"
+          ]
+        },
+        {
+          "turn_id": "LH006_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T07",
+            "LH006_T10"
+          ]
+        },
+        {
+          "turn_id": "LH006_T12",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T11",
+            "LH006_T10"
+          ]
+        },
+        {
+          "turn_id": "LH006_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T10",
+            "LH006_T12"
+          ]
+        },
+        {
+          "turn_id": "LH006_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T13",
+            "LH006_T12"
+          ]
+        },
+        {
+          "turn_id": "LH006_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T12",
+            "LH006_T14"
+          ]
+        },
+        {
+          "turn_id": "LH006_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T15",
+            "LH006_T14"
+          ]
+        },
+        {
+          "turn_id": "LH006_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T03",
+            "LH006_T14",
+            "LH006_T16"
+          ]
+        },
+        {
+          "turn_id": "LH006_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH006_T01",
+            "LH006_T16",
+            "LH006_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH007",
+      "routing": [
+        {
+          "turn_id": "LH007_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH007_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01"
+          ]
+        },
+        {
+          "turn_id": "LH007_T03",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T02"
+          ]
+        },
+        {
+          "turn_id": "LH007_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T03"
+          ]
+        },
+        {
+          "turn_id": "LH007_T05",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T04",
+            "LH007_T03"
+          ]
+        },
+        {
+          "turn_id": "LH007_T06",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T03",
+            "LH007_T05"
+          ]
+        },
+        {
+          "turn_id": "LH007_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T06",
+            "LH007_T05"
+          ]
+        },
+        {
+          "turn_id": "LH007_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T04",
+            "LH007_T05",
+            "LH007_T07"
+          ]
+        },
+        {
+          "turn_id": "LH007_T09",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T07",
+            "LH007_T08"
+          ]
+        },
+        {
+          "turn_id": "LH007_T10",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T09",
+            "LH007_T08"
+          ]
+        },
+        {
+          "turn_id": "LH007_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T10",
+            "LH007_T08"
+          ]
+        },
+        {
+          "turn_id": "LH007_T12",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T04",
+            "LH007_T08",
+            "LH007_T11"
+          ]
+        },
+        {
+          "turn_id": "LH007_T13",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T11",
+            "LH007_T12"
+          ]
+        },
+        {
+          "turn_id": "LH007_T14",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T13",
+            "LH007_T12"
+          ]
+        },
+        {
+          "turn_id": "LH007_T15",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T04",
+            "LH007_T12",
+            "LH007_T14"
+          ]
+        },
+        {
+          "turn_id": "LH007_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T14",
+            "LH007_T15"
+          ]
+        },
+        {
+          "turn_id": "LH007_T17",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T16",
+            "LH007_T15"
+          ]
+        },
+        {
+          "turn_id": "LH007_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH007_T01",
+            "LH007_T17",
+            "LH007_T15"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH008",
+      "routing": [
+        {
+          "turn_id": "LH008_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH008_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01"
+          ]
+        },
+        {
+          "turn_id": "LH008_T03",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T02"
+          ]
+        },
+        {
+          "turn_id": "LH008_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T03"
+          ]
+        },
+        {
+          "turn_id": "LH008_T05",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T04",
+            "LH008_T03"
+          ]
+        },
+        {
+          "turn_id": "LH008_T06",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T03",
+            "LH008_T05"
+          ]
+        },
+        {
+          "turn_id": "LH008_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T06",
+            "LH008_T05"
+          ]
+        },
+        {
+          "turn_id": "LH008_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T04",
+            "LH008_T05",
+            "LH008_T07"
+          ]
+        },
+        {
+          "turn_id": "LH008_T09",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T07",
+            "LH008_T08"
+          ]
+        },
+        {
+          "turn_id": "LH008_T10",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH008_T09",
+            "LH008_T08"
+          ]
+        },
+        {
+          "turn_id": "LH008_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T09",
+            "LH008_T08"
+          ]
+        },
+        {
+          "turn_id": "LH008_T12",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T11",
+            "LH008_T08"
+          ]
+        },
+        {
+          "turn_id": "LH008_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T04",
+            "LH008_T08",
+            "LH008_T12"
+          ]
+        },
+        {
+          "turn_id": "LH008_T14",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T12",
+            "LH008_T13"
+          ]
+        },
+        {
+          "turn_id": "LH008_T15",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH008_T14",
+            "LH008_T13"
+          ]
+        },
+        {
+          "turn_id": "LH008_T16",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T04",
+            "LH008_T13",
+            "LH008_T14"
+          ]
+        },
+        {
+          "turn_id": "LH008_T17",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T01",
+            "LH008_T14",
+            "LH008_T16"
+          ]
+        },
+        {
+          "turn_id": "LH008_T18",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH008_T04",
+            "LH008_T16",
+            "LH008_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH009",
+      "routing": [
+        {
+          "turn_id": "LH009_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH009_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01"
+          ]
+        },
+        {
+          "turn_id": "LH009_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T02"
+          ]
+        },
+        {
+          "turn_id": "LH009_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T02"
+          ]
+        },
+        {
+          "turn_id": "LH009_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01",
+            "LH009_T02",
+            "LH009_T04"
+          ]
+        },
+        {
+          "turn_id": "LH009_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T04",
+            "LH009_T05"
+          ]
+        },
+        {
+          "turn_id": "LH009_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01",
+            "LH009_T05",
+            "LH009_T06"
+          ]
+        },
+        {
+          "turn_id": "LH009_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T06",
+            "LH009_T07"
+          ]
+        },
+        {
+          "turn_id": "LH009_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH009_T07",
+            "LH009_T08"
+          ]
+        },
+        {
+          "turn_id": "LH009_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T08",
+            "LH009_T07"
+          ]
+        },
+        {
+          "turn_id": "LH009_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01",
+            "LH009_T07",
+            "LH009_T10"
+          ]
+        },
+        {
+          "turn_id": "LH009_T12",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01",
+            "LH009_T11",
+            "LH009_T10"
+          ]
+        },
+        {
+          "turn_id": "LH009_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T10",
+            "LH009_T12"
+          ]
+        },
+        {
+          "turn_id": "LH009_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T13",
+            "LH009_T12"
+          ]
+        },
+        {
+          "turn_id": "LH009_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01",
+            "LH009_T12",
+            "LH009_T14"
+          ]
+        },
+        {
+          "turn_id": "LH009_T16",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T14",
+            "LH009_T15"
+          ]
+        },
+        {
+          "turn_id": "LH009_T17",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T01",
+            "LH009_T15",
+            "LH009_T16"
+          ]
+        },
+        {
+          "turn_id": "LH009_T18",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH009_T03",
+            "LH009_T16",
+            "LH009_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH010",
+      "routing": [
+        {
+          "turn_id": "LH010_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH010_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01"
+          ]
+        },
+        {
+          "turn_id": "LH010_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T02"
+          ]
+        },
+        {
+          "turn_id": "LH010_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T02"
+          ]
+        },
+        {
+          "turn_id": "LH010_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T02",
+            "LH010_T04"
+          ]
+        },
+        {
+          "turn_id": "LH010_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T04",
+            "LH010_T05"
+          ]
+        },
+        {
+          "turn_id": "LH010_T07",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T05",
+            "LH010_T06"
+          ]
+        },
+        {
+          "turn_id": "LH010_T08",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T06",
+            "LH010_T07"
+          ]
+        },
+        {
+          "turn_id": "LH010_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH010_T07",
+            "LH010_T08"
+          ]
+        },
+        {
+          "turn_id": "LH010_T10",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T07",
+            "LH010_T08"
+          ]
+        },
+        {
+          "turn_id": "LH010_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T10",
+            "LH010_T08"
+          ]
+        },
+        {
+          "turn_id": "LH010_T12",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T08",
+            "LH010_T11"
+          ]
+        },
+        {
+          "turn_id": "LH010_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T12",
+            "LH010_T11"
+          ]
+        },
+        {
+          "turn_id": "LH010_T14",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T11",
+            "LH010_T13"
+          ]
+        },
+        {
+          "turn_id": "LH010_T15",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T13",
+            "LH010_T14"
+          ]
+        },
+        {
+          "turn_id": "LH010_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T14",
+            "LH010_T15"
+          ]
+        },
+        {
+          "turn_id": "LH010_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T03",
+            "LH010_T15",
+            "LH010_T16"
+          ]
+        },
+        {
+          "turn_id": "LH010_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH010_T01",
+            "LH010_T16",
+            "LH010_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH011",
+      "routing": [
+        {
+          "turn_id": "LH011_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH011_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01"
+          ]
+        },
+        {
+          "turn_id": "LH011_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T02"
+          ]
+        },
+        {
+          "turn_id": "LH011_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T02"
+          ]
+        },
+        {
+          "turn_id": "LH011_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T02",
+            "LH011_T04"
+          ]
+        },
+        {
+          "turn_id": "LH011_T06",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T05",
+            "LH011_T04"
+          ]
+        },
+        {
+          "turn_id": "LH011_T07",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T04",
+            "LH011_T06"
+          ]
+        },
+        {
+          "turn_id": "LH011_T08",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T06",
+            "LH011_T07"
+          ]
+        },
+        {
+          "turn_id": "LH011_T09",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH011_T08",
+            "LH011_T07"
+          ]
+        },
+        {
+          "turn_id": "LH011_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T07",
+            "LH011_T08"
+          ]
+        },
+        {
+          "turn_id": "LH011_T11",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T10",
+            "LH011_T08"
+          ]
+        },
+        {
+          "turn_id": "LH011_T12",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T08",
+            "LH011_T11"
+          ]
+        },
+        {
+          "turn_id": "LH011_T13",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T12",
+            "LH011_T11"
+          ]
+        },
+        {
+          "turn_id": "LH011_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T11",
+            "LH011_T13"
+          ]
+        },
+        {
+          "turn_id": "LH011_T15",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T14",
+            "LH011_T13"
+          ]
+        },
+        {
+          "turn_id": "LH011_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T13",
+            "LH011_T15"
+          ]
+        },
+        {
+          "turn_id": "LH011_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T03",
+            "LH011_T15",
+            "LH011_T16"
+          ]
+        },
+        {
+          "turn_id": "LH011_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH011_T01",
+            "LH011_T16",
+            "LH011_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "LH012",
+      "routing": [
+        {
+          "turn_id": "LH012_T01",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "LH012_T02",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01"
+          ]
+        },
+        {
+          "turn_id": "LH012_T03",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T02"
+          ]
+        },
+        {
+          "turn_id": "LH012_T04",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T03",
+            "LH012_T02"
+          ]
+        },
+        {
+          "turn_id": "LH012_T05",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T02",
+            "LH012_T04"
+          ]
+        },
+        {
+          "turn_id": "LH012_T06",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T03",
+            "LH012_T04",
+            "LH012_T05"
+          ]
+        },
+        {
+          "turn_id": "LH012_T07",
+          "gold_topic_id": "social",
+          "acceptable_actions": [
+            "chat"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T06"
+          ]
+        },
+        {
+          "turn_id": "LH012_T08",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T05",
+            "LH012_T07"
+          ]
+        },
+        {
+          "turn_id": "LH012_T09",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T08",
+            "LH012_T07"
+          ]
+        },
+        {
+          "turn_id": "LH012_T10",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T03",
+            "LH012_T06",
+            "LH012_T09"
+          ]
+        },
+        {
+          "turn_id": "LH012_T11",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T09",
+            "LH012_T10"
+          ]
+        },
+        {
+          "turn_id": "LH012_T12",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": [
+            "LH012_T11",
+            "LH012_T10"
+          ]
+        },
+        {
+          "turn_id": "LH012_T13",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue",
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T03",
+            "LH012_T10",
+            "LH012_T11"
+          ]
+        },
+        {
+          "turn_id": "LH012_T14",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T03",
+            "LH012_T13",
+            "LH012_T11"
+          ]
+        },
+        {
+          "turn_id": "LH012_T15",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T11",
+            "LH012_T14"
+          ]
+        },
+        {
+          "turn_id": "LH012_T16",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "continue"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T15",
+            "LH012_T14"
+          ]
+        },
+        {
+          "turn_id": "LH012_T17",
+          "gold_topic_id": "topic_b",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T03",
+            "LH012_T14",
+            "LH012_T16"
+          ]
+        },
+        {
+          "turn_id": "LH012_T18",
+          "gold_topic_id": "topic_a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "LH012_T01",
+            "LH012_T16",
+            "LH012_T17"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    }
+  ]
+}

@@ -11,10 +11,20 @@ from pydantic import Field
 
 from personal_agent.core.budget import estimate_request
 from personal_agent.evaluation.long_horizon.dataset import Corpus, Dataset, Gold, Splits, digest
-from personal_agent.evaluation.long_horizon.metrics import aggregate, score
-from personal_agent.evaluation.long_horizon.models import Config, ReplayResult, Schema
+from personal_agent.evaluation.long_horizon.metrics import SCORER_VERSION, aggregate, score
+from personal_agent.evaluation.long_horizon.models import (
+    BenchmarkProtocol,
+    Config,
+    ReplayResult,
+    Schema,
+)
 from personal_agent.evaluation.long_horizon.replay import replay
-from personal_agent.evaluation.long_horizon.report import prepare_output, working_tree_dirty, write
+from personal_agent.evaluation.long_horizon.report import (
+    evaluation_code_hash,
+    prepare_output,
+    working_tree_dirty,
+    write,
+)
 from personal_agent.evaluation.long_horizon.routing_eval import RoutingAdapter
 from personal_agent.evaluation.runner import Budget
 from personal_agent.llm.base import ProviderError
@@ -57,6 +67,7 @@ class LiveBundle(Schema):
     gold: Gold
     splits: Splits
     config: Config
+    protocol: BenchmarkProtocol | None = None
     live_config: LiveConfig
     split: str
     scenario_id: str | None
@@ -207,7 +218,7 @@ class LiveRoutingAdapter(RoutingAdapter):
 
 
 def live_summary(bundle: LiveBundle) -> dict:
-    dataset = Dataset(bundle.corpus, bundle.gold, bundle.splits, bundle.config)
+    dataset = Dataset(bundle.corpus, bundle.gold, bundle.splits, bundle.config, bundle.protocol)
     if bundle.hashes != {
         **dataset.hashes,
         "live_config_hash": digest(bundle.live_config.model_dump(mode="json")),
@@ -280,8 +291,16 @@ def live_summary(bundle: LiveBundle) -> dict:
     latency = sorted(c["latency_ms"] for c in bundle.calls)
     return {
         "evaluation_type": bundle.evaluation_type,
+        "scorer_version": SCORER_VERSION,
         "status": "completed",
         "purpose": "connection smoke, not a formal capability benchmark",
+        "annotation_status": (
+            "human-reviewed"
+            if bundle.protocol.human_reviewed
+            else "agent-authored provisional gold"
+        )
+        if bundle.protocol
+        else "legacy",
         "live_config": bundle.live_config.model_dump(mode="json"),
         **bundle.hashes,
         "git_commit": bundle.git_commit,
@@ -304,17 +323,6 @@ def live_summary(bundle: LiveBundle) -> dict:
             "p95": latency[math.ceil(0.95 * len(latency)) - 1] if len(latency) >= 20 else None,
         },
     }
-
-
-def evaluation_code_hash() -> str:
-    package = Path(__file__).resolve().parents[2]
-    paths = [
-        *Path(__file__).parent.glob("*.py"),
-        package / "organization/router.py",
-        package / "storage/routing.py",
-        package / "llm/openai_provider.py",
-    ]
-    return digest({p.relative_to(package).as_posix(): p.read_text(encoding="utf-8") for p in paths})
 
 
 async def evaluate_live(
@@ -359,6 +367,7 @@ async def evaluate_live(
             gold=dataset.gold,
             splits=dataset.splits,
             config=dataset.config,
+            protocol=dataset.protocol,
             live_config=config,
             split=split,
             scenario_id=scenario_id,

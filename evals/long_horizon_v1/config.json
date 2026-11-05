@@ -1,0 +1,6 @@
+{
+  "variant": "rule",
+  "replay_mode": "streaming",
+  "seed": 0,
+  "network": false
+}

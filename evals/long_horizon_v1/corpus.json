@@ -1,0 +1,1905 @@
+{
+  "version": "routing-v1-draft1",
+  "scenarios": [
+    {
+      "scenario_id": "LH001",
+      "description": "同一商店的手机端与网页端改版",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH001_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "我在给花店做手机端改版，先处理结账页面。",
+          "frozen_assistant_message": "先把结账流程中的问题列出来。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "支付按钮太靠下，单手够不到。",
+          "frozen_assistant_message": "可以先检查按钮位置。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "先保留一种支付方式，免得页面挤。",
+          "frozen_assistant_message": "这样可以先验证最小流程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "网页端也要改，但它是独立排期，重点是批量订花。",
+          "frozen_assistant_message": "网页端先围绕批量操作梳理。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "公司客户要一次填二十个收件地址。",
+          "frozen_assistant_message": "可以检查批量录入的步骤。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "地址导入放在第一屏。",
+          "frozen_assistant_message": "先看导入后怎样核对地址。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "单手够不到的那个按钮，我想挪到右下角。",
+          "frozen_assistant_message": "可以继续比较可触达范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "不用加悬浮动画，稳定一点。",
+          "frozen_assistant_message": "保持交互稳定。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "二十个地址填完以后，要能导出配送清单。",
+          "frozen_assistant_message": "导出的字段可以先列清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "给这个导出功能单独估两天。",
+          "frozen_assistant_message": "先按两天拆分工作。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "手机端的问题清单里，付款失败提示也要改。",
+          "frozen_assistant_message": "可以梳理失败后的恢复路径。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "那份清单先给我看看。",
+          "frozen_assistant_message": "你指手机端的问题清单，还是网页端的配送清单？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "我是说公司客户导出的配送清单。",
+          "frozen_assistant_message": "那就核对导出字段。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "电话号码要脱敏显示。",
+          "frozen_assistant_message": "可以区分展示和配送使用的字段。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "付款失败以后保留购物车，不要让人重新挑花。",
+          "frozen_assistant_message": "可以把这个约束加入恢复流程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "这件事跟按钮位置一起验收。",
+          "frozen_assistant_message": "可以放到同一次验收中。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "批量地址导入的排期从两天改三天。",
+          "frozen_assistant_message": "网页端排期按更正后的三天核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH001_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "单手操作这块还差一个真机测试。",
+          "frozen_assistant_message": "可以补一次真机验证。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "implicit-resume",
+        "ambiguity"
+      ]
+    },
+    {
+      "scenario_id": "LH002",
+      "description": "毕业论文和面试讲稿都有同一个截止日",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH002_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "毕业论文周五交，实验部分还缺一张消融表。",
+          "frozen_assistant_message": "先核对消融表需要哪些结果。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "表里比较三个检索策略，不要只放最好的一组。",
+          "frozen_assistant_message": "可以并列展示三个策略。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "同一个周五我还有面试，讲稿得单独准备。",
+          "frozen_assistant_message": "面试材料可以独立整理。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "开场只讲两分钟项目背景。",
+          "frozen_assistant_message": "可以先压缩开场。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "那三种策略我已经补跑完了。",
+          "frozen_assistant_message": "可以检查各组条件是否一致。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "实验结论别写成全面领先。",
+          "frozen_assistant_message": "结论范围可以跟数据保持一致。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "开场的第二段删掉，留时间说我负责的部分。",
+          "frozen_assistant_message": "可以突出你的实际职责。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "我还想准备一个故障排查例子。",
+          "frozen_assistant_message": "可以按发现、定位、处理来讲。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "昨天那份稿子现在能发了吗？",
+          "frozen_assistant_message": "你说的是论文稿，还是面试讲稿？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "论文稿，面试讲稿还不发。",
+          "frozen_assistant_message": "先核对论文提交项。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "图注要解释三个策略各自用了什么索引。",
+          "frozen_assistant_message": "可以把实验设置写清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "故障排查那个例子我选缓存穿透。",
+          "frozen_assistant_message": "可以列出定位过程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "不要写成我一个人解决的，团队也参与了。",
+          "frozen_assistant_message": "可以明确团队与个人贡献。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "检索结果那一表的标题换成中文。",
+          "frozen_assistant_message": "可以统一论文里的表格语言。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "导师要求再列一列运行时间。",
+          "frozen_assistant_message": "可以补充效率比较。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "面试的开场压到九十秒。",
+          "frozen_assistant_message": "可以重新估算每段时长。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "论文提交时间改成周四晚，这是新的要求。",
+          "frozen_assistant_message": "提交安排按新的时间核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH002_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "九十秒版本我想明早练一遍。",
+          "frozen_assistant_message": "可以按练习版本逐段检查。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "implicit-resume",
+        "cross-day",
+        "ambiguity"
+      ]
+    },
+    {
+      "scenario_id": "LH003",
+      "description": "自住房维修与出租房维修分开处理",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH003_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "我自己住的房子厨房漏水，先找人检查水槽。",
+          "frozen_assistant_message": "先明确漏水位置。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "师傅说可能是下水接头，预算暂定三百。",
+          "frozen_assistant_message": "可以先等待检查后的报价。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "出租那套房也有报修，不过是卧室空调不制冷。",
+          "frozen_assistant_message": "空调报修可以单独跟进。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "租客只在周末方便开门。",
+          "frozen_assistant_message": "需要把上门窗口说清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "水槽下面的柜板已经湿了，检查时也拍照。",
+          "frozen_assistant_message": "可以记录受潮范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "不制冷那台先清滤网，再决定要不要加冷媒。",
+          "frozen_assistant_message": "可以分步骤确认原因。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "更正，我家这个接头更换报价是四百，不是三百。",
+          "frozen_assistant_message": "这项报价按四百核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "柜板修复的钱暂时不算进去。",
+          "frozen_assistant_message": "可以把两个费用项目分开。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "两项维修都要安排，那个预算先按多少报？",
+          "frozen_assistant_message": "你在问厨房维修，还是出租房空调报修？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "问出租房那台空调，我还没拿到报价。",
+          "frozen_assistant_message": "可以先确认检查报价。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "跟租客约周六上午，别约下午。",
+          "frozen_assistant_message": "时间窗口按上午核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "柜板先通风，等接头修好以后再看。",
+          "frozen_assistant_message": "可以按这个顺序处理。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "接头的四百块包含材料吗，帮我列成待问项。",
+          "frozen_assistant_message": "可以把材料范围列为待确认项。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "租客说上午也不在了，改周日上午。",
+          "frozen_assistant_message": "上门安排按新的窗口核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "厨房那边师傅已经看过，确实是接头。",
+          "frozen_assistant_message": "可以继续核对维修范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "确认只换接头，不动整套水槽。",
+          "frozen_assistant_message": "范围可以明确到这一项。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "空调清洗报价两百，暂时不加冷媒。",
+          "frozen_assistant_message": "先按已确认的清洗范围处理。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH003_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "自己住这边的维修单我想存个副本。",
+          "frozen_assistant_message": "可以保留这次维修的单据信息。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "correction",
+        "ambiguity"
+      ]
+    },
+    {
+      "scenario_id": "LH004",
+      "description": "同城家庭旅行与工作出差",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH004_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "下月带爸妈去杭州玩三天，步行要少一点。",
+          "frozen_assistant_message": "可以先安排低步行强度的行程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "酒店尽量靠地铁，但别天天换。",
+          "frozen_assistant_message": "可以以同一家酒店为中心安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "月底我自己还要去杭州出差，跟客户开会。",
+          "frozen_assistant_message": "出差行程可以单独列出。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "会议在滨江，住会场附近比较好。",
+          "frozen_assistant_message": "可以围绕会场安排通勤。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "带老人那一趟，第二天只留一个景点。",
+          "frozen_assistant_message": "可以给休息留出时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "跟客户的晚餐不用写进游玩安排里。",
+          "frozen_assistant_message": "工作晚餐单独安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "爸妈希望住的地方有电梯。",
+          "frozen_assistant_message": "可以把电梯列为住宿条件。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "客户会议从周二改到周三。",
+          "frozen_assistant_message": "出差时间按新的会议日核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "酒店那张表先改一下。",
+          "frozen_assistant_message": "你指家庭旅行的住宿表，还是出差的住宿表？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "家庭旅行的，电梯这个条件加粗。",
+          "frozen_assistant_message": "可以突出这个住宿要求。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "三天都住一处，不搬行李。",
+          "frozen_assistant_message": "可以保持住宿地点一致。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "滨江会场附近那家先不订，等会务确认。",
+          "frozen_assistant_message": "可以把预订保留为待确认。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "只有一个景点的那天，加一段坐船可行吗？",
+          "frozen_assistant_message": "可以比较坐船与休息的安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "如果上船要走很多台阶就算了。",
+          "frozen_assistant_message": "可以先核对无障碍条件。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "会务确认酒店了，客户那趟只住两晚。",
+          "frozen_assistant_message": "出差住宿按两晚核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "爸妈这次预算还是四千，不包含我的出差费用。",
+          "frozen_assistant_message": "两个行程的费用保持分开。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "工作那趟我周四返程。",
+          "frozen_assistant_message": "可以按周四安排返程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH004_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "坐船暂时取消，留半天自由休息。",
+          "frozen_assistant_message": "家庭行程按新的休息安排核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "cross-day",
+        "ambiguity"
+      ]
+    },
+    {
+      "scenario_id": "LH005",
+      "description": "做饭计划穿插闲聊后恢复",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH005_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "这周我要自己带午饭，先做一个三天备菜计划。",
+          "frozen_assistant_message": "可以先确定容易保存的菜。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "其中一天用鸡肉，另两天别重复。",
+          "frozen_assistant_message": "可以按食材分配三天。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "公司只有微波炉，不能现炒。",
+          "frozen_assistant_message": "可以优先选方便复热的做法。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "周末的徒步也想安排一下，路线别太陡。",
+          "frozen_assistant_message": "徒步路线可以单独比较。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "我打算约两个朋友，上午出发。",
+          "frozen_assistant_message": "可以先确认集合时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "晚上好，今天工作总算忙完了。",
+          "frozen_assistant_message": "晚上好，先休息一下。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "刚才看到窗外晚霞，心情好多了。",
+          "frozen_assistant_message": "听起来是个不错的片刻。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "放进微波炉以后容易变柴的那份要换掉。",
+          "frozen_assistant_message": "可以重新比较便当的复热效果。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "鸡肉那天换成炖菜。",
+          "frozen_assistant_message": "可以按炖菜调整备菜顺序。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "约朋友那一趟，有一个人膝盖不舒服。",
+          "frozen_assistant_message": "路线需要给他留出轻松的选择。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "那就选环湖平路，别上山。",
+          "frozen_assistant_message": "可以围绕平路安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "另外两天午饭，一天豆腐一天鱼。",
+          "frozen_assistant_message": "可以继续补齐三天菜单。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "谢谢，这样三份就齐了。",
+          "frozen_assistant_message": "可以再核对保存和复热。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "上午出发的时间定成九点。",
+          "frozen_assistant_message": "可以把集合时间写清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "炖菜我想前一晚做好。",
+          "frozen_assistant_message": "可以把准备工作放到前一晚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "今晚早点睡，最近总是太晚了。",
+          "frozen_assistant_message": "希望你今晚能早点休息。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "环湖那次如果下雨就延期。",
+          "frozen_assistant_message": "可以保留天气不合适时延期的安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH005_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "午饭的采购单里别漏掉保鲜盒。",
+          "frozen_assistant_message": "可以一起核对容器和食材。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "smalltalk",
+        "implicit-resume",
+        "cross-day"
+      ]
+    },
+    {
+      "scenario_id": "LH006",
+      "description": "两家公司的独立应聘流程",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH006_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "星河科技的后端岗位让我周二做技术面试。",
+          "frozen_assistant_message": "可以先准备技术面试重点。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "他们特别问数据库事务。",
+          "frozen_assistant_message": "可以围绕相关经历准备。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "远山科技也是后端岗，但先要交书面作业。",
+          "frozen_assistant_message": "书面作业可以单独安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "作业要求设计一个库存接口。",
+          "frozen_assistant_message": "可以先澄清接口约束。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "事务那段经历，我想讲订单状态回滚。",
+          "frozen_assistant_message": "可以说明当时的处理过程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "库存不能出现负数，这个约束要放到方案里。",
+          "frozen_assistant_message": "可以明确并发更新时的约束。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "星河的自我介绍先控制两分钟。",
+          "frozen_assistant_message": "可以先压缩背景介绍。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "远山也要一份介绍，但更看重工程交付。",
+          "frozen_assistant_message": "可以按这次要求组织内容。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "那份介绍我改好了，先发哪位？",
+          "frozen_assistant_message": "你改的是星河面试用的，还是远山作业附带的介绍？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "是远山的，附在库存作业后面。",
+          "frozen_assistant_message": "可以核对提交材料顺序。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "周二那个面试改线上了。",
+          "frozen_assistant_message": "可以按线上面试准备环境。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "回滚的例子里，故障原因要说清楚。",
+          "frozen_assistant_message": "可以把定位与处理分开讲。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "库存作业的截止时间提前到周一晚。",
+          "frozen_assistant_message": "可以按新的截止时间安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "方案里补一个并发扣减的例子。",
+          "frozen_assistant_message": "可以展示约束怎样生效。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "线上面试用的介绍不加库存作业，那不是这家的要求。",
+          "frozen_assistant_message": "可以保持材料面向对应岗位。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "两分钟版本我还想再缩十秒。",
+          "frozen_assistant_message": "可以重新分配各段时长。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "提交前先检查负库存那个边界。",
+          "frozen_assistant_message": "可以把它列入最终检查。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH006_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "星河的事务问题还缺一个反例。",
+          "frozen_assistant_message": "可以补一个说明限制的反例。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "implicit-resume",
+        "ambiguity"
+      ]
+    },
+    {
+      "scenario_id": "LH007",
+      "description": "同一任务连续更正，穿插另一个安排",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH007_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "部门评审暂定周四，先准备一份六页的进展材料。",
+          "frozen_assistant_message": "可以先列六页的大纲。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "前两页交代目标和当前结果。",
+          "frozen_assistant_message": "可以把目标与证据对应起来。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "另外，还是这份评审材料，风险要单列一页。",
+          "frozen_assistant_message": "可以给风险保留独立位置。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "周末要给自行车做保养，刹车有点松。",
+          "frozen_assistant_message": "保养事项可以单独列出。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "先检查刹车，不急着换轮胎。",
+          "frozen_assistant_message": "可以先确认刹车的问题。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "评审改到周五了，材料不另起一份。",
+          "frozen_assistant_message": "沿用原材料核对新的时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "六页太紧，改成八页。",
+          "frozen_assistant_message": "可以按八页调整内容分配。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "保养那边我约了周六下午。",
+          "frozen_assistant_message": "可以核对上门或到店时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "风险页里加上依赖方延期这个可能。",
+          "frozen_assistant_message": "可以说明影响与应对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "这只是风险，不是已经延期。",
+          "frozen_assistant_message": "表述保持为待观察的可能性。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "标题也换一下，强调阶段结果。",
+          "frozen_assistant_message": "可以围绕阶段结果调整标题。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "刹车线换过以后，要试骑一下。",
+          "frozen_assistant_message": "可以把试骑列为验收项。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "八页版本里，有一页要给演示截图。",
+          "frozen_assistant_message": "可以安排截图与说明。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "更正，最后通知是周一评审，前面日期都作废。",
+          "frozen_assistant_message": "评审时间按最后通知核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "周六那个保养我仍然去，不跟评审一起改。",
+          "frozen_assistant_message": "保养时间保持独立。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "依赖方已经确认按时交付，风险页把这项撤掉。",
+          "frozen_assistant_message": "可以更新这一项的状态。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "其余风险保留，别整页删掉。",
+          "frozen_assistant_message": "只调整已确认变化的部分。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH007_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "给周一用的版本做一次页数检查。",
+          "frozen_assistant_message": "可以核对最终八页的结构。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "correction",
+        "fragmentation",
+        "implicit-resume"
+      ]
+    },
+    {
+      "scenario_id": "LH008",
+      "description": "相邻指代足够与不足的对照",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH008_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "想给家里买咖啡机，主要做拿铁。",
+          "frozen_assistant_message": "可以先按使用习惯比较。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "预算两千，先看半自动。",
+          "frozen_assistant_message": "可以在这个范围内筛选。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "这个预算先别提高。",
+          "frozen_assistant_message": "先保持两千的范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "办公室还要买打印机，这笔费用跟家里分开。",
+          "frozen_assistant_message": "打印机采购单独比较。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "要能双面打印，彩色不是必须。",
+          "frozen_assistant_message": "可以先比较黑白双面机型。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "家里那台如果清洗太麻烦，我就不选。",
+          "frozen_assistant_message": "可以把清洗步骤列入比较。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "这个条件比外观重要。",
+          "frozen_assistant_message": "可以优先检查维护成本。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "办公室的价格表我也整理好了。",
+          "frozen_assistant_message": "可以核对采购范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "咖啡机的价格表里补上磨豆机费用。",
+          "frozen_assistant_message": "可以一起看总成本。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "两张价格表都在这里，先把其中那张压缩一下。",
+          "frozen_assistant_message": "你指咖啡机比较表，还是办公室打印机表？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "家里买的那份，保留总成本就好。",
+          "frozen_assistant_message": "可以保留总成本与关键条件。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "那就先按两千继续看。",
+          "frozen_assistant_message": "可以保持当前预算继续筛选。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "双面打印那台的耗材也算一下。",
+          "frozen_assistant_message": "可以核对耗材成本。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "奶泡清洗的耗材我也单列了一张表。",
+          "frozen_assistant_message": "可以单独比较日常维护。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "打印机和咖啡机都有耗材表，先把那张合并吧。",
+          "frozen_assistant_message": "你想合并咖啡机耗材表，还是打印机耗材表？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "打印机那份，跟办公室采购表合并。",
+          "frozen_assistant_message": "可以并到对应采购表中。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "拿铁还是主要用途，不用为花式功能加钱。",
+          "frozen_assistant_message": "可以继续围绕主要用途筛选。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH008_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "办公室那边先选黑白双面，不买彩色。",
+          "frozen_assistant_message": "可以据此收拢采购范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "ambiguity",
+        "overclarification",
+        "implicit-resume"
+      ]
+    },
+    {
+      "scenario_id": "LH009",
+      "description": "音乐节与学校汇演的设备清单",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH009_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "社区音乐节在露天草坪，音响设备先按五百人规模列。",
+          "frozen_assistant_message": "可以先核对露天使用的设备条件。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "租赁清单里要有防雨罩。",
+          "frozen_assistant_message": "可以把防雨保护单独列出。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "孩子学校的汇演也让我帮忙看设备，在室内礼堂。",
+          "frozen_assistant_message": "礼堂设备可以单独核对。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "这里只有两支主持话筒，别照搬草坪那份。",
+          "frozen_assistant_message": "可以按主持需求列清单。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "户外电源线要够到草坪后面。",
+          "frozen_assistant_message": "可以核对走线距离。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "主持人的备用话筒也得有。",
+          "frozen_assistant_message": "可以检查备用设备。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "防雨罩先问租赁方是否包含在报价里。",
+          "frozen_assistant_message": "可以把租赁范围问清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "学校那份清单里加一个话筒架。",
+          "frozen_assistant_message": "可以补充固定设备。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "那份设备单的数量是不是写多了？",
+          "frozen_assistant_message": "你指音乐节租赁单，还是学校汇演设备单？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "学校的，只给两位主持人用。",
+          "frozen_assistant_message": "可以按两位主持人核对数量。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "草坪后面的连接线最好带一根备用。",
+          "frozen_assistant_message": "可以在走线计划中保留备用。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "现场扩声按五百人，不要改成礼堂方案。",
+          "frozen_assistant_message": "可以保持场地与规模一致。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "礼堂现有的话筒架能借到，不用再租。",
+          "frozen_assistant_message": "可以更新借用与租赁范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "主持话筒数量不变，只改架子的来源。",
+          "frozen_assistant_message": "可以只调整这一项。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "露天那场如果预报暴雨，要提前跟租赁方谈改期。",
+          "frozen_assistant_message": "可以把改期条件列为待确认。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "学校汇演的主持人换了一个，设备不因此重做。",
+          "frozen_assistant_message": "可以核对使用人变化是否影响需求。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "防雨罩已经确认包含在报价里。",
+          "frozen_assistant_message": "可以更新租赁范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH009_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "把礼堂那份借用单单独打印。",
+          "frozen_assistant_message": "可以保留对应的借用记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "implicit-resume",
+        "ambiguity",
+        "heldout"
+      ]
+    },
+    {
+      "scenario_id": "LH010",
+      "description": "两个志愿小组的值班安排",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH010_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "周六上午我负责旧书整理组，在社区服务站集合。",
+          "frozen_assistant_message": "可以先核对整理组的人员。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "这一组四个人，要戴手套。",
+          "frozen_assistant_message": "可以把人数和用品写清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "周日下午的长者手机教学组也在同一服务站。",
+          "frozen_assistant_message": "教学组的安排独立列出。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "那一组需要两位会讲方言的志愿者。",
+          "frozen_assistant_message": "可以确认人员要求。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "戴手套的那组，箱子需要提前搬进去。",
+          "frozen_assistant_message": "可以安排搬运准备。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "讲方言的两个人都已经找到了。",
+          "frozen_assistant_message": "可以核对教学分工。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "旧书整理改到周六下午，人数不变。",
+          "frozen_assistant_message": "可以更新这一组的集合时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "手机教学仍然是周日下午。",
+          "frozen_assistant_message": "教学组时间保持不变。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "把站里那张排班表发我看看。",
+          "frozen_assistant_message": "你想看旧书整理组，还是手机教学组的排班？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "旧书那组，我要核对四个人是否都能到。",
+          "frozen_assistant_message": "可以逐一确认整理组到场情况。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "有一个人下午不方便，换成小林。",
+          "frozen_assistant_message": "可以更新这一组的人员。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "教学组想多留十五分钟答疑。",
+          "frozen_assistant_message": "可以在教学安排后留出答疑时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "两位方言志愿者各带一个小组。",
+          "frozen_assistant_message": "可以按这个方式分组。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "箱子搬运由我提前半小时做。",
+          "frozen_assistant_message": "可以把准备工作放在集合前。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "周日那次只教拍照和扫码，不讲网购。",
+          "frozen_assistant_message": "可以保持教学范围清晰。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "整理组的手套一人两双。",
+          "frozen_assistant_message": "可以按人数核对用品。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "答疑时间从十五分钟改十分钟。",
+          "frozen_assistant_message": "可以调整教学结束前的时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH010_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "小林确认能来，旧书组名单就定这版。",
+          "frozen_assistant_message": "可以保留已确认的名单版本。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "cross-day",
+        "correction",
+        "heldout"
+      ]
+    },
+    {
+      "scenario_id": "LH011",
+      "description": "同一本教材的助教工作和自学计划",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH011_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "这学期我当数据库课助教，负责设计一次 SQL 作业。",
+          "frozen_assistant_message": "可以先列作业考查点。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "给学生的题目要覆盖连接查询。",
+          "frozen_assistant_message": "可以安排相关题型。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "我自己也用这本书准备资格考试，另做一个自学计划。",
+          "frozen_assistant_message": "自学计划可以单独安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "考试先复习事务和索引，不从出题那章开始。",
+          "frozen_assistant_message": "可以按考试重点安排复习。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "学生的连接题要给一个小数据集。",
+          "frozen_assistant_message": "可以准备便于核对结果的数据。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "这个数据集里故意留一条没有匹配的记录。",
+          "frozen_assistant_message": "可以借此考查连接边界。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "索引那一章我想分两晚看，已经列了自己的练习题单。",
+          "frozen_assistant_message": "可以按两次复习拆开。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "作业的参考答案先不要发给学生。",
+          "frozen_assistant_message": "可以先保留答案。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "学生作业和我的练习都在桌上，那份题目单是不是已经做完了？",
+          "frozen_assistant_message": "你指给学生出的作业，还是自己备考的练习单？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "自己的练习单，我要统计错题。",
+          "frozen_assistant_message": "可以先核对练习完成情况。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "连接查询也出现错题了，补到我的复习清单。",
+          "frozen_assistant_message": "可以补充这一项复习。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "没匹配记录的那题，答案里解释左连接。",
+          "frozen_assistant_message": "可以把边界情况解释清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "这一题不要再加窗口函数，太复杂。",
+          "frozen_assistant_message": "可以保持题目的考查范围。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "资格考试的时间提前一周，自学计划要压缩。",
+          "frozen_assistant_message": "可以重新分配复习时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "两晚看索引改成一晚。",
+          "frozen_assistant_message": "可以按新的安排核对重点。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "学生那份作业截止日期没变。",
+          "frozen_assistant_message": "可以保持原截止时间。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "我的错题清单里把索引那题标成已复习。",
+          "frozen_assistant_message": "可以更新这一项的复习状态。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH011_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "SQL 作业发出前再检查数据集。",
+          "frozen_assistant_message": "可以核对数据与题目是否一致。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "similar-projects",
+        "overclarification",
+        "implicit-resume",
+        "heldout"
+      ]
+    },
+    {
+      "scenario_id": "LH012",
+      "description": "读书会活动与图书登记工具",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "LH012_T01",
+          "timestamp": "2026-02-02T09:00:00+08:00",
+          "user_message": "我在筹备周末读书会，先列参加者和分享顺序。",
+          "frozen_assistant_message": "可以先确认活动的基本安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T02",
+          "timestamp": "2026-02-02T09:09:00+08:00",
+          "user_message": "每人分享五分钟，最后自由讨论。",
+          "frozen_assistant_message": "可以估算整体时长。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T03",
+          "timestamp": "2026-02-02T09:18:00+08:00",
+          "user_message": "顺便我还在写一个图书登记小工具，这是独立开发任务。",
+          "frozen_assistant_message": "登记工具可以单独梳理需求。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T04",
+          "timestamp": "2026-02-02T09:27:00+08:00",
+          "user_message": "第一版只记录书名和借阅人。",
+          "frozen_assistant_message": "可以先实现最小登记流程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T05",
+          "timestamp": "2026-02-02T09:36:00+08:00",
+          "user_message": "这次活动的分享顺序按报名先后排。",
+          "frozen_assistant_message": "可以按报名顺序整理。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T06",
+          "timestamp": "2026-02-02T09:45:00+08:00",
+          "user_message": "借阅人字段允许暂时为空。",
+          "frozen_assistant_message": "可以明确未借出时的状态。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T07",
+          "timestamp": "2026-02-03T09:00:00+08:00",
+          "user_message": "今天终于把桌子收拾干净了。",
+          "frozen_assistant_message": "听起来是个轻松一点的时刻。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T08",
+          "timestamp": "2026-02-03T09:09:00+08:00",
+          "user_message": "周末那个活动还缺主持人。",
+          "frozen_assistant_message": "可以先明确主持人的职责。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T09",
+          "timestamp": "2026-02-03T09:18:00+08:00",
+          "user_message": "五分钟到了由主持人提醒。",
+          "frozen_assistant_message": "可以把提醒方式说清楚。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T10",
+          "timestamp": "2026-02-03T09:27:00+08:00",
+          "user_message": "登记工具要能导出当前的图书清单。",
+          "frozen_assistant_message": "可以核对导出字段。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T11",
+          "timestamp": "2026-02-03T09:36:00+08:00",
+          "user_message": "读书会也整理了一张推荐书清单。",
+          "frozen_assistant_message": "可以把推荐书目单独列出。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T12",
+          "timestamp": "2026-02-03T09:45:00+08:00",
+          "user_message": "导出的图书清单和推荐书单我都打开了，把那份清单里的重复项删掉。",
+          "frozen_assistant_message": "你指登记工具导出的图书清单，还是读书会推荐书单？",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T13",
+          "timestamp": "2026-02-05T09:00:00+08:00",
+          "user_message": "工具导出的那份，同一本书重复录入了。",
+          "frozen_assistant_message": "可以先核对重复记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T14",
+          "timestamp": "2026-02-05T09:09:00+08:00",
+          "user_message": "借阅人不同的记录不要直接合并。",
+          "frozen_assistant_message": "可以保留借阅信息的区别。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T15",
+          "timestamp": "2026-02-05T09:18:00+08:00",
+          "user_message": "推荐书单里相同书名可以只留一次。",
+          "frozen_assistant_message": "可以按活动书单的用途整理。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T16",
+          "timestamp": "2026-02-05T09:27:00+08:00",
+          "user_message": "主持人已经确定，分享仍然每人五分钟。",
+          "frozen_assistant_message": "可以核对最终活动流程。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T17",
+          "timestamp": "2026-02-05T09:36:00+08:00",
+          "user_message": "空借阅人的记录也要能导出。",
+          "frozen_assistant_message": "可以把这种状态纳入导出检查。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "LH012_T18",
+          "timestamp": "2026-02-05T09:45:00+08:00",
+          "user_message": "读书会报名满了，分享顺序先锁定。",
+          "frozen_assistant_message": "可以保留这一版活动安排。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing",
+        "smalltalk",
+        "ambiguity",
+        "implicit-resume",
+        "heldout"
+      ]
+    }
+  ]
+}

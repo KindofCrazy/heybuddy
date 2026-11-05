@@ -9,8 +9,13 @@ from pathlib import Path
 from uuid import uuid4
 
 from personal_agent.evaluation.long_horizon.dataset import Corpus, Dataset, Gold, Splits, digest
-from personal_agent.evaluation.long_horizon.metrics import aggregate, score
-from personal_agent.evaluation.long_horizon.models import Config, ReplayResult, Schema
+from personal_agent.evaluation.long_horizon.metrics import SCORER_VERSION, aggregate, score
+from personal_agent.evaluation.long_horizon.models import (
+    BenchmarkProtocol,
+    Config,
+    ReplayResult,
+    Schema,
+)
 from personal_agent.evaluation.long_horizon.replay import replay
 from personal_agent.memory.privacy import require_private_directory
 
@@ -22,10 +27,12 @@ class Bundle(Schema):
     gold: Gold
     splits: Splits
     config: Config
+    protocol: BenchmarkProtocol | None = None
     split: str
     scenario_id: str | None
     git_commit: str | None
     git_dirty: bool
+    code_hash: str | None = None
     hashes: dict[str, str]
     results: list[ReplayResult]
 
@@ -38,7 +45,7 @@ def write(path: Path, value: object) -> None:
 
 
 def summary(bundle: Bundle) -> dict:
-    dataset = Dataset(bundle.corpus, bundle.gold, bundle.splits, bundle.config)
+    dataset = Dataset(bundle.corpus, bundle.gold, bundle.splits, bundle.config, bundle.protocol)
     if dataset.hashes != bundle.hashes or bundle.version != "1":
         raise ValueError("Result provenance mismatch")
     if bundle.evaluation_type != "Offline Contract Test":
@@ -62,13 +69,22 @@ def summary(bundle: Bundle) -> dict:
     latencies = sorted(p.latency_ms for p in predictions)
     return {
         "evaluation_type": bundle.evaluation_type,
+        "scorer_version": SCORER_VERSION,
         "status": "completed",
         "replay_mode": bundle.config.replay_mode,
         "variant": bundle.config.model_dump(mode="json"),
         "split": bundle.split,
+        "annotation_status": (
+            "human-reviewed"
+            if bundle.protocol.human_reviewed
+            else "agent-authored provisional gold"
+        )
+        if bundle.protocol
+        else "legacy",
         **bundle.hashes,
         "git_commit": bundle.git_commit,
         "git_dirty": bundle.git_dirty,
+        "code_hash": bundle.code_hash,
         "scenarios": rows,
         "split_aggregate": aggregate(list(rows.values())),
         "errors_by_stage": {stage: {} for stage in ("setup", "routing", "journal", "checkpoint")},
@@ -104,6 +120,17 @@ def working_tree_dirty() -> bool:
     return result.returncode != 0 or bool(result.stdout.strip())
 
 
+def evaluation_code_hash() -> str:
+    package = Path(__file__).resolve().parents[2]
+    paths = [
+        *Path(__file__).parent.glob("*.py"),
+        package / "organization/router.py",
+        package / "storage/routing.py",
+        package / "llm/openai_provider.py",
+    ]
+    return digest({p.relative_to(package).as_posix(): p.read_text(encoding="utf-8") for p in paths})
+
+
 async def evaluate(dataset: Dataset, output: Path, *, split="dev", scenario_id=None) -> dict:
     scenarios = dataset.select(split, scenario_id)
     revision = prepare_output(output)
@@ -116,10 +143,12 @@ async def evaluate(dataset: Dataset, output: Path, *, split="dev", scenario_id=N
             gold=dataset.gold,
             splits=dataset.splits,
             config=dataset.config,
+            protocol=dataset.protocol,
             split=split,
             scenario_id=scenario_id,
             git_commit=revision.stdout.strip() if revision.returncode == 0 else None,
             git_dirty=working_tree_dirty(),
+            code_hash=evaluation_code_hash(),
             hashes=dataset.hashes,
             results=results,
         )

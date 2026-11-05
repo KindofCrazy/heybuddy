@@ -59,15 +59,30 @@ class Scenario(Schema):
 class RoutingGold(Schema):
     turn_id: str
     gold_topic_id: str | None
-    acceptable_actions: list[Literal["continue", "select", "new", "chat", "clarify"]]
+    acceptable_actions: list[Literal["continue", "select", "new", "chat", "clarify"]] = Field(
+        min_length=1
+    )
     ambiguity: bool
     relevant_source_turn_ids: list[str]
 
     @model_validator(mode="after")
     def topic_required(self):
+        if len(set(self.acceptable_actions)) != len(self.acceptable_actions):
+            raise ValueError("Duplicate acceptable action")
         if not self.ambiguity and not self.gold_topic_id:
             raise ValueError("Unambiguous routing requires a topic")
         return self
+
+
+class BenchmarkProtocol(Schema):
+    version: str
+    scorer_version: str
+    annotation_origin: str
+    human_reviewed: bool
+    expected_splits: dict[str, int]
+    min_turns: int = Field(ge=1)
+    max_turns: int = Field(ge=1)
+    scenario_notes: dict[str, list[str]]
 
 
 class MemoryGold(Schema):

@@ -51,6 +51,8 @@ async def run_live(args, dataset, output):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--list", action="store_true")
+    parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--planning-input-cap", type=int, default=4096)
     parser.add_argument("--mode", choices=["routing"], default="routing")
     parser.add_argument("--variant", choices=["rule", "model-assisted"], default="rule")
     parser.add_argument("--replay-mode", choices=["streaming"], default="streaming")
@@ -69,6 +71,8 @@ def main() -> int:
     parser.add_argument("--output-price-cny", type=float)
     parser.add_argument("--price-source")
     args = parser.parse_args()
+    if args.preflight and (args.live or args.report or args.list or args.variant != "rule"):
+        parser.error("--preflight is offline-only and cannot list/re-score/run live")
     if args.live and (args.variant != "model-assisted" or args.list or args.report):
         parser.error("--live requires --variant model-assisted and cannot list/re-score")
     if args.variant == "model-assisted" and not args.live:
@@ -100,6 +104,37 @@ def main() -> int:
                 )
                 return 0
             output = args.output or default_output()
+            if args.preflight:
+                from personal_agent.evaluation.long_horizon.preflight import preflight
+                from personal_agent.evaluation.long_horizon.report import (
+                    evaluation_code_hash,
+                    prepare_output,
+                    working_tree_dirty,
+                    write,
+                )
+
+                revision = prepare_output(output)
+                try:
+                    result = asyncio.run(
+                        preflight(
+                            dataset,
+                            split=args.split,
+                            scenario_id=args.scenario,
+                            input_cap=args.planning_input_cap,
+                        )
+                    )
+                    result.update(
+                        git_commit=revision.stdout.strip() if revision.returncode == 0 else None,
+                        git_dirty=working_tree_dirty(),
+                        code_hash=evaluation_code_hash(),
+                    )
+                    write(output / "preflight.json", result)
+                    write(output / "status.json", {"status": "completed"})
+                except BaseException:
+                    write(output / "status.json", {"status": "failed"})
+                    raise
+                print(json.dumps({"result_dir": str(output), **result}, ensure_ascii=False))
+                return 0
             result = asyncio.run(
                 run_live(args, dataset, output)
                 if args.live

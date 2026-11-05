@@ -102,6 +102,8 @@ uv run personal-agent --help
 
 Long-Horizon Phase 1 提供独立的合成离线规则路由评测，入口为 `uv run python -m personal_agent.evaluation.long_horizon --list`；数据格式、真实 Router 重放路径、指标与结果重算见 [Long-Horizon Benchmark](docs/modules/long-horizon-evaluation.md)。结果标记为 Offline Contract Test，不代表真实模型或 Memory Learning 能力。
 
+[Thread Routing Benchmark v1 草案](docs/modules/long-horizon-benchmark-v1.md) 提供 12 场景/216 Turn、8/4 开发集与 Holdout 划分，新增澄清和历史证据关系指标；`--dataset evals/long_horizon_v1 --preflight` 可离线预估调用路径。Gold 明确标为 Agent 编写、待人工复核，当前不宣称正式模型能力结论。
+
 ```powershell
 uv run pytest
 uv run ruff check .
