@@ -102,6 +102,26 @@ uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_hor
 
 本实验与上一次失败记录分开保存，不续跑旧数据库，不修改已冻结标签或重写旧结果；发生不完整回执或其他停止条件时仍停止，绝不因已切换参数就把失败当作成功。Holdout 保持不运行。
 
+### 2026-11-05 非思考实验结果
+
+提交 `abf1d9f` 上完整完成 16 Trial、288 次 Turn 重放（rule/model-assisted 各 8 场景/144 Turn）。真实请求 77 次，全部完成，无 selection_unavailable；逐条请求参数记录为 reasoning_effort=none，SDK wire 映射由 MockTransport 测试核对，实际 reasoning_tokens 合计为 0。输入 34046、输出 2681 tokens，按本次较高单价估算费用上界 0.08954 元；预留金额 0.898906 元不是实际用量金额，均未达到 3 元限额。模型请求 P50 约 0.966 秒、P95 约 1.445 秒（support=77）。
+
+| 指标 | rule | model-assisted，显式非思考 |
+| --- | ---: | ---: |
+| Pairwise micro Precision | 0.4729 | 0.8032 |
+| Pairwise micro Recall | 0.8762 | 0.5843 |
+| Pairwise micro F1 | 0.6142 | 0.6765 |
+| Pairwise macro F1 | 0.6042 | 0.6574 |
+| 必需澄清遗漏 | 7/7 | 6/7 |
+| 不应澄清却标记澄清 | 1/137 | 2/137 |
+| 无歧义 Gold 的路由 coverage | 136/137 | 135/137 |
+| 显式证据关系一致性 | 200/335 | 228/330 |
+| 最长连续关系失败段 | 16 Turn | 8 Turn |
+
+模型辅助的 Pairwise 误合并较少，但同话题被拆散的问题更多（FN=212，对照 rule 为 64；有效 Pair support 因弃权不同，为 1074/1091）。不能只报告 F1 上升而隐藏 Recall 下降和 coverage 差异，澄清问题也仍明显。不同场景效果不一致：LH002/LH003 的 F1 低于对应规则基线。当前是一遍开发集合成草案评测，无统计显著性或泛化结论；默认思考实验未完成，不能与本轮作完整能力对比。
+
+规则基线与之前离线结果一致，完整报告无模型重算一致。可提交的无正文记录见 [非思考开发集结果](../../evals/results/long-horizon-v1-live-dev-no-thinking-20261105.json)，私有完整 Trace 保留在 `.heybuddy/evaluations/lh-v1-live-dev-no-thinking-20261105/`；上一轮失败记录保留，Holdout 未运行。未按分数修改 Gold、Prompt、规则或生产模型配置。
+
 ## 阅读与验证
 
 ```powershell
