@@ -1,5 +1,7 @@
 # Memory Automation：回答完成后的有界学习
 
+WORTHINESS_PROMPT 增加未来回应收益与减少用户重复纠正的门槛，排除活动流水账、泛泛建议及未验证的成功宣称；保留用户反馈的范围与例外。P2 关闭后才使用该兼容流程，模式、请求上限、审批与授权未变。来源及完整修改见 [提示词说明](prompts.md#codex-memories-借鉴与本次修改)。
+
 P1 接线更新：生产 CLI 先展示答案，再由 OrganizationRuntime 的可抢占钩子 await 原 MemoryAutomation.run()；AsyncInput 同时接收新输入，foreground() 取消检查并等待原取消记账结束。没有改变计划、精确授权、最多四次请求或失败显式 retry 语义；新的 Episode 进度独立。嵌入 chat() 未装配 OrganizationRuntime 时仍沿用原顺序路径。以下 V0.7.2 章节描述该服务内部的原有顺序阶段。
 
 ## 职责与架构组成

@@ -24,36 +24,54 @@ from personal_agent.reflection.models import (
     ReflectionPolicy,
     Selection,
 )
-from personal_agent.reflection.prompts import EXTRACTION_RULES, memory_rules
+from personal_agent.reflection.prompts import (
+    CONSOLIDATION_RULES,
+    EXTRACTION_RULES,
+    SELECTION_RULES,
+    memory_rules,
+)
 from personal_agent.reflection.provider import ReflectionModel, structured_request
 from personal_agent.reflection.writer import reconcile_item, write_item
 from personal_agent.storage.reflection import ReflectionRepository, sources
 
 BASE = memory_rules("temporary state")
 EXTRACT = BASE + EXTRACTION_RULES
-SELECT = BASE + (
-    "Select at most six existing relevant file paths from the complete bounded catalogue. "
-    "Core blocks are already read. Inspect existing subjects and directory indexes before "
-    "creating similar topics; choose all plausible duplicates or conflicting sources."
+SELECT = (
+    BASE
+    + SELECTION_RULES
+    + (
+        "Select at most six existing relevant file paths from the complete bounded catalogue. "
+        "Core blocks are already read. Inspect existing subjects and directory indexes before "
+        "creating similar topics; choose all plausible duplicates or conflicting sources."
+    )
 )
-CONSOLIDATE = BASE + (
-    "Evaluate every candidate exactly once using candidate_id (1-based). Decide create/update/"
-    "no_op/reject/review. Compare existing memories, prefer one home per subject and update "
-    "contradictions in place; later explicit corrections take precedence. No-op when already "
-    "captured. Reject ephemeral/unconfirmed content; review unresolved conflicts. Core must stay "
-    "lean: user facts/preferences in human.md, evidenced relationship reflections in persona.md "
-    "with first line '# 相处记忆', detailed projects/knowledge "
-    "in topic files. Never reinterpret a nonempty legacy persona identity as relationship memory "
-    "or rewrite character packages. Existing Core blocks require update, even when heading-only. "
-    "Update only a supplied file using a nonempty unique exact old_text span; "
-    "new_text replaces only that span. Create a topic under a directory with name/description "
-    "frontmatter; indexes are maintained by the host. Do not propose file deletion. "
-    "For non-write actions path/old_text/new_text must be empty. Explain reasons and relationships "
-    "among proposals. At most one write per target: merge related evidence during extraction, "
-    "or mark dependent duplicates no_op/review with relations. "
-    "A candidate is not an approved write. Reject one-off hypothetical/example disclaimers "
-    "when existing memory contains no corresponding false fact; generic caution is not a new "
-    "user preference. Favor a small number of useful changes and concise reasons."
+CONSOLIDATE = (
+    BASE
+    + CONSOLIDATION_RULES
+    + (
+        "Evaluate every candidate exactly once using candidate_id (1-based). Decide create/update/"
+        "no_op/reject/review. Compare existing memories, prefer one home per subject and update "
+        "contradictions in place; later explicit corrections take precedence. No-op when already "
+        "captured. Reject ephemeral/unconfirmed content; review unresolved conflicts. Core "
+        "must stay "
+        "lean: user facts/preferences in human.md, evidenced relationship reflections in "
+        "persona.md "
+        "with first line '# 相处记忆', detailed projects/knowledge "
+        "in topic files. Never reinterpret a nonempty legacy persona identity as relationship "
+        "memory "
+        "or rewrite character packages. Existing Core blocks require update, even when "
+        "heading-only. "
+        "Update only a supplied file using a nonempty unique exact old_text span; "
+        "new_text replaces only that span. Create a topic under a directory with name/description "
+        "frontmatter; indexes are maintained by the host. Do not propose file deletion. "
+        "For non-write actions path/old_text/new_text must be empty. Explain reasons and "
+        "relationships "
+        "among proposals. At most one write per target: merge related evidence during extraction, "
+        "or mark dependent duplicates no_op/review with relations. "
+        "A candidate is not an approved write. Reject one-off hypothetical/example disclaimers "
+        "when existing memory contains no corresponding false fact; generic caution is not a new "
+        "user preference. Favor a small number of useful changes and concise reasons."
+    )
 )
 
 

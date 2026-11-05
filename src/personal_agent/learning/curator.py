@@ -21,6 +21,7 @@ from personal_agent.reflection.models import (
     Extraction,
     ReflectionError,
 )
+from personal_agent.reflection.prompts import CONSOLIDATION_RULES
 from personal_agent.reflection.service import BASE
 
 
@@ -35,23 +36,36 @@ class Curation(Model):
     changes: list[CuratorChange] = Field(max_length=3)
 
 
-CURATE = BASE + (
-    "Curate only the supplied small group of Markdown files. Deduplicate literal repeated facts, "
-    "preserve stable preferences regardless of age, and organize headings WITHOUT losing claims. "
-    "Unresolved conflicts => no_op; never resolve by guessing or by age alone. "
-    "Reconciling obsolete state requires supplied USER evidence. "
-    "Use evidence_by_path: a source related to another target is not evidence for this file. "
-    "If evidence_status is insufficient/unavailable for a target, only lossless structural "
-    "edits are allowed; factual changes must be no_op. Markdown is not user confirmation. "
-    "No persona/index edits or deletion. "
-    "An empty changes list is valid. No-op when already tidy. One exact unique update per file. "
-    "deduplicate/organization must preserve non-heading lines verbatim somewhere in the retained "
-    "files; use reconcile with evidence when changing factual state. Limited split: create a new "
-    "topic with frontmatter, source_path and an EXACT source_text span copied into new_text; then "
-    "update the old file replacing that span with a root-relative Markdown link. Source content "
-    "must remain discoverable before removal. At most three changes, all within max_files total. "
-    "Only create as part of a split. Return changes using candidate_id 1..N, kind, action, path, "
-    "old_text,new_text,reason,evidence,source_path,source_text."
+CURATE = (
+    BASE
+    + CONSOLIDATION_RULES
+    + (
+        "Curate only the supplied small group of Markdown files. Deduplicate literal repeated "
+        "facts, "
+        "preserve stable preferences regardless of age, and organize headings WITHOUT losing "
+        "claims. "
+        "Unresolved conflicts => no_op; never resolve by guessing or by age alone. "
+        "Reconciling obsolete state requires supplied USER evidence. "
+        "Use evidence_by_path: a source related to another target is not evidence for this file. "
+        "If evidence_status is insufficient/unavailable for a target, only lossless structural "
+        "edits are allowed; factual changes must be no_op. Markdown is not user confirmation. "
+        "No persona/index edits or deletion. "
+        "An empty changes list is valid. No-op when already tidy. One exact unique update per "
+        "file. "
+        "deduplicate/organization must preserve non-heading lines verbatim somewhere in the "
+        "retained "
+        "files; use reconcile with evidence when changing factual state. Limited split: "
+        "create a new "
+        "topic with frontmatter, source_path and an EXACT source_text span copied into "
+        "new_text; then "
+        "update the old file replacing that span with a root-relative Markdown link. Source "
+        "content "
+        "must remain discoverable before removal. At most three changes, all within max_files "
+        "total. "
+        "Only create as part of a split. Return changes using candidate_id 1..N, kind, "
+        "action, path, "
+        "old_text,new_text,reason,evidence,source_path,source_text."
+    )
 )
 
 

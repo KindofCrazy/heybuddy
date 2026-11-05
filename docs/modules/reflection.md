@@ -1,5 +1,7 @@
 # Reflection 与长期记忆整合
 
+EXTRACT 加强未来复用价值、用户反馈优先和验证状态区分；SELECT、CONSOLIDATE 分别共用范围选择与最小增量整合规则。原有精确引文、候选计划和人工审批不变。完整修改清单与上游版本见 [Codex memories 借鉴](prompts.md#codex-memories-借鉴与本次修改)。
+
 `reflection/prompts.py::EXTRACTION_RULES` 由手动 Reflection 与 P2 Learning 共享。抽取首先判断更正的底层事实是否有长期复用价值；普通词语定义、比喻解释或当前情境消歧不因标为 correction 就自动成为长期候选，除非更正了已提供的错误持久记忆，或用户明确设立长期特殊用法。保留偏好的实际范围、强度与例外。完整来源校验、选文件、计划和人工审批不变。新增 `evals/prompts/flow-reviewed-context.json` 只推进抽取规则快照，旧快照和固定评分器保留。
 
 Reflection 从已完成原始对话提取值得长期保存的信息，读取相关现有记忆后生成带来源、理由和精确局部修改的计划，手动流程须批准后发布。它关注“对话带来了什么新认识”。Curator 从已存的少量记忆出发去重、整理及核对过时状态，事实更正仍须相关真实用户证据，关注“已有记忆是否一致、清楚、可用”；它不能替代学习，也不是再次全量阅读聊天。当前 P2 Learner 自动复用 Reflection 的底层请求、证据校验和 Writer，但不自动批准手动计划；P2 开启时旧 suggest/auto Automation 暂停。

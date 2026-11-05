@@ -1,5 +1,31 @@
 # 通用交谈提示词
 
+## Codex memories 借鉴与本次修改
+
+本次采用未来复用价值、用户纠正优先、证据状态、适用范围、渐进检索与最小增量修改原则。实际阅读的上游来源为 [stage_one_system.md](https://github.com/openai/codex/blob/main/codex-rs/memories/write/templates/memories/stage_one_system.md)（blob `d8aa51d2d190040a6bc816d1333093bf4c15201b`）、[stage_one_input.md](https://github.com/openai/codex/blob/main/codex-rs/memories/write/templates/memories/stage_one_input.md)（blob `0689fa4b935bea46c0882467202f0dc4719f377d`）和 [consolidation.md](https://github.com/openai/codex/blob/main/codex-rs/memories/write/templates/memories/consolidation.md)（blob `0eef7580b5c2694594e2e52c9dade3dbbdcdae5b`）。链接跟随 main，blob 标识记录本次实际阅读版本。上游 README 所列 `read/templates/memories/read_path.md` 返回 404，不声称读过该模板；读取侧依据已读取整合模板的 progressive disclosure 与适用范围原则适配。
+
+| 提示词与位置 | 修改后的行为 |
+| --- | --- |
+| `reflection/prompts.py::memory_rules()` → Reflection BASE、LEARNING_BASE、Curator BASE | 以减少用户重复解释、纠正和昂贵重查为目标，不以记录完成的工作为目标 |
+| `reflection/prompts.py::EXTRACTION_RULES` → EXTRACT、LEARN_EXTRACT | 每条候选先判断未来回应会怎样改善，无具体收益可返回空候选；优先明确可复用的用户反馈，反复强调增强证据，但明确长期偏好无需重复才有效 |
+| 同上 | 区分请求、提议、尝试与验证；助手自称成功、用户沉默或换话题不能单独证明成功或采纳；经验保留有证据的项目/环境、触发条件、失败、补救与实际验证，缺项不补造，未验证方案保持暂定；不复制大段工具输出 |
+| `reflection/prompts.py::SELECTION_RULES` → SELECT、LEARN_SELECT | 按主题和适用范围选择已有文件，同名项目/环境不自动合并；只选真实 catalogue 路径，在预算内比较相关冲突，不扫描无关主题 |
+| `reflection/prompts.py::CONSOLIDATION_RULES` → CONSOLIDATE、LEARN_CONSOLIDATE、CURATE | 合并时保留范围、条件、例外和确认程度；同源重复不算独立确认；保留独有细节；主题命名与描述便于检索但不堆关键词；准确内容不为风格而重写、重排、改名；未提供历史不代表旧事实失效 |
+| `automation/service.py::WORTHINESS_PROMPT` | 兼容流程使用相同价值门槛，活动日志和泛泛建议不足以触发；保留反馈范围与例外，避免误认验证结果 |
+| `core/prompts.py::MEMORY_READ_RULES` | 上下文够用则直接回答；需要细节才定位并有界读取；索引/摘要/片段不冒充全文；复用前核对项目、环境、时间与条件；易变状态需当前证据；无相关线索时停止扩散，未命中不等于从未发生；自然使用记忆，不展示档案或从记忆获得权限 |
+
+本项目仍使用自己的 JSON Schema、精确用户引文验证、分层 Markdown 索引和受控 Writer。没有复制上游的 raw_memory/rollout_summary 输出格式、memory_summary.md、Git 记忆基线、自由文件编辑、删除机制或 Skills 自动生成。上游允许更广泛的经验推断，本项目 confirmed 候选仍须有真实用户引文，工具成功不自动成为用户偏好或关系事实。角色关系语义、手动 Reflection 审批、P2 自动发布授权、原始 Journal 和 Markdown 权威源保持原契约。
+
+### 实际接线与验证
+
+1. `runtime.assemble_chat()` 装配主对话与维护服务。主对话的 `core/context.py::DEFAULT_SYSTEM_PROMPT` 和 `character/prompt.py::compile_system()` 都经过 `core/prompts.py::with_conversation_prompt()`，它在交谈风格前追加一份 MEMORY_READ_RULES，覆盖默认、Luna 与 Sherlock。显式自定义的非角色 System 不自动追加。
+2. 手动 `ReflectionService.reflect()` 依次将 EXTRACT、SELECT、CONSOLIDATE 交给 `ReflectionModel.ask()`，仍用空工具列表；抽取、选择与整合分别使用共享规则，计划生成后仍需可信审批才能发布。
+3. `MemoryLearningService.propose()` 使用 LEARN_EXTRACT、LEARN_SELECT、LEARN_CONSOLIDATE。LEARN_SELECT 仍须恰好覆盖所有候选，不因新增价值判断漏掉候选；reject/no_op/review 保持在整合阶段。
+4. `MemoryCurator._run()` 的有界请求使用追加共享整合规则的 CURATE，无可用用户证据时仍只允许无损结构整理。MemoryAutomation 仅在 P2 关闭后的兼容流程使用修改后的 WORTHINESS_PROMPT。
+5. 新规则计入既有请求预算；超预算明确失败，不增加模型调用或放宽输出上限。规则约束模型行为，不能代替宿主校验或证明真实模型质量提升。
+
+最小离线验证：`uv run pytest tests/test_memory_prompt_wiring.py tests/test_reflection.py tests/test_learning.py tests/test_curator_evidence.py`。新增测试检查默认/角色 System 单次注入、FakeProvider 三阶段实际请求、空工具列表、抽取无信号时只请求一次，以及手动生成计划不发布文件。既有测试覆盖引文归属、冲突、部分发布和 Curator 无损约束。新增 `evals/prompts/codex-memory-inspired-context.json` 保存主对话、兼容 Worthiness 和手动 Reflection，`codex-memory-inspired-learning.json` 保存 P2 三阶段与 Curator；历史快照与固定评分器保留。`tests/test_evaluation.py` 继续核对当前快照及历史版本差异，并确认摘要规则和工具描述未变。本次没有付费模型评测，不声称已验证召回率、事实准确率或用户体验收益。
+
 后续质量复核在 conversation.md 明确：交谈方式反馈不等于道别；“不要建议”也不应用行动建议包装成安慰；只给表达式/名称/结果时不补解释，机制比较不自动延伸到优化接口。知识描述按能准确说明的范围展开。新组合快照为 `evals/prompts/quality-reviewed-context.json`，旧快照保留。图片还由 ContextBuilder 按实际图像上下文追加 `VISUAL_RULES`，避免把图像专用的保守轮廓描述塞进所有文字对话或 Composer；明确给出几何条件时仍可准确命名。视觉修订降低错误确定性，不代表模型的细节识别能力增强。
 
 后续范围迭代将重复的结束规则合并为“按范围答完就停”：限定一种方法时不扩成多条路线，比较 A/B 时不附送第三种方案；只问操作路径时，在必要步骤结束后停止例行提醒和收尾。明确要求多个方案时仍逐项回答，角色口吻不扩大请求。当前组合快照为 `evals/prompts/scope-focused-context.json`，历史快照保留；默认与角色编译、权限、提醒边界不变。

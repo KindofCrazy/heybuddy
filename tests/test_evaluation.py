@@ -126,7 +126,15 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
     revised = json.loads((root / "flow-revised-context.json").read_text(encoding="utf-8"))
     focused = json.loads((root / "scope-focused-context.json").read_text(encoding="utf-8"))
     quality = json.loads((root / "quality-reviewed-context.json").read_text(encoding="utf-8"))
-    assert current == quality
+    memory_inspired = json.loads(
+        (root / "codex-memory-inspired-context.json").read_text(encoding="utf-8")
+    )
+    assert current == memory_inspired
+    assert memory_inspired["main"] != quality["main"]
+    assert memory_inspired["worthiness"] != quality["worthiness"]
+    assert memory_inspired["reflection"] != quality["reflection"]
+    assert memory_inspired["summary"] == quality["summary"]
+    assert memory_inspired["tools"] == quality["tools"]
     assert quality["main"] != focused["main"]
     assert {k: v for k, v in quality.items() if k != "main"} == {
         k: v for k, v in focused.items() if k != "main"
@@ -173,10 +181,10 @@ def test_p1_prompts_preserve_measured_memory_prompts_and_record_working_summary_
         k: v for k, v in p1.items() if k not in {"main", "tools"}
     }
     assert temporal["summary"] == chinese["summary"]
-    assert current["worthiness"] == chinese["worthiness"]
+    assert quality["worthiness"] == chinese["worthiness"]
     assert current["tools"] == chinese["tools"]  # Legacy offline tool fixtures stay frozen.
-    assert current["reflection"]["BASE"] == chinese["reflection"]["BASE"]
-    assert current["reflection"]["SELECT"] == chinese["reflection"]["SELECT"]
+    assert quality["reflection"]["BASE"] == chinese["reflection"]["BASE"]
+    assert quality["reflection"]["SELECT"] == chinese["reflection"]["SELECT"]
     assert current["main"] != p1["main"]  # Explicit Chinese translation, no measured gain.
     assert current["tools"].keys() == p1["tools"].keys()
     assert {key: value for key, value in p1.items() if key != "summary"} == {

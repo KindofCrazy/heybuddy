@@ -27,7 +27,12 @@ from personal_agent.reflection.models import (
     PlanItem,
     ReflectionError,
 )
-from personal_agent.reflection.prompts import EXTRACTION_RULES, memory_rules
+from personal_agent.reflection.prompts import (
+    CONSOLIDATION_RULES,
+    EXTRACTION_RULES,
+    SELECTION_RULES,
+    memory_rules,
+)
 from personal_agent.reflection.provider import ReflectionModel
 from personal_agent.reflection.service import ReflectionService
 from personal_agent.reflection.writer import reconcile_item, write_item
@@ -58,34 +63,44 @@ LEARN_EXTRACT = (
     )
 )
 LEARNING_BASE = memory_rules("ephemeral one-off context")
-LEARN_SELECT = LEARNING_BASE + (
-    "This stage only assigns targets, it does not accept or reject candidates. Even a weak "
-    "or temporary candidate MUST appear in exactly one group; the later consolidation stage "
-    "can reject or no_op. Never silently drop candidate_ids or return empty groups for a "
-    "nonempty candidate list. "
-    "Group ALL candidate_ids exactly once by one canonical target path. Prefer existing topics; "
-    "select related existing files for comparison by reusing their path. Core preferences may "
-    "target human.md. Relationship candidates alone may target persona.md when "
-    "relationship_memory_available is true; never reinterpret a legacy persona identity. "
-    "Never target an index. A new topic must be a .md file under a directory. "
-    "Merge related candidates into ONE group per file. "
-    "Preserve chronology and supplied max_files. Return groups [{path,candidate_ids}] and paths: "
-    "up to six existing catalogue paths to read for duplicates/conflicts."
+LEARN_SELECT = (
+    LEARNING_BASE
+    + SELECTION_RULES
+    + (
+        "This stage only assigns targets, it does not accept or reject candidates. Even a weak "
+        "or temporary candidate MUST appear in exactly one group; the later consolidation stage "
+        "can reject or no_op. Never silently drop candidate_ids or return empty groups for a "
+        "nonempty candidate list. "
+        "Group ALL candidate_ids exactly once by one canonical target path. Prefer existing "
+        "topics; "
+        "select related existing files for comparison by reusing their path. Core preferences may "
+        "target human.md. Relationship candidates alone may target persona.md when "
+        "relationship_memory_available is true; never reinterpret a legacy persona identity. "
+        "Never target an index. A new topic must be a .md file under a directory. "
+        "Merge related candidates into ONE group per file. "
+        "Preserve chronology and supplied max_files. Return groups [{path,candidate_ids}] and "
+        "paths: "
+        "up to six existing catalogue paths to read for duplicates/conflicts."
+    )
 )
-LEARN_CONSOLIDATE = LEARNING_BASE + (
-    "针对当前目标，把全部候选和相关记忆按来源时间合并成一次整合决定。"
-    "新的明确状态替换已过时状态，不追加互相矛盾的当前事实；用户后来的明确更正优先。"
-    "已经准确记录则 no_op，无法解决的冲突返回 review 或 no_op。"
-    "稳定偏好不因时间经过而失效，不推断敏感特征，不复制凭据，"
-    "不把假设或未经用户接受的建议升级为事实。"
-    "target_exists 由宿主按实际读取结果提供，不按正文多少判断文件是否存在。"
-    "现有文件只能 update/no_op/reject/review；只有标题的 human.md 也已经存在，必须用 update。"
-    "update 的 old_text 必须是目标原文中非空、精确且唯一的片段，new_text 只替换该片段；"
-    "首次添加核心资料时可以精确替换现有标题并保留标题。不为核心块添加主题元数据。"
-    "只有尚不存在的目录下主题文件才能 create，并提供 name/description 元数据。"
-    "persona.md 只保存有用户证据的相处认识、共同经历与交流反思，不保存稳定角色设定或模拟情绪；"
-    "整合后必须保留首行 # 相处记忆；旧的空 # Persona 模板首次更新时改用该标题。"
-    "不得删除整份文件、修改角色包或索引；非写入操作的 old_text/new_text 必须为空。"
+LEARN_CONSOLIDATE = (
+    LEARNING_BASE
+    + CONSOLIDATION_RULES
+    + (
+        "针对当前目标，把全部候选和相关记忆按来源时间合并成一次整合决定。"
+        "新的明确状态替换已过时状态，不追加互相矛盾的当前事实；用户后来的明确更正优先。"
+        "已经准确记录则 no_op，无法解决的冲突返回 review 或 no_op。"
+        "稳定偏好不因时间经过而失效，不推断敏感特征，不复制凭据，"
+        "不把假设或未经用户接受的建议升级为事实。"
+        "target_exists 由宿主按实际读取结果提供，不按正文多少判断文件是否存在。"
+        "现有文件只能 update/no_op/reject/review；只有标题的 human.md 也已经存在，必须用 update。"
+        "update 的 old_text 必须是目标原文中非空、精确且唯一的片段，new_text 只替换该片段；"
+        "首次添加核心资料时可以精确替换现有标题并保留标题。不为核心块添加主题元数据。"
+        "只有尚不存在的目录下主题文件才能 create，并提供 name/description 元数据。"
+        "persona.md 只保存有用户证据的相处认识、共同经历与交流反思，不保存稳定角色设定或模拟情绪；"
+        "整合后必须保留首行 # 相处记忆；旧的空 # Persona 模板首次更新时改用该标题。"
+        "不得删除整份文件、修改角色包或索引；非写入操作的 old_text/new_text 必须为空。"
+    )
 )
 
 

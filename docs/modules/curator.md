@@ -1,5 +1,7 @@
 # P2 Memory Curator
 
+CURATE 追加共享 CONSOLIDATION_RULES，强调保留适用范围、独有细节、确认程度和准确原文，无实质收益不改写；来源缺失不意味着旧事实失效。无损结构校验与有用户证据才能 reconcile 的边界不变。规则来源和接线见 [提示词说明](prompts.md#codex-memories-借鉴与本次修改)。
+
 P2 Review Fix：恢复后的 pending Curator 读取原 sources.memory 与已核实发布的目的文件，保留同一 Job 后重新规划；不重新 CREATE 已保存的 split 目的。当前比较依然受文件/字节限制并排除 persona/index。Learner 的启动/Idle 只读核对和真正冲突保护见 [Learning](learning.md)，tests/test_curator.py 的 partial split 验证补链后从当前文件继续。
 
 ## 职责与组成
