@@ -100,10 +100,11 @@ class ProductionMaintenance:
     offline callers use ExtractiveContractProvider and report it as such.
     """
 
-    def __init__(self, provider, *, interval: int = 3):
+    def __init__(self, provider, *, interval: int = 3, context_window: int = 131072):
         if not 1 <= interval <= 16:
             raise ValueError("Invalid maintenance interval")
         self.provider, self.interval = provider, interval
+        self.budget = ContextBudget(context_window=context_window)
         self.calls: list[dict] = []
         self.policy = OrganizationPolicy(
             page_runs=8, revision_seconds=1, idle_seconds=1, output_tokens=4096, input_tokens=32768
@@ -113,7 +114,7 @@ class ProductionMaintenance:
         if count % self.interval:
             return None
         start = len(self.calls)
-        budget = ContextBudget(context_window=131072)
+        budget = self.budget
         episodes = EpisodeRepository(repository.store, repository.agent_id)
         threads = ThreadRepository(repository.store, repository.agent_id)
         episode_model = OrganizerModel(

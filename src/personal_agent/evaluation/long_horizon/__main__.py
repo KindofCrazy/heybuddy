@@ -23,6 +23,8 @@ async def run_live(args, dataset, output):
         evaluate_live,
         validate_live_scope,
     )
+    from personal_agent.evaluation.long_horizon.pilot import PilotConfig, evaluate_pilot, protocol
+    from personal_agent.evaluation.long_horizon.pilot import validate_scope as validate_pilot_scope
     from personal_agent.llm.openai_provider import OpenAIProvider
 
     settings = load_settings()  # Normal configuration loader; never dump secrets/settings.
@@ -30,6 +32,7 @@ async def run_live(args, dataset, output):
         "smoke": LiveConfig,
         "routing-dev-v1": DevLiveConfig,
         "routing-dev-v1-no-thinking": NoThinkingDevConfig,
+        "routing-pilot-v2": PilotConfig,
     }[args.budget_profile]
     overrides = {
         k: getattr(args, k)
@@ -45,14 +48,18 @@ async def run_live(args, dataset, output):
         output_price_cny=args.output_price_cny,
         price_source=args.price_source,
     )
-    validate_live_scope(dataset, config, args.split, args.scenario)
+    pilot = isinstance(config, PilotConfig)
+    if pilot:
+        validate_pilot_scope(dataset, protocol(), args.split, args.scenario)
+    else:
+        validate_live_scope(dataset, config, args.split, args.scenario)
     async with AsyncOpenAI(
         api_key=settings.api_key.get_secret_value(),
         base_url=str(settings.base_url) if settings.base_url else None,
         max_retries=0,
-        timeout=10,
+        timeout=30 if pilot else 10,
     ) as client:
-        return await evaluate_live(
+        return await (evaluate_pilot if pilot else evaluate_live)(
             dataset,
             output,
             OpenAIProvider(client, settings.model),
@@ -66,6 +73,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--pilot-preflight", action="store_true")
     parser.add_argument(
         "--ablation", choices=["baseline", "state", "identity", "fewshot", "deferred", "all"]
     )
@@ -85,7 +93,7 @@ def main() -> int:
     parser.add_argument("--live", action="store_true")
     parser.add_argument(
         "--budget-profile",
-        choices=["smoke", "routing-dev-v1", "routing-dev-v1-no-thinking"],
+        choices=["smoke", "routing-dev-v1", "routing-dev-v1-no-thinking", "routing-pilot-v2"],
         default="smoke",
     )
     parser.add_argument("--repetitions", type=int)
@@ -97,11 +105,26 @@ def main() -> int:
     parser.add_argument("--price-source")
     args = parser.parse_args()
     if args.ablation and (
-        args.live or args.preflight or args.report or args.list or args.variant != "rule"
+        args.live
+        or args.preflight
+        or args.pilot_preflight
+        or args.report
+        or args.list
+        or args.variant != "rule"
     ):
         parser.error("--ablation is an independent offline contract experiment")
     if args.budget_profile != "smoke" and not args.live:
         parser.error("Explicit dev budget requires --live")
+    if args.pilot_preflight and (
+        args.preflight
+        or args.live
+        or args.report
+        or args.list
+        or args.variant != "rule"
+        or args.split != "dev"
+        or args.scenario
+    ):
+        parser.error("--pilot-preflight only accepts the frozen dev pilot, without live/settings")
     if args.preflight and (args.live or args.report or args.list or args.variant != "rule"):
         parser.error("--preflight is offline-only and cannot list/re-score/run live")
     if args.live and (args.variant != "model-assisted" or args.list or args.report):
@@ -114,7 +137,11 @@ def main() -> int:
         parser.error("Live smoke requires verified CNY input/output prices and a source")
     try:
         if args.report:
-            if (args.report / "ablation-trace.json").is_file():
+            if (args.report / "pilot-trace.json").is_file():
+                from personal_agent.evaluation.long_horizon.pilot import recompute_pilot
+
+                result = recompute_pilot(args.report)
+            elif (args.report / "ablation-trace.json").is_file():
                 from personal_agent.evaluation.long_horizon.ablation import recompute_ablation
 
                 result = recompute_ablation(args.report)
@@ -139,6 +166,20 @@ def main() -> int:
                 )
                 return 0
             output = args.output or default_output()
+            if args.pilot_preflight:
+                from personal_agent.evaluation.long_horizon.pilot import preflight
+                from personal_agent.evaluation.long_horizon.report import prepare_output, write
+
+                prepare_output(output)
+                try:
+                    result = asyncio.run(preflight(dataset))
+                    write(output / "preflight.json", result)
+                    write(output / "status.json", {"status": "completed"})
+                except BaseException:
+                    write(output / "status.json", {"status": "failed"})
+                    raise
+                print(json.dumps({"result_dir": str(output), **result}, ensure_ascii=False))
+                return 0
             if args.ablation:
                 from personal_agent.evaluation.long_horizon.ablation import evaluate_ablation
 

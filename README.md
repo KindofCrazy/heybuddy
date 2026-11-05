@@ -106,6 +106,8 @@ Long-Horizon Phase 1 提供独立的合成离线规则路由评测，入口为 `
 
 [Thread Routing Benchmark v2 草案](docs/modules/long-horizon-benchmark-v2.md) 扩展到 30 场景/540 Turn、21/9 划分，保留旧 Holdout，增加碎片化/污染指标及真实 Episode→Thread→repair 状态维护路径。`--dataset evals/long_horizon_v2 --ablation all` 离线验证状态、任务身份 Prompt、few-shot 与弱规则的五组对照；固定 Provider 结果只代表接线和预算路径，真实语义收益尚未评测。
 
+[v2 三场景真实模型 Pilot](docs/modules/long-horizon-pilot-v2.md) 提供独立 `routing-pilot-v2` profile，固定 LH019/LH021/LH022 与四组顺序，路由、Episode 和 Thread 共用人民币 10 元预算；`--pilot-preflight` 无模型预检，真实执行需显式 `--live`，九个摘要检查点在调用前冻结。
+
 ```powershell
 uv run pytest
 uv run ruff check .

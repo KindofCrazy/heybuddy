@@ -1,5 +1,7 @@
 # Thread Routing Benchmark v2 草案
 
+后续已授权的三个开发场景真实模型入口、共享预算与摘要审阅协议见 [v2 Pilot](long-horizon-pilot-v2.md)。本文保留 interval=3 的离线实验条件；Pilot 使用独立的 interval=6 配置。
+
 ## 职责与架构组成
 
 在 [v1](long-horizon-benchmark-v1.md) 上扩展为 30 个合成场景、540 Turn，开发集 21 场景/378 Turn，Holdout 9 场景/162 Turn。保留原 12 场景及其 Gold，原 Holdout 不移入开发集。语料、标签和六个对比例子在首次 v2 评分前冻结；Gold 仍是 Agent 编写、未经独立人工复核的草案，不能称为真实用户数据或独立盲测。

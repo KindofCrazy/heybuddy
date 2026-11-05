@@ -124,6 +124,7 @@ def evaluation_code_hash() -> str:
     package = Path(__file__).resolve().parents[2]
     paths = [
         *Path(__file__).parent.glob("*.py"),
+        *Path(__file__).parent.glob("*.json"),
         package / "organization/router.py",
         package / "storage/routing.py",
         package / "llm/openai_provider.py",

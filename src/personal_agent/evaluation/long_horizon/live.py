@@ -53,6 +53,9 @@ class LiveConfig(Schema):
     output_limit: Literal[1024] = 1024
     timeout_seconds: Literal[120] = 120
 
+    def request_limits(self, stage: str) -> tuple[int, int]:
+        return self.max_input_tokens, self.output_limit
+
 
 class DevLiveConfig(LiveConfig):
     """Explicitly authorized one-pass routing-v1 dev profile; smoke limits stay intact."""
@@ -144,11 +147,12 @@ class MeteredProvider:
         if self.stopped:
             raise LiveStopped(self.stopped)
         estimated = estimate_request(messages, tools)
+        input_limit, output_limit = self.config.request_limits(self.scope.get("stage", "routing"))
         if (
             tools
-            or max_output_tokens != 1024
-            or estimated > self.config.max_input_tokens
-            or estimated + 1024 + 1024 > self.config.context_window
+            or max_output_tokens != output_limit
+            or estimated > input_limit
+            or estimated + output_limit + 1024 > self.config.context_window
         ):
             self.stopped = "request_limit"
             raise LiveStopped(self.stopped)
@@ -157,7 +161,7 @@ class MeteredProvider:
         except Exception:
             self.stopped = "budget_exhausted"
             raise LiveStopped(self.stopped) from None
-        if isinstance(self.config, NoThinkingDevConfig):
+        if getattr(self.config, "reasoning_effort", None) is not None:
             options = {**options, "reasoning_effort": self.config.reasoning_effort}
         record = dict(
             **self.scope,
@@ -186,10 +190,7 @@ class MeteredProvider:
                 self.stopped = "unexpected_tool_calls"
             if usage is None:
                 self.stopped = "usage_unknown"
-            elif (
-                usage.input_tokens > self.config.max_input_tokens
-                or usage.output_tokens > self.config.output_limit
-            ):
+            elif usage.input_tokens > input_limit or usage.output_tokens > output_limit:
                 self.stopped = "actual_token_limit"
             return response
         except BaseException as error:

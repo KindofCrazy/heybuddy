@@ -1,0 +1,33 @@
+{
+  "version": "routing-v2-pilot-1",
+  "scenario_ids": ["LH019", "LH021", "LH022"],
+  "arms": ["baseline", "state", "identity", "fewshot"],
+  "maintenance_interval": 6,
+  "annotation_status": "agent-authored provisional gold",
+  "review_status": "agent semantic audit, not independent human review",
+  "dataset_hashes": {
+    "corpus_hash": "cb55f0cbe989d95cd38ff5cb7635b5b638c43ee35c2043bb76b2b2f4c011d2e6",
+    "gold_hash": "1227ee8194250632473a632f7a09c1e231919d40fe18ff5364b06d5f43061141",
+    "splits_hash": "7702335e8b49682bcb30069e10bf04d95a000674f1b7bea0235aa368e1efa109",
+    "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+    "protocol_hash": "ca9bb6427213b3f08d661390b0b1f742ab2a013d27d3ed86bb732a026fad0350"
+  },
+  "state_review": [
+    {"id": "S19-06", "scenario_id": "LH019", "after_turn": 6, "source_turns": [1,2,3,4,5,6], "check": "库存服务部署与照片选片是独立目标；部署包含备份、迁移和回滚脚本；照片暂定十张。"},
+    {"id": "S19-12", "scenario_id": "LH019", "after_turn": 12, "source_turns": [7,8,9,10,11,12], "check": "配置不覆盖旧版、迁移失败停止、回滚演练在发布前一天；两张偏黄照片先调色不删除；不捏造已完成部署。"},
+    {"id": "S19-18", "scenario_id": "LH019", "after_turn": 18, "source_turns": [14,15,16,17,18], "check": "发布顺延周四；迁移仅测试环境验证，正式环境未做；收到日志再开放流量；照片八张取代十张，导出尺寸统一。"},
+    {"id": "S21-06", "scenario_id": "LH021", "after_turn": 6, "source_turns": [1,2,3,4,5,6], "check": "保持一个作品集任务；标题不动、灰白配色、正文一致、不加动效、第二图上移；不虚构接受的建议。"},
+    {"id": "S21-12", "scenario_id": "LH021", "after_turn": 12, "source_turns": [7,8,9,10,11,12], "check": "间距调整与页脚联系邮箱属于原作品集；邮箱不用表单；导出预览，不建新项目或推断已经正式发布。"},
+    {"id": "S21-18", "scenario_id": "LH021", "after_turn": 18, "source_turns": [13,14,15,16,17,18], "check": "仅封面字放大一级，正文不随之放大，其他保留；检查手机宽度；当前版本为第一版。"},
+    {"id": "S22-06", "scenario_id": "LH022", "after_turn": 6, "source_turns": [1,2,3,4,5,6], "check": "场地与摄影合同独立；场地九点结束仍待对方确认；摄影暂定五十张；模糊发送请求不代表已经发送。"},
+    {"id": "S22-12", "scenario_id": "LH022", "after_turn": 12, "source_turns": [7,8,9,10,11,12], "check": "摄影改四十张、周二交片；场地费用表只留租金和押金；不把两个合同的日期、数量和费用混写。"},
+    {"id": "S22-18", "scenario_id": "LH022", "after_turn": 18, "source_turns": [13,14,15,16,17,18], "check": "摄影四十张而非五十张，双方同意周二交片；场地九点结束已确认，押金仍需核对；不能推断所有条款完成或已回复联系人。"}
+  ],
+  "audit_rules": [
+    "Only inspect each checkpoint's completed prefix and actual supplied evidence. No future facts.",
+    "Inspect all actual fragments of a topic, not only the first thread. Report routing loss separately from unsupported summarization.",
+    "A mixed Thread may accurately summarize mixed supplied sources; distinguish routing contamination from organizer cross-association or hallucination.",
+    "Record supported, omitted, superseded-detail, unsupported and not-assessable findings with checkpoint and source IDs; do not score fixed extractive fixtures as semantic accuracy.",
+    "Baseline has no maintenance and is not applicable for state quality. Review author is the development agent, not an independent judge."
+  ]
+}
