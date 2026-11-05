@@ -1,0 +1,186 @@
+{
+  "version": "1",
+  "scenarios": [
+    {
+      "scenario_id": "TR001",
+      "routing": [
+        {
+          "turn_id": "TR001_T1",
+          "gold_topic_id": "a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR001_T2",
+          "gold_topic_id": "b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR001_T3",
+          "gold_topic_id": "a",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "TR001_T1"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "TR002",
+      "routing": [
+        {
+          "turn_id": "TR002_T1",
+          "gold_topic_id": "mobile",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR002_T2",
+          "gold_topic_id": "desktop",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR002_T3",
+          "gold_topic_id": "mobile",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "TR002_T1"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "TR003",
+      "routing": [
+        {
+          "turn_id": "TR003_T1",
+          "gold_topic_id": "garden",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR003_T2",
+          "gold_topic_id": "trip",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR003_T3",
+          "gold_topic_id": "garden",
+          "acceptable_actions": [
+            "select"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": [
+            "TR003_T1"
+          ]
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "TR004",
+      "routing": [
+        {
+          "turn_id": "TR004_T1",
+          "gold_topic_id": "a",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR004_T2",
+          "gold_topic_id": "b",
+          "acceptable_actions": [
+            "new"
+          ],
+          "ambiguity": false,
+          "relevant_source_turn_ids": []
+        },
+        {
+          "turn_id": "TR004_T3",
+          "gold_topic_id": null,
+          "acceptable_actions": [
+            "clarify"
+          ],
+          "ambiguity": true,
+          "relevant_source_turn_ids": []
+        }
+      ],
+      "memory": [],
+      "checkpoints": []
+    },
+    {
+      "scenario_id": "ML001",
+      "routing": [],
+      "memory": [
+        {
+          "fact_id": "meeting-v1",
+          "key": "meeting_time",
+          "value": "周五15点",
+          "valid_from": "2026-01-01T10:00:00+08:00",
+          "valid_until": "2026-01-01T10:01:00+08:00",
+          "evidence_turn_ids": [
+            "ML001_T1"
+          ],
+          "memory_action": "create"
+        },
+        {
+          "fact_id": "meeting-v2",
+          "key": "meeting_time",
+          "value": "周五16点",
+          "valid_from": "2026-01-01T10:01:00+08:00",
+          "valid_until": null,
+          "evidence_turn_ids": [
+            "ML001_T2"
+          ],
+          "memory_action": "update"
+        }
+      ],
+      "checkpoints": [
+        {
+          "checkpoint_id": "ML001_CP1",
+          "after_turn_id": "ML001_T3",
+          "question": "会议最终安排在几点？",
+          "reference_answer": "周五16点。",
+          "evidence_turn_ids": [
+            "ML001_T2"
+          ]
+        }
+      ]
+    }
+  ]
+}

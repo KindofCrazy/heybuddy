@@ -1,0 +1,185 @@
+{
+  "version": "1",
+  "scenarios": [
+    {
+      "scenario_id": "TR001",
+      "description": "A → B → A，跨话题返回",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "TR001_T1",
+          "timestamp": "2026-01-01T10:00:00+08:00",
+          "user_message": "ProjectAlpha 预算五元",
+          "frozen_assistant_message": "收到，第1条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR001_T2",
+          "timestamp": "2026-01-01T10:01:00+08:00",
+          "user_message": "另外，ProjectBeta 预算十元",
+          "frozen_assistant_message": "收到，第2条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR001_T3",
+          "timestamp": "2026-01-01T10:02:00+08:00",
+          "user_message": "继续 ProjectAlpha",
+          "frozen_assistant_message": "收到，第3条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "scenario_id": "TR002",
+      "description": "高度相似但独立的项目",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "TR002_T1",
+          "timestamp": "2026-01-01T10:00:00+08:00",
+          "user_message": "AtlasMobile 搜索项目，采用 SQLite",
+          "frozen_assistant_message": "收到，第1条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR002_T2",
+          "timestamp": "2026-01-01T10:01:00+08:00",
+          "user_message": "另外，AtlasDesktop 搜索项目，也采用 SQLite",
+          "frozen_assistant_message": "收到，第2条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR002_T3",
+          "timestamp": "2026-01-01T10:02:00+08:00",
+          "user_message": "继续 AtlasMobile",
+          "frozen_assistant_message": "收到，第3条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "scenario_id": "TR003",
+      "description": "跨天继续旧 Thread",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "TR003_T1",
+          "timestamp": "2026-01-01T10:00:00+08:00",
+          "user_message": "GardenPlan 计划种番茄",
+          "frozen_assistant_message": "收到，第1条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR003_T2",
+          "timestamp": "2026-01-01T10:01:00+08:00",
+          "user_message": "另外，TripPlan 计划去海边",
+          "frozen_assistant_message": "收到，第2条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR003_T3",
+          "timestamp": "2026-01-02T10:02:00+08:00",
+          "user_message": "继续 GardenPlan",
+          "frozen_assistant_message": "收到，第3条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "scenario_id": "TR004",
+      "description": "模糊指代，需要澄清",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "TR004_T1",
+          "timestamp": "2026-01-01T10:00:00+08:00",
+          "user_message": "ProjectAlpha 发布计划",
+          "frozen_assistant_message": "收到，第1条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR004_T2",
+          "timestamp": "2026-01-01T10:01:00+08:00",
+          "user_message": "另外，ProjectBeta 发布计划",
+          "frozen_assistant_message": "收到，第2条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "TR004_T3",
+          "timestamp": "2026-01-01T10:02:00+08:00",
+          "user_message": "继续之前那个项目",
+          "frozen_assistant_message": "收到，第3条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [],
+      "tags": [
+        "routing"
+      ]
+    },
+    {
+      "scenario_id": "ML001",
+      "description": "明确事实、更正和检查点",
+      "time_zone": "Asia/Shanghai",
+      "turns": [
+        {
+          "turn_id": "ML001_T1",
+          "timestamp": "2026-01-01T10:00:00+08:00",
+          "user_message": "合成会议定在周五15点。",
+          "frozen_assistant_message": "收到，第1条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "ML001_T2",
+          "timestamp": "2026-01-01T10:01:00+08:00",
+          "user_message": "更正：合成会议改到周五16点。",
+          "frozen_assistant_message": "收到，第2条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        },
+        {
+          "turn_id": "ML001_T3",
+          "timestamp": "2026-01-01T10:02:00+08:00",
+          "user_message": "我确认刚才的更正。",
+          "frozen_assistant_message": "收到，第3条合成记录。",
+          "source": "cli",
+          "conversation_key": "synthetic-main"
+        }
+      ],
+      "checkpoints": [
+        {
+          "checkpoint_id": "ML001_CP1",
+          "after_turn_id": "ML001_T3"
+        }
+      ],
+      "tags": [
+        "memory-schema"
+      ]
+    }
+  ]
+}
