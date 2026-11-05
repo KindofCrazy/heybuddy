@@ -29,11 +29,15 @@
 
 所有比例带 numerator/support；零 support 返回 null。Macro 只平均有效场景并记录数量；Micro 累加分子分母。动作准确率仍为 null，不从不等价 reason 强行推导。评测不涉及 Memory Apply、生成式回答质量、模型主观评审或生产用户隐私数据。
 
+历史证据的预测归属本身可能已经出错，当前选择也可能因此与旧引用冲突。关系失败不等价于当前 Turn 单独选错，更不能直接归因某一轮；这里不把它包装成逐回合绝对话题准确率。应同时查看原 Trace、Pairwise、coverage 和各类 support。
+
 协议与 Gold 语义没有第三方复核，场景与冻结回复的自然性仍有限。Holdout 仅按场景隔离，当前没有执行路由或评分；这是本地可读的内部 Holdout，不是盲测。人工修正必须带版本和原因，不能看模型结果后改标签而沿用同一冻结版本。
 
 ## 本轮离线观察与预算建议
 
 开发集规则基线共 144 Turn，执行完整。Pairwise micro F1 约 0.6142，macro F1 约 0.6042；必需澄清遗漏 7/7，过度澄清 1/137，显式历史关系正确 200/335。最长连续关系失败段为 16 Turn。上述结果是 Offline Contract Test 与规则表现，不能当作真实模型评测，也不据此调整标签/Prompt。
+
+提交 `44d3b5a` 上的交付重跑与首次基线指标一致，报告重算一致；无正文汇总见 [v1 开发集离线结果](../../evals/results/long-horizon-v1-dev-offline-20261105.json)。完整私有报告位于被忽略的 `.heybuddy/evaluations/lh-v1-rule-delivery/`，预算路径位于 `.heybuddy/evaluations/lh-v1-budget-delivery/`。报告保留 Git dirty 标记（原有 Episode 修改）和精确评测代码 Hash。
 
 三个固定模拟路径的模型分支次数为 continue 111、clarify 111、new 63；单次估算输入最高 2782 tokens。它们只有预算用途，不能看作真实模型调用次数或能力。以每请求估算输入上限 4096、输出 1024 规划，开发集单次最多 136 请求、696320 预留 tokens；Holdout 单次解析上限 68 请求、348160 tokens，不需要执行 Holdout 得到此上限。
 
