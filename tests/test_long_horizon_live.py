@@ -16,6 +16,7 @@ from personal_agent.evaluation.long_horizon.live import (
     LiveConfig,
     LiveStopped,
     MeteredProvider,
+    NoThinkingDevConfig,
     evaluate_live,
     recompute_live,
     validate_live_scope,
@@ -66,6 +67,7 @@ async def test_live_smoke_mock_transport_and_recompute(tmp_path):
 
     def handle(request):
         payload = json.loads(request.content)
+        assert "reasoning" not in payload
         assert payload["tools"] == [] and payload["max_output_tokens"] == 1024
         assert "gold_topic_id" not in request.content.decode()
         assert "reference_answer" not in request.content.decode()
@@ -164,6 +166,11 @@ async def test_provider_error_swallowed_by_router_is_still_terminal(tmp_path, ki
     assert status["status"] == "failed"
     assert status["error_code"] == ("api_error" if kind == "api-error" else "incomplete_response")
     assert "private synthetic detail" not in json.dumps(status)
+    if kind == "incomplete":
+        progress = json.loads((output / "live-progress.json").read_text(encoding="utf-8"))
+        diagnostics = progress["calls"][-1]["provider_diagnostics"]
+        assert diagnostics["status"] == "incomplete"
+        assert diagnostics["incomplete_reason"] == "max_output_tokens"
 
 
 async def test_invalid_selection_is_reported_as_decision_failure(tmp_path):
@@ -301,3 +308,55 @@ async def test_one_pass_dev_profile_exceeds_smoke_budget_and_recomputes(tmp_path
     assert report["usage"]["cost_cny_upper_estimate"] < 3
     assert recompute_live(output) == report
     assert report["annotation_status"] == "agent-authored provisional gold"
+
+
+async def test_no_thinking_dev_wire_contract_and_recompute(tmp_path):
+    requests = []
+
+    def handle(request):
+        body = json.loads(request.content)
+        assert body["reasoning"] == {"effort": "none"}
+        assert body["max_output_tokens"] == 1024 and body["tools"] == []
+        assert body["model"] == "deepseek-flash"
+        assert "gold_topic_id" not in request.content.decode()
+        requests.append(body)
+        response = response_body([text_item('{"action":"continue"}')])
+        response["usage"] = {
+            "input_tokens": 300,
+            "output_tokens": 40,
+            "total_tokens": 340,
+            "output_tokens_details": {"reasoning_tokens": 0},
+        }
+        return httpx.Response(200, json=response)
+
+    cfg = NoThinkingDevConfig(
+        model="deepseek-flash",
+        endpoint_host="api.deepseek.com",
+        context_window=1048576,
+        input_price_cny=2.0,
+        output_price_cny=8.0,
+        price_source="mock-price",
+    )
+    output = tmp_path / "no-thinking"
+    async with make_client(handle) as client:
+        report = await evaluate_live(
+            load(FIXTURES.parent / "long_horizon_v1"),
+            output,
+            OpenAIProvider(client, "deepseek-flash"),
+            cfg,
+        )
+    assert 5 < len(requests) <= 136
+    assert report["live_config"]["reasoning_effort"] == "none"
+    assert report["live_config"]["profile"] == "routing-dev-v1-no-thinking"
+    assert report["usage"]["actual_requests"] == len(requests)
+    assert recompute_live(output) == report
+    saved = json.loads((output / "live-trace.json").read_text(encoding="utf-8"))
+    assert saved["version"] == "live-dev-no-thinking-1"
+    assert all(c["request_options"]["reasoning_effort"] == "none" for c in saved["calls"])
+    with pytest.raises(ValueError, match="verified DeepSeek"):
+        validate_live_scope(
+            load(FIXTURES.parent / "long_horizon_v1"),
+            cfg.model_copy(update={"endpoint_host": "other.invalid"}),
+            "dev",
+            None,
+        )

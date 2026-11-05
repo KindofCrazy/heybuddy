@@ -48,3 +48,5 @@ uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_hor
 `--preflight` 用真实 ThreadRouter 和三个固定模拟选择 continue/clarify/new 探测调用路径，无网络、无 Settings/Key，无模型 Usage，也不输出模型预测分数。实际模型路径可不同，不能把模拟结果当作真实模型能力。
 
 默认 Live 入口仍保留 smoke 的 5 次请求/20000 tokens 限制。用户随后已授权开发集一次、最高 3 元的独立测试，需显式选择 `--live --variant model-assisted --budget-profile routing-dev-v1`；该专用配置只接受完整开发集、不接受 Holdout。先看开发集，Holdout 留到协议/实现稳定后的单独运行。指标、离线结果、预算与实际结果说明见 [v1 模块文档](../../docs/modules/long-horizon-benchmark-v1.md)。
+
+默认思考实验发生 incomplete_response 后，新增独立的 `routing-dev-v1-no-thinking` 参数实验，显式设置 Responses reasoning.effort=none，其余预算与数据条件不变；不覆盖默认配置的失败记录，不能把两个实验的分数混算。该 profile 仅用于已核实的 DeepSeek 官方端点和模型，具体接线与结果以模块文档为准。

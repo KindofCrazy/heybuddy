@@ -66,6 +66,17 @@ class DevLiveConfig(LiveConfig):
     timeout_seconds: Literal[1800] = 1800
 
 
+class NoThinkingDevConfig(DevLiveConfig):
+    profile: Literal["routing-dev-v1-no-thinking"] = "routing-dev-v1-no-thinking"
+    reasoning_effort: Literal["none"] = "none"
+
+
+def live_version(config: LiveConfig) -> str:
+    if isinstance(config, NoThinkingDevConfig):
+        return "live-dev-no-thinking-1"
+    return "live-dev-1" if isinstance(config, DevLiveConfig) else "live-smoke-1"
+
+
 class Trial(Schema):
     variant: Literal["rule", "model-assisted"]
     repetition: int = Field(ge=1, le=5)
@@ -73,14 +84,14 @@ class Trial(Schema):
 
 
 class LiveBundle(Schema):
-    version: Literal["live-smoke-1", "live-dev-1"] = "live-smoke-1"
+    version: Literal["live-smoke-1", "live-dev-1", "live-dev-no-thinking-1"] = "live-smoke-1"
     evaluation_type: Literal["Real Model Evaluation"] = "Real Model Evaluation"
     corpus: Corpus
     gold: Gold
     splits: Splits
     config: Config
     protocol: BenchmarkProtocol | None = None
-    live_config: DevLiveConfig | LiveConfig
+    live_config: NoThinkingDevConfig | DevLiveConfig | LiveConfig
     split: str
     scenario_id: str | None
     hashes: dict[str, str]
@@ -146,6 +157,8 @@ class MeteredProvider:
         except Exception:
             self.stopped = "budget_exhausted"
             raise LiveStopped(self.stopped) from None
+        if isinstance(self.config, NoThinkingDevConfig):
+            options = {**options, "reasoning_effort": self.config.reasoning_effort}
         record = dict(
             **self.scope,
             status="running",
@@ -156,6 +169,8 @@ class MeteredProvider:
             text=None,
             usage=None,
             error_code=None,
+            provider_diagnostics=None,
+            request_options={"max_output_tokens": max_output_tokens, **options},
         )
         self.calls.append(record)
         start = perf_counter()
@@ -180,6 +195,7 @@ class MeteredProvider:
         except BaseException as error:
             if isinstance(error, ProviderError) and error.diagnostics:
                 usage = error.diagnostics.usage
+                record["provider_diagnostics"] = error.diagnostics.model_dump(mode="json")
             record.update(
                 status="failed",
                 error_code=(
@@ -232,7 +248,7 @@ class LiveRoutingAdapter(RoutingAdapter):
 def live_summary(bundle: LiveBundle) -> dict:
     dataset = Dataset(bundle.corpus, bundle.gold, bundle.splits, bundle.config, bundle.protocol)
     validate_live_scope(dataset, bundle.live_config, bundle.split, bundle.scenario_id)
-    if (bundle.version == "live-dev-1") != isinstance(bundle.live_config, DevLiveConfig):
+    if bundle.version != live_version(bundle.live_config):
         raise ValueError("Live budget profile/version mismatch")
     if bundle.hashes != {
         **dataset.hashes,
@@ -309,7 +325,9 @@ def live_summary(bundle: LiveBundle) -> dict:
         "scorer_version": SCORER_VERSION,
         "status": "completed",
         "purpose": (
-            "one-pass dev evaluation on provisional synthetic gold"
+            "one-pass dev evaluation with explicit reasoning.effort=none"
+            if isinstance(bundle.live_config, NoThinkingDevConfig)
+            else "one-pass dev evaluation on provisional synthetic gold"
             if isinstance(bundle.live_config, DevLiveConfig)
             else "connection smoke, not a formal capability benchmark"
         ),
@@ -395,7 +413,7 @@ async def evaluate_live(
                         if result.status != "completed":
                             raise LiveStopped(result.error_code)
         bundle = LiveBundle(
-            version="live-dev-1" if isinstance(config, DevLiveConfig) else "live-smoke-1",
+            version=live_version(config),
             corpus=dataset.corpus,
             gold=dataset.gold,
             splits=dataset.splits,
@@ -433,6 +451,10 @@ async def evaluate_live(
 
 
 def validate_live_scope(dataset: Dataset, config: LiveConfig, split: str, scenario_id: str | None):
+    if isinstance(config, NoThinkingDevConfig) and (
+        config.model != "deepseek-flash" or config.endpoint_host != "api.deepseek.com"
+    ):
+        raise ValueError("Non-thinking profile requires the verified DeepSeek model and endpoint")
     if isinstance(config, DevLiveConfig):
         if (
             split != "dev"

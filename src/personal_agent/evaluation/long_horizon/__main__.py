@@ -19,13 +19,18 @@ async def run_live(args, dataset, output):
     from personal_agent.evaluation.long_horizon.live import (
         DevLiveConfig,
         LiveConfig,
+        NoThinkingDevConfig,
         evaluate_live,
         validate_live_scope,
     )
     from personal_agent.llm.openai_provider import OpenAIProvider
 
     settings = load_settings()  # Normal configuration loader; never dump secrets/settings.
-    kind = DevLiveConfig if args.budget_profile == "routing-dev-v1" else LiveConfig
+    kind = {
+        "smoke": LiveConfig,
+        "routing-dev-v1": DevLiveConfig,
+        "routing-dev-v1-no-thinking": NoThinkingDevConfig,
+    }[args.budget_profile]
     overrides = {
         k: getattr(args, k)
         for k in ("repetitions", "max_requests", "max_tokens", "max_cost_cny")
@@ -72,7 +77,11 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--live", action="store_true")
-    parser.add_argument("--budget-profile", choices=["smoke", "routing-dev-v1"], default="smoke")
+    parser.add_argument(
+        "--budget-profile",
+        choices=["smoke", "routing-dev-v1", "routing-dev-v1-no-thinking"],
+        default="smoke",
+    )
     parser.add_argument("--repetitions", type=int)
     parser.add_argument("--max-requests", type=int)
     parser.add_argument("--max-tokens", type=int)

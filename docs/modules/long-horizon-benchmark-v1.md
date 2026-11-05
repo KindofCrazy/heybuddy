@@ -86,6 +86,22 @@ uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_hor
 
 无原始正文汇总见 [开发集真实失败回执](../../evals/results/long-horizon-v1-live-dev-20261105.json)。完整私有元数据、逐步回执与部分 Trace 保留在 `.heybuddy/evaluations/lh-v1-live-dev-20261105/`。下一步应先独立核对路由选择的推理/输出配置，再制定新的受控实验，不能把重新运行冒充本轮续跑成功。
 
+## 独立的非思考开发集实验
+
+用户随后授权核对参数并进行新的受控测试。DeepSeek [思考模式文档](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode/)说明默认开启思考（默认 high），Responses API 可用 `reasoning.effort=none` 关闭。本次选用显式关闭思考的新实验配置；保持相同 deepseek-flash、Prompt、Gold、冻结回复、1024 输出上限与开发集范围，不把它标作生产默认配置的结果，也不修改生产 Provider/Router。
+
+`NoThinkingDevConfig` 沿用 DevLiveConfig 的 1 次开发集、136 请求、696320 预留 tokens、输入上限 4096、人民币 3 元和 1800 秒总时限，仅增加固定 reasoning_effort=none 与独立 profile。`validate_live_scope()` 额外核对模型为 deepseek-flash、hostname 为 api.deepseek.com；其他端点/模型未经本次参数核实，不接受这个 profile。
+
+CLI `--budget-profile routing-dev-v1-no-thinking` → `run_live()` 创建专用配置 → `MeteredProvider.generate()` 在调用既有 Provider 时显式传 reasoning_effort="none" → 原 OpenAIProvider 映射为 Responses 的 reasoning.effort。记录实际 request_options、独立 LiveConfig Hash 和 live-dev-no-thinking-1 Trace 版本，防止与默认思考实验混算。原 smoke/default dev 请求继续省略 reasoning 参数，旧配置 Hash 保持可读；不自动探测或重试其他思考配置。
+
+同时补存 ProviderError 中已规范化的 ProviderDiagnostics（状态、细分原因、usage），不保存 SDK 异常体或原始 reasoning。旧失败的细分原因仍保持 unknown，不反向补造。`tests/test_long_horizon_live.py` 用 MockTransport 核对 none 的实际 wire 参数、完整开发集与重算、默认请求不变、错误原因落盘及模型/端点隔离，仍无真实网络。
+
+```powershell
+uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_horizon_v1 --split dev --live --variant model-assisted --budget-profile routing-dev-v1-no-thinking --repetitions 1 --max-requests 136 --max-tokens 696320 --max-cost-cny 3 --input-price-cny 2 --output-price-cny 8 --price-source https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ --output .heybuddy/evaluations/lh-v1-live-dev-no-thinking
+```
+
+本实验与上一次失败记录分开保存，不续跑旧数据库，不修改已冻结标签或重写旧结果；发生不完整回执或其他停止条件时仍停止，绝不因已切换参数就把失败当作成功。Holdout 保持不运行。
+
 ## 阅读与验证
 
 ```powershell
