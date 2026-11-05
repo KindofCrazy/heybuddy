@@ -70,6 +70,14 @@ uv run python -m personal_agent.evaluation.long_horizon --report .heybuddy/evalu
 
 `tests/test_long_horizon_live.py` 仍为 Offline Contract Test，使用 Fake Provider 和 MockTransport 覆盖真实 SDK/Provider 映射、共享预算、缺失 Usage、错误/不完整回执、取消、失败报告、Gold 与公开摘要隔离及指标重算；不发起付费 API 请求。
 
+### 2026-11-05 真实 smoke 结果
+
+实现提交 `30c2b64` 上运行四个 routing Fixture，两个 Variant 各重复五次，共 40 个 Scenario Trial、120 Turn。仅 model-assisted 的 TR004 第三条触发模型，共 5 次真实请求；回执完整，无 API/选择解析错误，报告重算一致。实际 Usage 为输入 2219、输出 2154 tokens，输出已含 reasoning；按本次较高单价估算费用上界 0.02167 元，未达到 10 元预算。模型请求 P50 约 2.366 秒；只有 5 个样本，P95 不报告。
+
+规则和模型辅助 Variant 的 Pairwise F1 均为 1.0，但模型分支 5 次均返回 continue，未标记澄清；Gold 模糊项上的 Clarification Rate 为 rule 5/5、model-assisted 0/5。模糊项排除在 Pairwise 之外，因此总 F1 不能反映此问题。它是同一个合成输入的五次重复，不是五个独立语义样本；不改 Prompt/规则/Gold 来追分，保留为后续正式 Benchmark 的歧义维度线索。
+
+无正文的可提交记录见 [smoke 汇总](../../evals/results/long-horizon-smoke-20261105.json)。完整私有轨迹保留在被忽略的 `.heybuddy/evaluations/lh-live-smoke-20261105/`；原有 Episode 未提交改动继续保留，报告 git_dirty=true，并记录参与评测实现的 code_hash。未运行 Memory Learning、主模型问答或新正式语料。
+
 ## 阅读与验证
 
 从仓库根目录执行：

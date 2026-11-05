@@ -1,0 +1,129 @@
+{
+  "evaluation_type": "Real Model Evaluation",
+  "status": "completed",
+  "purpose": "connection smoke, not a formal capability benchmark",
+  "live_config": {
+    "variant": "model-assisted",
+    "replay_mode": "streaming",
+    "network": true,
+    "model": "deepseek-flash",
+    "endpoint_host": "api.deepseek.com",
+    "context_window": 1048576,
+    "repetitions": 5,
+    "max_requests": 5,
+    "max_tokens": 20000,
+    "max_input_tokens": 2048,
+    "max_cost_cny": 10.0,
+    "input_price_cny": 2.0,
+    "output_price_cny": 8.0,
+    "price_source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "output_limit": 1024,
+    "timeout_seconds": 120
+  },
+  "corpus_hash": "b0978cb83c0436e9fdb1a52131ab23f7c762ac83118c2ce61258dcd4d9489413",
+  "gold_hash": "ad7fe0a2311c565426291ce32b566b9612baa6e2a119566da659f1b607036104",
+  "splits_hash": "3a537abc54955287cc3f1d7b4c27c9354f57e0506d8f147a7ec341da2e2bc800",
+  "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+  "live_config_hash": "86c6996b6bb1f7db4ac0ec63b034402ce3151d2d3daa4299a0acd47f16ca7541",
+  "git_commit": "30c2b64c5664cbef0dacf56287f6366bb5af2770",
+  "git_dirty": true,
+  "code_hash": "6503c698182b52bbcc6bcc216353b482853920f4c01a608b58f1a5c5b37a77d8",
+  "variants": {
+    "rule": {
+      "micro": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "tp": 15,
+        "fp": 0,
+        "fn": 0,
+        "pair_support": 50,
+        "precision_support": 15,
+        "recall_support": 15
+      },
+      "macro": {
+        "precision": {
+          "value": 1.0,
+          "scenario_support": 15
+        },
+        "recall": {
+          "value": 1.0,
+          "scenario_support": 15
+        },
+        "f1": {
+          "value": 1.0,
+          "scenario_support": 15
+        }
+      },
+      "scenario_support": 20
+    },
+    "model-assisted": {
+      "micro": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "tp": 15,
+        "fp": 0,
+        "fn": 0,
+        "pair_support": 50,
+        "precision_support": 15,
+        "recall_support": 15
+      },
+      "macro": {
+        "precision": {
+          "value": 1.0,
+          "scenario_support": 15
+        },
+        "recall": {
+          "value": 1.0,
+          "scenario_support": 15
+        },
+        "f1": {
+          "value": 1.0,
+          "scenario_support": 15
+        }
+      },
+      "scenario_support": 20
+    }
+  },
+  "usage": {
+    "currency": "CNY",
+    "actual_requests": 5,
+    "reserved_tokens": 13135,
+    "reserved_cost_cny": 0.05699,
+    "usage_complete": true,
+    "input_tokens": 2219,
+    "output_tokens": 2154,
+    "cost_cny_upper_estimate": 0.02167
+  },
+  "routing_reasons": {
+    "continue": 20,
+    "new_topic": 20,
+    "title_match": 15,
+    "model_continue": 5
+  },
+  "model_decision_support": 5,
+  "rule_decision_support": 55,
+  "selection_unavailable": 0,
+  "model_clarifications": 0,
+  "prompt_hashes": [
+    "109a1d8e7c290483df84cde6fda62500be8254702e53b5707475c58d449d5e00"
+  ],
+  "model_latency_ms": {
+    "support": 5,
+    "p50": 2365.755699996953,
+    "p95": null
+  },
+  "date": "2026-11-05",
+  "distinct_model_decision_turns": 1,
+  "clarification": {
+    "rule": {
+      "clarified": 5,
+      "support": 5
+    },
+    "model-assisted": {
+      "clarified": 0,
+      "support": 5
+    }
+  }
+}
