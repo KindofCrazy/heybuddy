@@ -41,9 +41,10 @@ Review Fix：schema 8 追加独立 [Dirty Thread Repair](thread-repair.md)。移
 4. organize() → batch() 读取至多 page_runs 条元数据，以 SQLite rowid 插入顺序维护 cursor。running 停住；failed/cancelled/interrupted 不读取正文，作为屏障跳过并记 episode_skips。completed 先核对消息字节/数量，超 source_bytes 显式记录 oversized，不伪造经历。
 5. 最近 provisional 仅在时间、数量和字节窗口内参与追加/重分段，首段复用 ID，新增拆分段生成新 ID；旧 finalized 不自动重写。不参与修订的尾部在发布事务 finalize。
 6. 宿主按相邻 Run 的 started_at 差标注 continuous/weak/strong/required，默认 15/90/180 分钟，超过 3 小时及中断屏障强制拆分；午夜无特殊含义，开始时间倒序拒绝。候选同时给 start_gap_seconds 和 previous_duration_seconds，长工具执行不会伪造短输入间隔。最近 provisional 追加也用最后来源 Run 的 started_at 判断，而非整段 Episode 的最初时间或结束时间。投影保留结束时刻、Conversation/Run/sequence，不发送 Provider reasoning。
-7. ask() → 严格 Segmentation；validate() 要求提供的 Run 恰好一次、同序覆盖、不跨屏障合并。Highlight 引文必须精确匹配所属原消息；user_confirmed 和 decision/correction 至少含用户证据，open_loop 无论 attribution 都至少含真实用户证据。仅引用助手或工具消息的 open_loop 以 unconfirmed_highlight 拒绝整批发布，不推进 cursor，也不自动重试。宿主证明引用存在及其角色，语义是否明确确认、是否值得跟进仍受模型质量限制。
-8. publish() 短事务重新核对本批、provisional 修订和来源 hash，原子更新 Episode、归一化 episode_runs、追加 episode_versions、skip 和 cursor。失败回滚，原 Journal 不改。修订标记旧关联 Thread 待更新。
-9. 无新历史仅检查 finalize。达到修订时长、容量、后续边界或排除 Run 时稳定归档；最后的小段可 provisional。退出/输入取消等待中的模型调用，不影响普通 Run。
+7. 调用模型前，`EpisodeRepository.preceding_source()` 查询实际待整理来源（包含本次合并的 provisional）之前、同一 Conversation 紧邻的一次 Run；只读取这一条，不越过 failed/cancelled/interrupted/running 或超限记录向前搜索。完整 Run 的消息 payload 必须能放进 `min(4096, source_bytes - 本次来源总字节)`，无剩余预算或放不下就省略，不截断。`EpisodeOrganizer.organize()` 再排除 required 时间间隔和不同 context_thread_id，将合格来源经 `evidence()` 投影为 `preceding_context`，无合格来源时传 null。它帮助理解“交给编辑”等承接语，不纳入 `runs`，不改变本批 cursor、Episode 来源或原 Journal；所有输入仍经过 `OrganizerModel.ask()` 的总输入预算检查。
+8. ask() → 严格 Segmentation；validate() 要求提供的 Run 恰好一次、同序覆盖、不跨屏障合并。`preceding_context` 只能辅助理解，Prompt 禁止提取其中计划；把它纳入分段以 invalid_partition 拒绝，把它引用为 highlight 证据以 invalid_evidence 拒绝。Highlight 引文必须精确匹配所属原消息；user_confirmed 和 decision/correction 至少含用户证据，open_loop 无论 attribution 都至少含真实用户证据。仅引用助手或工具消息的 open_loop 以 unconfirmed_highlight 拒绝整批发布，不推进 cursor，也不自动重试。宿主证明引用存在及其角色，摘要是否错误吸收前文计划等语义问题仍受模型质量限制。
+9. publish() 短事务重新核对本批、provisional 修订和来源 hash，原子更新 Episode、归一化 episode_runs、追加 episode_versions、skip 和 cursor。失败回滚，原 Journal 不改。修订标记旧关联 Thread 待更新。
+10. 无新历史仅检查 finalize。达到修订时长、容量、后续边界或排除 Run 时稳定归档；最后的小段可 provisional。退出/输入取消等待中的模型调用，不影响普通 Run。
 
 ## 持久化、异常与边界
 
@@ -56,6 +57,8 @@ migration 6 追加 episodes、episode_runs、episode_versions、episode_organize
 episode_runs.run_id 主键防重复，Run/stream 和 Episode/stream 复合外键校验归属。versions 只存有界派生快照，不复制原始聊天。进度与 Compaction/Reflection 独立。模型、格式、来源或事务失败不推进 cursor，自动失败不付费重复，手动 organize 才 retry。等待模型无 SQLite 长事务。提交前崩溃可重算，提交后不重复；未知 usage 不当作零费用。纯派生重算不执行历史工具。
 
 ## 阅读与验证
+
+承接语的最小例子：先完成并整理“周六交插画。/交给谁？”，再整理“交给编辑。/明白。”；前一 Run 仅进入 `preceding_context`，当前 Run 才进入 `runs`。`tests/test_episode_preceding.py` 用 Fake Provider 核对生产请求与发布结果，覆盖来源和 Journal 不变、禁止分段/引用前文、排除屏障、4096 字节及剩余预算、强制时间分界、Thread 和 Agent/Conversation 隔离。可离线运行 `uv run pytest tests/test_episode_preceding.py tests/test_episodes.py tests/test_thread_routing.py`；这验证接线与约束，不证明真实模型的语义收益。
 
 `uv run personal-agent` 直接聊天；`/episode organize` 立即一批；`/episode status` 查看进度与用量；list/show 显式展示私人摘要。命令不创建 Run，不授予 Memory 权限。
 

@@ -266,6 +266,22 @@ class EpisodeRepository:
         with self.store._transaction() as db:
             return self._batch(db, stream_id, policy)
 
+    def preceding_source(self, stream_id: str, before: int, max_bytes: int) -> Source | None:
+        """One adjacent Run for interpretation only; never skip an exclusion barrier."""
+        if max_bytes <= 0:
+            return None
+        with self.store._transaction() as db:
+            self.scope(db, stream_id)
+            row = db.execute(
+                "SELECT rowid AS position,* FROM runs WHERE conversation_id=? AND rowid<? "
+                "ORDER BY rowid DESC LIMIT 1",
+                (stream_id, before),
+            ).fetchone()
+            if row is None:
+                return None
+            source = self.read_source(db, row, min(max_bytes, 4096))
+            return source if source.turn else None
+
     def sources(self, episode: Episode, policy: OrganizationPolicy) -> list[Source]:
         with self.store._transaction() as db:
             self.scope(db, episode.stream_id)

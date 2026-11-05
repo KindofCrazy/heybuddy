@@ -223,12 +223,26 @@ class EpisodeOrganizer:
                     last = source
                     barrier = False
                 if sources:
+                    preceding = self.repository.preceding_source(
+                        stream_id,
+                        sources[0].position,
+                        self.policy.source_bytes - sum(s.payload_bytes for s in sources),
+                    )
+                    if preceding and (
+                        gap_kind(preceding.started_at, sources[0].started_at, self.policy)
+                        == "required"
+                        or preceding.context_thread_id != sources[0].context_thread_id
+                    ):
+                        preceding = None
                     suggestion = await self.model.ask(
                         Segmentation,
                         EPISODE_PROMPT,
                         {
                             "runs": [evidence(stream_id, source) for source in sources],
                             "boundaries": boundaries,
+                            "preceding_context": evidence(stream_id, preceding)
+                            if preceding
+                            else None,
                         },
                         reasoning_effort=self.policy.episode_reasoning_effort,
                     )
