@@ -63,3 +63,5 @@ uv run pytest tests/test_long_horizon.py tests/test_thread_routing.py tests/test
 输出目录必须是全新目录。`tests/test_long_horizon.py` 覆盖 Schema/冻结校验、真实路由生命周期、重放顺序、隔离、Gold 不进入路由、Pairwise 错误评分、歧义/零分母、取消/异常、不完整报告和公开摘要隐私，沿用 conftest 的无凭据、禁止外网保护。
 
 下一阶段应先冻结更丰富的人工标注语料与独立 Holdout，加入显式 action 定义和跨来源样例，明确弃权的 coverage 约束；再实现独立 Oracle-history 实验、固定模型配置/预算/调用记录及人工语义复核，得到授权后才运行 Real Model Evaluation。
+
+真实模型接入范围、当前语料的模型分支覆盖与两阶段调用预算见[真实模型评测方案](../long-horizon-live-evaluation-plan.md)；该文档是待实施方案，不代表已授权或已运行付费调用。
