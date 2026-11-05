@@ -58,3 +58,17 @@ uv run pytest tests/test_long_horizon_pilot.py tests/test_long_horizon_live.py t
 ```
 
 输出目录必须全新且满足既有隐私规则，完整消息/摘要/数据库不入 Git，只提交无正文汇总。pytest 始终保留 conftest 的禁止外网与无真实凭据保护。测试使用 Fake Provider/MockTransport，验证四组完整性、真实维护、累计共享记账、超预算在发出请求前拒绝、未知维护 Usage 不发布/不继续、协议资源不依赖 cwd、范围/模型/端点限制、完整性和篡改后重算拒绝。
+
+## 2026-11-05 JSON 实验实际结果
+
+实现提交 `ef4b176` 上执行独立 JSON 实验，格式围栏问题未再触发，但实验仍为 failed：baseline 三场景完成，state 的 LH019/LH021 完成，LH022 在 T06 第一次维护停止；identity/fewshot 尚未执行。JSON 实验共 49 次真实请求，输入 74409、输出 8243、reasoning=0，实际用量费用上界 0.214762 元，累计预留 1.535164 元。两次合计 68 请求、预留 1.911054 元、实际用量费用上界 0.259594 元，未耗尽预算。两次条件不混算，也没有追加第三次付费尝试。
+
+失败来自真实 Episode 强制边界校验：LH022_T05 的模糊输入保留摄影 Thread，T06 的明确澄清切回场地 Thread，二者之间是 required 边界；模型返回了合法 JSON，但将这两个 Run 合成一个 Episode。原始提案和原始提供来源在离线调用 `organization.episodes.validate()` 时再次得到 required_boundary。校验正确拒绝发布，不放宽边界、不按 Gold 修复、不自动重试。完整私有回执保留在 `.heybuddy/evaluations/lh-v2-live-pilot-json-20261105/`，无正文结果见 [JSON 实验未完成回执](../../evals/results/long-horizon-v2-live-pilot-json-20261105.json)。
+
+不报告完整四组或完整 state 开发集分数。只有 LH019/LH021 是 baseline/state 均完成的配对子集：micro F1 0.5623 → 0.6082、Recall 0.4145 → 0.4744、Precision 0.8739 → 0.8473。这是失败停止后按完成情况形成的两个场景子集，有完成条件偏差、样本小、Gold 未人工复核，不能作为摘要普遍收益结论，更不能证明 few-shot 效果。baseline 三场景的独立 F1 为 0.6288，不能拿它直接与两场景 state 分数比较。
+
+开发 Agent 核对了六份完整维护快照，并检查第七个被拒绝的提案，详见 [部分状态审阅](../../evals/results/long-horizon-v2-pilot-state-audit-20261105.json)。发布改期、测试/正式环境区别、八张替换十张、封面局部字号和邮箱位置等信息有保留；照片偏黄处理与导出尺寸虽然存在于 Episode 来源中，却没有进入对应 Thread 状态，前置路由错误和整理时的遗漏都参与了这条路径。作品集旧碎片还出现“封面已定稿”的过宽确认表述，后续更正在另一个 Thread 中，不能由旧碎片无证据自行改写。
+
+LH019_T09 与 LH021_T09 都由 `new_topic` 规则在模型调用前拆分原任务，说明单独调整路由 Prompt 无法覆盖这类输入。下一步应先离线检验 Host 对 required 边界预分块的方案，使模型只在允许的区域内做语义分段；同时独立验证已准备的弱规则延后策略，保留原始归属与失败证据。上述只是后续方向，本轮未更改生产分段算法、未开启弱规则候选，也未声称四组实验完成。
+
+交付验证实际为 1462 passed、3 skipped，Ruff、构建与两个 CLI 帮助检查通过；JSON 约束、默认 Provider 兼容及跨实验预算的定向 Fake/MockTransport 测试共 62 项通过。

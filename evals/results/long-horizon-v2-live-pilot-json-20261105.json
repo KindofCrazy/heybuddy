@@ -1,0 +1,619 @@
+{
+  "evaluation_type": "Real Model Evaluation",
+  "status": "failed",
+  "date": "2026-11-05",
+  "annotation_status": "agent-authored provisional gold",
+  "output_mode": "explicit protocol json_object",
+  "provenance": {
+    "git_commit": "ef4b17622804e0bf1da728dea712d356e666a437",
+    "git_dirty": false,
+    "code_hash": "f0112755333406e578456d6f257aa533f89f8c1ed1a6e379606fab410546164b",
+    "hashes": {
+      "corpus_hash": "cb55f0cbe989d95cd38ff5cb7635b5b638c43ee35c2043bb76b2b2f4c011d2e6",
+      "gold_hash": "1227ee8194250632473a632f7a09c1e231919d40fe18ff5364b06d5f43061141",
+      "splits_hash": "7702335e8b49682bcb30069e10bf04d95a000674f1b7bea0235aa368e1efa109",
+      "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+      "protocol_hash": "ca9bb6427213b3f08d661390b0b1f742ab2a013d27d3ed86bb732a026fad0350"
+    },
+    "pilot_protocol_hash": "7a9f29b538e5afe4b545ce440974ec88d7ac0eb4bc6d27f2b36967d82d8c3151"
+  },
+  "pilot_config": {
+    "variant": "model-assisted",
+    "replay_mode": "streaming",
+    "network": true,
+    "model": "deepseek-flash",
+    "endpoint_host": "api.deepseek.com",
+    "context_window": 1048576,
+    "repetitions": 1,
+    "max_requests": 381,
+    "max_tokens": 1907287,
+    "max_input_tokens": 32768,
+    "max_cost_cny": 9.62411,
+    "input_price_cny": 2.0,
+    "output_price_cny": 8.0,
+    "price_source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "output_limit": 1024,
+    "timeout_seconds": 3600,
+    "profile": "routing-pilot-v2-json",
+    "reasoning_effort": "none",
+    "json_mode": true,
+    "prior_reserved_cost_cny": 0.37589,
+    "prior_reserved_tokens": 92713,
+    "prior_requests": 19,
+    "prior_attempt_hash": "13003c6dfa59cebafc6708a56e2f03617965cf38d98075d635b032f2dc5a672d"
+  },
+  "pilot_config_hash": "1fe963cdfd0c93e85bfc8d27310957df30411fbdbdccac0996524967e1efed48",
+  "sealed_attempt_hash": "cd52c5bc46e5802ce6170b0cb7974a74f97c48a73a9b095e87d22dad000616c5",
+  "usage": {
+    "currency": "CNY",
+    "actual_requests": 49,
+    "reserved_tokens": 395870,
+    "reserved_cost_cny": 1.5351639999999998,
+    "usage_complete": true,
+    "input_tokens": 74409,
+    "output_tokens": 8243,
+    "cost_cny_upper_estimate": 0.214762
+  },
+  "completed_trials": [
+    {
+      "arm": "baseline",
+      "scenario_id": "LH019"
+    },
+    {
+      "arm": "baseline",
+      "scenario_id": "LH021"
+    },
+    {
+      "arm": "baseline",
+      "scenario_id": "LH022"
+    },
+    {
+      "arm": "state",
+      "scenario_id": "LH019"
+    },
+    {
+      "arm": "state",
+      "scenario_id": "LH021"
+    }
+  ],
+  "usage_by_stage": {
+    "routing": {
+      "requests": 25,
+      "input_tokens": 12342,
+      "output_tokens": 836
+    },
+    "episode": {
+      "requests": 7,
+      "input_tokens": 22964,
+      "output_tokens": 5398
+    },
+    "thread": {
+      "requests": 17,
+      "input_tokens": 39103,
+      "output_tokens": 2009
+    }
+  },
+  "combined_attempts": {
+    "maximum_cost_cny": 10,
+    "actual_requests": 68,
+    "reserved_cost_cny": 1.9110539999999998,
+    "cost_cny_upper_estimate": 0.259594,
+    "conditions_pooled": false
+  },
+  "failure": {
+    "scenario_id": "LH022",
+    "arm": "state",
+    "after_completed_turns": 6,
+    "stage": "maintenance",
+    "substage": "episode validation",
+    "cause": "required_boundary",
+    "diagnosis": "Schema-valid JSON grouped T05 and T06 across the fixed photography-to-venue Thread switch. Production validation rejected publication.",
+    "offline_revalidation": "original recorded response and original supplied sources reproduce required_boundary without API calls"
+  },
+  "completed_baseline_only": {
+    "aggregate": {
+      "scorer_version": "routing-identity-v2",
+      "micro": {
+        "precision": 0.9047619047619048,
+        "recall": 0.48188405797101447,
+        "f1": 0.6288416075650118,
+        "tp": 133,
+        "fp": 14,
+        "fn": 143,
+        "pair_support": 397,
+        "precision_support": 147,
+        "recall_support": 276
+      },
+      "macro": {
+        "precision": {
+          "value": 0.8771929824561403,
+          "scenario_support": 3
+        },
+        "recall": {
+          "value": 0.5435211121485631,
+          "scenario_support": 3
+        },
+        "f1": {
+          "value": 0.6574853222432608,
+          "scenario_support": 3
+        }
+      },
+      "scenario_support": 3,
+      "clarification": {
+        "required_recall": {
+          "micro": {
+            "numerator": 2,
+            "support": 4,
+            "rate": 0.5
+          },
+          "macro": {
+            "value": 0.5,
+            "scenario_support": 1
+          }
+        },
+        "miss_rate": {
+          "micro": {
+            "numerator": 2,
+            "support": 4,
+            "rate": 0.5
+          },
+          "macro": {
+            "value": 0.5,
+            "scenario_support": 1
+          }
+        },
+        "unnecessary_rate": {
+          "micro": {
+            "numerator": 0,
+            "support": 50,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 3
+          }
+        },
+        "precision": {
+          "micro": {
+            "numerator": 2,
+            "support": 2,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 1
+          }
+        }
+      },
+      "routing_coverage": {
+        "micro": {
+          "numerator": 50,
+          "support": 50,
+          "rate": 1.0
+        },
+        "macro": {
+          "value": 1.0,
+          "scenario_support": 3
+        }
+      },
+      "reference_relation_accuracy": {
+        "micro": {
+          "numerator": 80,
+          "support": 112,
+          "rate": 0.7142857142857143
+        },
+        "macro": {
+          "value": 0.7285403050108932,
+          "scenario_support": 3
+        }
+      },
+      "fragmentation": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 7,
+            "support": 5,
+            "rate": 1.4
+          },
+          "macro": {
+            "value": 1.3333333333333333,
+            "scenario_support": 3
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 4,
+            "support": 5,
+            "rate": 0.8
+          },
+          "macro": {
+            "value": 0.8333333333333334,
+            "scenario_support": 3
+          }
+        }
+      },
+      "cross_thread_contamination": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 2,
+            "support": 10,
+            "rate": 0.2
+          },
+          "macro": {
+            "value": 0.13333333333333333,
+            "scenario_support": 3
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 2,
+            "support": 10,
+            "rate": 0.2
+          },
+          "macro": {
+            "value": 0.13333333333333333,
+            "scenario_support": 3
+          }
+        }
+      },
+      "error_propagation": {
+        "adjacent_failure_rate": {
+          "micro": {
+            "numerator": 19,
+            "support": 19,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 2
+          }
+        },
+        "failure_turns": 22,
+        "evaluated_turn_support": 47,
+        "max_consecutive_failed_turns": 11,
+        "failure_streaks_ge2": 2
+      }
+    }
+  },
+  "paired_completed_subset": {
+    "scenario_ids": [
+      "LH019",
+      "LH021"
+    ],
+    "selection_reason": "only scenarios completed in both baseline and state before the predefined failure stop; post-run availability, not an independently selected test set",
+    "variants": {
+      "baseline": {
+        "scorer_version": "routing-identity-v2",
+        "micro": {
+          "precision": 0.8738738738738738,
+          "recall": 0.41452991452991456,
+          "f1": 0.5623188405797102,
+          "tp": 97,
+          "fp": 14,
+          "fn": 137,
+          "pair_support": 306,
+          "precision_support": 111,
+          "recall_support": 234
+        },
+        "macro": {
+          "precision": {
+            "value": 0.8157894736842105,
+            "scenario_support": 2
+          },
+          "recall": {
+            "value": 0.38671023965141615,
+            "scenario_support": 2
+          },
+          "f1": {
+            "value": 0.5246895218264297,
+            "scenario_support": 2
+          }
+        },
+        "scenario_support": 2,
+        "clarification": {
+          "required_recall": {
+            "micro": {
+              "numerator": 0,
+              "support": 0,
+              "rate": null
+            },
+            "macro": {
+              "value": null,
+              "scenario_support": 0
+            }
+          },
+          "miss_rate": {
+            "micro": {
+              "numerator": 0,
+              "support": 0,
+              "rate": null
+            },
+            "macro": {
+              "value": null,
+              "scenario_support": 0
+            }
+          },
+          "unnecessary_rate": {
+            "micro": {
+              "numerator": 0,
+              "support": 36,
+              "rate": 0.0
+            },
+            "macro": {
+              "value": 0.0,
+              "scenario_support": 2
+            }
+          },
+          "precision": {
+            "micro": {
+              "numerator": 0,
+              "support": 0,
+              "rate": null
+            },
+            "macro": {
+              "value": null,
+              "scenario_support": 0
+            }
+          }
+        },
+        "routing_coverage": {
+          "micro": {
+            "numerator": 36,
+            "support": 36,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 2
+          }
+        },
+        "reference_relation_accuracy": {
+          "micro": {
+            "numerator": 48,
+            "support": 78,
+            "rate": 0.6153846153846154
+          },
+          "macro": {
+            "value": 0.6222222222222222,
+            "scenario_support": 2
+          }
+        },
+        "fragmentation": {
+          "mean_extra_assignments": {
+            "micro": {
+              "numerator": 6,
+              "support": 3,
+              "rate": 2.0
+            },
+            "macro": {
+              "value": 1.75,
+              "scenario_support": 2
+            }
+          },
+          "affected_group_rate": {
+            "micro": {
+              "numerator": 3,
+              "support": 3,
+              "rate": 1.0
+            },
+            "macro": {
+              "value": 1.0,
+              "scenario_support": 2
+            }
+          }
+        },
+        "cross_thread_contamination": {
+          "mean_extra_assignments": {
+            "micro": {
+              "numerator": 2,
+              "support": 7,
+              "rate": 0.2857142857142857
+            },
+            "macro": {
+              "value": 0.2,
+              "scenario_support": 2
+            }
+          },
+          "affected_group_rate": {
+            "micro": {
+              "numerator": 2,
+              "support": 7,
+              "rate": 0.2857142857142857
+            },
+            "macro": {
+              "value": 0.2,
+              "scenario_support": 2
+            }
+          }
+        },
+        "error_propagation": {
+          "adjacent_failure_rate": {
+            "micro": {
+              "numerator": 19,
+              "support": 19,
+              "rate": 1.0
+            },
+            "macro": {
+              "value": 1.0,
+              "scenario_support": 2
+            }
+          },
+          "failure_turns": 21,
+          "evaluated_turn_support": 34,
+          "max_consecutive_failed_turns": 11,
+          "failure_streaks_ge2": 2
+        }
+      },
+      "state": {
+        "scorer_version": "routing-identity-v2",
+        "micro": {
+          "precision": 0.8473282442748091,
+          "recall": 0.47435897435897434,
+          "f1": 0.6082191780821918,
+          "tp": 111,
+          "fp": 20,
+          "fn": 123,
+          "pair_support": 306,
+          "precision_support": 131,
+          "recall_support": 234
+        },
+        "macro": {
+          "precision": {
+            "value": 0.8275862068965517,
+            "scenario_support": 2
+          },
+          "recall": {
+            "value": 0.47312999273783585,
+            "scenario_support": 2
+          },
+          "f1": {
+            "value": 0.5963901445215509,
+            "scenario_support": 2
+          }
+        },
+        "scenario_support": 2,
+        "clarification": {
+          "required_recall": {
+            "micro": {
+              "numerator": 0,
+              "support": 0,
+              "rate": null
+            },
+            "macro": {
+              "value": null,
+              "scenario_support": 0
+            }
+          },
+          "miss_rate": {
+            "micro": {
+              "numerator": 0,
+              "support": 0,
+              "rate": null
+            },
+            "macro": {
+              "value": null,
+              "scenario_support": 0
+            }
+          },
+          "unnecessary_rate": {
+            "micro": {
+              "numerator": 0,
+              "support": 36,
+              "rate": 0.0
+            },
+            "macro": {
+              "value": 0.0,
+              "scenario_support": 2
+            }
+          },
+          "precision": {
+            "micro": {
+              "numerator": 0,
+              "support": 0,
+              "rate": null
+            },
+            "macro": {
+              "value": null,
+              "scenario_support": 0
+            }
+          }
+        },
+        "routing_coverage": {
+          "micro": {
+            "numerator": 36,
+            "support": 36,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 2
+          }
+        },
+        "reference_relation_accuracy": {
+          "micro": {
+            "numerator": 48,
+            "support": 78,
+            "rate": 0.6153846153846154
+          },
+          "macro": {
+            "value": 0.6222222222222222,
+            "scenario_support": 2
+          }
+        },
+        "fragmentation": {
+          "mean_extra_assignments": {
+            "micro": {
+              "numerator": 4,
+              "support": 3,
+              "rate": 1.3333333333333333
+            },
+            "macro": {
+              "value": 1.25,
+              "scenario_support": 2
+            }
+          },
+          "affected_group_rate": {
+            "micro": {
+              "numerator": 3,
+              "support": 3,
+              "rate": 1.0
+            },
+            "macro": {
+              "value": 1.0,
+              "scenario_support": 2
+            }
+          }
+        },
+        "cross_thread_contamination": {
+          "mean_extra_assignments": {
+            "micro": {
+              "numerator": 2,
+              "support": 5,
+              "rate": 0.4
+            },
+            "macro": {
+              "value": 0.3333333333333333,
+              "scenario_support": 2
+            }
+          },
+          "affected_group_rate": {
+            "micro": {
+              "numerator": 2,
+              "support": 5,
+              "rate": 0.4
+            },
+            "macro": {
+              "value": 0.3333333333333333,
+              "scenario_support": 2
+            }
+          }
+        },
+        "error_propagation": {
+          "adjacent_failure_rate": {
+            "micro": {
+              "numerator": 17,
+              "support": 18,
+              "rate": 0.9444444444444444
+            },
+            "macro": {
+              "value": 0.9444444444444444,
+              "scenario_support": 2
+            }
+          },
+          "failure_turns": 20,
+          "evaluated_turn_support": 34,
+          "max_consecutive_failed_turns": 10,
+          "failure_streaks_ge2": 3
+        }
+      }
+    }
+  },
+  "four_arm_metrics": null,
+  "identity_and_fewshot_evaluated": false,
+  "holdout_evaluated": false,
+  "limitations": [
+    "The experiment did not complete: 5 of 12 full trials; state LH022 stopped at its first maintenance checkpoint.",
+    "No full three-scenario state score, no identity/fewshot efficacy result. Paired subset is descriptive and conditioned on completion.",
+    "The boundary guard is retained; no schema relaxation, output stripping, SDK retry or further live attempts.",
+    "Data and state review remain development-agent authored, with no independent human semantic judgement."
+  ]
+}

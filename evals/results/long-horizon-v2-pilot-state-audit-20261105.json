@@ -1,0 +1,231 @@
+{
+  "evaluation_type": "Development-agent semantic audit of partial real-model pilot",
+  "status": "partial",
+  "reviewer": "development agent; not an independent human or paid judge",
+  "pilot_protocol_hash": "7a9f29b538e5afe4b545ce440974ec88d7ac0eb4bc6d27f2b36967d82d8c3151",
+  "progress_hash": "8181b6d41dd035d956421ae529b96c400067be5a0538ee991c289b2fa803b709",
+  "git_commit": "ef4b17622804e0bf1da728dea712d356e666a437",
+  "code_hash": "f0112755333406e578456d6f257aa533f89f8c1ed1a6e379606fab410546164b",
+  "completed_snapshots_reviewed": 6,
+  "blocked_checkpoints_inspected": 1,
+  "state_semantic_accuracy": null,
+  "reviews": [
+    {
+      "checkpoint": "S19-06",
+      "scenario_id": "LH019",
+      "after_turn_id": "LH019_T06",
+      "status": "reviewed completed snapshot",
+      "findings": [
+        {
+          "kind": "supported",
+          "source_turn_ids": [
+            "LH019_T01",
+            "LH019_T02",
+            "LH019_T03",
+            "LH019_T04",
+            "LH019_T05",
+            "LH019_T06"
+          ],
+          "detail": "Separate deployment and photo tasks; backup, migration, rollback addition and provisional ten-image selection retained. No invented deployment completion."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": "268df7ef8fbeab40878adc4e5ed4de31f3b20edf7b4669c4c5e283d40f934456"
+    },
+    {
+      "checkpoint": "S19-12",
+      "scenario_id": "LH019",
+      "after_turn_id": "LH019_T12",
+      "status": "reviewed completed snapshot",
+      "findings": [
+        {
+          "kind": "supported",
+          "source_turn_ids": [
+            "LH019_T07",
+            "LH019_T09",
+            "LH019_T10",
+            "LH019_T12"
+          ],
+          "detail": "Log collection, preserving old configuration, stopping on migration failure and rehearsal before release retained."
+        },
+        {
+          "kind": "routing contamination and state omission",
+          "source_turn_ids": [
+            "LH019_T08",
+            "LH019_T11"
+          ],
+          "detail": "Photo color and keep-then-adjust requests were routed into deployment fragments. Episodes explicitly retain both photo facts, but the published Thread states omit them and the photo Thread never receives them."
+        },
+        {
+          "kind": "routing fragmentation",
+          "source_turn_ids": [
+            "LH019_T09"
+          ],
+          "detail": "The discourse marker triggered new_topic before model selection despite an explicit same-release reference."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": "cbd5f4b5f6dde42da67e056b0128e9c13477b5449c0bf6ddc6dd7714fa64bf0b"
+    },
+    {
+      "checkpoint": "S19-18",
+      "scenario_id": "LH019",
+      "after_turn_id": "LH019_T18",
+      "status": "reviewed completed snapshot",
+      "findings": [
+        {
+          "kind": "supported correction",
+          "source_turn_ids": [
+            "LH019_T14",
+            "LH019_T15",
+            "LH019_T16",
+            "LH019_T18"
+          ],
+          "detail": "Thursday supersedes Wednesday in the updated deployment state; test-only migration and log-before-traffic condition retained; photo count eight supersedes ten in the photo state."
+        },
+        {
+          "kind": "routing contamination and state omission",
+          "source_turn_ids": [
+            "LH019_T17"
+          ],
+          "detail": "The image export-size request is present in the deployment Episode evidence but omitted from published Thread states; it is absent from the photo Thread."
+        },
+        {
+          "kind": "routing fragmentation",
+          "source_turn_ids": [
+            "LH019_T09",
+            "LH019_T10",
+            "LH019_T12",
+            "LH019_T13",
+            "LH019_T18"
+          ],
+          "detail": "One deployment task remains split into two Threads, with configuration and rehearsal constraints in a separate fragment. Maintenance correctly does not use gold to merge ownership."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": "76c6f768d4f6fcee0d4c87cf3a1beceae6150a6c426dd2a28bea250864cc8d95"
+    },
+    {
+      "checkpoint": "S21-06",
+      "scenario_id": "LH021",
+      "after_turn_id": "LH021_T06",
+      "status": "reviewed completed snapshot",
+      "findings": [
+        {
+          "kind": "supported",
+          "source_turn_ids": [
+            "LH021_T01",
+            "LH021_T02",
+            "LH021_T03",
+            "LH021_T04",
+            "LH021_T05",
+            "LH021_T06"
+          ],
+          "detail": "One portfolio task; unchanged title, grey-white palette, alignment with body pages, no animation and upward second-image adjustment retained."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": "483e359bf1caac5fea4c7f2861e63061a47d9edb3970510b6493e8f5d2a00b54"
+    },
+    {
+      "checkpoint": "S21-12",
+      "scenario_id": "LH021",
+      "after_turn_id": "LH021_T12",
+      "status": "reviewed completed snapshot",
+      "findings": [
+        {
+          "kind": "supported",
+          "source_turn_ids": [
+            "LH021_T07",
+            "LH021_T09",
+            "LH021_T10",
+            "LH021_T11",
+            "LH021_T12"
+          ],
+          "detail": "Spacing adjustment retained in the original fragment; footer contact email without a form and requested preview export retained in the new fragment."
+        },
+        {
+          "kind": "overbroad confirmation flag",
+          "source_turn_ids": [
+            "LH021_T07",
+            "LH021_T08"
+          ],
+          "detail": "The old-fragment state labels the cover finalized. The immediate agreement confirms the spacing change; a broader cover finalization is not independently explicit. Agent review flag, not independent adjudication."
+        },
+        {
+          "kind": "routing fragmentation",
+          "source_turn_ids": [
+            "LH021_T09"
+          ],
+          "detail": "new_topic split the single portfolio task before any model call; all subsequent short replies remain in that fragment."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": "39b4fd2bdf52a656ea3275a14ea29af141524d03f733385c72e408519c7f39cf"
+    },
+    {
+      "checkpoint": "S21-18",
+      "scenario_id": "LH021",
+      "after_turn_id": "LH021_T18",
+      "status": "reviewed completed snapshot",
+      "findings": [
+        {
+          "kind": "supported",
+          "source_turn_ids": [
+            "LH021_T13",
+            "LH021_T14",
+            "LH021_T15",
+            "LH021_T16",
+            "LH021_T17",
+            "LH021_T18"
+          ],
+          "detail": "Cover-only one-step font increase, unchanged body text, preservation of other settings, mobile-width check and first-version designation retained in the active fragment."
+        },
+        {
+          "kind": "stale fragment and overbroad confirmation",
+          "source_turn_ids": [
+            "LH021_T08",
+            "LH021_T13",
+            "LH021_T14",
+            "LH021_T15"
+          ],
+          "detail": "The earlier cover fragment still says finalized while later cover changes live in a different Thread. Source isolation prevents its automatic correction; this is a fragmented routing-state limitation, not evidence that a later correction was available to that old fragment."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": "651a03a5c979df4bd9998353369a687555fccc4940bf4081b8b910d4f93162be"
+    },
+    {
+      "checkpoint": "S22-06",
+      "scenario_id": "LH022",
+      "after_turn_id": "LH022_T06",
+      "status": "blocked; no published maintenance snapshot",
+      "findings": [
+        {
+          "kind": "required-boundary rejection",
+          "source_turn_ids": [
+            "LH022_T05",
+            "LH022_T06"
+          ],
+          "detail": "The JSON-valid Episode proposal joins an ambiguous turn bound to photography with the clarification routed to venue. Offline validation reproduces required_boundary. No Thread-state quality judgement for this checkpoint."
+        }
+      ],
+      "arm": "state",
+      "snapshot_hash": null
+    }
+  ],
+  "unexecuted": {
+    "state": [
+      "S22-12",
+      "S22-18"
+    ],
+    "identity": "all nine checkpoints",
+    "fewshot": "all nine checkpoints"
+  },
+  "baseline": "not applicable; no maintenance",
+  "limitations": [
+    "No four-arm semantic comparison; only complete saved snapshots plus one rejected proposal inspected.",
+    "Findings distinguish wrong routing, omission from supplied Episode evidence, and unconfirmed interpretation; they do not imply causal isolation.",
+    "This is a transparent development-agent audit of synthetic provisional cases, not human-reviewed semantic ground truth or automated accuracy."
+  ]
+}
