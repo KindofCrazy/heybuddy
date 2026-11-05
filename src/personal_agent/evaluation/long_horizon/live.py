@@ -54,6 +54,18 @@ class LiveConfig(Schema):
     timeout_seconds: Literal[120] = 120
 
 
+class DevLiveConfig(LiveConfig):
+    """Explicitly authorized one-pass routing-v1 dev profile; smoke limits stay intact."""
+
+    profile: Literal["routing-dev-v1"] = "routing-dev-v1"
+    repetitions: Literal[1] = 1
+    max_requests: int = Field(default=136, ge=1, le=136)
+    max_tokens: int = Field(default=696320, ge=1, le=696320)
+    max_input_tokens: int = Field(default=4096, ge=1, le=4096)
+    max_cost_cny: float = Field(default=3.0, gt=0, le=3, allow_inf_nan=False)
+    timeout_seconds: Literal[1800] = 1800
+
+
 class Trial(Schema):
     variant: Literal["rule", "model-assisted"]
     repetition: int = Field(ge=1, le=5)
@@ -61,14 +73,14 @@ class Trial(Schema):
 
 
 class LiveBundle(Schema):
-    version: Literal["live-smoke-1"] = "live-smoke-1"
+    version: Literal["live-smoke-1", "live-dev-1"] = "live-smoke-1"
     evaluation_type: Literal["Real Model Evaluation"] = "Real Model Evaluation"
     corpus: Corpus
     gold: Gold
     splits: Splits
     config: Config
     protocol: BenchmarkProtocol | None = None
-    live_config: LiveConfig
+    live_config: DevLiveConfig | LiveConfig
     split: str
     scenario_id: str | None
     hashes: dict[str, str]
@@ -219,6 +231,9 @@ class LiveRoutingAdapter(RoutingAdapter):
 
 def live_summary(bundle: LiveBundle) -> dict:
     dataset = Dataset(bundle.corpus, bundle.gold, bundle.splits, bundle.config, bundle.protocol)
+    validate_live_scope(dataset, bundle.live_config, bundle.split, bundle.scenario_id)
+    if (bundle.version == "live-dev-1") != isinstance(bundle.live_config, DevLiveConfig):
+        raise ValueError("Live budget profile/version mismatch")
     if bundle.hashes != {
         **dataset.hashes,
         "live_config_hash": digest(bundle.live_config.model_dump(mode="json")),
@@ -293,7 +308,11 @@ def live_summary(bundle: LiveBundle) -> dict:
         "evaluation_type": bundle.evaluation_type,
         "scorer_version": SCORER_VERSION,
         "status": "completed",
-        "purpose": "connection smoke, not a formal capability benchmark",
+        "purpose": (
+            "one-pass dev evaluation on provisional synthetic gold"
+            if isinstance(bundle.live_config, DevLiveConfig)
+            else "connection smoke, not a formal capability benchmark"
+        ),
         "annotation_status": (
             "human-reviewed"
             if bundle.protocol.human_reviewed
@@ -328,10 +347,23 @@ def live_summary(bundle: LiveBundle) -> dict:
 async def evaluate_live(
     dataset: Dataset, output: Path, provider, config: LiveConfig, *, split="dev", scenario_id=None
 ) -> dict:
+    validate_live_scope(dataset, config, split, scenario_id)
     scenarios = [s for s in dataset.select(split, scenario_id) if "routing" in s.tags]
     if not scenarios:
         raise ValueError("No routing scenarios selected")
     revision = prepare_output(output)
+    metadata = {
+        "evaluation_type": "Real Model Evaluation",
+        "split": split,
+        "scenario_id": scenario_id,
+        "selected_scenario_ids": [s.scenario_id for s in scenarios],
+        "live_config": config.model_dump(mode="json"),
+        "hashes": {**dataset.hashes, "live_config_hash": digest(config.model_dump(mode="json"))},
+        "git_commit": revision.stdout.strip() if revision.returncode == 0 else None,
+        "git_dirty": working_tree_dirty(),
+        "code_hash": evaluation_code_hash(),
+    }
+    write(output / "live-metadata.json", metadata)
     trials = []
     metered = MeteredProvider(provider, config)
 
@@ -363,6 +395,7 @@ async def evaluate_live(
                         if result.status != "completed":
                             raise LiveStopped(result.error_code)
         bundle = LiveBundle(
+            version="live-dev-1" if isinstance(config, DevLiveConfig) else "live-smoke-1",
             corpus=dataset.corpus,
             gold=dataset.gold,
             splits=dataset.splits,
@@ -372,9 +405,9 @@ async def evaluate_live(
             split=split,
             scenario_id=scenario_id,
             hashes={**dataset.hashes, "live_config_hash": digest(config.model_dump(mode="json"))},
-            git_commit=revision.stdout.strip() if revision.returncode == 0 else None,
-            git_dirty=working_tree_dirty(),
-            code_hash=evaluation_code_hash(),
+            git_commit=metadata["git_commit"],
+            git_dirty=metadata["git_dirty"],
+            code_hash=metadata["code_hash"],
             trials=trials,
             calls=metered.calls,
             usage=metered.usage(),
@@ -397,6 +430,19 @@ async def evaluate_live(
             },
         )
         raise
+
+
+def validate_live_scope(dataset: Dataset, config: LiveConfig, split: str, scenario_id: str | None):
+    if isinstance(config, DevLiveConfig):
+        if (
+            split != "dev"
+            or scenario_id is not None
+            or dataset.protocol is None
+            or dataset.protocol.version != "routing-v1-draft1"
+            or [s.scenario_id for s in dataset.select("dev")] != [f"LH{n:03d}" for n in range(1, 9)]
+            or any(len(s.turns) != 18 for s in dataset.select("dev"))
+        ):
+            raise ValueError("routing-dev-v1 requires the complete frozen v1 dev split only")
 
 
 def recompute_live(output: Path) -> dict:

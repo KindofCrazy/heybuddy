@@ -16,22 +16,31 @@ async def run_live(args, dataset, output):
     from openai import AsyncOpenAI
 
     from personal_agent.config import load_settings
-    from personal_agent.evaluation.long_horizon.live import LiveConfig, evaluate_live
+    from personal_agent.evaluation.long_horizon.live import (
+        DevLiveConfig,
+        LiveConfig,
+        evaluate_live,
+        validate_live_scope,
+    )
     from personal_agent.llm.openai_provider import OpenAIProvider
 
     settings = load_settings()  # Normal configuration loader; never dump secrets/settings.
-    config = LiveConfig(
+    kind = DevLiveConfig if args.budget_profile == "routing-dev-v1" else LiveConfig
+    overrides = {
+        k: getattr(args, k)
+        for k in ("repetitions", "max_requests", "max_tokens", "max_cost_cny")
+        if getattr(args, k) is not None
+    }
+    config = kind(
         model=settings.model,
         endpoint_host=urlsplit(str(settings.base_url or "https://api.openai.com")).hostname,
         context_window=settings.context_window,
-        repetitions=args.repetitions,
-        max_requests=args.max_requests,
-        max_tokens=args.max_tokens,
-        max_cost_cny=args.max_cost_cny,
+        **overrides,
         input_price_cny=args.input_price_cny,
         output_price_cny=args.output_price_cny,
         price_source=args.price_source,
     )
+    validate_live_scope(dataset, config, args.split, args.scenario)
     async with AsyncOpenAI(
         api_key=settings.api_key.get_secret_value(),
         base_url=str(settings.base_url) if settings.base_url else None,
@@ -63,14 +72,17 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--live", action="store_true")
-    parser.add_argument("--repetitions", type=int, default=5)
-    parser.add_argument("--max-requests", type=int, default=5)
-    parser.add_argument("--max-tokens", type=int, default=20000)
-    parser.add_argument("--max-cost-cny", type=float, default=10)
+    parser.add_argument("--budget-profile", choices=["smoke", "routing-dev-v1"], default="smoke")
+    parser.add_argument("--repetitions", type=int)
+    parser.add_argument("--max-requests", type=int)
+    parser.add_argument("--max-tokens", type=int)
+    parser.add_argument("--max-cost-cny", type=float)
     parser.add_argument("--input-price-cny", type=float)
     parser.add_argument("--output-price-cny", type=float)
     parser.add_argument("--price-source")
     args = parser.parse_args()
+    if args.budget_profile != "smoke" and not args.live:
+        parser.error("Explicit dev budget requires --live")
     if args.preflight and (args.live or args.report or args.list or args.variant != "rule"):
         parser.error("--preflight is offline-only and cannot list/re-score/run live")
     if args.live and (args.variant != "model-assisted" or args.list or args.report):

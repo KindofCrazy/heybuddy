@@ -12,11 +12,13 @@ from personal_agent.core.models import ModelResponse, TextMessage, TokenUsage
 from personal_agent.evaluation.long_horizon.__main__ import main
 from personal_agent.evaluation.long_horizon.dataset import digest, load
 from personal_agent.evaluation.long_horizon.live import (
+    DevLiveConfig,
     LiveConfig,
     LiveStopped,
     MeteredProvider,
     evaluate_live,
     recompute_live,
+    validate_live_scope,
 )
 from personal_agent.llm.openai_provider import OpenAIProvider
 from tests.test_provider import make_client, response_body, text_item
@@ -130,6 +132,9 @@ async def test_unknown_usage_stops_before_next_paid_request(tmp_path):
     status = json.loads((output / "status.json").read_text())
     assert status["status"] == "failed" and status["error_code"] == "usage_unknown"
     assert status["usage"]["input_tokens"] == "unknown"
+    metadata = json.loads((output / "live-metadata.json").read_text())
+    assert metadata["live_config"]["max_requests"] == 5
+    assert metadata["code_hash"] and metadata["hashes"]["gold_hash"]
     assert not (output / "summary.json").exists()
     with pytest.raises(ValueError, match="incomplete"):
         recompute_live(output)
@@ -240,3 +245,59 @@ def test_cli_live_gate_precedes_loading_settings(monkeypatch):
         monkeypatch.setattr("sys.argv", ["benchmark", *arguments])
         with pytest.raises(SystemExit):
             main()
+
+
+def dev_config(**overrides):
+    return DevLiveConfig(
+        **dict(
+            dict(
+                model="synthetic",
+                endpoint_host="mock.invalid",
+                context_window=131072,
+                input_price_cny=2.0,
+                output_price_cny=8.0,
+                price_source="mock-price",
+            ),
+            **overrides,
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "limits",
+    [
+        {"max_requests": 137},
+        {"max_tokens": 696321},
+        {"max_cost_cny": 3.01},
+        {"repetitions": 2},
+        {"max_input_tokens": 4097},
+    ],
+)
+def test_dev_profile_cannot_expand_user_authorization(limits):
+    with pytest.raises(ValidationError):
+        dev_config(**limits)
+
+
+def test_dev_profile_rejects_holdout_and_wrong_corpus():
+    data = load(FIXTURES.parent / "long_horizon_v1")
+    validate_live_scope(data, dev_config(), "dev", None)
+    for split, scenario in (("holdout", None), ("dev", "LH001")):
+        with pytest.raises(ValueError, match="dev split only"):
+            validate_live_scope(data, dev_config(), split, scenario)
+    with pytest.raises(ValueError, match="dev split only"):
+        validate_live_scope(load(FIXTURES), dev_config(), "dev", None)
+
+
+async def test_one_pass_dev_profile_exceeds_smoke_budget_and_recomputes(tmp_path):
+    fixed = Fixed(text='{"action":"continue"}')
+    output = tmp_path / "dev-profile"
+    report = await evaluate_live(
+        load(FIXTURES.parent / "long_horizon_v1"), output, fixed, dev_config()
+    )
+    assert 5 < len(fixed.requests) <= 136
+    assert report["live_config"]["profile"] == "routing-dev-v1"
+    assert len(report["trials"]) == 16
+    assert {t["scenario_id"] for t in report["trials"]} == {f"LH{n:03d}" for n in range(1, 9)}
+    assert report["usage"]["cost_cny_upper_estimate"] < 3
+    assert recompute_live(output) == report
+    assert report["annotation_status"] == "agent-authored provisional gold"

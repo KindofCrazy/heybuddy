@@ -10,6 +10,23 @@
 
 `metrics.py` 提供版本 `routing-relations-v1` 的加法指标，原 Pairwise 公式与零分母处理不变。`preflight.py::BudgetProbe/preflight()` 仅用固定选择探测生产 Router 的模型分支与估算输入量。CLI `--preflight` 与 Live/list/report 互斥，始终不加载模型配置或 Key。
 
+## 场景、Turn、Trial 与输入输出
+
+场景是一段完整的测试故事，例如花店手机端与网页端两个独立项目交替讨论，再跨天回到旧项目；一个场景可包含多个逻辑话题/Thread，因此场景不等于 Thread。当前每场景 18 Turn，场景之间新建数据库、Conversation、Memory 和 Thread，互不继承状态。
+
+Turn 是一轮用户输入及其冻结助手回复，对应一个持久化 Run。按时间逐轮推进，先保存用户消息、执行路由，再写固定回复；不是一次把未来 18 轮都交给 Router。模型请求是另一种计数：规则能决定时不请求模型，所以一轮 Turn 不一定产生一次付费调用。
+
+Trial 是某个 Variant 对某个完整场景的一次独立重放。本次开发集 8 场景，rule/model-assisted 各一次，计划共 16 Trial、288 次 Turn 重放；付费调用只来自 model-assisted 中需要模型选择的 Turn，最多 136 次。
+
+| 层级 | 输入 | 输出 |
+| --- | --- | --- |
+| 一次实验 | 冻结 Corpus、Split、配置；Gold 单独留给评分器 | 每场景 Trace、每 Variant 汇总、用量/延迟/预算与完整性状态 |
+| 一轮 Router | 当前用户文本、宿主保存的 Thread/历史状态 | 实际 Thread 绑定、先前 Thread、新建/选择理由、歧义标记 |
+| 一次模型选择（仅当规则未决） | 当前输入、active Thread ID、至多 12 张 Thread 标题/有界状态卡、最近最多 4 条消息片段；无工具、无 Gold | 结构化 continue/select/new/chat/clarify，由真实 Router 校验并保存绑定 |
+| 评分 | Prediction Trace + 独立 Gold 的话题、允许动作与历史证据引用 | Pairwise、澄清遗漏/误报、coverage、证据关系与连续失败统计 |
+
+数据库保留完整 Journal，不代表每次路由请求都会看到完整历史。当前重放也不运行后台 Organizer/Learning，Thread 状态可能尚为空；主模型自然回答、长期记忆学习和回答正确性不在本轮评测范围。冻结回复是控制实验历史的输入材料，不是模型本轮生成的成绩。
+
 ## 实际执行路径
 
 1. CLI `--dataset evals/long_horizon_v1` → `dataset.load()` 读取相互分离的 Corpus、Gold、Split、Config、Protocol，验证 manifest，再校验每个 Turn/证据与长度/划分约束。
@@ -43,7 +60,21 @@
 
 若沿用上一轮已核实的未缓存输入 2 元/百万、输出 8 元/百万作为暂定计价假设，开发集单次上界估算为 `(136×4096×2 + 136×1024×8)/1000000 = 2.228224` 元；建议下一轮先做开发集一次、最高 3 元的独立实验。此处只是提案，执行前需复核端点价格并授权。两个 Split 各重复 3 次的同条件上界约 10.027008 元，不应宣称必然低于上一轮 10 元 smoke 预算。
 
-输入估算不是 tokenizer。固定模拟路径不能覆盖所有模型选择；实际输入超规划上限应停止而不是自动提额。当前 LiveConfig 的 5 次/20000 tokens smoke 限制继续保留，完整正式实验的预算配置需要下一步实现并显式授权；本轮没有付费请求。Holdout 不随开发迭代反复跑。
+输入估算不是 tokenizer。固定模拟路径不能覆盖所有模型选择；实际输入超规划上限应停止而不是自动提额。原 LiveConfig 的 5 次/20000 tokens smoke 限制继续保留。用户随后已授权开发集一次、人民币 3 元的独立测试；新增 DevLiveConfig 专用配置承载该授权，Holdout 不随开发迭代反复跑。
+
+## 已授权开发集单次测试
+
+`live.DevLiveConfig` 继承共用的请求元数据，单独限定 repetitions=1、最多 136 请求、696320 预留 tokens、每请求估算输入最多 4096 tokens、输出仍为 1024、人民币 3 元、总时限 1800 秒。原 smoke 类型及其序列化字段不变，旧的配置 Hash 和 Trace 继续可读。LiveBundle 分别使用 live-smoke-1/live-dev-1 保存预算类型，重算核对预算类型与版本一致。
+
+CLI 显式 `--budget-profile routing-dev-v1` 才选此配置；省略时保持 smoke。`validate_live_scope()` 在创建输出和请求前核对完整 routing-v1-draft1 开发集 LH001–LH008、每场景 18 Turn；拒绝 Holdout、单个场景、其他语料或重复次数增加。模型参数和原 Router 的 10 秒单次超时不改，SDK 不自动重试，遇到 API 错误、回执不完整、未知 Usage 或限额问题仍停止整个测试，不自动提高输出上限或重跑。
+
+`evaluate_live()` 在发送任何付费请求前保存私有 live-metadata.json，包含选择范围、配置、数据/协议/代码 Hash 和 Git 状态；因此失败也能核对实验配置。live-progress.json 保存逐步调用回执与已完成/部分重放记录，只有完整结束才发布 completed Summary。源数据与 Gold 不随结果改动。
+
+```powershell
+uv run python -m personal_agent.evaluation.long_horizon --dataset evals/long_horizon_v1 --split dev --live --variant model-assisted --budget-profile routing-dev-v1 --repetitions 1 --max-requests 136 --max-tokens 696320 --max-cost-cny 3 --input-price-cny 2 --output-price-cny 8 --price-source https://api-docs.deepseek.com/zh-cn/quick_start/pricing/ --output .heybuddy/evaluations/lh-v1-live-dev
+```
+
+参数中的单价按当前 DeepSeek 官方价表复核，仍按较高的未缓存输入/输出价估算，金额不冒充服务商账单。Gold 的 agent-authored provisional 状态保留；一次开发集实验不构成独立泛化结论。
 
 ## 阅读与验证
 
