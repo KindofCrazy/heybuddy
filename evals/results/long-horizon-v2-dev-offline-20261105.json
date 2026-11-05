@@ -1,0 +1,457 @@
+{
+  "evaluation_type": "Offline Contract Test",
+  "status": "completed",
+  "date": "2026-11-05",
+  "dataset_version": "routing-v2-draft1",
+  "annotation_status": "agent-authored provisional gold",
+  "corpus_scenarios": 30,
+  "corpus_turns": 540,
+  "development_scenarios": 21,
+  "development_turns": 378,
+  "holdout_scenarios": 9,
+  "holdout_turns": 162,
+  "holdout_evaluated": false,
+  "provenance": {
+    "git_commit": "4026ccb62ec909f094b5f9b997f8248312d6b32f",
+    "git_dirty": true,
+    "code_hash": "358ab0c647a71dadb3a01c4ccf74d1dc8c7357007b173aacac9abbe206856186",
+    "scorer_version": "routing-identity-v2",
+    "corpus_hash": "cb55f0cbe989d95cd38ff5cb7635b5b638c43ee35c2043bb76b2b2f4c011d2e6",
+    "gold_hash": "1227ee8194250632473a632f7a09c1e231919d40fe18ff5364b06d5f43061141",
+    "splits_hash": "7702335e8b49682bcb30069e10bf04d95a000674f1b7bea0235aa368e1efa109",
+    "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+    "protocol_hash": "ca9bb6427213b3f08d661390b0b1f742ab2a013d27d3ed86bb732a026fad0350"
+  },
+  "rule": {
+    "aggregate": {
+      "scorer_version": "routing-identity-v2",
+      "micro": {
+        "precision": 0.47756278303828736,
+        "recall": 0.836940836940837,
+        "f1": 0.6081258191349934,
+        "tp": 1160,
+        "fp": 1269,
+        "fn": 226,
+        "pair_support": 2869,
+        "precision_support": 2429,
+        "recall_support": 1386
+      },
+      "macro": {
+        "precision": {
+          "value": 0.5036327231014277,
+          "scenario_support": 21
+        },
+        "recall": {
+          "value": 0.871796945489756,
+          "scenario_support": 21
+        },
+        "f1": {
+          "value": 0.6100949189017768,
+          "scenario_support": 21
+        }
+      },
+      "scenario_support": 21,
+      "clarification": {
+        "required_recall": {
+          "micro": {
+            "numerator": 0,
+            "support": 19,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 15
+          }
+        },
+        "miss_rate": {
+          "micro": {
+            "numerator": 19,
+            "support": 19,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 15
+          }
+        },
+        "unnecessary_rate": {
+          "micro": {
+            "numerator": 2,
+            "support": 359,
+            "rate": 0.005571030640668524
+          },
+          "macro": {
+            "value": 0.006377551020408163,
+            "scenario_support": 21
+          }
+        },
+        "precision": {
+          "micro": {
+            "numerator": 0,
+            "support": 2,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 2
+          }
+        }
+      },
+      "routing_coverage": {
+        "micro": {
+          "numerator": 357,
+          "support": 359,
+          "rate": 0.9944289693593314
+        },
+        "macro": {
+          "value": 0.9936224489795918,
+          "scenario_support": 21
+        }
+      },
+      "reference_relation_accuracy": {
+        "micro": {
+          "numerator": 541,
+          "support": 873,
+          "rate": 0.6197021764032073
+        },
+        "macro": {
+          "value": 0.6264550016739867,
+          "scenario_support": 21
+        }
+      },
+      "fragmentation": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 12,
+            "support": 45,
+            "rate": 0.26666666666666666
+          },
+          "macro": {
+            "value": 0.2619047619047619,
+            "scenario_support": 21
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 12,
+            "support": 45,
+            "rate": 0.26666666666666666
+          },
+          "macro": {
+            "value": 0.2619047619047619,
+            "scenario_support": 21
+          }
+        }
+      },
+      "cross_thread_contamination": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 29,
+            "support": 28,
+            "rate": 1.0357142857142858
+          },
+          "macro": {
+            "value": 1.0714285714285714,
+            "scenario_support": 21
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 23,
+            "support": 28,
+            "rate": 0.8214285714285714
+          },
+          "macro": {
+            "value": 0.8809523809523809,
+            "scenario_support": 21
+          }
+        }
+      },
+      "error_propagation": {
+        "adjacent_failure_rate": {
+          "micro": {
+            "numerator": 251,
+            "support": 254,
+            "rate": 0.9881889763779528
+          },
+          "macro": {
+            "value": 0.9833333333333333,
+            "scenario_support": 20
+          }
+        },
+        "failure_turns": 290,
+        "evaluated_turn_support": 336,
+        "max_consecutive_failed_turns": 16,
+        "failure_streaks_ge2": 35
+      }
+    },
+    "routing_reasons": {
+      "continue": 260,
+      "adjacent_continuation": 90,
+      "new_topic": 7,
+      "title_match": 19,
+      "clarify": 2
+    },
+    "actual_network_requests": 0,
+    "recompute_matches": true
+  },
+  "contract_ablations": {
+    "evaluation_type": "Offline Contract Test",
+    "status": "completed",
+    "purpose": "mechanism and budget paths; scripted choices do not measure policy efficacy",
+    "annotation_status": "agent-authored provisional gold",
+    "corpus_hash": "cb55f0cbe989d95cd38ff5cb7635b5b638c43ee35c2043bb76b2b2f4c011d2e6",
+    "gold_hash": "1227ee8194250632473a632f7a09c1e231919d40fe18ff5364b06d5f43061141",
+    "splits_hash": "7702335e8b49682bcb30069e10bf04d95a000674f1b7bea0235aa368e1efa109",
+    "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+    "protocol_hash": "ca9bb6427213b3f08d661390b0b1f742ab2a013d27d3ed86bb732a026fad0350",
+    "git_commit": "4026ccb62ec909f094b5f9b997f8248312d6b32f",
+    "git_dirty": true,
+    "code_hash": "358ab0c647a71dadb3a01c4ccf74d1dc8c7357007b173aacac9abbe206856186",
+    "split": "dev",
+    "scenario_support": 21,
+    "arms": {
+      "baseline": {
+        "configuration": {
+          "name": "baseline",
+          "state_mode": "off",
+          "prompt_policy": "baseline",
+          "defer_weak_rules": false,
+          "maintenance_interval": 3,
+          "scripted_action": "continue"
+        },
+        "configuration_hash": "23fde447f59dd84cd343a90ab99178f39b935fe20927c15a49cb8a9f50d11774",
+        "completed_turns": 378,
+        "maintenance_windows": 0,
+        "stages": {
+          "routing": {
+            "synthetic_calls": 241,
+            "estimated_input_tokens": 379182,
+            "reserved_output_tokens": 246784,
+            "max_estimated_input_tokens": 1773
+          },
+          "episode": {
+            "synthetic_calls": 0,
+            "estimated_input_tokens": 0,
+            "reserved_output_tokens": 0,
+            "max_estimated_input_tokens": 0
+          },
+          "thread": {
+            "synthetic_calls": 0,
+            "estimated_input_tokens": 0,
+            "reserved_output_tokens": 0,
+            "max_estimated_input_tokens": 0
+          }
+        },
+        "supplied_thread_cards": 281,
+        "cards_with_state": 0,
+        "prompt_hashes": [
+          "109a1d8e7c290483df84cde6fda62500be8254702e53b5707475c58d449d5e00"
+        ],
+        "routing_reasons": {
+          "continue": 21,
+          "model_continue": 241,
+          "adjacent_continuation": 90,
+          "new_topic": 7,
+          "title_match": 19
+        },
+        "model_quality_metrics": null
+      },
+      "state": {
+        "configuration": {
+          "name": "state",
+          "state_mode": "extractive-contract",
+          "prompt_policy": "baseline",
+          "defer_weak_rules": false,
+          "maintenance_interval": 3,
+          "scripted_action": "continue"
+        },
+        "configuration_hash": "38494947c97abeec75336840e85586e769462aefbcec5a4748e11c2792c3b769",
+        "completed_turns": 378,
+        "maintenance_windows": 126,
+        "stages": {
+          "routing": {
+            "synthetic_calls": 241,
+            "estimated_input_tokens": 463248,
+            "reserved_output_tokens": 246784,
+            "max_estimated_input_tokens": 2526
+          },
+          "episode": {
+            "synthetic_calls": 126,
+            "estimated_input_tokens": 1297253,
+            "reserved_output_tokens": 516096,
+            "max_estimated_input_tokens": 10658
+          },
+          "thread": {
+            "synthetic_calls": 351,
+            "estimated_input_tokens": 2723012,
+            "reserved_output_tokens": 1437696,
+            "max_estimated_input_tokens": 9362
+          }
+        },
+        "supplied_thread_cards": 281,
+        "cards_with_state": 254,
+        "prompt_hashes": [
+          "109a1d8e7c290483df84cde6fda62500be8254702e53b5707475c58d449d5e00"
+        ],
+        "routing_reasons": {
+          "continue": 21,
+          "model_continue": 241,
+          "adjacent_continuation": 90,
+          "new_topic": 7,
+          "title_match": 19
+        },
+        "model_quality_metrics": null
+      },
+      "identity": {
+        "configuration": {
+          "name": "identity",
+          "state_mode": "extractive-contract",
+          "prompt_policy": "identity",
+          "defer_weak_rules": false,
+          "maintenance_interval": 3,
+          "scripted_action": "continue"
+        },
+        "configuration_hash": "651ec802d0aa4364fd823d0228414dec37db4678010fb7208e692ecde44977e4",
+        "completed_turns": 378,
+        "maintenance_windows": 126,
+        "stages": {
+          "routing": {
+            "synthetic_calls": 241,
+            "estimated_input_tokens": 701115,
+            "reserved_output_tokens": 246784,
+            "max_estimated_input_tokens": 3513
+          },
+          "episode": {
+            "synthetic_calls": 126,
+            "estimated_input_tokens": 1297253,
+            "reserved_output_tokens": 516096,
+            "max_estimated_input_tokens": 10658
+          },
+          "thread": {
+            "synthetic_calls": 351,
+            "estimated_input_tokens": 2723012,
+            "reserved_output_tokens": 1437696,
+            "max_estimated_input_tokens": 9362
+          }
+        },
+        "supplied_thread_cards": 281,
+        "cards_with_state": 254,
+        "prompt_hashes": [
+          "f488a1d0de182d9e92a0a1b71ac02f9f369fd562b87890b0d8aa52e470366cb1"
+        ],
+        "routing_reasons": {
+          "continue": 21,
+          "model_continue": 241,
+          "adjacent_continuation": 90,
+          "new_topic": 7,
+          "title_match": 19
+        },
+        "model_quality_metrics": null
+      },
+      "fewshot": {
+        "configuration": {
+          "name": "fewshot",
+          "state_mode": "extractive-contract",
+          "prompt_policy": "fewshot",
+          "defer_weak_rules": false,
+          "maintenance_interval": 3,
+          "scripted_action": "continue"
+        },
+        "configuration_hash": "863f9955889c8f88f472b97fa3d79573e577d657ad56a79cb470b656d36dd7bb",
+        "completed_turns": 378,
+        "maintenance_windows": 126,
+        "stages": {
+          "routing": {
+            "synthetic_calls": 241,
+            "estimated_input_tokens": 992966,
+            "reserved_output_tokens": 246784,
+            "max_estimated_input_tokens": 4724
+          },
+          "episode": {
+            "synthetic_calls": 126,
+            "estimated_input_tokens": 1297253,
+            "reserved_output_tokens": 516096,
+            "max_estimated_input_tokens": 10658
+          },
+          "thread": {
+            "synthetic_calls": 351,
+            "estimated_input_tokens": 2723012,
+            "reserved_output_tokens": 1437696,
+            "max_estimated_input_tokens": 9362
+          }
+        },
+        "supplied_thread_cards": 281,
+        "cards_with_state": 254,
+        "prompt_hashes": [
+          "2f390b1b6043bcb7fbb747367cdac1812aa603055c184d83022f056883909264"
+        ],
+        "routing_reasons": {
+          "continue": 21,
+          "model_continue": 241,
+          "adjacent_continuation": 90,
+          "new_topic": 7,
+          "title_match": 19
+        },
+        "model_quality_metrics": null
+      },
+      "deferred": {
+        "configuration": {
+          "name": "deferred",
+          "state_mode": "extractive-contract",
+          "prompt_policy": "fewshot",
+          "defer_weak_rules": true,
+          "maintenance_interval": 3,
+          "scripted_action": "continue"
+        },
+        "configuration_hash": "46103ad14675e8e52195026dafdc26e5ff7c636497e3826a48536eaf0cadcc9e",
+        "completed_turns": 378,
+        "maintenance_windows": 126,
+        "stages": {
+          "routing": {
+            "synthetic_calls": 356,
+            "estimated_input_tokens": 1437684,
+            "reserved_output_tokens": 364544,
+            "max_estimated_input_tokens": 4236
+          },
+          "episode": {
+            "synthetic_calls": 126,
+            "estimated_input_tokens": 1298341,
+            "reserved_output_tokens": 516096,
+            "max_estimated_input_tokens": 10658
+          },
+          "thread": {
+            "synthetic_calls": 357,
+            "estimated_input_tokens": 2797990,
+            "reserved_output_tokens": 1462272,
+            "max_estimated_input_tokens": 9362
+          }
+        },
+        "supplied_thread_cards": 356,
+        "cards_with_state": 314,
+        "prompt_hashes": [
+          "2f390b1b6043bcb7fbb747367cdac1812aa603055c184d83022f056883909264"
+        ],
+        "routing_reasons": {
+          "continue": 21,
+          "model_continue": 356,
+          "title_match": 1
+        },
+        "model_quality_metrics": null
+      }
+    },
+    "identity_policy_hash": "dfd32dc64582746669d300331c7d0a7b6084491dc214e8f603edd0ab6761302d",
+    "fewshot_hash": "bd29cc58032f836ca081759edadd57f964da48a7fab0fa1c32b830f5db295eb3",
+    "actual_network_requests": 0,
+    "token_usage": "unknown",
+    "recompute_matches": true
+  },
+  "limitations": [
+    "Gold and examples are agent-authored synthetic drafts, not independently human-reviewed.",
+    "Scripted route choices only validate mechanisms and estimate paths; model quality is not scored.",
+    "State uses real publication and repair but a fixed user-quote provider, not semantic summarization.",
+    "Virtual completed-boundary maintenance every three turns is not production wall-clock scheduling.",
+    "Estimates and reserved outputs are not provider token usage or billing.",
+    "Pre-existing uncommitted Episode changes remain excluded from this delivery commit; code hash includes them."
+  ]
+}

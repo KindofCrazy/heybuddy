@@ -1,5 +1,7 @@
 # Thread Routing Benchmark v1 草案
 
+本文保存 v1 实验条件与历史结果；当前评分器已扩展为 routing-identity-v2，新增指标与旧轨迹的单独重算见 [v2 文档](long-horizon-benchmark-v2.md)，下文原始结果不改写。
+
 ## 职责与组成
 
 在 [Phase 1 基础设施](long-horizon-evaluation.md) 上增加更长的合成场景、按场景划分的开发集/Holdout、澄清与证据关系指标，以及离线预算预检。生产 Router、Prompt、Agent Loop、Memory Learning 和 SQLite schema 均不修改。

@@ -1,0 +1,355 @@
+{
+  "evaluation_type": "Offline Rescore of Existing Real Model Evaluation",
+  "status": "completed",
+  "date": "2026-11-05",
+  "annotation_status": "agent-authored provisional gold",
+  "additional_network_requests": 0,
+  "original_experiment": {
+    "git_commit": "abf1d9ff0c880d304eeb22b7f47cafe7891913eb",
+    "git_dirty": true,
+    "code_hash": "13765ccac1b9ad27f92ccc5046df3356ccdb002cca42055dcfbca39b69f74a5d",
+    "corpus_hash": "4dba2c8666f17df06ff45b626061530d8458ca27fc9a706b38cc54adbebe8262",
+    "gold_hash": "d641386531d9c83b4eb7f1f7a9c66be09524dffe6dbf73fe72e155914aee03b4",
+    "splits_hash": "99c214693a5ff141e88d9f0eba135c915f04680e3937e02e9d1ead4eec433326",
+    "config_hash": "21134863544907c9efe0311595ff133de7045d2a2289b6bf99335967c6beb04c",
+    "protocol_hash": "a6506236161e4ca7a3c1b4be2d11511d4afc94d9ea12be0d2224b83a5077f1b2",
+    "live_config_hash": "e2c8e637fac14402d22bf1ba13a1ad322072ab22ef3629c70393ef78419818c2"
+  },
+  "rescoring": {
+    "git_commit": "4026ccb62ec909f094b5f9b997f8248312d6b32f",
+    "code_hash": "358ab0c647a71dadb3a01c4ccf74d1dc8c7357007b173aacac9abbe206856186",
+    "scorer_version": "routing-identity-v2"
+  },
+  "variants": {
+    "rule": {
+      "scorer_version": "routing-identity-v2",
+      "micro": {
+        "precision": 0.47286012526096033,
+        "recall": 0.8762088974854932,
+        "f1": 0.6142372881355932,
+        "tp": 453,
+        "fp": 505,
+        "fn": 64,
+        "pair_support": 1091,
+        "precision_support": 958,
+        "recall_support": 517
+      },
+      "macro": {
+        "precision": {
+          "value": 0.4675697164378502,
+          "scenario_support": 8
+        },
+        "recall": {
+          "value": 0.882260101010101,
+          "scenario_support": 8
+        },
+        "f1": {
+          "value": 0.6042239249912518,
+          "scenario_support": 8
+        }
+      },
+      "scenario_support": 8,
+      "clarification": {
+        "required_recall": {
+          "micro": {
+            "numerator": 0,
+            "support": 7,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 6
+          }
+        },
+        "miss_rate": {
+          "micro": {
+            "numerator": 7,
+            "support": 7,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 6
+          }
+        },
+        "unnecessary_rate": {
+          "micro": {
+            "numerator": 1,
+            "support": 137,
+            "rate": 0.0072992700729927005
+          },
+          "macro": {
+            "value": 0.0078125,
+            "scenario_support": 8
+          }
+        },
+        "precision": {
+          "micro": {
+            "numerator": 0,
+            "support": 1,
+            "rate": 0.0
+          },
+          "macro": {
+            "value": 0.0,
+            "scenario_support": 1
+          }
+        }
+      },
+      "routing_coverage": {
+        "micro": {
+          "numerator": 136,
+          "support": 137,
+          "rate": 0.9927007299270073
+        },
+        "macro": {
+          "value": 0.9921875,
+          "scenario_support": 8
+        }
+      },
+      "reference_relation_accuracy": {
+        "micro": {
+          "numerator": 200,
+          "support": 335,
+          "rate": 0.5970149253731343
+        },
+        "macro": {
+          "value": 0.6000211712592014,
+          "scenario_support": 8
+        }
+      },
+      "fragmentation": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 5,
+            "support": 17,
+            "rate": 0.29411764705882354
+          },
+          "macro": {
+            "value": 0.25,
+            "scenario_support": 8
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 5,
+            "support": 17,
+            "rate": 0.29411764705882354
+          },
+          "macro": {
+            "value": 0.25,
+            "scenario_support": 8
+          }
+        }
+      },
+      "cross_thread_contamination": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 12,
+            "support": 10,
+            "rate": 1.2
+          },
+          "macro": {
+            "value": 1.125,
+            "scenario_support": 8
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 10,
+            "support": 10,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 8
+          }
+        }
+      },
+      "error_propagation": {
+        "adjacent_failure_rate": {
+          "micro": {
+            "numerator": 100,
+            "support": 100,
+            "rate": 1.0
+          },
+          "macro": {
+            "value": 1.0,
+            "scenario_support": 8
+          }
+        },
+        "failure_turns": 116,
+        "evaluated_turn_support": 128,
+        "max_consecutive_failed_turns": 16,
+        "failure_streaks_ge2": 14
+      }
+    },
+    "model-assisted": {
+      "scorer_version": "routing-identity-v2",
+      "micro": {
+        "precision": 0.8032345013477089,
+        "recall": 0.5843137254901961,
+        "f1": 0.6765039727582293,
+        "tp": 298,
+        "fp": 73,
+        "fn": 212,
+        "pair_support": 1074,
+        "precision_support": 371,
+        "recall_support": 510
+      },
+      "macro": {
+        "precision": {
+          "value": 0.8073230655467497,
+          "scenario_support": 8
+        },
+        "recall": {
+          "value": 0.583089638949014,
+          "scenario_support": 8
+        },
+        "f1": {
+          "value": 0.6574370078668477,
+          "scenario_support": 8
+        }
+      },
+      "scenario_support": 8,
+      "clarification": {
+        "required_recall": {
+          "micro": {
+            "numerator": 1,
+            "support": 7,
+            "rate": 0.14285714285714285
+          },
+          "macro": {
+            "value": 0.08333333333333333,
+            "scenario_support": 6
+          }
+        },
+        "miss_rate": {
+          "micro": {
+            "numerator": 6,
+            "support": 7,
+            "rate": 0.8571428571428571
+          },
+          "macro": {
+            "value": 0.9166666666666666,
+            "scenario_support": 6
+          }
+        },
+        "unnecessary_rate": {
+          "micro": {
+            "numerator": 2,
+            "support": 137,
+            "rate": 0.014598540145985401
+          },
+          "macro": {
+            "value": 0.014705882352941176,
+            "scenario_support": 8
+          }
+        },
+        "precision": {
+          "micro": {
+            "numerator": 1,
+            "support": 3,
+            "rate": 0.3333333333333333
+          },
+          "macro": {
+            "value": 0.3333333333333333,
+            "scenario_support": 3
+          }
+        }
+      },
+      "routing_coverage": {
+        "micro": {
+          "numerator": 135,
+          "support": 137,
+          "rate": 0.9854014598540146
+        },
+        "macro": {
+          "value": 0.9852941176470589,
+          "scenario_support": 8
+        }
+      },
+      "reference_relation_accuracy": {
+        "micro": {
+          "numerator": 228,
+          "support": 330,
+          "rate": 0.6909090909090909
+        },
+        "macro": {
+          "value": 0.6910583053024913,
+          "scenario_support": 8
+        }
+      },
+      "fragmentation": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 21,
+            "support": 17,
+            "rate": 1.2352941176470589
+          },
+          "macro": {
+            "value": 1.1875,
+            "scenario_support": 8
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 14,
+            "support": 17,
+            "rate": 0.8235294117647058
+          },
+          "macro": {
+            "value": 0.8125,
+            "scenario_support": 8
+          }
+        }
+      },
+      "cross_thread_contamination": {
+        "mean_extra_assignments": {
+          "micro": {
+            "numerator": 12,
+            "support": 26,
+            "rate": 0.46153846153846156
+          },
+          "macro": {
+            "value": 0.5148809523809523,
+            "scenario_support": 8
+          }
+        },
+        "affected_group_rate": {
+          "micro": {
+            "numerator": 12,
+            "support": 26,
+            "rate": 0.46153846153846156
+          },
+          "macro": {
+            "value": 0.5148809523809523,
+            "scenario_support": 8
+          }
+        }
+      },
+      "error_propagation": {
+        "adjacent_failure_rate": {
+          "micro": {
+            "numerator": 43,
+            "support": 55,
+            "rate": 0.7818181818181819
+          },
+          "macro": {
+            "value": 0.7393308080808081,
+            "scenario_support": 8
+          }
+        },
+        "failure_turns": 64,
+        "evaluated_turn_support": 127,
+        "max_consecutive_failed_turns": 8,
+        "failure_streaks_ge2": 16
+      }
+    }
+  },
+  "original_archive_modified": false,
+  "limitations": [
+    "New fragmentation and contamination metrics use the eligible, non-abstained subset; read coverage alongside them.",
+    "No new routing, summary generation or model requests; does not measure new prompt efficacy.",
+    "Original archived summary is preserved; this export explicitly names the new scoring version."
+  ]
+}

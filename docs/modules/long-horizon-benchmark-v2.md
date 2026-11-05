@@ -63,6 +63,10 @@ uv run pytest tests/test_long_horizon_v2.py tests/test_thread_routing.py
 
 开发集规则基线 21 场景/378 Turn 完整完成，Pairwise micro Precision 0.4776、Recall 0.8369、F1 0.6081；必需澄清遗漏 19/19，误澄清 2/359，coverage 357/359。与旧 8 场景分数不能直接比较数据规模效应，不据此修改冻结标签。
 
+实现提交 `4026ccb` 上的交付重跑与首次规则基线及五组路径计数一致，两个报告均无模型重算一致。无正文汇总见 [v2 开发集与离线对照](../../evals/results/long-horizon-v2-dev-offline-20261105.json)；完整私有轨迹位于 `.heybuddy/evaluations/lh-v2-rule-delivery/` 与 `.heybuddy/evaluations/lh-v2-ablation-delivery/`。原有两处 Episode 未提交修改保留，报告为 git_dirty=true，code_hash 纳入实际使用的依赖。完整回归实际为 1434 passed、3 skipped，Ruff、构建和两个 CLI 帮助检查通过。
+
 五组固定 continue 路径均完成 378 Turn。路由分支数分别为 241、241、241、241、356；四组带状态的组各触发 126 次 Episode 请求和 351/351/351/357 次 Thread 请求。state 组 281 张累计候选卡中 254 张带状态，baseline 为 0。fewshot 最大估算路由输入 4724，超过旧 v1 的 4096 输入上限；真实评测必须重新预检，不能直接扩大旧 profile。
 
 频繁维护明显增加成本。五组的总估算输入依次为 379182、4483513、4721380、5013231、5534015；输出预留依次为 246784、2200576、2200576、2200576、2342912。它们不是 tokenizer 或 Provider Usage，更不是账单；真实选择、Episode 分组和维护次数可能不同。本轮实际外部请求为零。建议先选少量 dev 场景，分开测状态维护与路由，再对照 identity/fewshot/deferred；确认拆分下降且污染、coverage、澄清不恶化后，才扩大真实模型实验。Holdout 保留到方案稳定之后。
+
+旧实验只读重新评分的独立来源、版本与完整指标见 [v1 身份指标重算](../../evals/results/long-horizon-v1-identity-rescore-20261105.json)；原始归档未改写，新增外部请求为零。
