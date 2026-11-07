@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "data_status": "agent_reviewed_draft",
+  "human_reviewed": false,
+  "total": 150,
+  "counts": {
+    "thread_routing": 50,
+    "memory_learning": 50,
+    "proactive_decision": 50
+  },
+  "sources": {
+    "custom": 115,
+    "TIAGE": 5,
+    "IRC Disentanglement": 3,
+    "LongMemEval": 8,
+    "MemoryAgentBench": 4,
+    "TriggerBench": 15
+  },
+  "sha256": {
+    "inputs.jsonl": "39fcaeb104a7b3bf14943bae1b45072c132a806ad06fc93893c68785aecc0323",
+    "gold.jsonl": "906586310897d3258e4a82153df8068384a7cc5e05e4392cdd5675fad4fa2e94",
+    "public_sources/selected_source_records.jsonl": "fbb6e425a9261a9c7dbb8d47b18955cd1c98b48c14d233bfdf4b39047621a2e2"
+  },
+  "limitations": [
+    "No independent human review",
+    "Template-related cases are correlated",
+    "Decision snapshots, not long-horizon end-to-end replay",
+    "Adapted excerpts, not native public benchmark scores"
+  ]
+}

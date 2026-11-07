@@ -1,0 +1,17 @@
+[
+  {
+    "positive": "custom_pd_001",
+    "negative": "custom_pd_011",
+    "difference": "Task completion evidence + resolved status"
+  },
+  {
+    "positive": "custom_pd_002",
+    "negative": "custom_pd_012",
+    "difference": "Task completion evidence + resolved status"
+  },
+  {
+    "positive": "custom_pd_003",
+    "negative": "custom_pd_013",
+    "difference": "Task completion evidence + resolved status"
+  }
+]

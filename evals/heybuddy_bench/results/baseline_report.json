@@ -1,0 +1,2714 @@
+{
+  "expected": 150,
+  "observed": 150,
+  "tracks": {
+    "thread_routing": {
+      "expected": 50,
+      "observed": 50,
+      "strict_action_accuracy": 0.52,
+      "acceptable_action_accuracy": 0.52,
+      "action_macro_f1": 0.2563888888888889,
+      "decision_accuracy": 0.52,
+      "target_accuracy_on_applicable_gold": 0.9629629629629629,
+      "target_cases": 27,
+      "valid_decision_rate": 1.0,
+      "decision_wilson_95": [
+        0.3851,
+        0.652
+      ],
+      "by_class": {
+        "continue": {
+          "f1": 0.4375,
+          "support": 7
+        },
+        "select": {
+          "f1": 0.8444444444444444,
+          "support": 20
+        },
+        "new": {
+          "f1": 0.0,
+          "support": 10
+        },
+        "chat": {
+          "f1": 0.0,
+          "support": 6
+        },
+        "clarify": {
+          "f1": 0.0,
+          "support": 7
+        }
+      },
+      "by_source": {
+        "custom": {
+          "count": 42,
+          "correct": 23
+        },
+        "TIAGE": {
+          "count": 5,
+          "correct": 2
+        },
+        "IRC Disentanglement": {
+          "count": 3,
+          "correct": 1
+        }
+      },
+      "false_interruption_rate": null,
+      "notification_precision": null,
+      "content_checks": {
+        "None": 50
+      },
+      "usage": {
+        "provider_calls": 0,
+        "api_requests": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "api_cost_usd": 0
+      },
+      "failures": [
+        "custom_rt_025",
+        "custom_rt_029",
+        "custom_rt_035",
+        "public_001",
+        "extra_rt_001",
+        "extra_rt_002",
+        "custom_rt_026",
+        "custom_rt_030",
+        "custom_rt_036",
+        "custom_rt_027",
+        "custom_rt_031",
+        "custom_rt_037",
+        "public_003",
+        "custom_rt_014",
+        "custom_rt_028",
+        "custom_rt_032",
+        "custom_rt_038",
+        "custom_rt_033",
+        "custom_rt_039",
+        "public_005",
+        "custom_rt_034",
+        "custom_rt_040",
+        "public_006",
+        "public_008"
+      ]
+    },
+    "memory_learning": {
+      "expected": 50,
+      "observed": 50,
+      "strict_action_accuracy": 0.2,
+      "acceptable_action_accuracy": 0.2,
+      "action_macro_f1": 0.06666666666666667,
+      "decision_accuracy": 0.2,
+      "target_accuracy_on_applicable_gold": 0.2631578947368421,
+      "target_cases": 38,
+      "valid_decision_rate": 1.0,
+      "decision_wilson_95": [
+        0.1124,
+        0.3304
+      ],
+      "by_class": {
+        "create": {
+          "f1": 0.3333333333333333,
+          "support": 10
+        },
+        "update": {
+          "f1": 0.0,
+          "support": 28
+        },
+        "no_op": {
+          "f1": 0.0,
+          "support": 4
+        },
+        "reject": {
+          "f1": 0.0,
+          "support": 6
+        },
+        "review": {
+          "f1": 0.0,
+          "support": 2
+        }
+      },
+      "by_source": {
+        "custom": {
+          "count": 38,
+          "correct": 9
+        },
+        "LongMemEval": {
+          "count": 8,
+          "correct": 0
+        },
+        "MemoryAgentBench": {
+          "count": 4,
+          "correct": 1
+        }
+      },
+      "false_interruption_rate": null,
+      "notification_precision": null,
+      "content_checks": {
+        "True": 38,
+        "None": 12
+      },
+      "usage": {
+        "provider_calls": 0,
+        "api_requests": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "api_cost_usd": 0
+      },
+      "failures": [
+        "custom_ml_005",
+        "custom_ml_009",
+        "custom_ml_011",
+        "custom_ml_021",
+        "custom_ml_026",
+        "public_009",
+        "public_017",
+        "extra_ml_001",
+        "extra_ml_002",
+        "extra_ml_003",
+        "extra_ml_004",
+        "extra_ml_005",
+        "extra_ml_006",
+        "extra_ml_007",
+        "extra_ml_008",
+        "custom_ml_006",
+        "custom_ml_010",
+        "custom_ml_012",
+        "custom_ml_022",
+        "custom_ml_027",
+        "public_010",
+        "public_018",
+        "custom_ml_007",
+        "custom_ml_013",
+        "custom_ml_023",
+        "custom_ml_028",
+        "public_011",
+        "public_019",
+        "custom_ml_008",
+        "custom_ml_019",
+        "custom_ml_024",
+        "custom_ml_029",
+        "public_012",
+        "custom_ml_020",
+        "custom_ml_025",
+        "custom_ml_030",
+        "public_013",
+        "public_014",
+        "public_015",
+        "public_016"
+      ]
+    },
+    "proactive_decision": {
+      "expected": 50,
+      "observed": 50,
+      "strict_action_accuracy": 0.4,
+      "acceptable_action_accuracy": 0.42,
+      "action_macro_f1": 0.21801891488302638,
+      "decision_accuracy": 0.42,
+      "target_accuracy_on_applicable_gold": 1.0,
+      "target_cases": 25,
+      "valid_decision_rate": 1.0,
+      "decision_wilson_95": [
+        0.2937,
+        0.5577
+      ],
+      "by_class": {
+        "silent": {
+          "f1": 0.5306122448979592,
+          "support": 25
+        },
+        "defer": {
+          "f1": 0.0,
+          "support": 8
+        },
+        "notify": {
+          "f1": 0.34146341463414637,
+          "support": 15
+        },
+        "propose_task": {
+          "f1": 0.0,
+          "support": 2
+        }
+      },
+      "by_source": {
+        "custom": {
+          "count": 35,
+          "correct": 12
+        },
+        "TriggerBench": {
+          "count": 15,
+          "correct": 9
+        }
+      },
+      "false_interruption_rate": 0.48,
+      "notification_precision": 0.2692307692307692,
+      "content_checks": {
+        "None": 50
+      },
+      "usage": {
+        "provider_calls": 0,
+        "api_requests": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "reasoning_tokens": 0,
+        "api_cost_usd": 0
+      },
+      "failures": [
+        "custom_pd_011",
+        "custom_pd_019",
+        "custom_pd_024",
+        "custom_pd_031",
+        "public_024",
+        "public_026",
+        "public_028",
+        "custom_pd_012",
+        "custom_pd_020",
+        "custom_pd_025",
+        "custom_pd_032",
+        "public_022",
+        "public_025",
+        "public_027",
+        "custom_pd_013",
+        "custom_pd_026",
+        "custom_pd_033",
+        "custom_pd_004",
+        "custom_pd_014",
+        "custom_pd_027",
+        "custom_pd_034",
+        "custom_pd_005",
+        "custom_pd_015",
+        "custom_pd_028",
+        "custom_pd_006",
+        "custom_pd_016",
+        "custom_pd_029",
+        "custom_pd_009",
+        "custom_pd_010"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "custom_rt_001",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_011",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_021",
+      "track": "thread_routing",
+      "category": "subtask_existing",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_025",
+      "track": "thread_routing",
+      "category": "distinct_new_task",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_029",
+      "track": "thread_routing",
+      "category": "ephemeral_social",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "chat",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_035",
+      "track": "thread_routing",
+      "category": "ambiguous_reference",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "select",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_001",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "TIAGE",
+        "type": "public_derived"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "extra_rt_001",
+      "track": "thread_routing",
+      "category": "same_domain_new_goal",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "extra_rt_002",
+      "track": "thread_routing",
+      "category": "ambiguous_active_reference",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_002",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_012",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_022",
+      "track": "thread_routing",
+      "category": "subtask_existing",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_026",
+      "track": "thread_routing",
+      "category": "distinct_new_task",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_030",
+      "track": "thread_routing",
+      "category": "ephemeral_social",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "chat",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_036",
+      "track": "thread_routing",
+      "category": "ambiguous_reference",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "select",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_002",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "TIAGE",
+        "type": "public_derived"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_003",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_013",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_023",
+      "track": "thread_routing",
+      "category": "subtask_existing",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_027",
+      "track": "thread_routing",
+      "category": "distinct_new_task",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_031",
+      "track": "thread_routing",
+      "category": "ephemeral_social",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "chat",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_037",
+      "track": "thread_routing",
+      "category": "ambiguous_reference",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "select",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_003",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "TIAGE",
+        "type": "public_derived"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_004",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_014",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_024",
+      "track": "thread_routing",
+      "category": "subtask_existing",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_028",
+      "track": "thread_routing",
+      "category": "distinct_new_task",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_032",
+      "track": "thread_routing",
+      "category": "ephemeral_social",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "chat",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_038",
+      "track": "thread_routing",
+      "category": "ambiguous_reference",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "select",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_004",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "TIAGE",
+        "type": "public_derived"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_005",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_015",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_033",
+      "track": "thread_routing",
+      "category": "ephemeral_social",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "chat",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_039",
+      "track": "thread_routing",
+      "category": "ambiguous_reference",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "select",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_005",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "TIAGE",
+        "type": "public_derived"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_006",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_016",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_034",
+      "track": "thread_routing",
+      "category": "ephemeral_social",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "chat",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_040",
+      "track": "thread_routing",
+      "category": "ambiguous_reference",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "clarify",
+      "predicted_action": "select",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_006",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "IRC Disentanglement",
+        "type": "public_derived"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_007",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_017",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_007",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "IRC Disentanglement",
+        "type": "public_derived"
+      },
+      "gold_action": "continue",
+      "predicted_action": "continue",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_008",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_018",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_008",
+      "track": "thread_routing",
+      "category": "public",
+      "source": {
+        "name": "IRC Disentanglement",
+        "type": "public_derived"
+      },
+      "gold_action": "new",
+      "predicted_action": "continue",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_009",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_019",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_010",
+      "track": "thread_routing",
+      "category": "long_gap_resume",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_rt_020",
+      "track": "thread_routing",
+      "category": "similar_thread_disambiguation",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "select",
+      "predicted_action": "select",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_001",
+      "track": "memory_learning",
+      "category": "new_fact",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_005",
+      "track": "memory_learning",
+      "category": "explicit_project_update",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_009",
+      "track": "memory_learning",
+      "category": "explicit_preference_override",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_011",
+      "track": "memory_learning",
+      "category": "core_vs_deferred",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_016",
+      "track": "memory_learning",
+      "category": "behavioral_regularity",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_021",
+      "track": "memory_learning",
+      "category": "temporal_provenance",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_026",
+      "track": "memory_learning",
+      "category": "ignore_or_archive",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "reject",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_009",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_017",
+      "track": "memory_learning",
+      "category": "public",
+      "source": {
+        "name": "MemoryAgentBench",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "extra_ml_001",
+      "track": "memory_learning",
+      "category": "assistant_not_user",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "no_op",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "extra_ml_002",
+      "track": "memory_learning",
+      "category": "already_recorded",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "no_op",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "extra_ml_003",
+      "track": "memory_learning",
+      "category": "deadline_correction",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "extra_ml_004",
+      "track": "memory_learning",
+      "category": "project_scoped_preference",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "extra_ml_005",
+      "track": "memory_learning",
+      "category": "relationship_feedback",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "extra_ml_006",
+      "track": "memory_learning",
+      "category": "quoted_instruction",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "reject",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "extra_ml_007",
+      "track": "memory_learning",
+      "category": "entity_scope",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "extra_ml_008",
+      "track": "memory_learning",
+      "category": "unconfirmed_correction",
+      "source": {
+        "method": "replacement_after_source_review",
+        "type": "custom"
+      },
+      "gold_action": "review",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_002",
+      "track": "memory_learning",
+      "category": "new_fact",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_006",
+      "track": "memory_learning",
+      "category": "explicit_project_update",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_010",
+      "track": "memory_learning",
+      "category": "explicit_preference_override",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_012",
+      "track": "memory_learning",
+      "category": "core_vs_deferred",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_017",
+      "track": "memory_learning",
+      "category": "behavioral_regularity",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_022",
+      "track": "memory_learning",
+      "category": "temporal_provenance",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_027",
+      "track": "memory_learning",
+      "category": "ignore_or_archive",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "reject",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_010",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_018",
+      "track": "memory_learning",
+      "category": "public",
+      "source": {
+        "name": "MemoryAgentBench",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_003",
+      "track": "memory_learning",
+      "category": "new_fact",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_007",
+      "track": "memory_learning",
+      "category": "explicit_project_update",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_013",
+      "track": "memory_learning",
+      "category": "core_vs_deferred",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_018",
+      "track": "memory_learning",
+      "category": "behavioral_regularity",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_023",
+      "track": "memory_learning",
+      "category": "temporal_provenance",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "no_op",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_028",
+      "track": "memory_learning",
+      "category": "ignore_or_archive",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "reject",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_011",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_019",
+      "track": "memory_learning",
+      "category": "public",
+      "source": {
+        "name": "MemoryAgentBench",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_004",
+      "track": "memory_learning",
+      "category": "new_fact",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_008",
+      "track": "memory_learning",
+      "category": "explicit_project_update",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_014",
+      "track": "memory_learning",
+      "category": "core_vs_deferred",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_019",
+      "track": "memory_learning",
+      "category": "behavioral_regularity",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "reject",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_024",
+      "track": "memory_learning",
+      "category": "temporal_provenance",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "no_op",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_029",
+      "track": "memory_learning",
+      "category": "ignore_or_archive",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_012",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_020",
+      "track": "memory_learning",
+      "category": "public",
+      "source": {
+        "name": "MemoryAgentBench",
+        "type": "public_derived"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_015",
+      "track": "memory_learning",
+      "category": "core_vs_deferred",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "create",
+      "predicted_action": "create",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_ml_020",
+      "track": "memory_learning",
+      "category": "behavioral_regularity",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "reject",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_025",
+      "track": "memory_learning",
+      "category": "temporal_provenance",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "review",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_ml_030",
+      "track": "memory_learning",
+      "category": "ignore_or_archive",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_013",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_014",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_015",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "public_016",
+      "track": "memory_learning",
+      "category": "knowledge-update",
+      "source": {
+        "name": "LongMemEval",
+        "type": "public_derived"
+      },
+      "gold_action": "update",
+      "predicted_action": "create",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": false,
+      "decision_correct": false,
+      "content_check_pass": true
+    },
+    {
+      "case_id": "custom_pd_001",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_011",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_019",
+      "track": "proactive_decision",
+      "category": "behavioral_evidence",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_024",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_031",
+      "track": "proactive_decision",
+      "category": "repeat_cooldown",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_021",
+      "track": "proactive_decision",
+      "category": "temporal_grounding",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_024",
+      "track": "proactive_decision",
+      "category": "state_tracking",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_026",
+      "track": "proactive_decision",
+      "category": "logical_adherence",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_028",
+      "track": "proactive_decision",
+      "category": "attention_recovery",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_002",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_012",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_020",
+      "track": "proactive_decision",
+      "category": "behavioral_evidence",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_025",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_032",
+      "track": "proactive_decision",
+      "category": "repeat_cooldown",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_022",
+      "track": "proactive_decision",
+      "category": "temporal_grounding",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_025",
+      "track": "proactive_decision",
+      "category": "state_tracking",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_027",
+      "track": "proactive_decision",
+      "category": "logical_adherence",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "notify",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_003",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_013",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_021",
+      "track": "proactive_decision",
+      "category": "behavioral_evidence",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_026",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_033",
+      "track": "proactive_decision",
+      "category": "repeat_cooldown",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_023",
+      "track": "proactive_decision",
+      "category": "temporal_grounding",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_029",
+      "track": "proactive_decision",
+      "category": "state_tracking",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_032",
+      "track": "proactive_decision",
+      "category": "logical_adherence",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_004",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_014",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_022",
+      "track": "proactive_decision",
+      "category": "behavioral_evidence",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_027",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_034",
+      "track": "proactive_decision",
+      "category": "repeat_cooldown",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_030",
+      "track": "proactive_decision",
+      "category": "state_tracking",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_033",
+      "track": "proactive_decision",
+      "category": "logical_adherence",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_005",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_015",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_023",
+      "track": "proactive_decision",
+      "category": "behavioral_evidence",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_028",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_035",
+      "track": "proactive_decision",
+      "category": "repeat_cooldown",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_031",
+      "track": "proactive_decision",
+      "category": "state_tracking",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_034",
+      "track": "proactive_decision",
+      "category": "logical_adherence",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_006",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "defer",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_016",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_029",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "notify",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "public_035",
+      "track": "proactive_decision",
+      "category": "logical_adherence",
+      "source": {
+        "name": "TriggerBench",
+        "type": "public_derived"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_007",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_017",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_030",
+      "track": "proactive_decision",
+      "category": "attention_interruption",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_008",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "silent",
+      "predicted_action": "silent",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_018",
+      "track": "proactive_decision",
+      "category": "completed_or_cancelled",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "notify",
+      "predicted_action": "notify",
+      "strict_action_correct": true,
+      "acceptable_action_correct": true,
+      "target_correct": true,
+      "decision_correct": true,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_009",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "propose_task",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    },
+    {
+      "case_id": "custom_pd_010",
+      "track": "proactive_decision",
+      "category": "deadline_commitment",
+      "source": {
+        "method": "controlled_template",
+        "type": "custom"
+      },
+      "gold_action": "propose_task",
+      "predicted_action": "silent",
+      "strict_action_correct": false,
+      "acceptable_action_correct": false,
+      "target_correct": true,
+      "decision_correct": false,
+      "content_check_pass": null
+    }
+  ],
+  "mode": "baseline",
+  "model": null,
+  "backbone": null,
+  "capability_evaluation": true,
+  "human_reviewed": false,
+  "dataset_hashes": {
+    "inputs.jsonl": "39fcaeb104a7b3bf14943bae1b45072c132a806ad06fc93893c68785aecc0323",
+    "gold.jsonl": "906586310897d3258e4a82153df8068384a7cc5e05e4392cdd5675fad4fa2e94"
+  },
+  "configuration": {
+    "router_model_selection": true,
+    "router_defer_weak_rules": false,
+    "context_window": 131072,
+    "memory_policy": "production defaults",
+    "proactive_policy": "production defaults; compose disabled",
+    "max_requests": 30,
+    "max_tokens": 1000000,
+    "max_cost_usd": 0,
+    "input_price_usd": null,
+    "output_price_usd": null
+  },
+  "evaluation_code_sha256": "28e183dc078ebee904ad6fda66297841277c0b76e270a661b726978ce70df88d"
+}

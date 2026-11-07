@@ -1,0 +1,36 @@
+{
+  "expected": 150,
+  "observed": 150,
+  "counts": {
+    "thread_routing": 50,
+    "memory_learning": 50,
+    "proactive_decision": 50
+  },
+  "errors": [],
+  "provider_calls": 113,
+  "api_requests": 0,
+  "api_cost_usd": 0,
+  "note": "Contract test with gold-independent responses; no capability scores.",
+  "mode": "smoke",
+  "model": null,
+  "backbone": null,
+  "capability_evaluation": false,
+  "human_reviewed": false,
+  "dataset_hashes": {
+    "inputs.jsonl": "39fcaeb104a7b3bf14943bae1b45072c132a806ad06fc93893c68785aecc0323",
+    "gold.jsonl": "906586310897d3258e4a82153df8068384a7cc5e05e4392cdd5675fad4fa2e94"
+  },
+  "configuration": {
+    "router_model_selection": true,
+    "router_defer_weak_rules": false,
+    "context_window": 131072,
+    "memory_policy": "production defaults",
+    "proactive_policy": "production defaults; compose disabled",
+    "max_requests": 256,
+    "max_tokens": 4000000,
+    "max_cost_usd": 0,
+    "input_price_usd": null,
+    "output_price_usd": null
+  },
+  "evaluation_code_sha256": "28e183dc078ebee904ad6fda66297841277c0b76e270a661b726978ce70df88d"
+}
