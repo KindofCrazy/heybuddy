@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
@@ -104,6 +104,19 @@ def proactive(store, provider=None, **changes):
         policy,
         clock=Clock(),
     )
+
+
+async def test_scout_and_attention_see_user_local_time_with_offset(state):
+    store, stream, _ = state
+    provider = ProposalProvider()
+    service = proactive(store, provider)
+    seed(store, stream, "我明天准备测试 HeyBuddy 的记忆模块")
+    assert (await service.run())["stage"] == "scout"
+    assert (await service.run())["stage"] == "attention"
+    expected = service.clock.now().astimezone(timezone(timedelta(minutes=480)))
+    for request in provider.requests:
+        now = datetime.fromisoformat(json.loads(request[1].text)["now"])
+        assert now == expected and now.utcoffset() == timedelta(hours=8)
 
 
 async def test_no_backfill_incremental_restart_and_no_duplicate_send(state):

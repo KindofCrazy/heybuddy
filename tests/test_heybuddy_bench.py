@@ -134,6 +134,32 @@ async def test_real_learning_writes_memory_and_receipts(tmp_path):
     assert not list(tmp_path.iterdir())
 
 
+async def test_previous_case_decisions_do_not_change_current_no_op(tmp_path):
+    cases = load_inputs(DATA)
+    selected = [
+        next(c for c in cases if c["case_id"] == cid) for cid in ["custom_ml_011", "custom_ml_026"]
+    ]
+
+    class WriteThenEmpty(WriteProvider):
+        extractions = 0
+
+        async def generate(self, messages, tools, **options):
+            data = json.loads(messages[-1].text)
+            if data["response_schema"]["title"] == "Extraction":
+                self.extractions += 1
+                if self.extractions == 2:
+                    return ModelResponse(text='{"candidates": []}')
+            return await super().generate(messages, tools, **options)
+
+    results = await run_cases(
+        selected, mode="smoke", temp_parent=tmp_path, provider=WriteThenEmpty()
+    )
+    assert results[0]["prediction"]["action"] == "update"
+    assert results[1]["prediction"]["action"] == "no_op"
+    assert results[1]["prediction"]["decisions"] == []
+    assert results[1]["prediction"]["model_decisions"] == []
+
+
 async def test_proactive_host_gate_avoids_call_and_does_not_send(tmp_path):
     case = copy.deepcopy(next(c for c in load_inputs(DATA) if c["case_id"] == "custom_pd_001"))
     case["input"]["now"] = "2026-11-05T23:30:00+08:00"

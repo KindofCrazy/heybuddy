@@ -2,7 +2,7 @@
 
 ## 职责与架构组成
 
-`evaluation/heybuddy_bench/` 为三个决策点提供隔离运行器，不改 Router、Learning、Proactive 的生产实现。数据在 `evals/heybuddy_bench/`：`inputs.jsonl` 是输入，`gold.jsonl` 是隔离标签，`manifest.json` 固定哈希。`dataset.py` 校验；`adapters.py` 建立临时状态并调用生产模块；`baselines.py` 提供三个简单确定性对照；`runner.py` 控制串行执行、临时目录、调用预算与费用；`scoring.py` 计算动作/目标指标；`__main__.py` 提供显式离线或 live 入口。
+`evaluation/heybuddy_bench/` 为三个决策点提供隔离运行器，直接调用 Router、Learning、Proactive 的生产实现。数据在 `evals/heybuddy_bench/`：`inputs.jsonl` 是输入，`gold.jsonl` 是隔离标签，`manifest.json` 固定哈希。`dataset.py` 校验；`adapters.py` 建立临时状态并调用生产模块；`baselines.py` 提供三个简单确定性对照；`runner.py` 控制串行执行、临时目录、调用预算与费用；`scoring.py` 计算动作/目标指标；`__main__.py` 提供显式离线或 live 入口。
 
 每题是独立快照，输入里已经包含必要历史与候选状态。数据中的 `episode` 不表示后台 Organizer 已运行。Memory 使用原生 `learn(run_ids=...)`；Proactive 使用原生决策分支，上游 Scout 提取效果不在这个 Track 内。当前默认库 Router 仍关闭模型选择，Benchmark 显式开启一次模型辅助选择，弱规则仍按生产行为优先。
 
@@ -17,6 +17,12 @@
 7. 每道题完成后立即追加并 flush `predictions.jsonl`。全部推理结束、Provider 关闭后，非 Smoke 模式才读取 Gold 并运行 `scoring.aggregate()`，输出 `report.json`。Smoke 不生成能力分数。缺失/重复预测、非法动作、执行错误不会被筛掉；未完成或失败退出码为非零。
 
 ## 异常与边界
+
+`ObservedLearning.propose()` 只旁观原 `MemoryLearningService.propose()` 已校验的 PlanItem，记录当前题的最终 Host 决定；`learning()` 只读取本题调用片段，避免复用前题的 FileDecision。实际零变化的等值更新记为 no_op，失败仍为 __error__。旧 v0.2 真实记录的报告污染可由 `analysis.repair_observation()` 根据本题调用和已保存的真实文件效果重算，保留原始记录，不重跑 API、不改变模型输出或 Gold。
+
+显式真实诊断入口 `python -m personal_agent.evaluation.heybuddy_bench.experiment` 使用冻结的 `live_protocol.json` 切分 104 个开发题与 46 个按用户/来源组留出的题。该入口通过原 `load_settings()` 取指定项目配置，只使用模型、端点和 Key，不读取真实数据库/MemoryFS；不展开配置内容。它要求配置的模型与端点匹配协议，使用 JSON 与 reasoning_effort=none、SDK 无重试，所有阶段共用 `SessionBudget` 的持久 CNY 账本。每次分发前记录 pending 和本次输入字节上界/输出上限；已知 usage 到达后按高峰未缓存单价记费并释放未用预留。未确认 usage 或遗留 pending 阻止下一次真实调用。原始输入/输出留在被忽略的评测目录，仅公开无正文汇总。`analysis --candidate-tag final` 区分最终轮，最终轮复用留出组，不能当作全新盲测。生产代码冻结哈希在调用前核验。
+
+原始 v0.2 分数与预先声明的复核分并列：复核分允许合法 Deferred 目录中的新文件名、silent 无选择、六个可合理存入 Core 或现有项目的方案。它不放宽文件正文质量，不把这类评分修正当作生产改进。开发题与留出题仍是 Agent 编写数据，不能称为第三方盲测。
 
 缺失真实模型、Key 环境或价格时 live 入口在调用前拒绝；预算不足、Provider 失败或无效 JSON 不重试。实际 usage 缺失时成本与 Token 保留 null，并停止后续真实请求；已知 reasoning 已在 output 中，不重复收费。只保存安全错误码/异常类型，不打印 SDK 异常正文、私有 Provider payload、隐藏推理或密钥。费用预留使用估算，不是精确 Tokenizer 或外部账单硬保证。
 

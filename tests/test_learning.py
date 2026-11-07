@@ -46,6 +46,39 @@ def human_write(new="回答先给结论，保持简洁。"):
     )
 
 
+async def test_core_comparison_path_is_already_available(state):
+    _, sessions, _, run = state
+    provider = FakeProvider(
+        *[
+            ModelResponse(text=json.dumps(data, ensure_ascii=False))
+            for data in [
+                {"candidates": [candidate(sessions.current.id, run)]},
+                {"groups": [{"path": "human.md", "candidate_ids": [1]}], "paths": ["human.md"]},
+                human_write(),
+            ]
+        ]
+    )
+    result = await learner(state, provider).learn(run_ids=[run])
+    assert result["outcome"] == "completed" and result["updated_files"] == 1
+
+
+def test_selection_previews_are_bounded_and_keep_topic_identity(state):
+    learning = learner(state, FakeProvider())
+    catalog = []
+    for n in range(6):
+        path = f"topics/project-{n}.md"
+        text = (
+            f"---\nname: project-{n}\ndescription: Existing project\n---\n"
+            f"# 项目 {n}\n" + "已有内容" * 300
+        )
+        index.create(state[2], path, text)
+        catalog.append({"path": path})
+    previews = learning._selection_previews(catalog)
+    assert len(previews) == 4
+    assert sum(len(value.encode()) for value in previews.values()) <= 3072
+    assert "项目 0" in previews["topics/project-0.md"]
+
+
 async def test_publication_callback_cannot_outlive_serial_scope(state):
     learning = learner(state, FakeProvider())
     db = state[0]

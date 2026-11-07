@@ -1,5 +1,6 @@
 """Bounded proactive units in the Host's serial, preemptible maintenance lane."""
 
+from datetime import timedelta, timezone
 from typing import TYPE_CHECKING
 
 from personal_agent.core.history import HistoryError
@@ -15,7 +16,7 @@ from personal_agent.proactive.models import (
 )
 from personal_agent.proactive.scout import OpportunityScout
 from personal_agent.proactive.wake import WakeCoordinator
-from personal_agent.storage.proactive import ProactiveRepository, stamp
+from personal_agent.storage.proactive import ProactiveRepository
 
 if TYPE_CHECKING:
     from personal_agent.proactive.outbound import OutboundRuntime
@@ -84,6 +85,9 @@ class ProactiveRuntime:
         if not self.policy.enabled:
             return dict(outcome="disabled")
         at = self.clock.now()
+        local_now = at.astimezone(
+            timezone(timedelta(minutes=self.policy.utc_offset_minutes))
+        ).isoformat()
         expired = self.repository.expire(at)
         gate = self.gate()
         if gate == "unprocessed_evidence":
@@ -98,7 +102,7 @@ class ProactiveRuntime:
                 if snapshot["users"] and not snapshot["skip"]:
                     existing = self.repository.candidates()
                     snapshot["review_targets"] = followup_targets(existing)
-                    result = await self.scout.extract(snapshot, existing, stamp(at))
+                    result = await self.scout.extract(snapshot, existing, local_now)
                 self.repository.publish(snapshot, result, self.policy, at)
                 return dict(outcome="completed", stage="scout", changes=len(result.changes))
             except OrganizationError as error:
@@ -122,7 +126,7 @@ class ProactiveRuntime:
         activity = self.repository.activity()
         epoch = self.activity_epoch
         try:
-            decision = await self.attention.evaluate(proposals, stamp(at))
+            decision = await self.attention.evaluate(proposals, local_now)
         except OrganizationError as error:
             if error.code in {"maintenance_budget", "maintenance_request_budget"}:
                 return dict(outcome="budget_exhausted")

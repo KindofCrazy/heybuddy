@@ -1,6 +1,10 @@
 # Benchmark Review + Evaluation Report
 
-日期：2026-11-07。数据版本：v0.2.0，150 个独立快照，三个 Track 各 50 题。审核者为编码 Agent，独立人工审核尚未完成。完整 HeyBuddy 的真实模型比较未执行；本文严格分开实际 Baseline、生产链路离线验证和待执行项。
+日期：2026-11-07。数据版本：v0.2.0，150 个独立快照，三个 Track 各 50 题。审核者为编码 Agent，独立人工审核尚未完成。
+
+**当前结论：适合发现工程缺陷，还不是成熟的综合能力测试。** 已完成 DeepSeek 真实对照及生产修复，最终指标、开发/留出对照、逐题失败与费用见 [真实测评与 Bad Case 报告](LIVE_EVALUATION_REPORT.md)。输入、Gold 和主评分未随候选表现修改。
+
+下文保留首次交付（`1378ee6`）的数据 Review、Baseline 和离线接线验证，文中的“未执行”均指该历史快照；当前真实执行结果以上述报告为准。
 
 ## Review 结论与修正
 
@@ -34,7 +38,7 @@
 
 IRC 入群事件不是个人任务切换，部分长 QA/小说预测也不适合当前 MemoryFS。替代题覆盖同领域新任务、活跃上下文中的歧义、助手推测、已存事实、项目限定偏好、关系反馈、引用攻击和实体隔离。未强凑 45 个公开题。[来源清单、固定 revision、许可证与改编说明](public_sources/SOURCES.md) 可逐题追溯。
 
-LongMemEval 只使用已定位的用户更新证据，MAB 只改编四个不同单跳关系；IRC/TIAGE 不再评原始回复图/话题切换，TriggerBench 加入 Host 门控。这些是 HeyBuddy 改编任务，不能称为原始 Benchmark 官方成绩。选择没有参考本次预测得分，数据未用于生产 Prompt 调参。
+LongMemEval 只使用已定位的用户更新证据，MAB 只改编四个不同单跳关系；IRC/TIAGE 不再评原始回复图/话题切换，TriggerBench 加入 Host 门控。这些是 HeyBuddy 改编任务，不能称为原始 Benchmark 官方成绩。150 题的选择和冻结早于真实模型调用；后续根据开发组做的生产修复另见真实测评报告，未改变测试输入和 Gold。
 
 ## 已运行 Evaluation
 

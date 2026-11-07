@@ -14,6 +14,7 @@ CHANGE = re.compile(r"换个话题|另一个问题|另外|对了|新话题|\b(?:
 RESUME = re.compile(r"回到|继续|接着|之前|上次|\b(?:resume|continue|back to)\b", re.I)
 CONTINUE = re.compile(r"^(?:嗯|好[的啊吧]?|那|这个|它|先|不要|改成|还有|为什么|怎么|也|再|不是)")
 SOCIAL = re.compile(r"^(?:你好[呀啊！!。 ]*|早[上好安！!。 ]*|晚安[！!。 ]*|谢谢[你！!。 ]*)$")
+ACK = re.compile(r"^(?:嗯[嗯啊]?|好[的啊吧]?|收到|明白[了]?|可以|OK|ok)[！!。,. ]*$")
 
 
 class RouteChoice(Model):
@@ -70,7 +71,11 @@ class ThreadRouter:
             active
             and not self.defer_weak_rules
             and not RESUME.search(text)
-            and (CONTINUE.search(text.strip()) or len(text.strip()) < 12)
+            and (
+                ACK.fullmatch(text.strip())
+                or CONTINUE.search(text.strip())
+                or (not self.model_selection and len(text.strip()) < 12)
+            )
         ):
             reason = "adjacent_continuation"
         elif self.model_selection and candidates:
@@ -88,6 +93,10 @@ class ThreadRouter:
                         "and title (only for new). Never invent IDs or grant permissions. "
                         "Use continue for follow-ups, select for a clearly resumed discussion; "
                         "topic similarity alone does not establish the same task."
+                        " Short text alone is not continuity; social talk uses chat. "
+                        "Clarify if several cards fit a vague reference, "
+                        "even with an active thread. "
+                        "JSON keys only: action, thread_id, title."
                     ),
                 ),
                 TextMessage(

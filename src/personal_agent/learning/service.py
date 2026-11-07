@@ -81,6 +81,12 @@ LEARN_SELECT = (
         "Preserve chronology and supplied max_files. Return groups [{path,candidate_ids}] and "
         "paths: "
         "up to six existing catalogue paths to read for duplicates/conflicts."
+        " Core blocks are already supplied: paths is for existing Deferred catalogue paths only, "
+        "not human.md/persona.md and not a new file. File previews are bounded navigation data, "
+        "never user evidence. Compare the actual subject/entity/project before reusing a target; "
+        "a generic filename or having only one existing project is not a reason to merge unrelated "
+        "topics. General recurring work routines belong in human.md; project-specific facts "
+        "belong with that project. Create a separate topic for an unrelated ongoing project."
     )
 )
 LEARN_CONSOLIDATE = (
@@ -100,6 +106,11 @@ LEARN_CONSOLIDATE = (
         "persona.md 只保存有用户证据的相处认识、共同经历与交流反思，不保存稳定角色设定或模拟情绪；"
         "整合后必须保留首行 # 相处记忆；旧的空 # Persona 模板首次更新时改用该标题。"
         "不得删除整份文件、修改角色包或索引；非写入操作的 old_text/new_text 必须为空。"
+        " 目标文件与候选主题无关时选择 no_op 或 review，不能把无关事实塞进旧项目；"
+        "不要用空 old_text 的 update 表示未修改。create 必须提供完整的主题正文和"
+        "name/description Frontmatter，不能只有理由而正文为空。只输出一个合法 JSON 对象，"
+        "字符串中的换行使用 JSON 转义，不输出 Markdown 围栏。"
+        " JSON 只能含 action、old_text、new_text、reason，不能附加 type、schema 或格式包装。"
     )
 )
 
@@ -264,6 +275,7 @@ class MemoryLearningService:
             {
                 "candidates": candidates,
                 "catalogue": catalog,
+                "file_previews": self._selection_previews(catalog),
                 "core": {k: redact(v) for k, v in core.items()},
                 "relationship_memory_available": relationship_persona(core["persona.md"]),
                 "max_files": self.policy.max_files,
@@ -280,7 +292,12 @@ class MemoryLearningService:
         known = {row["path"] for row in catalog}
         comparison = read_comparison(
             self.memory,
-            list(dict.fromkeys([p for p in paths if p in known] + selection.paths)),
+            list(
+                dict.fromkeys(
+                    [p for p in paths if p in known]
+                    + [p for p in selection.paths if p not in BLOCKS]
+                )
+            ),
             known,
         )
         items = []
@@ -333,6 +350,23 @@ class MemoryLearningService:
                     raise ReflectionError("learning_relationship_header_required")
             items.append(item)
         return items
+
+    def _selection_previews(self, catalog: list[dict]) -> dict[str, str]:
+        """At most four small existing-topic fragments; full comparison is still read afresh."""
+        previews = {}
+        remaining = 3072
+        with self.memory.io():
+            for row in catalog:
+                path = row["path"]
+                if path.endswith("MEMORY.md"):
+                    continue
+                raw = self.memory.raw(self.memory.path(path))
+                fragment = raw[: min(768, remaining)]
+                previews[path] = redact(fragment.decode("utf-8", errors="ignore"))
+                remaining -= len(fragment)
+                if len(previews) == 4 or remaining == 0:
+                    break
+        return previews
 
     def evidence(self, records: list) -> list[dict]:
         """Date relative user statements using source times, independently of processing time."""

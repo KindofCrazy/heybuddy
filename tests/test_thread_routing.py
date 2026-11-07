@@ -173,6 +173,24 @@ async def test_router_semantic_decision_uses_empty_tools_and_shared_budget(route
     assert data["active_thread_id"] == b.id and data["recent"]
 
 
+async def test_short_unrelated_message_uses_model_but_ack_does_not(routed):
+    runtime, _ = routed
+    repo = repository(runtime)
+    active = repo.create("ProjectAlpha")
+    completed(repo, active, "正在排查项目中的错误")
+    run = repo.store.begin_run(repo.conversation_id, TextMessage(role="user", text="今天风挺舒服"))
+    provider = FakeProvider(ModelResponse(text='{"action":"chat"}'))
+    router = ThreadRouter(repo, model_selection=True)
+    result = await router.route(run, "今天风挺舒服", provider)
+    assert result.title == "日常交流" and len(provider.requests) == 1
+    repo.store.interrupt_run(run)
+    completed(repo, active, "回到项目")
+    run = repo.store.begin_run(repo.conversation_id, TextMessage(role="user", text="好的"))
+    provider = FakeProvider()
+    assert (await router.route(run, "好的", provider)).id == active.id
+    assert provider.requests == []
+
+
 @pytest.mark.parametrize("answer", ['{"action":"select","thread_id":"invented"}', "invalid"])
 async def test_invalid_router_decision_keeps_current_thread_without_retry(routed, answer):
     runtime, _ = routed

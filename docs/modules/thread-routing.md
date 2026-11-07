@@ -22,6 +22,8 @@ Conversation 是原始来源日志，不再要求用户按它选择讨论。Thre
 
 默认启用规则路由，语义模型选择需 Host 显式开启；不会宣称规则能理解所有隐式话题变化。最近候选之外的 Thread 可由可信 CLI 按 ID 选择。Agent 级 Memory、主题状态和只读 Recall 仍可共享；自动原始 Run 重放及工作摘要按来源隔离，切换来源不能继承工具授权。
 
+开启 `model_selection` 后，短句长度本身不再直接判为当前任务续接；明确“好的/收到/明白”等 ACK 和既有“那/这个/怎么”等续接前缀仍沿当前 Thread，不额外调用模型。其余短句交给既有一次无工具选择，提示区分闲聊与任务推进，并在多个候选都能解释同一版本/截止日指代时澄清。关闭模型选择仍保留兼容规则；没有新增配置项或 Worker。前缀规则仍可能误判歧义，这是当前兼容边界；验证见 `tests/test_thread_routing.py::test_short_unrelated_message_uses_model_but_ack_does_not`。
+
 `ThreadRouter(..., defer_weak_rules=True)` 是默认关闭的实验入口，必须同时开启 model_selection；它把换话题与临近续接两条弱规则交给既有模型选择，便于独立测量 Prompt 的作用。Host 选择、显式 ID、唯一标题及其他规则继续沿原路径处理。当前 Runtime 不开启此参数，也没有新增环境配置；[v2 离线对照](long-horizon-benchmark-v2.md) 通过真实 Router 使用它，不复制路由逻辑。
 
 模型只返回受校验选择，不能执行工具、改权限或改 Host 配置。选择失败不重试；需要澄清时提示 Agent 追问、禁用本轮工具定义，Registry 再执行强制拒绝。取消向上传播。预算不足停止，数据库错误沿现有 HistoryError 路径停止，原工具不会被重跑。

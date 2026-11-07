@@ -33,6 +33,15 @@ class FixedClock:
         return self.at
 
 
+class ObservedLearning(MemoryLearningService):
+    """Observe the actual host-validated plans without changing the production pipeline."""
+
+    async def propose(self, records, hints):
+        items = await super().propose(records, hints)
+        self.observed_decisions = [item.decision.model_dump() for item in items]
+        return items
+
+
 def seed_run(store, conversation, events, *, routing=None, thread_id=None):
     """Preserve roles and timestamps. Assistant input cannot become a user quotation."""
     first = events[0]
@@ -146,11 +155,12 @@ def memory_contents(memory):
 
 
 async def learning(body, store, sessions, provider, root):
+    call_start = len(provider.calls)
     memory = MemoryFS.for_agent(root / "memory", sessions.agent.id)
     seed_memory(memory, body["memory_files"])
     before = memory_contents(memory)
     clock = FixedClock(body["now"])
-    service = MemoryLearningService(
+    service = ObservedLearning(
         LearningRepository(EpisodeRepository(store, sessions.agent.id)),
         ReflectionService(
             ReflectionRepository(store, sessions.agent.id),
@@ -185,12 +195,15 @@ async def learning(body, store, sessions, provider, root):
         for path, text in sorted(after.items())
         if text != before.get(path)
     ]
-    decisions = [
+    model_decisions = [
         call["parsed"]
-        for call in provider.calls
+        for call in provider.calls[call_start:]
         if call.get("schema") in {"FileDecision", "ExistingFileDecision"} and call.get("parsed")
     ]
+    decisions = getattr(service, "observed_decisions", [])
     action = changes[0]["action"] if changes else (decisions[0]["action"] if decisions else "no_op")
+    if not changes and action in {"create", "update"}:
+        action = "no_op"
     if result["outcome"] != "completed":
         action = "__error__"
     return {
@@ -198,6 +211,7 @@ async def learning(body, store, sessions, provider, root):
         "target_path": changes[0]["path"] if changes else None,
         "changes": changes,
         "decisions": decisions,
+        "model_decisions": model_decisions,
         "outcome": result["outcome"],
         "error_code": result.get("error_code"),
         "receipts": job["operations"],

@@ -14,6 +14,10 @@ LEARN_EXTRACT 区分用户资料与 relationship 候选：后者是有用户证�
 
 ## 机制流程
 
+`MemoryLearningService.propose()` 的 Selection 附带 `_selection_previews()` 生成的有界导航片段：跳过索引，按目录清单顺序最多读取四个现有主题，每份至多 768 UTF-8 字节、总计至多 3072 字节，并先脱敏。片段只帮助识别主题归属，不能作为新的用户证据；实际 Consolidation 仍通过 `read_comparison()` 重新读取完整目标、校验精确片段与 hash，不写入选择阶段的片段。总请求仍受原输入预算限制。
+
+Core 已在 Selection 的 `core` 中提供，模型若在比较 `paths` 中重复列出固定 Core 名，宿主跳过这项重复读取；未知 Deferred 路径仍由 `read_comparison()` 拒绝，不开放任意路径或额外写权限。选择提示区分同一项目更新、无关新主题和一般作息偏好，整合提示要求真正 no-op 时返回 no_op，而非空 old_text 的 update。验证见 `tests/test_learning.py::test_core_comparison_path_is_already_available` 与 `test_selection_previews_are_bounded_and_keep_topic_identity`。
+
 1. 在回答后的维护中发现尚未学习的真实对话；明确记住、决定或纠正可以优先处理，其余按批积累。
 2. 提取并验证用户证据，读取现有记忆，合并重复候选并制定有限修改。
 3. 按宿主自动学习策略发布允许的内容，不改角色设定；手动反思的审批边界不变。
