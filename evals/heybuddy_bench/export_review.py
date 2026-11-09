@@ -1,6 +1,8 @@
 """Export a human review queue; refuse to overwrite completed reviewer fields."""
 
+import argparse
 import csv
+import json
 from pathlib import Path
 
 from personal_agent.evaluation.heybuddy_bench.dataset import load_inputs, read_rows
@@ -8,19 +10,21 @@ from personal_agent.evaluation.heybuddy_bench.dataset import load_inputs, read_r
 ROOT = Path(__file__).resolve().parent
 
 
-def export():
-    path = ROOT / "human_review.csv"
+def export(directory: Path = ROOT):
+    path = directory / "human_review.csv"
     if path.exists():
         with path.open(encoding="utf-8-sig", newline="") as stream:
             if any(r.get("reviewer") for r in csv.DictReader(stream)):
                 raise ValueError("Preserve existing human review; choose a separate export")
-    gold = {r["case_id"]: r for r in read_rows(ROOT / "gold.jsonl")}
+    gold = {r["case_id"]: r for r in read_rows(directory / "gold.jsonl")}
     fields = [
         "case_id",
         "track",
         "category",
         "input_excerpt",
         "gold_action",
+        "acceptable_actions",
+        "state_assertions",
         "evidence_present",
         "unambiguous",
         "natural_language",
@@ -31,7 +35,8 @@ def export():
     with path.open("w", encoding="utf-8-sig", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
-        for row in load_inputs(ROOT):
+        cases = load_inputs(directory)
+        for row in cases:
             body, track = row["input"], row["track"]
             excerpt = (
                 body["current_message"]
@@ -52,10 +57,20 @@ def export():
                     category=row["category"],
                     input_excerpt=excerpt[:400],
                     gold_action=gold[row["case_id"]]["gold"]["action"],
+                    acceptable_actions=json.dumps(
+                        gold[row["case_id"]]["gold"].get("acceptable_actions", []),
+                        ensure_ascii=False,
+                    ),
+                    state_assertions=json.dumps(
+                        gold[row["case_id"]]["gold"].get("fact_assertions", []),
+                        ensure_ascii=False,
+                    ),
                 )
             )
-    print("Exported 150 review rows")
+    print(f"Exported {len(cases)} review rows; full context remains in inputs.jsonl/gold.jsonl")
 
 
 if __name__ == "__main__":
-    export()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dataset", type=Path, default=ROOT)
+    export(parser.parse_args().dataset)

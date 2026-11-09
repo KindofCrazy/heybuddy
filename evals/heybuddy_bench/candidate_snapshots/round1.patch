@@ -1,0 +1,134 @@
+--- a/src/personal_agent/learning/service.py
++++ b/src/personal_agent/learning/service.py
+@@ -1,6 +1,7 @@
+ """Extraction-first learning reuses Reflection model/evidence validation and exact-span writer."""
+ 
+ import asyncio
++import re
+ from collections.abc import AsyncIterator, Awaitable, Callable
+ from contextlib import asynccontextmanager
+ from datetime import datetime, timedelta
+@@ -60,6 +61,9 @@
+         " 一次安排中对玩笑或措辞的澄清，通常属于当次 Episode，不单独形成长期用词规则。"
+         "只在它更正了已存的持续事实或用户明确表达可复用偏好时保留，不能为了防止一切误解"
+         "而保存每次解释。用户对某个观点的认同只覆盖该观点，不覆盖同条回复里的其他偏好。"
++        " 对已保存事项的明确取消、更正和状态变更是可复用更新，即使只针对一次安排。"
++        "existing_memory_navigation 仅帮助识别旧事项，不是新用户证据；"
++        "只引用本次 history 中真实用户原话，逐字复制来源 ID，保留未改变的其他事项。"
+     )
+ )
+ LEARNING_BASE = memory_rules("ephemeral one-off context")
+@@ -87,6 +91,8 @@
+         "a generic filename or having only one existing project is not a reason to merge unrelated "
+         "topics. General recurring work routines belong in human.md; project-specific facts "
+         "belong with that project. Create a separate topic for an unrelated ongoing project."
++        " If a supplied file already contains the same entity and fact being corrected, update "
++        "that file, even when its filename is generic; do not create a competing current truth."
+     )
+ )
+ LEARN_CONSOLIDATE = (
+@@ -111,6 +117,8 @@
+         "name/description Frontmatter，不能只有理由而正文为空。只输出一个合法 JSON 对象，"
+         "字符串中的换行使用 JSON 转义，不输出 Markdown 围栏。"
+         " JSON 只能含 action、old_text、new_text、reason，不能附加 type、schema 或格式包装。"
++        ' 返回实例形状为 {"action":"所选动作","old_text":"原文片段",'
++        '"new_text":"替换正文","reason":"非空理由"}，reason 是必填字段。'
+     )
+ )
+ 
+@@ -256,10 +264,16 @@
+ 
+     async def propose(self, records: list, hints: list) -> list[PlanItem]:
+         evidence = self.evidence(records)
++        navigation = self._correction_navigation(evidence)
+         extraction = await self.model.ask(
+             Extraction,
+             LEARN_EXTRACT,
+-            {"history": evidence, "episode_hints": hints, "as_of": self.clock.now().isoformat()},
++            {
++                "history": evidence,
++                "episode_hints": hints,
++                "as_of": self.clock.now().isoformat(),
++                **({"existing_memory_navigation": navigation} if navigation else {}),
++            },
+         )
+         verify_candidates(extraction, {(cid, s.run_id): s.turn for cid, s in records})
+         if not extraction.candidates:
+@@ -350,6 +364,27 @@
+                     raise ReflectionError("learning_relationship_header_required")
+             items.append(item)
+         return items
++
++    def _correction_navigation(self, evidence: list[dict]) -> dict[str, str]:
++        text = "\n".join(
++            message.get("text", "")
++            for run in evidence
++            for message in run["messages"]
++            if message.get("role") == "user"
++        )
++        if not re.search(
++            r"取消|不再|更正|改为|改成|而不是|"
++            r"\b(?:cancel(?:led|ed)?|correct(?:ion)?|instead|no longer)\b",
++            text,
++            re.I,
++        ):
++            return {}
++        # Navigation only; evidence verification still accepts the supplied Journal alone.
++        previews = self._selection_previews(catalogue(self.memory))
++        selected = dict(list(previews.items())[:2])
++        human = self.memory.read().blocks["human.md"].encode()[:768]
++        selected["human.md"] = redact(human.decode("utf-8", errors="ignore"))
++        return selected
+ 
+     def _selection_previews(self, catalog: list[dict]) -> dict[str, str]:
+         """At most four small existing-topic fragments; full comparison is still read afresh."""
+--- a/src/personal_agent/organization/router.py
++++ b/src/personal_agent/organization/router.py
+@@ -52,6 +52,17 @@
+             reverse=True,
+         )
+         unique = bool(ranked and ranked[0][0] and (len(ranked) == 1 or ranked[0][0] > ranked[1][0]))
++        competing_state = unique and any(
++            thread.id != ranked[0][1].id
++            and thread.current_state
++            and not thread.dirty
++            and any(
++                (len(term) >= 4 or re.fullmatch(r"[\u4e00-\u9fff]{2,}", term))
++                and term.casefold() in thread.current_state.casefold()
++                for term in terms
++            )
++            for thread in by_id.values()
++        )
+         self.metrics = {"extra_requests": 0, "reason": reason}
+         # A UUID/reference is trusted only after scope validation by the repository.
+         explicit = re.search(r"(?:thread:|线程\s*)([0-9a-fA-F-]{36})", text)
+@@ -63,7 +74,15 @@
+         elif SOCIAL.fullmatch(text.strip()) and (active is None or not text.startswith("谢谢")):
+             target = next((t for t in by_id.values() if t.title == "日常交流"), None)
+             reason = "chat"
+-        elif unique and (RESUME.search(text) or not active or ranked[0][1].id != active.id):
++        elif (
++            unique
++            and (
++                not self.model_selection
++                or ranked[0][1].title.casefold() in text.casefold()
++                or not competing_state
++            )
++            and (RESUME.search(text) or not active or ranked[0][1].id != active.id)
++        ):
+             target, reason = ranked[0][1], "title_match"
+         elif CHANGE.search(text) and not self.defer_weak_rules:
+             target, reason = None, "new_topic"
+--- a/src/personal_agent/proactive/attention.py
++++ b/src/personal_agent/proactive/attention.py
+@@ -23,6 +23,10 @@
+ 只有真实相关的新进展、已被提醒覆盖、条件不成立或事项终结，才据此撤下原定跟进。
+ 只输出 action、proposal_ids、reason、next_review_at 这些 schema 字段，
+ 不输出 type、schema 或格式包装。
++返回的是 schema 的实例，不是 schema 本身。实例形状：
++{"action":"所选动作","proposal_ids":["给定候选ID"],"reason":"非空理由","next_review_at":null}
++只有 defer 才填写未来 next_review_at；其他动作填 null。发送窗口必须以用户明确偏好为准：
++用户明确要求现在检查且事项未终结时，不要因为截止时间较晚就忽略该检查窗口。
+ """
+ 
+ 

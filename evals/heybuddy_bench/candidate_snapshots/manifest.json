@@ -1,0 +1,60 @@
+{
+  "round1": {
+    "base_commit": "b2a954a",
+    "production_code_hash": "b817f916722241613425932728b31fe9e378695c033baf88b119ebaeb0444ae6",
+    "normalized_production_code_hash": "130edd1a53e6dfc8613b83e3911d04ce63a191e0f21cbb9299dda1c0b701d505",
+    "changed_file_endings": {
+      "learning/service.py": "CRLF",
+      "organization/router.py": "CRLF",
+      "proactive/attention.py": "LF"
+    },
+    "patch_sha256": "8151322c0164bb814d813cdcd9e5000e588a531af7a5c7cc542b97252a6be618"
+  },
+  "round2": {
+    "base_commit": "b2a954a",
+    "production_code_hash": "8a327dce9a0771aa7eb31377b333051da24af5a2dc132f5f2314c6f85f856994",
+    "normalized_production_code_hash": "648b25fee9a5f3d057d7f79542d1ba2cfd0c072a530267a617d3ebcc211dff75",
+    "changed_file_endings": {
+      "learning/service.py": "CRLF",
+      "organization/router.py": "CRLF",
+      "proactive/attention.py": "LF"
+    },
+    "patch_sha256": "d3fe31fa8a84d0bac060f4cc6d19cd3daee3872f37d4eb6275058642d09eab2d"
+  },
+  "round3": {
+    "base_commit": "b2a954a",
+    "production_code_hash": "b695bcd96520db2331c661f75f965ef5fb1116e894af2a62187752ffa14869e6",
+    "normalized_production_code_hash": "32865d8c3ea66ff2cefb222e6cae5ce6a01767e31815be942c3300e6ea53ae16",
+    "changed_file_endings": {
+      "learning/models.py": "CRLF",
+      "learning/service.py": "CRLF",
+      "organization/router.py": "CRLF",
+      "proactive/attention.py": "LF"
+    },
+    "patch_sha256": "2633ae19cbd4095e156b9f7a76528e94036ed2042cc3bc61f3d79ab52213ac1e"
+  },
+  "round4": {
+    "base_commit": "b2a954a",
+    "production_code_hash": "47d70399db992ef6c577348171e4dfc721746a9f9a29e52d31298d8ebdb9054e",
+    "normalized_production_code_hash": "98d81ddf79021252003d388e1f7ba8fa7756aca77f5b785c4bf9453aeff7503b",
+    "changed_file_endings": {
+      "learning/models.py": "CRLF",
+      "learning/service.py": "CRLF",
+      "organization/router.py": "CRLF",
+      "proactive/attention.py": "LF"
+    },
+    "patch_sha256": "2798a155356ea0ca47b3bb2ac19c87fd69a2626f3a9d5cf1974ea4ca270df6f6"
+  },
+  "final": {
+    "base_commit": "b2a954a",
+    "production_code_hash": "8fccb334a39c27d34be2b61c2a7d1e3db7a37dac4d6b9654f5dc9b494f97c272",
+    "normalized_production_code_hash": "1185e166403c4c68bce4d7387e0539c6c1095d64430a285c3b75dd7f2cda77b7",
+    "changed_file_endings": {
+      "learning/models.py": "CRLF",
+      "learning/service.py": "CRLF",
+      "organization/router.py": "CRLF",
+      "proactive/attention.py": "LF"
+    },
+    "patch_sha256": "af05e326e7412d2830dce11c3b89e6874e7adc8c1ef4f7e0be5e1e12f8c966c5"
+  }
+}

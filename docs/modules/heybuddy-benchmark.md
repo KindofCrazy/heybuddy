@@ -2,6 +2,16 @@
 
 ## 职责与架构组成
 
+后续循环入口为 `evaluation/heybuddy_bench/cycle.py`，方案见 `evals/heybuddy_bench/ITERATION_PLAN.md`。它保留 v0.2 与中间修订，当前运行 v0.4 主集及单独 30 题挑战集。`state_scoring.py::score_state()` 在不改变旧评分默认行为的前提下，通过 `aggregate(..., score_fn=...)` 增加多文件状态断言；主分要求合法目标、新值覆盖、指定旧原文移除与无关文件保护。这些是有边界的确定性检查，不是通用语义判官。
+
+当前迭代版为 `v0_4` 与 `v0_4_challenge`。`fact_scoring.py` 在推理结束后使用输入旧状态与真实文件变化重建最终状态，检查跨文件保护条件；`temporal_scoring.py` 区分当前不联系和允许未来复查，按 Host 实际保存时间验证 DND 窗口。公开 LongMemEval 旧状态规范为主题记忆，原引文/source ID/原生 Gold 留在 provenance，最新用户原话不变。`rescore_cycle.py` 只有在全部任务输入相等时才允许重算，v0.4 的八个输入变化必须重新推理。阶段按代码、数据和 scorer 分别冻结；`report_cycle.py` 只导出无正文汇总，Smoke 不导出能力分数。
+
+`cycle --phase NAME --revision v0_3_1 --part development --live` 显式调用真实模型；baseline 不接受 --live。代码与数据分别按 phase 冻结。所有阶段共用原冻结预算协议的账本，结转此前 ¥1.875786；本轮新增上限 ¥20，总账上限 ¥21.875786。`carry_budget()` 拒绝旧账本哈希变化、未结算请求、缺失 usage 或静默改价。数据版本允许另行冻结而不重置累计预算；输出存在则拒绝覆盖。`reserved` 只运行挑战集后五题/Track，最终代码冻结后才执行。原始正文和中间状态仅存忽略目录，公开汇总保留逐题阶段和 Prompt 哈希。
+
+复现当前版本使用 `--revision v0_4`。本地没有历史账本时，可从已公开且经同一 SHA-256 校验的 `v0_4/budget_start.json` 结转历史计数，既不会寻找别处的私人数据，也不会获得额外预算。挑战集保留的是相关场景变体，不是独立第三方盲测；同一编码 Agent 编写题目和代码的偏差需独立人工审核。
+
+`cycle --part diagnostic` 只运行 `review_probes/` 四道冻结的事后归因题；`selected_cases()` 核验其输入与 Gold 哈希，`summarize()` 在 Provider 关闭后单独生成 diagnostic 组，不能进入 primary / challenge 分母。`report_cycle.py` 导出各阶段逐题结果、调用阶段、错误、目标与 Prompt 哈希，汇总所有真实阶段费用并减去历史结转。最终观察与评分误判审计见 [本轮报告](../../evals/heybuddy_bench/ITERATION_REPORT.md) 和 `results/cycle_20261108_review.csv`；原始正文仍只在忽略目录。
+
 `evaluation/heybuddy_bench/` 为三个决策点提供隔离运行器，直接调用 Router、Learning、Proactive 的生产实现。数据在 `evals/heybuddy_bench/`：`inputs.jsonl` 是输入，`gold.jsonl` 是隔离标签，`manifest.json` 固定哈希。`dataset.py` 校验；`adapters.py` 建立临时状态并调用生产模块；`baselines.py` 提供三个简单确定性对照；`runner.py` 控制串行执行、临时目录、调用预算与费用；`scoring.py` 计算动作/目标指标；`__main__.py` 提供显式离线或 live 入口。
 
 每题是独立快照，输入里已经包含必要历史与候选状态。数据中的 `episode` 不表示后台 Organizer 已运行。Memory 使用原生 `learn(run_ids=...)`；Proactive 使用原生决策分支，上游 Scout 提取效果不在这个 Track 内。当前默认库 Router 仍关闭模型选择，Benchmark 显式开启一次模型辅助选择，弱规则仍按生产行为优先。
@@ -14,7 +24,7 @@
 4. Learning 的 `adapters.learning()` 初始化临时 `MemoryFS`，通过原 MemoryFS/index API 写入初始 Core 与主题，补齐旧数据缺失的中性 Frontmatter。`seed_run()` 保留来源时间和 user/assistant 角色，合法结束。`MemoryLearningService.learn(run_ids=...)` 经过生产 Extraction、Targets、逐文件 FileDecision、证据/唯一片段/hash/隐私校验、原子文件发布与 SQLite 回执。Runner 读取真实前后文件差异，不制造 `facts` 回答，不批准手动 Reflection 计划。
 5. Proactive 的 `adapters.proactive()` 用输入证据建立 Journal 来源，初始化 Repository 水位，再载入已有候选快照。`ProactiveRuntime.run()` 执行 Gate → 到期候选 → `AttentionEngine.evaluate()` → Activity/Revision/CAS 复核 → Shadow 审计。已完成、取消、covered、安静窗口、无新来源的已通知事项可以在模型调用前沉默；不会把这些情况当作模型语义成绩。Composer 关闭，`outbound=None`，不构造 Sender 或 Scheduler。
 6. 所有模型调用经 `runner.Meter.generate()`，要求空工具列表，调用前使用已有 `evaluation.runner.Budget.reserve()` 预留请求/估算 Token/费用，记录 Prompt 哈希和结构化可见决定。原生子模块仍执行自身输入、输出、超时与来源校验；Provider 仅由 live 入口显式构造，SDK `max_retries=0`。
-7. 每道题完成后立即追加并 flush `predictions.jsonl`。全部推理结束、Provider 关闭后，非 Smoke 模式才读取 Gold 并运行 `scoring.aggregate()`，输出 `report.json`。Smoke 不生成能力分数。缺失/重复预测、非法动作、执行错误不会被筛掉；未完成或失败退出码为非零。
+7. 每道题完成后立即追加并 flush `predictions.jsonl`。全部推理结束、Provider 关闭后，非 Smoke 模式读取 Gold 并运行 `scoring.aggregate()`，输出 `report.json`；此前结构校验读过 Gold，但不传给任务适配器。Smoke 不生成能力分数。缺失/重复预测、非法动作、执行错误不会被筛掉；未完成或失败退出码为非零。
 
 ## 异常与边界
 

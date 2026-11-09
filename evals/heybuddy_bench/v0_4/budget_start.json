@@ -1,0 +1,13 @@
+{
+  "protocol_hash": "f2ea2767c2a95bb63e9cd891e551b88180fbabca58a392404adcb95c8bc8010a",
+  "currency": "CNY",
+  "requests": 565,
+  "input_tokens": 723225,
+  "output_tokens": 53667,
+  "reasoning_tokens": 0,
+  "pending": false,
+  "usage_complete": true,
+  "reserved_tokens": 776892,
+  "reserved_cost_cny": 1.875786,
+  "cost_cny_upper_estimate": 1.875786
+}

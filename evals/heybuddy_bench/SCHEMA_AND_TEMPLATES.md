@@ -1,5 +1,19 @@
 # Schema、Ground Truth 与评分协议 v0.2
 
+本页下文保留 v0.2 协议。当前 v0.4 仍使用相同输入接口，新增状态评分扩展如下；运行命令和完整局限见 [v0.4 README](v0_4/README.md) 及 [本轮报告](ITERATION_REPORT.md)。
+
+| v0.4 Gold / manifest 扩展 | 含义 |
+|---|---|
+| `storage_alternatives` | 预先声明动作与已有目标的合理替代存储，不能从候选输出反推 |
+| `optional_extra_paths` | 允许有证据的额外文件修改，其余修改仍扣范围分 |
+| `preserve_terms`、`fact_assertions` | 必须保留的指定内容及跨文件条件；后者按 `paths`、`all_any`、`none_exact` 在旧状态与真实 diff 重建结果上检查 |
+| `review_not_before` | 在原生未来时间校验之外检查延后复查的最早允许时刻 |
+| `total`、评分器 SHA-256 | 校验实际总数，分别冻结 state / fact / temporal scorer |
+
+主分由 `cycle.summarize()` 选择版本化 scorer：Memory 合法目标、新值别名、指定旧原文移除和声明的保护条件必须同时通过；Proactive defer 检查实际持久化时间与目标。原动作分仍保留。跨文件条件不是完整语义检查，词面否定、额外合法学习和同义词仍可能误判，已发现实例进入复核队列，不能据最终保留输出静默改分。
+
+主集仍每 Track 50 题；另外 30 题为相关的开发/保留变体，4 道事后探针单独报告。v0.4 的 MAB 四题已被个人知识题替换；LongMemEval 旧状态为规范主题笔记；TIAGE 接受更宽的闲聊解释；未来约定与 DND 允许满足真实时间条件的内部 defer。旧 source ID、native_gold 与适配记录均保留。
+
 一个 case 是独立决策点。`inputs.jsonl` 每行包含 `case_id`、`track`、`source`、`category`、`scenario_group`、`review_status`、`input`；只有 `input` 进入生产适配器。`gold.jsonl` 按相同 ID 保存 `gold`、可选 `provenance` 和审核说明。公开 `source_id`、原生标签、`has_answer`、TriggerBench `variant/function/ground_truth` 和审核信息均不进入模型。
 
 `manifest.json` 固定两份数据与公开摘录的 SHA-256。冻结 JSONL 显式写入 LF，Git 属性也固定 LF，防止 Windows/Unix checkout 改变哈希。校验使用显式异常，不使用可被 `python -O` 移除的 assert。拒绝重复/缺失 ID、非法动作、未来证据、无时区时间、跨目标引用、非唯一 update 片段、路径穿越、缺失来源与哈希变化。

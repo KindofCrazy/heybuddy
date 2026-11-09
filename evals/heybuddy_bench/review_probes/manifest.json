@@ -1,0 +1,8 @@
+{
+  "total": 4,
+  "purpose": "Attribution only; excluded from headline scores",
+  "sha256": {
+    "inputs.jsonl": "6c6fde46eb2f340ada86eb089f49ffee09c0a7d62a4626cf21ff7f7a88768de3",
+    "gold.jsonl": "1edf4ba93af88a7887717d91524a04f368bb39800fdcef99c67c58a1273f3e0a"
+  }
+}

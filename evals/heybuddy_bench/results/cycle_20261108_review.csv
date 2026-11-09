@@ -1,0 +1,23 @@
+case_id,track,classification,independent_review,summary,next_action
+custom_rt_010,thread_routing,agent_fixed,pending,Partial title shortcut overrode competing task state,Keep competition and Runtime safety regressions
+custom_rt_008,thread_routing,agent_semantics,pending,Final run selected new rather than annotated route,Review referent and task boundary on full input
+custom_rt_034,thread_routing,agent_semantics,pending,Repeated final run selected new on short message,Review social versus task intent without adding case-specific rules
+custom_rt_037,thread_routing,agent_semantics,pending,Final run selected new rather than annotated route,Review full conversation evidence
+custom_ml_025,memory_learning,policy_ambiguity,pending,Stored qualified unverified report rather than review and retained uncertainty,Define whether qualified project uncertainty is learnable
+extra_ml_001,memory_learning,agent_target_selection,pending,Attempted persona target for denial and production guard rejected write,Improve target selection without weakening relationship guard
+extra_ml_008,memory_learning,policy_ambiguity,pending,Kept original date and added that delay rumor is unconfirmed,Decide review versus qualified update policy before next freeze
+public_011,memory_learning,scorer_scope,pending,Correct friend update plus evidenced travel preference fails extra Core path protection,Review preference durability and acceptable extra learning
+public_012,memory_learning,agent_candidate_granularity,pending,Uncertain future idea caused confirmed hours update to be reviewed,Separate confidence scopes without allowing uncertain auto-write
+public_013,memory_learning,scorer_scope_and_duplication,pending,Correct bike update plus separate trip note fails declared file scope,Review legitimate extra topic versus duplication
+public_022,proactive_decision,source_policy_fit,pending,Old and final models choose silent on annotated notify case,Independently assess current unmet need and timing
+public_024,proactive_decision,source_policy_fit,pending,Transfer or busy state leads to silent despite notify label,Review interruption preference and expected benefit
+public_025,proactive_decision,source_policy_fit,pending,Sensitive waiting and availability lead to silent despite notify label,Review explicit policy rather than copying model prediction
+public_026,proactive_decision,source_policy_fit,pending,Finished work or session ending leads to silent despite notify label,Review whether there is an unfinished follow-up
+public_027,proactive_decision,source_policy_fit,pending,No clear future check commitment leads to silent despite notify label,Review source adaptation and omitted benefit
+public_028,proactive_decision,timing_ambiguity,pending,Final Agent defers unfinished review rather than notifying now,Review recovery timing; truncation only removes inserted math problem tail
+public_030,proactive_decision,agent_regression_against_frozen_label,pending,Repeated final run notifies on frozen silent case,Keep visible false interruption and assess user preference independently
+custom_pd_010,proactive_decision,policy_ambiguity,pending,Repeated final run silent rather than proposing authorization task,Clarify when authorization request itself is timely
+challenge_pd_003,proactive_decision,agent_fixed,pending,Future check now persists defer instead of clearing review,Retain future-time persistence checks
+challenge_pd_004,proactive_decision,agent_variance,pending,First final run silent but second run passes,Review narrow timing and task proposal boundary
+challenge_pd_007,proactive_decision,agent_fixed,pending,Reserved future check preserved by defer,Do not tune on reserved output
+challenge_ml_007,memory_learning,scorer_alias_false_negative,pending,Correct scoped prohibition expressed with unlisted synonym,Preserve frozen score; revise semantic assertions only in a new frozen version

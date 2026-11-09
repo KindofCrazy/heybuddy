@@ -1,6 +1,7 @@
 """Extraction-first learning reuses Reflection model/evidence validation and exact-span writer."""
 
 import asyncio
+import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -60,6 +61,11 @@ LEARN_EXTRACT = (
         " 一次安排中对玩笑或措辞的澄清，通常属于当次 Episode，不单独形成长期用词规则。"
         "只在它更正了已存的持续事实或用户明确表达可复用偏好时保留，不能为了防止一切误解"
         "而保存每次解释。用户对某个观点的认同只覆盖该观点，不覆盖同条回复里的其他偏好。"
+        " 对已保存事项的明确取消、更正和状态变更是可复用更新，即使只针对一次安排。"
+        "existing_memory_navigation 仅帮助识别旧事项，不是新用户证据；"
+        "只引用本次 history 中真实用户原话，逐字复制来源 ID，保留未改变的其他事项。"
+        " 更正必须带来新的持续信息：对进行中事项重申尚未完成通常不必重复写入；"
+        "否认助手一次猜测不自动形成长期偏好，除非更正了已存错误或明确要求以后遵守。"
     )
 )
 LEARNING_BASE = memory_rules("ephemeral one-off context")
@@ -87,6 +93,12 @@ LEARN_SELECT = (
         "a generic filename or having only one existing project is not a reason to merge unrelated "
         "topics. General recurring work routines belong in human.md; project-specific facts "
         "belong with that project. Create a separate topic for an unrelated ongoing project."
+        " If a supplied file already contains the same entity and fact being corrected, update "
+        "that file, even when its filename is generic; do not create a competing current truth."
+        " Catalogue and memory are this same user's prior stored notes, not third-party examples; "
+        "a neutral filename does not change ownership. "
+        "A comparison-only path belongs only in paths, never in a group with candidate_ids=[]. "
+        "Every group needs at least one actual candidate ID."
     )
 )
 LEARN_CONSOLIDATE = (
@@ -111,6 +123,10 @@ LEARN_CONSOLIDATE = (
         "name/description Frontmatter，不能只有理由而正文为空。只输出一个合法 JSON 对象，"
         "字符串中的换行使用 JSON 转义，不输出 Markdown 围栏。"
         " JSON 只能含 action、old_text、new_text、reason，不能附加 type、schema 或格式包装。"
+        ' 返回实例形状为 {"action":"所选动作","old_text":"原文片段",'
+        '"new_text":"替换正文","reason":"非空理由"}，reason 是必填字段。'
+        " 旧记录已表达同一进行中状态、新候选只是重申尚未完成时用 no_op，"
+        "不要为同义改写、日期日志或否认一次猜测而增加长期记录。"
     )
 )
 
@@ -256,10 +272,16 @@ class MemoryLearningService:
 
     async def propose(self, records: list, hints: list) -> list[PlanItem]:
         evidence = self.evidence(records)
+        navigation = self._correction_navigation(evidence)
         extraction = await self.model.ask(
             Extraction,
             LEARN_EXTRACT,
-            {"history": evidence, "episode_hints": hints, "as_of": self.clock.now().isoformat()},
+            {
+                "history": evidence,
+                "episode_hints": hints,
+                "as_of": self.clock.now().isoformat(),
+                **({"existing_memory_navigation": navigation} if navigation else {}),
+            },
         )
         verify_candidates(extraction, {(cid, s.run_id): s.turn for cid, s in records})
         if not extraction.candidates:
@@ -269,10 +291,13 @@ class MemoryLearningService:
             dict(candidate_id=n, **c.model_dump()) for n, c in enumerate(extraction.candidates, 1)
         ]
         core = self.memory.read().blocks
+        selection_schema = Targets.model_json_schema()
+        selection_schema["properties"]["groups"]["maxItems"] = self.policy.max_files
         selection = await self.model.ask(
             Targets,
             LEARN_SELECT,
             {
+                "response_schema": selection_schema,
                 "candidates": candidates,
                 "catalogue": catalog,
                 "file_previews": self._selection_previews(catalog),
@@ -351,6 +376,85 @@ class MemoryLearningService:
             items.append(item)
         return items
 
+    def _correction_navigation(self, evidence: list[dict]) -> dict[str, str]:
+        text = "\n".join(
+            message.get("text", "")
+            for run in evidence
+            for message in run["messages"]
+            if message.get("role") == "user"
+        )
+        correction = bool(
+            re.search(
+                r"取消|不再|更正|改为|改成|而不是|"
+                r"\b(?:cancel(?:led|ed)?|correct(?:ion)?|instead|no longer)\b",
+                text,
+                re.I,
+            )
+        )
+        stop = {
+            "have",
+            "been",
+            "from",
+            "your",
+            "with",
+            "this",
+            "that",
+            "there",
+            "some",
+            "what",
+            "about",
+            "when",
+            "would",
+            "could",
+            "please",
+            "actually",
+            "recently",
+            "currently",
+            "still",
+            "user",
+            "notes",
+            "project",
+            "today",
+        }
+        terms = set(re.findall(r"[a-z][a-z0-9_-]{3,}", text[-4000:].casefold())) - stop
+        for phrase in re.findall(r"[\u4e00-\u9fff]{2,}", text[-4000:]):
+            terms.update(
+                phrase[n : n + 2]
+                for n in range(len(phrase) - 1)
+                if phrase[n : n + 2]
+                not in {
+                    "用户",
+                    "现在",
+                    "项目",
+                    "这个",
+                    "我们",
+                    "已经",
+                    "正在",
+                    "可以",
+                    "今天",
+                    "完成",
+                    "记录",
+                    "信息",
+                }
+            )
+
+        def relevance(value: str) -> int:
+            return sum(len(term) for term in terms if term in value.casefold())
+
+        # Navigation only; evidence verification still accepts the supplied Journal alone.
+        catalog = sorted(catalogue(self.memory), key=lambda row: relevance(str(row)), reverse=True)
+        previews = self._selection_previews(catalog)
+        ranked = sorted(previews.items(), key=lambda pair: relevance(pair[1]), reverse=True)
+        selected = {
+            path: fragment.encode()[:512].decode("utf-8", errors="ignore")
+            for path, fragment in ranked[:2]
+            if correction or relevance(fragment)
+        }
+        human = self.memory.read().blocks["human.md"]
+        if correction or relevance(human):
+            selected["human.md"] = redact(human).encode()[:512].decode("utf-8", errors="ignore")
+        return selected
+
     def _selection_previews(self, catalog: list[dict]) -> dict[str, str]:
         """At most four small existing-topic fragments; full comparison is still read afresh."""
         previews = {}
@@ -360,9 +464,11 @@ class MemoryLearningService:
                 path = row["path"]
                 if path.endswith("MEMORY.md"):
                     continue
-                raw = self.memory.raw(self.memory.path(path))
+                raw = redact(
+                    self.memory.raw(self.memory.path(path)).decode("utf-8", errors="ignore")
+                ).encode()
                 fragment = raw[: min(768, remaining)]
-                previews[path] = redact(fragment.decode("utf-8", errors="ignore"))
+                previews[path] = fragment.decode("utf-8", errors="ignore")
                 remaining -= len(fragment)
                 if len(previews) == 4 or remaining == 0:
                     break

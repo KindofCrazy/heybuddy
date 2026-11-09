@@ -191,6 +191,53 @@ async def test_short_unrelated_message_uses_model_but_ack_does_not(routed):
     assert provider.requests == []
 
 
+async def test_partial_title_collision_uses_semantic_selection(routed):
+    runtime, _ = routed
+    repo = repository(runtime)
+    inventory = repo.create("Machine inventory")
+    vision = repo.create("Vision training")
+    completed(repo, vision, "Waiting for augmentation compute")
+    completed(repo, inventory, "Ordering spare equipment")
+    with repo.store._transaction() as db:
+        db.execute(
+            "UPDATE topic_threads SET payload=?,dirty=0 WHERE id=?",
+            (
+                vision.model_copy(
+                    update={"current_state": "Waiting for augmentation compute"}
+                ).model_dump_json(),
+                vision.id,
+            ),
+        )
+    text = "The machine slot is available; resume the augmentation experiments."
+    run = repo.store.begin_run(repo.conversation_id, TextMessage(role="user", text=text))
+    provider = FakeProvider(
+        ModelResponse(text=json.dumps(dict(action="select", thread_id=vision.id)))
+    )
+    router = ThreadRouter(repo, model_selection=True)
+    assert (await router.route(run, text, provider)).id == vision.id
+    assert router.metrics["reason"] == "model_select" and len(provider.requests) == 1
+
+
+async def test_weak_prefix_with_two_matching_states_is_not_automatic_continuation(routed):
+    runtime, _ = routed
+    repo = repository(runtime)
+    first, second = repo.create("活动材料"), repo.create("课程材料")
+    for thread in (first, second):
+        completed(repo, thread, "在等新版本")
+        with repo.store._transaction() as db:
+            payload = thread.model_copy(update={"current_state": "有一个待确认的新版本"})
+            db.execute(
+                "UPDATE topic_threads SET payload=?,dirty=0 WHERE id=?",
+                (payload.model_dump_json(), thread.id),
+            )
+    text = "那份材料的新版本确认了吗？"
+    run = repo.store.begin_run(repo.conversation_id, TextMessage(role="user", text=text))
+    provider = FakeProvider(ModelResponse(text='{"action":"clarify"}'))
+    router = ThreadRouter(repo, model_selection=True)
+    assert (await router.route(run, text, provider)).id == second.id
+    assert router.metrics["ambiguous"] and len(provider.requests) == 1
+
+
 @pytest.mark.parametrize("answer", ['{"action":"select","thread_id":"invented"}', "invalid"])
 async def test_invalid_router_decision_keeps_current_thread_without_retry(routed, answer):
     runtime, _ = routed
@@ -204,6 +251,28 @@ async def test_invalid_router_decision_keeps_current_thread_without_retry(routed
     router = ThreadRouter(repo, model_selection=True)
     assert (await router.route(run, "ambiguous input", provider)).id == active.id
     assert router.metrics["reason"] == "selection_unavailable" and len(provider.requests) == 1
+    assert router.metrics["ambiguous"]
+
+
+@pytest.mark.parametrize("answer", ["invalid", '{"action":"select","thread_id":"unknown"}'])
+async def test_unavailable_route_blocks_tools_in_the_actual_runtime(routed, answer):
+    runtime, provider = routed
+    repo = repository(runtime)
+    active = repo.create("alpha")
+    completed(repo, active, "past")
+    runtime.routing_model_selection = True
+    provider.responses += [
+        ModelResponse(text=answer),
+        ModelResponse(tool_calls=[add_call("deny-on-unavailable")]),
+        ModelResponse(text="需要先确认属于哪个讨论。"),
+    ]
+    result = await runtime.run("请处理一个没有明确讨论归属的复杂请求", frozenset())
+    assert result.status == "completed"
+    assert provider.tools[1:] == [[], []]
+    denied = next(m for m in provider.requests[-1] if m.role == "tool")
+    assert not denied.result.ok and denied.result.error.code == "routing_ambiguous"
+    assert repo.active().id == active.id
+    await runtime.close()
 
 
 async def test_router_cancellation_does_not_bind_or_execute(routed):

@@ -67,7 +67,7 @@ def wilson(correct, count):
     return [round(center - half, 4), round(center + half, 4)]
 
 
-def aggregate(inputs, gold_rows, results):
+def aggregate(inputs, gold_rows, results, *, score_fn=score_case):
     gold = {r["case_id"]: r for r in gold_rows}
     supplied = {c["case_id"] for c in inputs}
     require(supplied == set(gold), "Scoring input/gold mismatch")
@@ -81,7 +81,7 @@ def aggregate(inputs, gold_rows, results):
         cid, track = case["case_id"], case["track"]
         result = predictions.get(cid, {"prediction": {"action": "__missing__"}})
         g = gold[cid]["gold"]
-        checks = score_case(track, g, result["prediction"])
+        checks = score_fn(track, g, result["prediction"])
         details.append(
             dict(
                 case_id=cid,

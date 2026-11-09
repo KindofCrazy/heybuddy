@@ -22,7 +22,17 @@ class LearningPolicy(ReflectionPolicy):
 
 
 class Target(Model):
-    path: str = Field(min_length=1, max_length=260)
+    path: str = Field(
+        min_length=1,
+        max_length=260,
+        description="human.md/persona.md or a topic in 1-3 ASCII directories; never an index.",
+        json_schema_extra={
+            "pattern": (
+                r"^(?:human\.md|persona\.md|(?:[A-Za-z0-9][A-Za-z0-9_-]{0,63}/){1,3}"
+                r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}\.md)$"
+            )
+        },
+    )
     candidate_ids: list[int] = Field(min_length=1, max_length=8)
 
 

@@ -1,0 +1,30 @@
+[
+  {
+    "case_id": "custom_pd_001",
+    "reason": "Explicit, dated local check window"
+  },
+  {
+    "case_id": "custom_pd_002",
+    "reason": "Explicit, dated local check window"
+  },
+  {
+    "case_id": "custom_pd_003",
+    "reason": "Explicit, dated local check window"
+  },
+  {
+    "case_id": "custom_pd_017",
+    "reason": "Explicit, dated local check window"
+  },
+  {
+    "case_id": "custom_pd_018",
+    "reason": "Explicit, dated local check window"
+  },
+  {
+    "case_id": "custom_pd_030",
+    "reason": "Explicit, dated local check window"
+  },
+  {
+    "case_id": "custom_pd_035",
+    "reason": "Explicit, dated local check window"
+  }
+]

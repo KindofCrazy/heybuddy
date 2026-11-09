@@ -1,0 +1,11 @@
+{
+  "version": "0.3.3",
+  "human_reviewed": false,
+  "sha256": {
+    "inputs.jsonl": "8c6db64778f922bdff5599cf6cb886b8dddba5d30c7ffdaea15652066cbc63af",
+    "gold.jsonl": "09fd05543b46f93a74ba8bc52c9e16d0ecf6d2aef88eed4c48b03e18c0fc6f6f"
+  },
+  "total": 150,
+  "temporal_scorer_sha256": "658bf34b7bf5fcac2902a2536fbb3cc170aa346ebb5252bbb55769f219004dad",
+  "fact_scorer_sha256": "649b7b83c1b1166823be75549ccfb988ac7cc945879d704420d354cd1705b8a6"
+}

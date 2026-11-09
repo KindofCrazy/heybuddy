@@ -1,0 +1,6 @@
+[
+  {
+    "case_id": "extra_ml_004",
+    "reason": "Core exception must retain Chinese default"
+  }
+]

@@ -22,11 +22,15 @@ Conversation 是原始来源日志，不再要求用户按它选择讨论。Thre
 
 默认启用规则路由，语义模型选择需 Host 显式开启；不会宣称规则能理解所有隐式话题变化。最近候选之外的 Thread 可由可信 CLI 按 ID 选择。Agent 级 Memory、主题状态和只读 Recall 仍可共享；自动原始 Run 重放及工作摘要按来源隔离，切换来源不能继承工具授权。
 
-开启 `model_selection` 后，短句长度本身不再直接判为当前任务续接；明确“好的/收到/明白”等 ACK 和既有“那/这个/怎么”等续接前缀仍沿当前 Thread，不额外调用模型。其余短句交给既有一次无工具选择，提示区分闲聊与任务推进，并在多个候选都能解释同一版本/截止日指代时澄清。关闭模型选择仍保留兼容规则；没有新增配置项或 Worker。前缀规则仍可能误判歧义，这是当前兼容边界；验证见 `tests/test_thread_routing.py::test_short_unrelated_message_uses_model_but_ack_does_not`。
+启用模型时，若标题只是部分关键词命中，而其他干净候选的 current_state 又支持输入中的具体术语，Router 把这种竞争交给语义选择；完整标题明确出现或没有竞争状态时保留快捷规则。例如“machine slot”同时提到另一个训练 Thread 的 augmentation，不能仅因 Machine inventory 标题含 machine 就直接绑定。关闭模型时保留历史规则；此改动避免无差别增加所有历史回放的请求数，代价是缺少状态的歧义仍可能误判。验证见 `tests/test_thread_routing.py::test_partial_title_collision_uses_semantic_selection`。
+
+开启 `model_selection` 后，短句长度本身不再直接判为当前任务续接；明确“好的/收到/明白”等 ACK 仍沿当前 Thread，不额外调用模型。既有“那/这个/怎么”等续接前缀在没有多个干净候选状态竞争时保留快捷规则，其余短句交给既有一次无工具选择，提示区分闲聊与任务推进，并在多个候选都能解释同一版本/截止日指代时澄清。关闭模型选择仍保留兼容规则；没有新增配置项或 Worker。前缀规则仍可能误判歧义，这是当前兼容边界；验证见 `tests/test_thread_routing.py::test_short_unrelated_message_uses_model_but_ack_does_not`。
 
 `ThreadRouter(..., defer_weak_rules=True)` 是默认关闭的实验入口，必须同时开启 model_selection；它把换话题与临近续接两条弱规则交给既有模型选择，便于独立测量 Prompt 的作用。Host 选择、显式 ID、唯一标题及其他规则继续沿原路径处理。当前 Runtime 不开启此参数，也没有新增环境配置；[v2 离线对照](long-horizon-benchmark-v2.md) 通过真实 Router 使用它，不复制路由逻辑。
 
 模型只返回受校验选择，不能执行工具、改权限或改 Host 配置。选择失败不重试；需要澄清时提示 Agent 追问、禁用本轮工具定义，Registry 再执行强制拒绝。取消向上传播。预算不足停止，数据库错误沿现有 HistoryError 路径停止，原工具不会被重跑。
+
+模型选择返回非法 JSON、未知 Thread 或请求失败时，`selection_unavailable` 也设置 `metrics.ambiguous`，保持当前上下文用于追问，`HarnessRuntime.bind_context()` 将其传给 `ROUTING_CLARIFY`，Context 与 Registry 共同阻止工具。不能仅保留原 Thread 就当作已确认归属；验证见 `test_unavailable_route_blocks_tools_in_the_actual_runtime`。若多个干净候选状态都支持模糊指代，弱续接前缀也交给语义选择，明确 ACK 仍不增加调用。
 
 可信 CLI 的 `/thread correct <run_id> <thread_id>` 只纠正同来源、已终结 Run，增加绑定修订与审计，事务失效原/新 Thread 摘要。若旧 Episode 因此包含多个归属，解除其 Thread 关联，原摘要和原 Run 保留，不冒充新归属的状态证据。此操作不自动调用模型或补做工具。
 

@@ -1,4 +1,6 @@
-# HeyBuddy-Bench v0.2
+# HeyBuddy-Bench
+
+当前迭代版为 [v0.4](v0_4/README.md)：主集仍为 150 题，增加多文件/跨文件状态断言、未来复查边界和 30 道含开发与保留部分的挑战变体。最新结论见 [本轮 Review + Evaluation Report](ITERATION_REPORT.md) 与 [逐题结果](results/cycle_20261108_summary.json)，方案见 [迭代计划](ITERATION_PLAN.md)。下文保留 v0.2 的数据与首次交付入口；当前版本的测评使用专用 `cycle --revision v0_4`，不能混用旧评分。
 
 当前为 **150 个经编码 Agent 审阅的决策快照**：Thread Routing、Memory Learning、Proactive Decision 各 50 题。独立人工审核尚未完成，`human_reviewed=false`。已完成确定性 Baseline、离线生产链路验证和 DeepSeek 真实对照；模型结果与局限见 [真实测评报告](LIVE_EVALUATION_REPORT.md)。
 

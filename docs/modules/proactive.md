@@ -35,6 +35,10 @@ SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisi
 
 ## 配置与可信入口
 
+Attention 提示包含 JSON 实例形状，区分结果字段与 schema 元数据，要求 reason 非空、只有 defer 才填写下一次复查时间。用户明确请求在当前窗口检查时，较晚的任务截止时间不能代替该窗口偏好。Host 仍严格校验完整输出、候选 ID、时刻和权限，没有删除非法字段或自动重试来补救模型输出；这些提示是否改善真实结果须对照评测。
+
+提示同时说明真实持久化后果：silent 清除该候选复查，defer 只保留未来内部复查，本身不联系用户。明确的未来检查约定不能仅因当前尚早而被 silent 丢掉；“今天不要联系，明天再说”允许明天复查，仍不得当天重开打扰。真实决策的时间还会受 Host 最小间隔和有效期夹取，因此评测检查实际保存的时间。
+
 `ProactiveRuntime.run()` 向 Scout 与 Attention 提供的 `now` 使用 `utc_offset_minutes` 转成用户本地 ISO 时间并保留 UTC 偏移；数据库截止、排序、有效期与 CAS 仍按既有 UTC 路径处理。这样“今晚、晚饭后”的用户原话不会因为模型只看到 UTC 小时而被误判为早晨或中午。Attention 明确要求 silent 也选择一个给定 ID，并区分暂时忙碌的 defer 与明确拒绝本轮打扰的 silent。验证见 `tests/test_proactive.py::test_scout_and_attention_see_user_local_time_with_offset`，这些测试检验时间表示与门控契约，不证明模型一定正确判断语义。
 
 库级与示例默认 AGENT_PROACTIVE_ENABLED=true，用户明确要求默认开启 Shadow。后台使用已配置 Provider，受现有维护预算限制；设为 false 可关闭。开发验证全部离线。配置沿用当前项目 .env/环境变量，不在其他路径搜索凭证。Luna 由 AGENT_CHARACTER_ID=luna 显式选择，库级角色默认 none。

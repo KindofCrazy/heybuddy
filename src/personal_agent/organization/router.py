@@ -52,6 +52,18 @@ class ThreadRouter:
             reverse=True,
         )
         unique = bool(ranked and ranked[0][0] and (len(ranked) == 1 or ranked[0][0] > ranked[1][0]))
+        state_support = {
+            thread.id
+            for thread in by_id.values()
+            if thread.current_state
+            and not thread.dirty
+            and any(
+                (len(term) >= 4 or re.fullmatch(r"[\u4e00-\u9fff]{2,}", term))
+                and term.casefold() in thread.current_state.casefold()
+                for term in terms
+            )
+        }
+        competing_state = unique and bool(state_support - {ranked[0][1].id})
         self.metrics = {"extra_requests": 0, "reason": reason}
         # A UUID/reference is trusted only after scope validation by the repository.
         explicit = re.search(r"(?:thread:|线程\s*)([0-9a-fA-F-]{36})", text)
@@ -63,7 +75,15 @@ class ThreadRouter:
         elif SOCIAL.fullmatch(text.strip()) and (active is None or not text.startswith("谢谢")):
             target = next((t for t in by_id.values() if t.title == "日常交流"), None)
             reason = "chat"
-        elif unique and (RESUME.search(text) or not active or ranked[0][1].id != active.id):
+        elif (
+            unique
+            and (
+                not self.model_selection
+                or ranked[0][1].title.casefold() in text.casefold()
+                or not competing_state
+            )
+            and (RESUME.search(text) or not active or ranked[0][1].id != active.id)
+        ):
             target, reason = ranked[0][1], "title_match"
         elif CHANGE.search(text) and not self.defer_weak_rules:
             target, reason = None, "new_topic"
@@ -71,6 +91,12 @@ class ThreadRouter:
             active
             and not self.defer_weak_rules
             and not RESUME.search(text)
+            and not (
+                self.model_selection
+                and not ACK.fullmatch(text.strip())
+                and active.id in state_support
+                and len(state_support) > 1
+            )
             and (
                 ACK.fullmatch(text.strip())
                 or CONTINUE.search(text.strip())
@@ -142,6 +168,7 @@ class ThreadRouter:
                     self.metrics["suggested_title"] = choice.title
             except (ValueError, TimeoutError, ProviderError):
                 reason = "selection_unavailable"
+                self.metrics["ambiguous"] = True
         elif active and RESUME.search(text):
             self.metrics["ambiguous"] = True
             reason = "clarify"

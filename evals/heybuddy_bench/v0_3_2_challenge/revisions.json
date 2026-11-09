@@ -1,0 +1,10 @@
+[
+  {
+    "case_id": "challenge_ml_002",
+    "reason": "Global Python exception is supported"
+  },
+  {
+    "case_id": "challenge_pd_005",
+    "reason": "Plan authorized; file movement unauthorized"
+  }
+]

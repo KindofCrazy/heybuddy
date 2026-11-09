@@ -1,0 +1,10 @@
+{
+  "version": "0.3.2",
+  "human_reviewed": false,
+  "sha256": {
+    "inputs.jsonl": "8c6db64778f922bdff5599cf6cb886b8dddba5d30c7ffdaea15652066cbc63af",
+    "gold.jsonl": "5e3839ecc1403e42fe8b334c9733c4767b8d7fd6381ea9c5398d3fcd186b4597"
+  },
+  "total": 150,
+  "fact_scorer_sha256": "649b7b83c1b1166823be75549ccfb988ac7cc945879d704420d354cd1705b8a6"
+}

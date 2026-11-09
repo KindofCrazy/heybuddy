@@ -1,3 +1,5 @@
 # Frozen benchmark hashes must survive Windows and Unix checkouts.
 evals/heybuddy_bench/** text eol=lf
 src/personal_agent/evaluation/heybuddy_bench/** text eol=lf
+# Unified patch context uses a literal space for an empty source line.
+evals/heybuddy_bench/candidate_snapshots/*.patch -whitespace

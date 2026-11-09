@@ -100,7 +100,7 @@ uv run personal-agent --help
 
 ## 离线开发检查
 
-新增 [HeyBuddy 三能力 Benchmark](docs/modules/heybuddy-benchmark.md)：Routing、Memory Learning、Proactive Decision 各 50 个独立快照，含五个公开来源的 35 个改编样本；提供真实生产链路适配器、确定性 Baseline、Shadow 隔离运行与逐题报告。已完成 [DeepSeek 真实对照与 Bad Case 分析](evals/heybuddy_bench/LIVE_EVALUATION_REPORT.md)；数据尚未独立人工审核，决策快照成绩不代表整体助手能力。
+新增 [HeyBuddy 三能力 Benchmark](docs/modules/heybuddy-benchmark.md)：Routing、Memory Learning、Proactive Decision 各 50 个独立快照；当前 v0.4 含四个公开来源的 31 个改编样本，另有 30 个相关挑战变体。提供真实生产链路适配器、简单 Baseline、Shadow 隔离运行与逐题报告。最新 [Benchmark 与 Agent 迭代报告](evals/heybuddy_bench/ITERATION_REPORT.md) 包含真实重复对照、Bad Case 归因与成本；旧 [v0.2 真实报告](evals/heybuddy_bench/LIVE_EVALUATION_REPORT.md) 保留。数据尚未独立人工审核，决策快照成绩不代表整体助手能力。
 
 Long-Horizon Phase 1 提供独立的合成离线规则路由评测，入口为 `uv run python -m personal_agent.evaluation.long_horizon --list`；数据格式、真实 Router 重放路径、指标与结果重算见 [Long-Horizon Benchmark](docs/modules/long-horizon-evaluation.md)。结果标记为 Offline Contract Test，不代表真实模型或 Memory Learning 能力。
 

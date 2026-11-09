@@ -1,0 +1,50 @@
+[
+  {
+    "case_id": "public_009",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/running.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_010",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/food.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_011",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/friends.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_012",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/sculpture.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_013",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/bikes.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_014",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/cocktails.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_015",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/writing.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  },
+  {
+    "case_id": "public_016",
+    "old_path": "topics/reference-notes.md",
+    "new_path": "topics/reading.md",
+    "reason": "Prior user memory, not an unattributed pasted question"
+  }
+]

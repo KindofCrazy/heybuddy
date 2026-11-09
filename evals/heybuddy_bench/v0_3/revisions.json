@@ -1,0 +1,131 @@
+[
+  {
+    "case_id": "custom_ml_014",
+    "revision": "storage",
+    "reason": "Previously reviewed Core/project alternatives"
+  },
+  {
+    "case_id": "custom_ml_015",
+    "revision": "storage",
+    "reason": "Previously reviewed Core/project alternatives"
+  },
+  {
+    "case_id": "custom_ml_016",
+    "revision": "storage",
+    "reason": "Previously reviewed Core/project alternatives"
+  },
+  {
+    "case_id": "custom_ml_017",
+    "revision": "storage",
+    "reason": "Previously reviewed Core/project alternatives"
+  },
+  {
+    "case_id": "custom_ml_018",
+    "revision": "storage",
+    "reason": "Previously reviewed Core/project alternatives"
+  },
+  {
+    "case_id": "custom_pd_001",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_002",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_003",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_017",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_018",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_019",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_020",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_030",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "custom_pd_035",
+    "revision": "input",
+    "reason": "Explicit 16:00 check window replaces ambiguous proximity"
+  },
+  {
+    "case_id": "public_001",
+    "revision": "label",
+    "reason": "Topic shift is not necessarily a new task"
+  },
+  {
+    "case_id": "public_002",
+    "revision": "label",
+    "reason": "Topic shift is not necessarily a new task"
+  },
+  {
+    "case_id": "public_003",
+    "revision": "label",
+    "reason": "Topic shift is not necessarily a new task"
+  },
+  {
+    "case_id": "public_004",
+    "revision": "label",
+    "reason": "Topic shift is not necessarily a new task"
+  },
+  {
+    "case_id": "public_005",
+    "revision": "label",
+    "reason": "Topic shift is not necessarily a new task"
+  },
+  {
+    "case_id": "public_016",
+    "revision": "scoring",
+    "reason": "Allow independently evidenced learning interest"
+  },
+  {
+    "case_id": "public_017",
+    "revision": "replace",
+    "replacement": "replacement_public_017",
+    "reason": "Fictional-world relations are diagnostic, not primary personal memory"
+  },
+  {
+    "case_id": "public_018",
+    "revision": "replace",
+    "replacement": "replacement_public_018",
+    "reason": "Fictional-world relations are diagnostic, not primary personal memory"
+  },
+  {
+    "case_id": "public_019",
+    "revision": "replace",
+    "replacement": "replacement_public_019",
+    "reason": "Fictional-world relations are diagnostic, not primary personal memory"
+  },
+  {
+    "case_id": "public_020",
+    "revision": "replace",
+    "replacement": "replacement_public_020",
+    "reason": "Fictional-world relations are diagnostic, not primary personal memory"
+  },
+  {
+    "case_id": "extra_ml_005",
+    "revision": "storage",
+    "reason": "Previously reviewed Core/project alternatives"
+  }
+]

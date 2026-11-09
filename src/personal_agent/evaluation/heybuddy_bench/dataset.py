@@ -154,6 +154,10 @@ def validate(directory: Path, *, expected: int = 50) -> dict:
             set(g.get("acceptable_actions", [g["action"]])) <= set(TRACKS[track]),
             "Invalid acceptable action",
         )
+        require(
+            g["action"] in g.get("acceptable_actions", [g["action"]]),
+            "Canonical action must remain acceptable",
+        )
         if track == "thread_routing":
             if g["action"] in {"continue", "select"}:
                 require(
@@ -197,6 +201,8 @@ def validate(directory: Path, *, expected: int = 50) -> dict:
             )
             require("native_gold" in source and "adaptation" in source, "Missing native label")
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
+    if "total" in manifest:
+        require(manifest["total"] == len(inputs), "Manifest total mismatch")
     for name, checksum in manifest["sha256"].items():
         require(sha256(directory / name) == checksum, "Manifest hash mismatch: " + name)
     return {

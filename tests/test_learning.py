@@ -60,6 +60,9 @@ async def test_core_comparison_path_is_already_available(state):
     )
     result = await learner(state, provider).learn(run_ids=[run])
     assert result["outcome"] == "completed" and result["updated_files"] == 1
+    schema = json.loads(provider.requests[1][-1].text)["response_schema"]
+    assert schema["properties"]["groups"]["maxItems"] == LearningPolicy().max_files
+    assert "pattern" in schema["$defs"]["Target"]["properties"]["path"]
 
 
 def test_selection_previews_are_bounded_and_keep_topic_identity(state):
@@ -77,6 +80,43 @@ def test_selection_previews_are_bounded_and_keep_topic_identity(state):
     assert len(previews) == 4
     assert sum(len(value.encode()) for value in previews.values()) <= 3072
     assert "项目 0" in previews["topics/project-0.md"]
+
+
+def test_correction_navigation_is_bounded_and_never_becomes_evidence(state):
+    learning = learner(state, FakeProvider())
+    path = "topics/exhibit.md"
+    index.create(state[2], path, "---\nname: exhibit\ndescription: Schedule\n---\nExhibit is open.")
+    evidence = [dict(messages=[dict(role="user", text="The exhibit is cancelled.")])]
+    navigation = learning._correction_navigation(evidence)
+    assert path in navigation and "human.md" in navigation
+    assert sum(len(text.encode()) for text in navigation.values()) <= 2304
+    assert learning._correction_navigation([dict(messages=[dict(role="user", text="Hello")])]) == {}
+
+
+def test_existing_fact_visible_without_explicit_correction_word(state):
+    learning = learner(state, FakeProvider())
+    path = "topics/running.md"
+    index.create(
+        state[2], path, "---\nname: running\ndescription: Running\n---\nRunning best: 27:12."
+    )
+    evidence = [
+        dict(
+            messages=[
+                dict(role="user", text="My running best is 25:50; training for another race.")
+            ]
+        )
+    ]
+    assert path in learning._correction_navigation(evidence)
+
+
+def test_preview_redacts_before_a_byte_boundary_can_split_a_secret(state):
+    learning = learner(state, FakeProvider())
+    path = "topics/note.md"
+    header = "---\nname: note\ndescription: Note\n---\n"
+    text = header + "x" * (760 - len(header)) + " sk-" + "a" * 40
+    index.create(state[2], path, text)
+    preview = learning._selection_previews([dict(path=path)])[path]
+    assert "sk-" not in preview and len(preview.encode()) <= 768
 
 
 async def test_publication_callback_cannot_outlive_serial_scope(state):
