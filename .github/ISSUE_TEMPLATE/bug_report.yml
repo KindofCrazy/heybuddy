@@ -1,0 +1,36 @@
+name: 问题报告
+description: 报告可复现的问题，帮助定位实际行为。
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先搜索已有 Issue。不要上传真实配置、密钥、聊天、Memory 或数据库。
+        安全问题请按 [安全说明](https://github.com/KindofCrazy/heybuddy/blob/main/SECURITY.md)私下报告。
+  - type: textarea
+    id: environment
+    attributes:
+      label: 版本与环境
+      description: 提交哈希、操作系统、Python / uv 版本、使用入口（CLI / QQ / NapCat / Observatory）。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现
+      description: 使用合成数据，列出必要配置项名称和复现步骤，不填写密钥或私人内容。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为与脱敏诊断
+      description: 提供状态、错误码或安全诊断字段；不要粘贴完整 Provider 异常体。
+    validations:
+      required: true

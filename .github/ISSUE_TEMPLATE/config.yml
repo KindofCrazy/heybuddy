@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 使用与配置文档
+    url: https://github.com/KindofCrazy/heybuddy/blob/main/docs/README.md
+    about: 先查看安装、配置、模块与渠道说明。
+  - name: 安全问题
+    url: https://github.com/KindofCrazy/heybuddy/blob/main/SECURITY.md
+    about: 按安全说明私下报告，避免公开凭据或私人数据。

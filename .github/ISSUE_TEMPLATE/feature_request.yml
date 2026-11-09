@@ -1,0 +1,23 @@
+name: 功能建议
+description: 描述具体场景、需要解决的问题和预期行为。
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景与问题
+      description: 当前行为有哪些不足？请使用不含私人数据的示例。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望行为
+      description: 说明输入、输出、适用渠道和必要权限；如有替代方案，也可一起说明。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围与验证
+      description: 如何确认问题得到解决？是否影响数据兼容、后台行为或真实调用成本？

@@ -1,114 +1,113 @@
 # HeyBuddy
 
-一个本地运行、核心 Harness 自行实现的个人 Agent：Python 3.13、asyncio 手写循环、SQLite schema 24、普通 Markdown 长期记忆。当前支持共享执行预算、工具、Hooks、只读 Skills、MCP、规划、受控工作区、深度一只读子执行、后台作业、注册式 Workflow 和多层上下文压缩。角色库默认 none，当前开发配置选择 Luna。
+**本地运行、长期记忆、执行过程可追溯的个人 AI Agent。**
 
-## 先读这里
+[![CI](https://github.com/KindofCrazy/heybuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/KindofCrazy/heybuddy/actions/workflows/ci.yml)
+[![Python 3.13](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![uv](https://img.shields.io/badge/Package_manager-uv-DE5FE9)](https://docs.astral.sh/uv/)
 
-先读[机制与逻辑流程](docs/mechanisms.md)：用准备信息、执行动作、反馈循环和停止决策解释 Agent，适合向别人讲解，无需知道函数名。再读[一条消息在 Agent 内部怎样完成](docs/architecture.md)，对照实际代码理解来源、预算、上下文、工具、round 停止、Goal 验收和提交返回。
+[快速开始](#快速开始) · [架构与机制](docs/architecture.md) · [完整文档](docs/README.md) · [评测](#评测与验证) · [参与贡献](CONTRIBUTING.md)
 
-再按需查[完整模块导航](docs/README.md)。每个核心模块包含职责、机制流程、真实调用路径、异常边界、验证入口与未来改进；改进建议不代表已经实现。
+HeyBuddy 用 Python 和 asyncio 自行实现 Agent Harness，把模型调用、工具执行、会话路由、记忆和后台维护放在同一套明确的生命周期与预算约束下。SQLite 保存完整运行日志，普通 Markdown 保存长期记忆，便于理解、检查和直接编辑。
 
-| 关注点 | 文档 |
+项目适合希望理解 Agent 内部机制、实验长期记忆，或搭建本地个人助手的开发者。核心循环不依赖 LangChain、LangGraph 等 Agent 框架；模型通过 Provider Protocol 接入，当前适配器使用官方 OpenAI Python SDK。
+
+> **项目状态：持续开发中。** 当前包版本为 `0.7.2`，已实现 P5 Harness，SQLite schema 为 `24`。版本号、实现阶段和数据库版本分别维护；已有评测的适用范围见对应报告。
+
+## 核心能力
+
+| 能力 | 当前实现 |
 | --- | --- |
-| 执行循环与停止条件 | [Agent](docs/modules/agent.md)、[Harness](docs/modules/harness.md)、[Planning](docs/modules/planning.md) |
-| 逻辑会话与路由 | [Thread Router](docs/modules/thread-routing.md) |
-| 模型输入与压缩 | [Context](docs/modules/context.md)、[Compaction](docs/modules/compaction.md)、[检索](docs/modules/retrieval.md) |
-| 执行能力 | [Tool Use](docs/modules/tools.md)、[Hooks](docs/modules/hooks.md)、[Skills](docs/modules/skills.md)、[MCP](docs/modules/skills-mcp.md) |
-| 长期理解与后台维护 | [Memory](docs/modules/memory.md)、[Learning](docs/modules/learning.md)、[Proactive](docs/modules/proactive.md) |
-| 工作与恢复 | [Execution](docs/modules/execution.md)、[Workflow](docs/modules/workflows.md)、[存储](docs/modules/storage.md) |
+| 可控执行 | 手写异步循环、生命周期 Hooks、来源隔离、共享执行预算和明确停止状态 |
+| 长期记忆 | Markdown Core / Deferred Memory、历史证据检索、后台 Learning 与手动审批 Reflection |
+| 会话与上下文 | Thread 逻辑会话、有限历史读取、多层上下文压缩、完整原始 Journal |
+| 工具与扩展 | 注册与授权校验、只读 Skills、MCP Client、受控工作文件和白名单命令 |
+| 任务与工作流 | Todo / Task / Goal、深度一只读子执行、后台作业、注册式 Workflow 与显式恢复 |
+| 交互与观测 | 本地 CLI、官方 QQ 白名单私聊、NapCat 单主号私聊、loopback 只读 Observatory |
+| 关注与提醒 | 关心式跟进保持 Shadow；明确一次性提醒可向已绑定 NapCat 主号投递 |
 
-## 安装与配置
+## 架构概览
 
-需要 [uv](https://docs.astral.sh/uv/)，Python 3.13，且该 Python 的 SQLite 支持 FTS5 trigram；在项目根目录运行：
+```mermaid
+flowchart TD
+    Entry[CLI / QQ / NapCat] --> Runtime[共享 Runtime]
+    Runtime --> Harness[Harness · 来源 / 权限 / 预算]
+    Harness --> Agent[Agent Loop]
+    Agent --> Context[Context · 路由 / 检索 / 压缩]
+    Context --> Provider[Provider · 模型调用]
+    Provider --> Agent
+    Agent --> Tools[Tool Registry · 校验与顺序执行]
+    Tools --> Agent
+    Context --> Memory[Markdown · 长期记忆]
+    Agent --> Journal[SQLite · 完整运行日志]
+    Runtime --> Maintenance[有界后台维护]
+    Maintenance --> Memory
+    Maintenance --> Journal
+    Observatory[只读 Observatory] -.-> Memory
+    Observatory -.-> Journal
+```
+
+从[机制与逻辑流程](docs/mechanisms.md)理解整体决策，再按[一条消息的实际执行路径](docs/architecture.md)对照代码。模块文档包含职责、关键符号、异常边界和验证入口。
+
+## 快速开始
+
+需要 [Git](https://git-scm.com/)、[uv](https://docs.astral.sh/uv/) 和支持 SQLite FTS5 trigram 的 Python 3.13。以下命令使用 PowerShell：
 
 ```powershell
+git clone https://github.com/KindofCrazy/heybuddy.git
+cd heybuddy
 uv python install 3.13
 uv sync --locked
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
-编辑当前目录的 `.env`，已有配置无需覆盖，数据库路径可省略：
-
-```dotenv
-OPENAI_API_KEY=your-key
-OPENAI_MODEL=your-responses-api-model
-# 使用 DeepSeek 时可设置以下地址及模型 deepseek-flash
-# OPENAI_BASE_URL=https://api.deepseek.com
-AGENT_DATABASE_PATH=.heybuddy/heybuddy.sqlite3
-# 新安装默认用户数据目录；已有数据库旁的 .memory 目录继续原地使用
-# AGENT_MEMORY_ROOT=D:/private-data/heybuddy-memory
-AGENT_CORE_MEMORY_MAX_BYTES=8192
-# 必填：设为所用模型真实支持的窗口 token 数，不按模型名/端点猜测
-AGENT_CONTEXT_WINDOW=<实际窗口 token 数>
-AGENT_RESERVED_OUTPUT_TOKENS=4096
-AGENT_CONTEXT_SAFETY_MARGIN=1024
-AGENT_COMPACTION_TRIGGER_RATIO=0.8
-AGENT_RECENT_RUNS=2
-AGENT_MAX_ROUNDS=10
-AGENT_MAX_TOOL_CALLS_PER_RESPONSE=64
-AGENT_MAX_TOOL_CALLS_PER_RUN=256
-AGENT_REQUEST_TIMEOUT_SECONDS=60
-AGENT_TOOL_TIMEOUT_SECONDS=10
-AGENT_LOG_LEVEL=INFO
-```
-
-Key、模型名和 AGENT_CONTEXT_WINDOW 必填，其余均有默认值。较小窗口需同时调整输出/摘要预算，组合不一致会明确报配置错误，见[配置说明](docs/modules/config.md)。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
-
-数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或日常自动备份；旧格式迁移会创建一次性完整备份。新安装 Memory 默认在 Windows `%LOCALAPPDATA%/HeyBuddy/memory/`（其他系统 `~/.local/share/heybuddy/memory/`），并按 Agent ID 隔离；已有 `<database_path>.memory/<agent_id>/` 继续原地使用。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 推荐放在仓库外；仓库内实际 Agent 记忆目录必须整目录被 Git 忽略且没有已跟踪文件，否则初始化或写入会被拒绝。程序不会自动改写忽略规则或移除索引。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
-
-## 启动与会话命令
+编辑本地 `.env`，填写 `OPENAI_API_KEY`、`OPENAI_MODEL` 和 `AGENT_CONTEXT_WINDOW`。窗口大小必须按所用模型的实际规格设置；输出和摘要预算需要与窗口匹配，详见[配置说明](docs/modules/config.md)。`.env.example` 包含可选能力的开发配置，当前选择 Luna；库级角色默认值仍为 `none`。
 
 ```powershell
-uv run personal-agent
-# 等价入口
-uv run python -m personal_agent.main
-# 帮助不读取密钥、不打开数据库
+# 查看帮助：不读取密钥、不打开数据库、不调用模型
 uv run personal-agent --help
+
+# 开始交互：需要有效配置，模型请求会产生相应费用
+uv run personal-agent
 ```
 
-| 输入 | 行为 |
+| 常用输入 | 行为 |
 | --- | --- |
-| 普通文本 | 在线选择 Thread 并串行运行 Agent，原文保留在 Conversation 日志 |
-| `/new` | 新建并选择空 Thread；关闭路由时新建 Conversation |
-| `/sessions` | 列出 Thread ID 和标题，标记当前 Thread；关闭路由时列出 Conversation |
-| `/resume <id>` | 选择已有 Thread；关闭路由时选择 Conversation |
-| `/memory read <请求>` | 本轮允许读取固定 Core 块和内容摘要 |
-| `/memory edit <请求>` | 本轮允许 Core 与 Deferred 创建/编辑及索引补链 |
-| `/memory check` | 本地检查缺失索引/链接、悬空/无效链接，不调用模型 |
-| `/memory repair` | 用户直接授权本地补齐缺失索引/链接，保留原文，不调用模型 |
-| `/status` | 查看 Agent、当前 Conversation、Run 状态和中断提示 |
-| `/context status` | 本地查看预算估算、摘要边界/大小、加载页和最近压缩状态，不调用模型 |
+| 普通文本 | 运行 Agent，保存原始消息与执行结果 |
+| `/new`、`/sessions`、`/resume <id>` | 新建、查看和选择 Thread；关闭路由时操作 Conversation |
+| `/memory read <请求>`、`/memory edit <请求>` | 仅为当前 Run 授予对应记忆权限 |
+| `/status`、`/context status` | 查看运行状态与上下文预算 |
 | `exit` / `quit` / EOF | 正常退出 |
 
-首次启动创建 Agent `heybuddy` 和一个 Conversation；之后自动恢复上次选中的会话。会话管理命令不送给模型或保存聊天消息；记忆授权命令连同请求作为用户消息进入 Run 并保存。授权只对当前 Run 有效，普通自然语言“记住”不会获得写权限，历史里的授权不会延续。无效 ID 或命令不会切换当前会话。 Ctrl+C 取消当前 Run 并退出。每个数据库同时只支持一个本地 CLI 实例，另一个实例会明确报错。配置错误退出码 2，存储/记忆启动错误退出码 1；单轮错误显示状态后仍可接收后续输入。
+完整环境变量、数据目录、会话操作与恢复说明见[安装与日常使用](docs/getting-started.md)。其他入口见 [Observatory](docs/observatory.md)、[NapCat](docs/napcat-setup.md)、[官方 QQ](docs/qq-setup.md)和[明确提醒](docs/reminder-delivery.md)。
 
-例如第一次输入“我正在开发 HeyBuddy，准备参考 Letta Code 设计长期记忆”，然后退出。第二次使用同一数据库启动并问“我们之前准备怎样实现 Memory？”，Provider 会收到恢复的前文。输入 `/new` 后再提问，则包含程序 Base System Prompt、共享 Core Memory 与新输入；可通过 `/resume` 返回旧会话。
+## 设计边界
 
-## 当前边界
+- **权限来自可信宿主。** 工具必须注册、校验并授权；不开放任意 Shell、模型生成代码执行或配置管理。自然语言和历史消息不能授予权限。
+- **记忆与证据分离。** Markdown 是长期 Memory 唯一权威源，SQLite 保存原始历史。主模型写入按 Run 授权，后台 Learning 使用独立 Host 策略，手动 Reflection 仍需审批。
+- **摘要不替代日志。** 压缩只改变模型可见的工作上下文，保留原始 Journal、工具调用和结果。重启不自动重跑工具，Workflow 仅经可信显式 Resume 并核对副作用后恢复。
+- **主动能力分级开放。** 关心式 Proactive 保持 Shadow，不真实发送；明确提醒使用独立 Scheduler。官方 QQ 仅被动回复。
+- **数据在本地以明文保存。** `.env`、数据库和 Memory 不应入 Git；自定义记忆目录建议放在仓库外。当前没有数据加密或日常自动备份。更多见[安全说明](SECURITY.md)。
 
-工具只执行宿主注册、校验和授权的操作，不开放任意 Shell、模型代码执行或配置管理。Main Agent 的 Memory 写工具按 Run 授权；P2 后台 Learning 使用独立 Host 策略，手动 Reflection 仍需审批。Markdown 是长期 Memory 唯一权威源，角色设定与相处记忆分离。
+## 文档导航
 
-原始 Journal 完整保留，模型上下文可以使用派生摘要和工具产物引用。重启只标记中断，不自动重跑工具；Workflow 仅经可信显式 Resume 并核对副作用后恢复。关心式 Proactive 保持 Shadow；明确提醒是独立 Scheduler，可向已绑定 NapCat 主号投递，官方 QQ 仍仅被动回复。
+| 想了解什么 | 阅读入口 |
+| --- | --- |
+| 安装、配置和日常使用 | [入门指南](docs/getting-started.md)、[配置](docs/modules/config.md)、[CLI](docs/modules/sessions-cli.md) |
+| 一条请求如何执行 | [机制流程](docs/mechanisms.md)、[架构](docs/architecture.md)、[Agent](docs/modules/agent.md)、[Harness](docs/modules/harness.md) |
+| 会话、检索和上下文 | [Thread 路由](docs/modules/thread-routing.md)、[Context](docs/modules/context.md)、[Compaction](docs/modules/compaction.md)、[检索](docs/modules/retrieval.md) |
+| 工具和任务扩展 | [Tools](docs/modules/tools.md)、[Hooks](docs/modules/hooks.md)、[Skills](docs/modules/skills.md)、[MCP](docs/modules/skills-mcp.md)、[Planning](docs/modules/planning.md) |
+| 长期记忆和维护 | [Memory](docs/modules/memory.md)、[Learning](docs/modules/learning.md)、[Reflection](docs/modules/reflection.md)、[Proactive](docs/modules/proactive.md) |
+| 存储、执行和恢复 | [Storage](docs/modules/storage.md)、[Execution](docs/modules/execution.md)、[Workflow](docs/modules/workflows.md) |
+| 全部模块与历史资料 | [完整模块索引](docs/README.md)、[历史归档](docs/archive/README.md) |
 
-## 运行与维护入口
+## 评测与验证
 
-- `/context status` 查看窗口与压缩，`/harness` 查看当前来源状态；`/compact` 可信显式压缩。
-- `/goal 生成资料报告 | file:report.md` 建立带确定性检查的目标，文件存在不代表语义验收。
-- Memory、会话、Reflection 等命令见[会话与 CLI](docs/modules/sessions-cli.md)和[配置](docs/modules/config.md)。
-- [Observatory](docs/observatory.md) 只读查看本地状态；[NapCat](docs/napcat-setup.md)、[官方 QQ](docs/qq-setup.md)、[明确提醒](docs/reminder-delivery.md) 是外围接入说明。
-- [旧 Memory 迁移](docs/memory-migration.md) 保留操作步骤；[历史归档](docs/archive/README.md) 保留阶段交付、评测与调研，不作为当前架构入口。
+[HeyBuddy Benchmark](docs/modules/heybuddy-benchmark.md)覆盖 Routing、Memory Learning、Proactive Decision，各有 50 个独立快照。当前 v0.4 含四个公开来源的 31 个改编样本，另有 30 个相关挑战变体。数据尚未独立人工审核，决策快照成绩不代表整体助手能力。
 
-## 离线开发检查
+真实重复对照、Bad Case 归因和成本见[迭代报告](evals/heybuddy_bench/ITERATION_REPORT.md)；数据、协议和运行入口见[评测目录](evals/heybuddy_bench/README.md)。[Long-Horizon 系列](docs/modules/long-horizon-evaluation.md)、[v1](docs/modules/long-horizon-benchmark-v1.md)、[v2](docs/modules/long-horizon-benchmark-v2.md)和[真实模型 Pilot](docs/modules/long-horizon-pilot-v2.md)分别保留实验范围与局限，离线契约测试不作为真实模型效果结论。
 
-新增 [HeyBuddy 三能力 Benchmark](docs/modules/heybuddy-benchmark.md)：Routing、Memory Learning、Proactive Decision 各 50 个独立快照；当前 v0.4 含四个公开来源的 31 个改编样本，另有 30 个相关挑战变体。提供真实生产链路适配器、简单 Baseline、Shadow 隔离运行与逐题报告。最新 [Benchmark 与 Agent 迭代报告](evals/heybuddy_bench/ITERATION_REPORT.md) 包含真实重复对照、Bad Case 归因与成本；旧 [v0.2 真实报告](evals/heybuddy_bench/LIVE_EVALUATION_REPORT.md) 保留。数据尚未独立人工审核，决策快照成绩不代表整体助手能力。
-
-Long-Horizon Phase 1 提供独立的合成离线规则路由评测，入口为 `uv run python -m personal_agent.evaluation.long_horizon --list`；数据格式、真实 Router 重放路径、指标与结果重算见 [Long-Horizon Benchmark](docs/modules/long-horizon-evaluation.md)。结果标记为 Offline Contract Test，不代表真实模型或 Memory Learning 能力。
-
-[Thread Routing Benchmark v1 草案](docs/modules/long-horizon-benchmark-v1.md) 提供 12 场景/216 Turn、8/4 开发集与 Holdout 划分，新增澄清和历史证据关系指标；`--dataset evals/long_horizon_v1 --preflight` 可离线预估调用路径。Gold 明确标为 Agent 编写、待人工复核，当前不宣称正式模型能力结论。
-
-[Thread Routing Benchmark v2 草案](docs/modules/long-horizon-benchmark-v2.md) 扩展到 30 场景/540 Turn、21/9 划分，保留旧 Holdout，增加碎片化/污染指标及真实 Episode→Thread→repair 状态维护路径。`--dataset evals/long_horizon_v2 --ablation all` 离线验证状态、任务身份 Prompt、few-shot 与弱规则的五组对照；固定 Provider 结果只代表接线和预算路径，不提供真实语义收益结论。
-
-[v2 三场景真实模型 Pilot](docs/modules/long-horizon-pilot-v2.md) 提供独立 text/JSON profile，固定 LH019/LH021/LH022 与四组顺序，路由、Episode 和 Thread 共用人民币 10 元预算；`--pilot-preflight` 无模型预检，真实执行需显式 `--live`，九个摘要检查点在调用前冻结。两次尝试均保留失败记录，已审阅六份状态快照；四组尚未完整结束，不宣称 few-shot 收益。
+本地开发检查：
 
 ```powershell
 uv run pytest
@@ -116,6 +115,10 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-测试保留网络禁用保护，使用 Fake Provider、MockTransport 与隔离数据；不调用付费模型。变更打包或入口时另运行 `uv build` 与 CLI 启动检查。不要把真实数据库、Memory、凭据或本地配置提交到 Git。
+测试使用 Fake Provider、MockTransport 和隔离数据，保留网络禁用保护，不调用付费模型。[CI](.github/workflows/ci.yml)在 Ubuntu 和 Windows 上执行离线测试、静态检查、构建和 CLI 帮助检查。
 
-默认开启 Thread 在线路由：同一原始 Conversation 中可切换逻辑讨论，独立重放和压缩。`/new`、`/sessions`、`/resume <id>` 分别新建、列出、选择 Thread；`/thread new [title]|list|use <id>|correct <run_id> <thread_id>` 为可信 CLI 管理入口。关闭 `AGENT_THREAD_ROUTING_ENABLED` 可使用旧 Conversation 模式。语义模型选择默认关闭，开启方法与边界见 [Thread Router](docs/modules/thread-routing.md)。
+## 参与贡献与许可
+
+提交问题或改动前请阅读[贡献指南](CONTRIBUTING.md)。安全问题按[安全报告流程](SECURITY.md)处理，开发 Agent 另需遵守 [AGENTS.md](AGENTS.md)。
+
+主项目尚未声明开源许可证。第三方角色、图标和评测数据的来源及许可分别见 [Luna 来源说明](src/personal_agent/character/packages/luna/SOURCE.md)、[图标许可证](src/personal_agent/dashboard/static/ICONS-LICENSE.txt)、[角色图片说明](src/personal_agent/dashboard/static/characters/README.md)和[评测来源清单](evals/heybuddy_bench/public_sources/SOURCES.md)；这些许可不代表对整个项目的统一授权。

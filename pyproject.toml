@@ -24,6 +24,12 @@ dependencies = [
 [project.scripts]
 personal-agent = "personal_agent.main:main"
 
+[project.urls]
+Homepage = "https://github.com/KindofCrazy/heybuddy"
+Documentation = "https://github.com/KindofCrazy/heybuddy/blob/main/docs/README.md"
+Repository = "https://github.com/KindofCrazy/heybuddy"
+Issues = "https://github.com/KindofCrazy/heybuddy/issues"
+
 [build-system]
 requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
@@ -36,6 +42,8 @@ include = [
     "/scripts/**",
     "/evals/**",
     "/README.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
     "/AGENTS.md",
     "/.env.example",
     "/.gitignore",

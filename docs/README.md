@@ -1,4 +1,8 @@
-# Agent 内部架构文档
+# HeyBuddy 文档
+
+[项目首页](../README.md) · [安装与日常使用](getting-started.md) · [贡献指南](../CONTRIBUTING.md) · [安全说明](../SECURITY.md)
+
+首次运行从[入门指南](getting-started.md)开始；理解实现从下面的机制和架构文档开始。完整模块索引按职责分组。
 
 先读[机制与逻辑流程](mechanisms.md)：不依赖函数名，说明信息如何准备、动作如何受控、何时继续或停止，适合向别人讲解。需要对照实现时，再读[一条消息在 Agent 内部怎样完成](architecture.md)，从收到普通文本到返回结果按真实代码路径展开。适配层作为外围参考。
 
@@ -85,6 +89,6 @@
 
 [Observatory 使用](observatory.md)、[CLI 实践](cli-dogfooding.md)、[旧 Memory 迁移](memory-migration.md)、[NapCat 配置](napcat-setup.md)、[QQ 配置](qq-setup.md)、[明确提醒投递](reminder-delivery.md)。[架构审查](reviews/architecture-audit.md)保留为审查记录，不代替当前调用路径。
 
-## 文档清理规则
+## 文档维护约定
 
-当前实现只在主线和模块文档维护。阶段交付、真实调用验证和第三方方案对照放 archive，并标注历史性质。删除了已失效的“当前开发角色 Miru”和重复的“当前记忆系统与模型工具”；对应内容由 persona、memory、tools 接管。没有清理生产数据、测试 fixture、角色来源声明或用户未提交代码。
+当前实现以主线和模块文档为准。阶段交付、真实调用验证和第三方方案对照放在 `archive/`，并标注历史性质。角色、记忆与工具能力分别在 persona、memory、tools 专题维护；新增或修改模块时同步更新索引与实际调用路径。
