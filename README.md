@@ -6,13 +6,13 @@
 [![Python 3.13](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/badge/Package_manager-uv-DE5FE9)](https://docs.astral.sh/uv/)
 
-[快速开始](#快速开始) · [架构与机制](docs/architecture.md) · [完整文档](docs/README.md) · [评测](#评测与验证) · [参与贡献](CONTRIBUTING.md)
+[快速开始](#快速开始) · [架构与机制](docs/architecture.md) · [完整文档](docs/README.md) · [参与贡献](CONTRIBUTING.md)
 
 HeyBuddy 用 Python 和 asyncio 自行实现 Agent Harness，把模型调用、工具执行、会话路由、记忆和后台维护放在同一套明确的生命周期与预算约束下。SQLite 保存完整运行日志，普通 Markdown 保存长期记忆，便于理解、检查和直接编辑。
 
 项目适合希望理解 Agent 内部机制、实验长期记忆，或搭建本地个人助手的开发者。核心循环不依赖 LangChain、LangGraph 等 Agent 框架；模型通过 Provider Protocol 接入，当前适配器使用官方 OpenAI Python SDK。
 
-> **项目状态：持续开发中。** 当前包版本为 `0.7.2`，已实现 P5 Harness，SQLite schema 为 `24`。版本号、实现阶段和数据库版本分别维护；已有评测的适用范围见对应报告。
+> **项目状态：持续开发中。** 当前包版本为 `0.7.2`，已实现 P5 Harness，SQLite schema 为 `24`。版本号、实现阶段和数据库版本分别维护。
 
 ## 核心能力
 
@@ -101,11 +101,7 @@ uv run personal-agent
 | 存储、执行和恢复 | [Storage](docs/modules/storage.md)、[Execution](docs/modules/execution.md)、[Workflow](docs/modules/workflows.md) |
 | 全部模块与历史资料 | [完整模块索引](docs/README.md)、[历史归档](docs/archive/README.md) |
 
-## 评测与验证
-
-[HeyBuddy Benchmark](docs/modules/heybuddy-benchmark.md)覆盖 Routing、Memory Learning、Proactive Decision，各有 50 个独立快照。当前 v0.4 含四个公开来源的 31 个改编样本，另有 30 个相关挑战变体。数据尚未独立人工审核，决策快照成绩不代表整体助手能力。
-
-真实重复对照、Bad Case 归因和成本见[迭代报告](evals/heybuddy_bench/ITERATION_REPORT.md)；数据、协议和运行入口见[评测目录](evals/heybuddy_bench/README.md)。[Long-Horizon 系列](docs/modules/long-horizon-evaluation.md)、[v1](docs/modules/long-horizon-benchmark-v1.md)、[v2](docs/modules/long-horizon-benchmark-v2.md)和[真实模型 Pilot](docs/modules/long-horizon-pilot-v2.md)分别保留实验范围与局限，离线契约测试不作为真实模型效果结论。
+## 开发检查
 
 本地开发检查：
 
