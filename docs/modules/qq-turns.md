@@ -55,7 +55,7 @@ deadline 使用持久 UTC 接收时间以支持重启，等待使用 asyncio tim
 
 专项测试 `tests/test_qq_completeness.py` 覆盖枚举与工具拒绝、提前提交、wait 跨 idle、max_wait、快照过期、数据库领取复核、调用上限、超时/关闭恢复和时间回退；仅用 Fake Provider，不产生真实费用。启用后在 QQ 对“我最近在考虑”与明确完整问题分别体验等待和提前回复；准确性与延迟需用户另行真实验证。可以随时恢复 `time` 模式。
 
-离线运行 `uv run pytest tests/test_qq_turns.py tests/test_qq_adapter.py tests/test_qq_images.py tests/test_qq_integration.py tests/test_qq_transport.py`。`test_qq_turns.py` 用固定接收时间和 claim 的 now 参数验证 idle 重置、max_wait、恰好截止、积压边界、条数/字节/图片拆分和回执原子状态；异步测试验证共享 Run、一次回复、after_reply、取消恢复、发送期间到达、失败和 uncertain。原 QQ/CLI 回归继续使用 Fake Provider / MockTransport，网络禁用保护保持不变。
+离线运行 `uv run pytest tests/test_qq_turns.py tests/test_qq_adapter.py tests/test_qq_images.py tests/test_qq_integration.py tests/test_qq_transport.py`。`test_qq_turns.py` 用固定接收时间和 claim 的 now 参数验证 idle 重置、max_wait、恰好截止、积压边界、条数/字节/图片拆分和回执原子状态；异步测试验证共享 Run、一次回复、after_reply、取消恢复、发送期间到达、失败和 uncertain。同组异步输入通过 `tests/test_qq_adapter.py::accept_burst()` 显式共享接收时间，避免慢磁盘的 SQLite fsync 耗时被当成用户消息间隔；跨轮次仍使用独立到达与等待信号。原 QQ/CLI 回归继续使用 Fake Provider / MockTransport，网络禁用保护保持不变。
 
 手工验证使用现有已授权 QQ 配置运行 `uv run personal-agent qq`（会使用正常模型调用，请自行决定何时运行）：
 

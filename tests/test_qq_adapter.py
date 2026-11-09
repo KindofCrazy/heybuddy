@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -47,6 +48,16 @@ class Sender:
         self.messages.append((openid, message_id, sequence, text))
         if self.error:
             raise self.error
+
+
+async def accept_burst(adapter: QQAdapter, *payloads: dict) -> None:
+    """Model one burst without treating SQLite fsync latency as an input gap."""
+    received_at = datetime.now(UTC)
+    for payload in payloads:
+        message = parse_text(payload, adapter.settings)
+        await adapter.accept_message(
+            replace(message, received_at=received_at) if message is not None else None
+        )
 
 
 @pytest.fixture
@@ -150,8 +161,7 @@ async def test_consecutive_messages_queue_without_interrupting_current_run(state
     try:
         await adapter.accept(event("1", "第一条"))
         await asyncio.wait_for(started.wait(), 1)
-        await adapter.accept(event("2", "第二条"))
-        await adapter.accept(event("3", "第三条"))
+        await accept_burst(adapter, event("2", "第二条"), event("3", "第三条"))
         with pytest.raises(QQError, match="qq_queue_full"):
             await adapter.accept(event("4", "第四条"))
         assert calls == ["第一条"]

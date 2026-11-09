@@ -40,7 +40,7 @@ uv build
 uv run personal-agent --help
 ```
 
-GitHub Actions 在 Ubuntu 和 Windows、Python 3.13 上执行相同检查。依赖安装可以联网，测试本身不得访问外部网络或真实账号。真实模型评测必须另行明确授权，通过隔离的显式 `--live` 入口执行。
+GitHub Actions 在 Ubuntu 和 Windows、Python 3.13 上执行相同检查，并设置 `PYTHONUTF8=1`，让中文子进程输出不依赖 runner 的系统代码页。依赖安装可以联网，测试本身不得访问外部网络或真实账号。真实模型评测必须另行明确授权，通过隔离的显式 `--live` 入口执行。
 
 ## Issue 与 Pull Request
 

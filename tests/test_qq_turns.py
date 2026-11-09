@@ -11,7 +11,7 @@ from personal_agent.channels.qq.config import QQError, QQSettings
 from personal_agent.channels.qq.events import QQAttachment, parse_text
 from personal_agent.channels.qq.turns import plan_turn
 from personal_agent.config import load_qq_settings, load_settings
-from tests.test_qq_adapter import Sender, event, rows, settled, state
+from tests.test_qq_adapter import Sender, accept_burst, event, rows, settled, state
 from tests.test_qq_transport import config
 
 __all__ = ["state"]
@@ -109,9 +109,8 @@ async def test_batch_runs_and_replies_once_with_shared_run_and_status(
     )
     sender = Sender(error)
     adapter = QQAdapter(config(), service, inbox, sender)
-    # All accept calls persist without yielding, including duplicates/unauthorized/empty input.
-    for index in (1, 2, 2, 3):
-        await adapter.accept(event(str(index), str(index)))
+    # One synthetic burst, including duplicate/unauthorized/empty input.
+    await accept_burst(adapter, *(event(str(index), str(index)) for index in (1, 2, 2, 3)))
     await adapter.accept(event("unauthorized", openid="stranger"))
     await adapter.accept(event("empty", text=""))
     adapter.start()
@@ -184,8 +183,7 @@ async def test_cancel_started_batch_links_run_and_never_recovers_it(state):
 
     service.agent.provider = Provider()
     adapter = QQAdapter(config(), service, inbox, Sender())
-    await adapter.accept(event("1"))
-    await adapter.accept(event("2"))
+    await accept_burst(adapter, event("1"), event("2"))
     adapter.start()
     await asyncio.wait_for(entered.wait(), 1)
     await adapter.accept(event("3"))
@@ -217,8 +215,7 @@ async def test_arrival_during_send_belongs_to_next_turn(state):
     try:
         await adapter.accept(event("1"))
         await asyncio.wait_for(entered.wait(), 1)
-        await adapter.accept(event("2"))
-        await adapter.accept(event("3"))
+        await accept_burst(adapter, event("2"), event("3"))
         assert [r["status"] for r in rows(db)] == ["sending", "received", "received"]
         release.set()
         await settled(adapter)
