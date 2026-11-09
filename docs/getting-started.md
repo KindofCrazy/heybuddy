@@ -73,4 +73,4 @@ uv run personal-agent --help
 
 ## Thread 路由
 
-默认开启 Thread 在线路由：同一原始 Conversation 中可切换逻辑讨论，独立重放和压缩。`/new`、`/sessions`、`/resume <id>` 分别新建、列出、选择 Thread；`/thread new [title]|list|use <id>|correct <run_id> <thread_id>` 为可信 CLI 管理入口。关闭 `AGENT_THREAD_ROUTING_ENABLED` 可使用旧 Conversation 模式。语义模型选择默认关闭，开启方法与边界见 [Thread Router](modules/thread-routing.md)。
+默认开启 Thread 在线路由：同一原始 Conversation 中可切换逻辑讨论，独立重放和压缩。`/new`、`/sessions`、`/resume <id>` 分别新建、列出、选择 Thread；`/thread new [title]|list|use <id>|correct <run_id> <thread_id>` 为可信 CLI 管理入口。关闭 `AGENT_THREAD_ROUTING_ENABLED` 可使用旧 Conversation 模式。语义模型选择默认开启，仅在规则未决时调用；已有配置若显式设置 `AGENT_THREAD_ROUTER_MODEL_SELECTION=false`，仍保持关闭，可改为 true 启用。配置与预算边界见 [Thread Router](modules/thread-routing.md)。

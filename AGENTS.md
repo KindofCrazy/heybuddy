@@ -10,7 +10,7 @@
 
 ## Thread 在线路由明确授权
 
-2026-11-05 用户授权将既有 Thread 用作逻辑会话，不新增 ContextRoute 或并发 Worker。Conversation 保留原始 Journal 和来源；每 Run 在首次 prepare 路由一次，历史重放与工作摘要按 Thread/Conversation/source 隔离。在线 Thread 可先无 current_state，Episode 仍事后整理，切换 Thread 必须分段；后台不能改写已路由归属。可信 CLI 可以纠正绑定并失效摘要，不能改原始消息。模型路由默认关闭，Host 可显式开启一次无工具选择并计入根预算；不明确时先追问并拒绝本轮工具。关闭路由保留历史兼容模式，不删除状态。下文旧 Conversation Summary 与会话选择描述仅适用于关闭此能力的兼容路径。
+2026-11-05 用户授权将既有 Thread 用作逻辑会话，不新增 ContextRoute 或并发 Worker。Conversation 保留原始 Journal 和来源；每 Run 在首次 prepare 路由一次，历史重放与工作摘要按 Thread/Conversation/source 隔离。在线 Thread 可先无 current_state，Episode 仍事后整理，切换 Thread 必须分段；后台不能改写已路由归属。可信 CLI 可以纠正绑定并失效摘要，不能改原始消息。2026-11-09 用户明确要求生产默认开启模型辅助路由，规则未决时最多一次无工具选择并计入根预算，Host 仍可显式关闭；不明确时先追问并拒绝本轮工具。关闭路由保留历史兼容模式，不删除状态。下文旧 Conversation Summary 与会话选择描述仅适用于关闭此能力的兼容路径。
 
 ## NapCat 一对一渠道明确授权
 

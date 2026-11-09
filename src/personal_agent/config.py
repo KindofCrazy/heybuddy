@@ -27,7 +27,7 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
 
     harness_enabled: bool = True
     thread_routing_enabled: bool = True
-    thread_router_model_selection: bool = False
+    thread_router_model_selection: bool = True
     goal_model_review: bool = False
     workspace_root: Path | None = None
     workspace_git_root: Path | None = None

@@ -12,7 +12,7 @@ Conversation 是原始来源日志，不再要求用户按它选择讨论。Thre
 
 1. `open_application → assemble_chat → ChatService.run → HarnessRuntime.run` 绑定可信来源和根预算。Agent.run 使用现有锁串行执行，context.begin 原子创建 Run 与原用户消息，on_begin 保存 run_scope。
 2. `ContextBuilder.prepare()` 首次调用 Host 安装的 prepare_scope，await ThreadRouter.route。先 bootstrap 旧日志归属：已有 Episode 的 Thread 优先，未整理 Run 进入明确标注的历史 Thread。不修改旧消息或猜测旧任务分类。
-3. Router 读取当前 Thread、最近 24 个候选标题及有界状态，按 Host 手选、显式 Thread ID、唯一标题匹配、换话题、临近回复和闲聊规则选择。Host 显式开启 model_selection 时，模糊情况最多发一次无工具模型请求，输入包括当前文本、当前 Thread ID、至多 12 张候选卡及 4 条邻近消息片段；调用计入根预算。
+3. Router 读取当前 Thread、最近 24 个候选标题及有界状态，按 Host 手选、显式 Thread ID、唯一标题匹配、换话题、临近回复和闲聊规则选择。生产 Settings 默认开启 model_selection，模糊情况且有候选时最多发一次无工具模型请求，输入包括当前文本、当前 Thread ID、至多 12 张候选卡及 4 条邻近消息片段；调用计入根预算。
 4. Repository.bind 校验当前 running Run、Agent 与 Conversation，事务保存绑定和事件。该 Run 后续工具轮次不再改变 Thread；CURRENT_THREAD 在 Run 退出时重置。
 5. SQLiteThreadHistory 读取本 Thread 的独立摘要及其之后完整 completed/failed Run。ContextBuilder 将 active_thread、thread_working_summary 作为低信任 user JSON 插入 messages，历史 Run 按原 user/assistant/tool 消息序列追加，保留 call_id 和 Provider JSON；不将整个 Run 编码成一条 JSON 聊天，也不写回原 Journal。
 6. 每轮仍执行原窗口估算和多层压缩。Thread 摘要只覆盖本 Thread 的完整 Run 前缀，允许原 Conversation sequence 存在其他 Thread 的间隔。旧 Conversation 混合摘要不会被注入。贡献器每轮刷新，Router 每 Run 只执行一次。
@@ -20,7 +20,7 @@ Conversation 是原始来源日志，不再要求用户按它选择讨论。Thre
 
 ## 异常与边界
 
-默认启用规则路由，语义模型选择需 Host 显式开启；不会宣称规则能理解所有隐式话题变化。最近候选之外的 Thread 可由可信 CLI 按 ID 选择。Agent 级 Memory、主题状态和只读 Recall 仍可共享；自动原始 Run 重放及工作摘要按来源隔离，切换来源不能继承工具授权。
+生产默认启用规则优先的模型辅助路由，Host 可通过 `AGENT_THREAD_ROUTER_MODEL_SELECTION=false` 关闭语义模型选择；已有显式 false 不会被新默认值覆盖。直接构造库级 `ThreadRouter` 仍默认关闭模型选择，离线评测需显式启用；不会宣称规则能理解所有隐式话题变化。最近候选之外的 Thread 可由可信 CLI 按 ID 选择。Agent 级 Memory、主题状态和只读 Recall 仍可共享；自动原始 Run 重放及工作摘要按来源隔离，切换来源不能继承工具授权。
 
 启用模型时，若标题只是部分关键词命中，而其他干净候选的 current_state 又支持输入中的具体术语，Router 把这种竞争交给语义选择；完整标题明确出现或没有竞争状态时保留快捷规则。例如“machine slot”同时提到另一个训练 Thread 的 augmentation，不能仅因 Machine inventory 标题含 machine 就直接绑定。关闭模型时保留历史规则；此改动避免无差别增加所有历史回放的请求数，代价是缺少状态的歧义仍可能误判。验证见 `tests/test_thread_routing.py::test_partial_title_collision_uses_semantic_selection`。
 

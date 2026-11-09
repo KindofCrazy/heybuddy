@@ -416,7 +416,7 @@ async def test_receipt_namespaces_preserve_official_and_other_account_queues(sta
 async def test_luna_shared_runtime_images_dedup_commands_and_restart(state):
     db, sessions, memory, _ = state
     selected = settings()
-    provider = FakeProvider(ModelResponse(text="我在呀。"))
+    provider = FakeProvider(ModelResponse(text='{"action":"new"}'), ModelResponse(text="我在呀。"))
     service = assemble_chat(selected, sessions, memory, provider)
     inbox = QQInbox(db, sessions.agent.id, selected.napcat_scope, selected.napcat_peer_id)
     sender = Sender()
@@ -446,19 +446,20 @@ async def test_luna_shared_runtime_images_dedup_commands_and_restart(state):
             )
             await adapter.accept_message(parse_message(incoming, selected, policy))
             await settled(adapter)
-            assert calls == [URL] and len(provider.requests) == 1
+            assert calls == [URL] and len(provider.requests) == 2
+            assert provider.tools[0] == []
             assert sender.messages[0][-1] == "我在呀。"
-            assert provider.requests[0][-1].images
-            assert any("你是 Luna" in m.text for m in provider.requests[0] if m.role == "system")
+            assert provider.requests[1][-1].images
+            assert any("你是 Luna" in m.text for m in provider.requests[1] if m.role == "system")
             assert "never-inject" not in str(provider.requests)
             assert not {"memory_update", "memory_edit", "deferred_create"} & {
-                tool.name for tool in provider.tools[0]
+                tool.name for tool in provider.tools[1]
             }
             await adapter.accept_message(
                 parse_message(event(2, text="/memory edit"), selected, policy)
             )
             await settled(adapter)
-            assert len(provider.requests) == 1 and "CLI" in sender.messages[-1][-1]
+            assert len(provider.requests) == 2 and "CLI" in sender.messages[-1][-1]
             # Official and NapCat IDs cannot collide, even for the same message number.
             assert rows(db)[0]["app_id"] == selected.napcat_scope
             assert rows(db)[0]["run_id"] == db.list_runs(sessions.current.id)[-1].id
@@ -470,7 +471,7 @@ async def test_luna_shared_runtime_images_dedup_commands_and_restart(state):
         try:
             await restarted.accept_message(parse_message(incoming, selected, policy))
             await settled(restarted)
-            assert len(provider.requests) == 1
+            assert len(provider.requests) == 2
         finally:
             await restarted.close()
 

@@ -33,6 +33,20 @@ def test_no_parent_directory_secret_search(tmp_path, monkeypatch):
         load_settings()
 
 
+def test_thread_router_model_selection_defaults_on_and_host_can_disable(monkeypatch):
+    Path(".env").write_text(
+        "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\nAGENT_CONTEXT_WINDOW=64000\n"
+    )
+    assert load_settings().thread_router_model_selection is True
+    with Path(".env").open("a") as file:
+        file.write("AGENT_THREAD_ROUTER_MODEL_SELECTION=false\n")
+    assert load_settings().thread_router_model_selection is False
+    monkeypatch.setenv("AGENT_THREAD_ROUTER_MODEL_SELECTION", "true")
+    assert load_settings().thread_router_model_selection is True
+    monkeypatch.setenv("AGENT_THREAD_ROUTER_MODEL_SELECTION", "false")
+    assert load_settings().thread_router_model_selection is False
+
+
 @pytest.mark.parametrize(
     "field,value",
     [

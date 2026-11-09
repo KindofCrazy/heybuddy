@@ -93,11 +93,43 @@ async def test_a_b_a_replays_original_tools_without_other_topic(routed):
     assert calls[0].provider_data == {"opaque": [{"value": "keep"}]}
     assert calls[0].tool_calls[0].id == "source-sum"
     assert len([m for m in replay if m.role == "tool"]) == 1
-    assert len(provider.requests) == 4  # The router is rule-based by default, once per Run.
+    assert len(provider.requests) == 4  # These explicit topic changes need no model selection.
     assert runtime.sessions.current.id == conversation
     with runtime.sessions.store.reading() as db:
         assert db.execute("SELECT COUNT(*) FROM run_threads").fetchone()[0] == 3
         assert db.execute("SELECT COUNT(*) FROM conversations").fetchone()[0] == 1
+    await runtime.close()
+
+
+@pytest.mark.parametrize("model_selection", [True, False])
+async def test_default_model_routing_resumes_implicit_topic_and_can_be_disabled(
+    routed, model_selection
+):
+    runtime, provider = routed
+    assert runtime.routing_model_selection is True
+    if not model_selection:
+        runtime.routing_model_selection = False
+    repo = repository(runtime)
+    benchmark = repo.create("Memory Benchmark")
+    completed(repo, benchmark, "评测数据集已有一百条样本")
+    interview = repo.create("字节面试")
+    completed(repo, interview, "明天准备面试")
+    if model_selection:
+        provider.responses.append(
+            ModelResponse(text=json.dumps({"action": "select", "thread_id": benchmark.id}))
+        )
+    provider.responses.append(ModelResponse(text="好的，继续处理。"))
+
+    result = await runtime.run("刚才那个评测数据集需要再增加一些样本。", frozenset())
+
+    assert result.status == "completed"
+    assert repo.active().id == (benchmark.id if model_selection else interview.id)
+    assert len(provider.requests) == (2 if model_selection else 1)
+    if model_selection:
+        assert provider.tools[0] == []
+        assert provider.output_limits[0] == 1024
+        assert "评测数据集已有一百条样本" in texts(provider.requests[-1])
+        assert "明天准备面试" not in texts(provider.requests[-1])
     await runtime.close()
 
 

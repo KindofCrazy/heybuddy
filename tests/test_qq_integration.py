@@ -88,7 +88,9 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
         memory = MemoryFS.for_agent(root, sessions.agent.id)
         memory.initialize()
         sessions.memory = memory
-        provider = FakeProvider(ModelResponse(text="继续核对反例。"))
+        provider = FakeProvider(
+            ModelResponse(text='{"action":"new"}'), ModelResponse(text="继续核对反例。")
+        )
         service = assemble_chat(settings, sessions, memory, provider)
         assert sessions.current.id == conversation_id
         assert sessions.character.package.fingerprint == fingerprint
@@ -108,11 +110,12 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
         try:
             await adapter.accept(event(text="继续我们之前的 HeyBuddy 讨论"))
             await settled(adapter)
-            request = provider.requests[0]
-            assert "add_numbers" not in {tool.name for tool in provider.tools[0]}
-            clock = next(t for t in provider.tools[0] if t.name == "get_current_time")
+            assert provider.tools[0] == []
+            request = provider.requests[1]
+            assert "add_numbers" not in {tool.name for tool in provider.tools[1]}
+            clock = next(t for t in provider.tools[1] if t.name == "get_current_time")
             assert "UTC" not in clock.description
-            names = {tool.name for tool in provider.tools[0]}
+            names = {tool.name for tool in provider.tools[1]}
             assert {
                 "get_current_time",
                 "archival_memory_search",
@@ -155,7 +158,7 @@ async def test_production_cli_then_qq_restart_share_history_memory_and_character
             assert any(m.text.startswith(identity) for m in request if m.role == "system")
             if character_id != "luna":
                 assert any("curious" in m.text for m in request if m.role == "user")
-            assert len(provider.requests) == 1
+            assert len(provider.requests) == 2
             assert len(db.list_runs(conversation_id)) == 2
             assert sender.messages[0][-1] == "继续核对反例。"
         finally:
