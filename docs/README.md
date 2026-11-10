@@ -28,6 +28,8 @@
 
 ## 能力扩展
 
+连续场景评测入口见 [sequence-evaluation](modules/sequence-evaluation.md)，数据与固定检查点见 [Sequence v1](../evals/heybuddy_bench/sequence_v1/README.md)。
+
 | 模块 | 内容 |
 | --- | --- |
 | [skills](modules/skills.md) | 只读操作知识 |

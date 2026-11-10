@@ -1,0 +1,15 @@
+{
+  "version": "sequence-1.0",
+  "total": 60,
+  "families": 30,
+  "split": {
+    "dev": 42,
+    "holdout": 18
+  },
+  "human_reviewed": false,
+  "source": "hand-authored synthetic; contrastive variants are correlated",
+  "sha256": {
+    "inputs.jsonl": "99157e413c537aa84544050a21adfca04d10108b28c6ef03a8fb45c5d71e1d6d",
+    "gold.jsonl": "36341f1cec4c2f3519e36af17cd49633f4a664d955f2b82dabb03081bf4407fb"
+  }
+}

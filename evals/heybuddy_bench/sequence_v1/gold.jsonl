@@ -1,0 +1,60 @@
+{"case_id": "seq-r-01-0", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-01-1", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-02-0", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-02-1", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-03-0", "checks": [{"actions": ["continue"], "target": "interview"}, {"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}, {"actions": ["select"], "target": "interview"}]}
+{"case_id": "seq-r-03-1", "checks": [{"actions": ["continue"], "target": "interview"}, {"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}, {"actions": ["select"], "target": "interview"}]}
+{"case_id": "seq-r-04-0", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-04-1", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-05-0", "checks": [{"actions": ["new"], "target": null}]}
+{"case_id": "seq-r-05-1", "checks": [{"actions": ["new"], "target": null}]}
+{"case_id": "seq-r-06-0", "checks": [{"actions": ["clarify"], "target": null}]}
+{"case_id": "seq-r-06-1", "checks": [{"actions": ["clarify"], "target": null}]}
+{"case_id": "seq-r-07-0", "checks": [{"actions": ["continue"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-07-1", "checks": [{"actions": ["continue"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-08-0", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-08-1", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-09-0", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-09-1", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-10-0", "checks": [{"actions": ["continue"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-r-10-1", "checks": [{"actions": ["select"], "context_absent": ["INTERVIEW_ONLY"], "context_has": ["SQLite"], "target": "research"}]}
+{"case_id": "seq-m-01-0", "checks": [{"present": [["申请", "求职"]]}, {"absent": ["正在申请 Agent 算法岗实习"], "present": [["入职", "offer"]]}]}
+{"case_id": "seq-m-01-1", "checks": [{"present": [["申请", "求职"]]}, {"absent": ["已经拿到", "准备入职"], "present": [["申请", "求职"]]}]}
+{"case_id": "seq-m-02-0", "checks": [{"present": [["Redis"]]}, {"absent": ["存储选择 Redis", "采用 Redis", "使用 Redis 作为"], "present": [["SQLite"]]}]}
+{"case_id": "seq-m-02-1", "checks": [{"present": [["Redis"]]}, {"absent": ["只允许 SQLite", "已经改用 SQLite"], "present": [["Redis"]]}]}
+{"case_id": "seq-m-03-0", "checks": [{"absent": ["已经决定转", "不再从事 CV"]}, {"absent": ["不再从事 CV"], "present": [["Agent"], ["CV"]]}]}
+{"case_id": "seq-m-03-1", "checks": [{"absent": ["已经决定转", "不再从事 CV"]}, {"absent": ["已经决定转", "不再从事 CV"]}]}
+{"case_id": "seq-m-04-0", "checks": [{"present": [["推导", "公式"]]}, {"absent": ["所有回答都简短"], "present": [["推导", "公式"]]}]}
+{"case_id": "seq-m-04-1", "checks": [{"present": [["推导", "公式"]]}, {"absent": ["多给公式推导", "需要详细公式推导"], "present": [["简短", "简洁"]]}]}
+{"case_id": "seq-m-05-0", "checks": [{"absent": ["长期喜欢牛肉面", "偏好牛肉面"]}, {"absent": ["长期喜欢牛肉面", "偏好牛肉面"]}]}
+{"case_id": "seq-m-05-1", "checks": [{"absent": ["长期喜欢牛肉面", "偏好牛肉面"]}, {"present": [["牛肉面"]]}]}
+{"case_id": "seq-m-06-0", "checks": [{"absent": ["已决定采用 MemoryFS", "已经授权上传"]}, {"absent": ["已决定采用 MemoryFS", "已经授权上传"]}]}
+{"case_id": "seq-m-06-1", "checks": [{"absent": ["已决定采用 MemoryFS", "已经授权上传"]}, {"absent": ["已经授权上传"], "present": [["MemoryFS"], ["RAG"]]}]}
+{"case_id": "seq-m-07-0", "checks": [{"present": [["公式", "推导"]]}, {"absent": ["技术回答请附公式推导", "必须附公式", "总是附公式"]}]}
+{"case_id": "seq-m-07-1", "checks": [{"present": [["公式", "推导"]]}, {"present": [["公式", "推导"]]}]}
+{"case_id": "seq-m-08-0", "checks": [{"absent": ["喜欢晚上工作", "长期偏好晚上"]}, {"absent": ["喜欢晚上工作", "长期偏好晚上"]}, {"absent": ["偏好晚上工作"], "present": [["不喜欢晚上", "不喜夜间"]]}, {"absent": ["喜欢晚上工作", "偏好晚上工作"]}]}
+{"case_id": "seq-m-08-1", "checks": [{"absent": ["喜欢晚上工作", "长期偏好晚上"]}, {"absent": ["喜欢晚上工作", "长期偏好晚上"]}, {"present": [["喜欢晚上", "晚上研究"]]}, {"present": [["晚上"]]}]}
+{"case_id": "seq-m-09-0", "checks": [{"present": [["星桥"]]}, {"max_matching_files": {"count": 1, "term": "星桥"}, "present": [["星桥"]]}]}
+{"case_id": "seq-m-09-1", "checks": [{"present": [["星桥"]]}, {"absent": ["项目名为星桥", "项目名：星桥"], "present": [["月桥"]]}]}
+{"case_id": "seq-m-10-0", "checks": [{"present": [["SQLite"], ["不使用 Redis", "不要使用 Redis", "禁止 Redis", "不引入 Redis"]]}, {"present": [["SQLite"]]}]}
+{"case_id": "seq-m-10-1", "checks": [{"present": [["SQLite"], ["不使用 Redis", "不要使用 Redis", "禁止 Redis", "不引入 Redis"]]}, {"present": [["SQLite"], ["允许 Redis", "可以使用 Redis", "可用 Redis"]]}]}
+{"case_id": "seq-p-01-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["notify", "propose_task", "defer"], "max_candidates": 1}]}
+{"case_id": "seq-p-01-1", "checks": [{"max_candidates": 0}, {"actions": ["none"], "max_candidates": 0}]}
+{"case_id": "seq-p-02-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s1", "s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "max_candidates": 1}]}
+{"case_id": "seq-p-02-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s1", "s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "max_candidates": 1}]}
+{"case_id": "seq-p-03-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s1", "s2"], "states": ["resolved"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "max_candidates": 1}]}
+{"case_id": "seq-p-03-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s1", "s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "max_candidates": 1}]}
+{"case_id": "seq-p-04-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s1", "s2"], "states": ["dismissed"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "max_candidates": 1}]}
+{"case_id": "seq-p-04-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s1", "s2"], "states": ["dismissed"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "max_candidates": 1}]}
+{"case_id": "seq-p-05-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "gate": "quiet_hours"}]}
+{"case_id": "seq-p-05-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "gate": "quiet_hours"}]}
+{"case_id": "seq-p-06-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "opportunities": [{"evidence": ["s1"], "states": ["expired"], "terms": ["Benchmark", "评测"]}]}]}
+{"case_id": "seq-p-06-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"actions": ["none"], "opportunities": [{"evidence": ["s1"], "states": ["expired"], "terms": ["Benchmark", "评测"]}]}]}
+{"case_id": "seq-p-07-0", "checks": [{"max_candidates": 2, "opportunities": [{"evidence": ["s1"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}, {"evidence": ["s1"], "states": ["open", "deferred"], "terms": ["面试"]}]}, {"actions": ["notify", "propose_task"], "selected_any": ["面试"]}]}
+{"case_id": "seq-p-07-1", "checks": [{"max_candidates": 2, "opportunities": [{"evidence": ["s1"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}, {"evidence": ["s1"], "states": ["open", "deferred"], "terms": ["面试"]}]}, {"actions": ["notify", "propose_task"], "selected_any": ["Benchmark", "评测"]}]}
+{"case_id": "seq-p-08-0", "checks": [{"max_candidates": 0}, {"actions": ["none"], "max_candidates": 0}]}
+{"case_id": "seq-p-08-1", "checks": [{"max_candidates": 0}, {"actions": ["none"], "max_candidates": 0}]}
+{"case_id": "seq-p-09-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2", "s3"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}]}
+{"case_id": "seq-p-09-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2", "s3"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}]}
+{"case_id": "seq-p-10-0", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2", "s3"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}]}
+{"case_id": "seq-p-10-1", "checks": [{"max_candidates": 1, "opportunities": [{"evidence": ["s1"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2"], "followups": ["covered"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}, {"max_candidates": 1, "opportunities": [{"evidence": ["s2", "s3"], "followups": ["pending"], "states": ["open", "deferred"], "terms": ["Benchmark", "评测"]}]}]}

@@ -1,5 +1,7 @@
 # 自动化行为评测
 
+新增独立的 [连续场景评测](sequence-evaluation.md)，覆盖真实 Router 候选缺失、持久 MemoryFS 多步更新和原话到 Scout/Attention 生命周期。数据与评分边界见 [Sequence v1](../../evals/heybuddy_bench/sequence_v1/README.md)；不替换原有 Snapshot Benchmark，也不将固定离线响应计为能力分数。
+
 P3 增加默认无需 Key/网络的 [Character Evaluation](character-evaluation.md)，固定 13 场景与 20 轮漂移，对比 E0/E1/E2。复用本模块 Budget，合成历史/检索相同；机械契约与七维人工语义评分分开，只有 --live 才创建真实客户端。
 
 ## P1 独立 smoke

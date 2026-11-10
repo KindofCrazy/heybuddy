@@ -1,0 +1,17 @@
+{
+  "max_cost_cny": 20,
+  "max_requests": 700,
+  "max_tokens": 8000000,
+  "input_price_cny": 2,
+  "output_price_cny": 8,
+  "model": "deepseek-flash",
+  "endpoint_host": "api.deepseek.com",
+  "price_source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+  "price_checked": "2026-11-10",
+  "dataset_hashes": {
+    "inputs.jsonl": "99157e413c537aa84544050a21adfca04d10108b28c6ef03a8fb45c5d71e1d6d",
+    "gold.jsonl": "36341f1cec4c2f3519e36af17cd49633f4a664d955f2b82dabb03081bf4407fb"
+  },
+  "live_split": "dev",
+  "holdout_policy": "Do not run or tune on holdout in the initial diagnostic experiment."
+}

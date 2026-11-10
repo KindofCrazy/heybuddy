@@ -99,6 +99,7 @@ uv run personal-agent
 | 工具和任务扩展 | [Tools](docs/modules/tools.md)、[Hooks](docs/modules/hooks.md)、[Skills](docs/modules/skills.md)、[MCP](docs/modules/skills-mcp.md)、[Planning](docs/modules/planning.md) |
 | 长期记忆和维护 | [Memory](docs/modules/memory.md)、[Learning](docs/modules/learning.md)、[Reflection](docs/modules/reflection.md)、[Proactive](docs/modules/proactive.md) |
 | 存储、执行和恢复 | [Storage](docs/modules/storage.md)、[Execution](docs/modules/execution.md)、[Workflow](docs/modules/workflows.md) |
+| 连续场景评测 | [Sequence Benchmark](docs/modules/sequence-evaluation.md)、[数据与例子](evals/heybuddy_bench/sequence_v1/README.md) |
 | 全部模块与历史资料 | [完整模块索引](docs/README.md)、[历史归档](docs/archive/README.md) |
 
 ## 开发检查

@@ -1,0 +1,262 @@
+{
+  "exported_at": "2026-11-10T09:17:15.785547+00:00",
+  "dataset": "sequence-1.0",
+  "human_reviewed": false,
+  "model": "deepseek-flash",
+  "split": "dev",
+  "expected": 42,
+  "observed": 42,
+  "tracks": {
+    "routing": {
+      "scenarios": 14,
+      "scenarios_passed": 8,
+      "checkpoints": 18,
+      "checkpoints_passed": 11,
+      "families": 7,
+      "recent_candidate_recall": {
+        "hits": 7,
+        "total": 14
+      },
+      "effective_candidate_recall_with_active": {
+        "hits": 9,
+        "total": 14
+      },
+      "model_candidate_recall_when_called": {
+        "hits": 6,
+        "total": 11
+      }
+    },
+    "memory": {
+      "scenarios": 14,
+      "scenarios_passed": 13,
+      "checkpoints": 28,
+      "checkpoints_passed": 26,
+      "families": 7
+    },
+    "proactive": {
+      "scenarios": 14,
+      "scenarios_passed": 12,
+      "checkpoints": 34,
+      "checkpoints_passed": 32,
+      "families": 7
+    }
+  },
+  "families": {
+    "routing/old_exact": {
+      "scenarios": 2,
+      "passed": 1
+    },
+    "routing/old_paraphrase": {
+      "scenarios": 2,
+      "passed": 1
+    },
+    "routing/interleave": {
+      "scenarios": 2,
+      "passed": 1
+    },
+    "routing/shared_keyword": {
+      "scenarios": 2,
+      "passed": 1
+    },
+    "routing/new_project": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "routing/ambiguous_reference": {
+      "scenarios": 2,
+      "passed": 0
+    },
+    "routing/scope_isolation": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "memory/status_transition": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "memory/explicit_correction": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "memory/tentative_choice": {
+      "scenarios": 2,
+      "passed": 1
+    },
+    "memory/scoped_preference": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "memory/transient_detail": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "memory/assistant_not_user": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "memory/withdraw_preference": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/raw_discovery": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/already_covered": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/completed": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/explicit_refusal": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/quiet_hours": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/expired": {
+      "scenarios": 2,
+      "passed": 2
+    },
+    "proactive/competing_goals": {
+      "scenarios": 2,
+      "passed": 0
+    }
+  },
+  "failed_checkpoints": [
+    {
+      "case_id": "seq-r-01-1",
+      "step": "s1",
+      "failed_checks": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1
+      }
+    },
+    {
+      "case_id": "seq-r-02-1",
+      "step": "s1",
+      "failed_checks": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1
+      }
+    },
+    {
+      "case_id": "seq-r-03-1",
+      "step": "s2",
+      "failed_checks": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1
+      }
+    },
+    {
+      "case_id": "seq-r-03-1",
+      "step": "s3",
+      "failed_checks": {
+        "action": 1,
+        "target": 1
+      }
+    },
+    {
+      "case_id": "seq-r-04-1",
+      "step": "s1",
+      "failed_checks": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1,
+        "context_absent": 1
+      }
+    },
+    {
+      "case_id": "seq-r-06-0",
+      "step": "s1",
+      "failed_checks": {
+        "action": 1
+      }
+    },
+    {
+      "case_id": "seq-r-06-1",
+      "step": "s1",
+      "failed_checks": {
+        "action": 1
+      }
+    },
+    {
+      "case_id": "seq-m-03-1",
+      "step": "s1",
+      "failed_checks": {
+        "execution": 1
+      }
+    },
+    {
+      "case_id": "seq-m-03-1",
+      "step": "s2",
+      "failed_checks": {
+        "execution": 1
+      }
+    },
+    {
+      "case_id": "seq-p-07-0",
+      "step": "s1",
+      "failed_checks": {
+        "opportunity": 1,
+        "state": 1
+      }
+    },
+    {
+      "case_id": "seq-p-07-1",
+      "step": "s1",
+      "failed_checks": {
+        "opportunity": 1,
+        "state": 1
+      }
+    }
+  ],
+  "execution_error_cases": [
+    "seq-m-03-1"
+  ],
+  "hashes": {
+    "evaluation": "e33f6678aa21de3e8c9bc64b21dd91331de4a4120628c5bcd82a44d13daa582d",
+    "production": "a4997f6cfeaa62b31f36526bdbb4cd8c812791d2294970be8a4aa84250f04e0b",
+    "inputs.jsonl": "99157e413c537aa84544050a21adfca04d10108b28c6ef03a8fb45c5d71e1d6d",
+    "gold.jsonl": "36341f1cec4c2f3519e36af17cd49633f4a664d955f2b82dabb03081bf4407fb"
+  },
+  "protocol_hash": "c62ac5937a994d1ebb6397550142ae07dc32b34afa76de89b2b8ab664e7530c8",
+  "cumulative_usage": {
+    "protocol_hash": "c62ac5937a994d1ebb6397550142ae07dc32b34afa76de89b2b8ab664e7530c8",
+    "currency": "CNY",
+    "requests": 113,
+    "input_tokens": 163284,
+    "output_tokens": 12618,
+    "reasoning_tokens": 0,
+    "pending": false,
+    "usage_complete": true,
+    "reserved_tokens": 175902,
+    "reserved_cost_cny": 0.427512,
+    "cost_cny_upper_estimate": 0.427512
+  },
+  "dev_requests": 105,
+  "smoke_requests": 8,
+  "holdout_observed": 0,
+  "configuration": {
+    "memory": "explicit per-step learning checkpoints; persistent MemoryFS",
+    "proactive": "production defaults except compose=false and social_followup=false; one Attention attempt per requested checkpoint",
+    "routing": "actual recent24/LLM12 and rules; persistent bindings"
+  },
+  "limitations": [
+    "Agent-authored synthetic Gold; no human review or representative sampling.",
+    "Variants share scenario families; checkpoints and variants are correlated.",
+    "State checks are lexical/structural, not full semantic correctness or user utility.",
+    "Memory/Attention checkpoints are controlled; no autonomous scheduler benchmark.",
+    "Routing history visibility is a proxy; no downstream Agent task success measured.",
+    "Production policies and scorer unchanged after the initial live freeze.",
+    "Smoke repeats 3 development scenarios; cumulative usage includes both stages.",
+    "Cost is a cache-miss peak-price upper estimate, not the provider's final invoice."
+  ]
+}
