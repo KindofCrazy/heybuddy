@@ -1,0 +1,4318 @@
+{
+  "version": "1.0.0",
+  "expected": 360,
+  "observed": 360,
+  "passed": 280,
+  "pass_rate": 77.78,
+  "tables": {
+    "primary": {
+      "routing": {
+        "expected": 50,
+        "observed": 50,
+        "passed": 49,
+        "pass_rate": 98.0
+      },
+      "memory": {
+        "expected": 50,
+        "observed": 50,
+        "passed": 45,
+        "pass_rate": 90.0
+      },
+      "proactive": {
+        "expected": 50,
+        "observed": 50,
+        "passed": 42,
+        "pass_rate": 84.0
+      }
+    },
+    "challenge": {
+      "routing": {
+        "expected": 10,
+        "observed": 10,
+        "passed": 10,
+        "pass_rate": 100.0
+      },
+      "memory": {
+        "expected": 10,
+        "observed": 10,
+        "passed": 9,
+        "pass_rate": 90.0
+      },
+      "proactive": {
+        "expected": 10,
+        "observed": 10,
+        "passed": 10,
+        "pass_rate": 100.0
+      }
+    },
+    "short": {
+      "routing": {
+        "expected": 20,
+        "observed": 20,
+        "passed": 11,
+        "pass_rate": 55.0
+      },
+      "memory": {
+        "expected": 20,
+        "observed": 20,
+        "passed": 16,
+        "pass_rate": 80.0
+      },
+      "proactive": {
+        "expected": 20,
+        "observed": 20,
+        "passed": 18,
+        "pass_rate": 90.0
+      }
+    },
+    "long": {
+      "routing": {
+        "expected": 40,
+        "observed": 40,
+        "passed": 32,
+        "pass_rate": 80.0
+      },
+      "memory": {
+        "expected": 40,
+        "observed": 40,
+        "passed": 26,
+        "pass_rate": 65.0
+      },
+      "proactive": {
+        "expected": 40,
+        "observed": 40,
+        "passed": 12,
+        "pass_rate": 30.0
+      }
+    },
+    "all": {
+      "routing": {
+        "expected": 120,
+        "observed": 120,
+        "passed": 102,
+        "pass_rate": 85.0
+      },
+      "memory": {
+        "expected": 120,
+        "observed": 120,
+        "passed": 96,
+        "pass_rate": 80.0
+      },
+      "proactive": {
+        "expected": 120,
+        "observed": 120,
+        "passed": 82,
+        "pass_rate": 68.33
+      }
+    }
+  },
+  "capabilities": {
+    "primary/routing/long_gap_resume": {
+      "expected": 10,
+      "observed": 10,
+      "passed": 10
+    },
+    "primary/routing/similar_thread_disambiguation": {
+      "expected": 10,
+      "observed": 10,
+      "passed": 10
+    },
+    "primary/routing/subtask_existing": {
+      "expected": 4,
+      "observed": 4,
+      "passed": 4
+    },
+    "primary/routing/distinct_new_task": {
+      "expected": 4,
+      "observed": 4,
+      "passed": 4
+    },
+    "primary/routing/ephemeral_social": {
+      "expected": 6,
+      "observed": 6,
+      "passed": 5
+    },
+    "primary/routing/ambiguous_reference": {
+      "expected": 6,
+      "observed": 6,
+      "passed": 6
+    },
+    "primary/memory/new_fact": {
+      "expected": 4,
+      "observed": 4,
+      "passed": 4
+    },
+    "primary/memory/explicit_project_update": {
+      "expected": 4,
+      "observed": 4,
+      "passed": 4
+    },
+    "primary/memory/explicit_preference_override": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "primary/memory/core_vs_deferred": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 5
+    },
+    "primary/memory/behavioral_regularity": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 5
+    },
+    "primary/memory/temporal_provenance": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 4
+    },
+    "primary/memory/ignore_or_archive": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 5
+    },
+    "primary/proactive/deadline_commitment": {
+      "expected": 10,
+      "observed": 10,
+      "passed": 9
+    },
+    "primary/proactive/completed_or_cancelled": {
+      "expected": 8,
+      "observed": 8,
+      "passed": 8
+    },
+    "primary/proactive/behavioral_evidence": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 5
+    },
+    "primary/proactive/attention_interruption": {
+      "expected": 7,
+      "observed": 7,
+      "passed": 7
+    },
+    "primary/proactive/repeat_cooldown": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 5
+    },
+    "primary/routing/public": {
+      "expected": 8,
+      "observed": 8,
+      "passed": 8
+    },
+    "primary/memory/knowledge-update": {
+      "expected": 8,
+      "observed": 8,
+      "passed": 6
+    },
+    "primary/memory/explicit_personal_note": {
+      "expected": 4,
+      "observed": 4,
+      "passed": 4
+    },
+    "primary/proactive/temporal_grounding": {
+      "expected": 3,
+      "observed": 3,
+      "passed": 2
+    },
+    "primary/proactive/state_tracking": {
+      "expected": 5,
+      "observed": 5,
+      "passed": 2
+    },
+    "primary/proactive/logical_adherence": {
+      "expected": 6,
+      "observed": 6,
+      "passed": 4
+    },
+    "primary/proactive/attention_recovery": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 0
+    },
+    "primary/routing/same_domain_new_goal": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/routing/ambiguous_active_reference": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/assistant_not_user": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 0
+    },
+    "primary/memory/already_recorded": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/deadline_correction": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/project_scoped_preference": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/relationship_feedback": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/quoted_instruction": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/entity_scope": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "primary/memory/unconfirmed_correction": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 0
+    },
+    "challenge/routing/lexical_collision": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/shared_suffix": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/ambiguous_active": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/new_entity": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/ack": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/cancellation": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/scoped_preference": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/deadline": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/knowledge": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/progress": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/competing": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/dnd": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/too_early": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/finished_first": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/permission": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/homograph": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/implicit_resume": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/two_referents": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/different_goal": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/routing/social": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/entity_isolation": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/conditional_scope": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 0
+    },
+    "challenge/memory/rescheduled": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/explicit_note": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/memory/two_facts": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/priority": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/focused": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/covered": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/concrete_help": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "challenge/proactive/explicit_refusal": {
+      "expected": 1,
+      "observed": 1,
+      "passed": 1
+    },
+    "short/routing/old_exact": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/routing/old_paraphrase": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/routing/interleave": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/routing/shared_keyword": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/routing/new_project": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/routing/ambiguous_reference": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "short/routing/scope_isolation": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/memory/status_transition": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/memory/explicit_correction": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/memory/tentative_choice": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/memory/scoped_preference": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/memory/transient_detail": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/memory/assistant_not_user": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/memory/withdraw_preference": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/raw_discovery": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/already_covered": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/completed": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/explicit_refusal": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/quiet_hours": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/expired": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/competing_goals": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/routing/routing_0_视频空间推理": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_1_论文复现": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_2_语音助手": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_3_笔记同步": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_4_机器人导航": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_0_课程推荐": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_1_文献管理": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_2_图像去噪": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_3_日程助手": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_4_旅行规划": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_0_音乐检索": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_1_日志分析": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_2_食谱工具": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_3_校园地图": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_4_读书记录": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_0_简历助手": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_1_代码审查": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_2_数据标注": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/routing/routing_3_问答评测": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/routing/routing_4_实验追踪": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/internship": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/project_stage": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/database": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/reply_style": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/project_scope": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/research_choice": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/meeting_day": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/home_city": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/entity_scope": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/deadline": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/rename": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/diet": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/work_time": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/relationship": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/assistant_claim": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/memory/withdraw": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/duplicate": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/language": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/memory/storage_scope": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/memory/conditional": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/proactive/proactive_0_评测": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_1_返修": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_2_发布": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_3_作品": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_4_报名": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_0_报告": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_1_面试": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_2_申请": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_3_展示": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_4_答辩": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_0_投稿": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_1_验收": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_2_搬迁": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_3_续约": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_4_预约": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_0_出行": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_1_交付": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "long/proactive/proactive_2_归档": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "long/proactive/proactive_3_演讲": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "long/proactive/proactive_4_开题": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 0
+    },
+    "short/routing/explicit_id": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/routing/state_tail": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/routing/active_bias": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/memory/behavior_vs_preference": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/memory/duplicate_fact": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/memory/negation": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 1
+    },
+    "short/proactive/assistant_suggestion": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/ordinary_update": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    },
+    "short/proactive/explicit_new_plan": {
+      "expected": 2,
+      "observed": 2,
+      "passed": 2
+    }
+  },
+  "cases": [
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_001",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_002",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_003",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_004",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_005",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_006",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_007",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_008",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_009",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_010",
+      "track": "routing",
+      "family": "long_gap_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_011",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_012",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_013",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_014",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_015",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_016",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_017",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_018",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_019",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_020",
+      "track": "routing",
+      "family": "similar_thread_disambiguation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_021",
+      "track": "routing",
+      "family": "subtask_existing",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_022",
+      "track": "routing",
+      "family": "subtask_existing",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_023",
+      "track": "routing",
+      "family": "subtask_existing",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_024",
+      "track": "routing",
+      "family": "subtask_existing",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_025",
+      "track": "routing",
+      "family": "distinct_new_task",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_026",
+      "track": "routing",
+      "family": "distinct_new_task",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_027",
+      "track": "routing",
+      "family": "distinct_new_task",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_028",
+      "track": "routing",
+      "family": "distinct_new_task",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_029",
+      "track": "routing",
+      "family": "ephemeral_social",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_030",
+      "track": "routing",
+      "family": "ephemeral_social",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_031",
+      "track": "routing",
+      "family": "ephemeral_social",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_032",
+      "track": "routing",
+      "family": "ephemeral_social",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_033",
+      "track": "routing",
+      "family": "ephemeral_social",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_034",
+      "track": "routing",
+      "family": "ephemeral_social",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_035",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_036",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_037",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_038",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_039",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_rt_040",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_001",
+      "track": "memory",
+      "family": "new_fact",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_002",
+      "track": "memory",
+      "family": "new_fact",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_003",
+      "track": "memory",
+      "family": "new_fact",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_004",
+      "track": "memory",
+      "family": "new_fact",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_005",
+      "track": "memory",
+      "family": "explicit_project_update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_006",
+      "track": "memory",
+      "family": "explicit_project_update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_007",
+      "track": "memory",
+      "family": "explicit_project_update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_008",
+      "track": "memory",
+      "family": "explicit_project_update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_009",
+      "track": "memory",
+      "family": "explicit_preference_override",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_010",
+      "track": "memory",
+      "family": "explicit_preference_override",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_011",
+      "track": "memory",
+      "family": "core_vs_deferred",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_012",
+      "track": "memory",
+      "family": "core_vs_deferred",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_013",
+      "track": "memory",
+      "family": "core_vs_deferred",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_014",
+      "track": "memory",
+      "family": "core_vs_deferred",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_015",
+      "track": "memory",
+      "family": "core_vs_deferred",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_016",
+      "track": "memory",
+      "family": "behavioral_regularity",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_017",
+      "track": "memory",
+      "family": "behavioral_regularity",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_018",
+      "track": "memory",
+      "family": "behavioral_regularity",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_019",
+      "track": "memory",
+      "family": "behavioral_regularity",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_020",
+      "track": "memory",
+      "family": "behavioral_regularity",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_021",
+      "track": "memory",
+      "family": "temporal_provenance",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_022",
+      "track": "memory",
+      "family": "temporal_provenance",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_023",
+      "track": "memory",
+      "family": "temporal_provenance",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_024",
+      "track": "memory",
+      "family": "temporal_provenance",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_025",
+      "track": "memory",
+      "family": "temporal_provenance",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_026",
+      "track": "memory",
+      "family": "ignore_or_archive",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_027",
+      "track": "memory",
+      "family": "ignore_or_archive",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_028",
+      "track": "memory",
+      "family": "ignore_or_archive",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_029",
+      "track": "memory",
+      "family": "ignore_or_archive",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_ml_030",
+      "track": "memory",
+      "family": "ignore_or_archive",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_001",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_002",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_003",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_004",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_005",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_006",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_007",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_008",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_009",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_010",
+      "track": "proactive",
+      "family": "deadline_commitment",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_011",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_012",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_013",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_014",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_015",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_016",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_017",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_018",
+      "track": "proactive",
+      "family": "completed_or_cancelled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_019",
+      "track": "proactive",
+      "family": "behavioral_evidence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_020",
+      "track": "proactive",
+      "family": "behavioral_evidence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_021",
+      "track": "proactive",
+      "family": "behavioral_evidence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_022",
+      "track": "proactive",
+      "family": "behavioral_evidence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_023",
+      "track": "proactive",
+      "family": "behavioral_evidence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_024",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_025",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_026",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_027",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_028",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_029",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_030",
+      "track": "proactive",
+      "family": "attention_interruption",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_031",
+      "track": "proactive",
+      "family": "repeat_cooldown",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_032",
+      "track": "proactive",
+      "family": "repeat_cooldown",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_033",
+      "track": "proactive",
+      "family": "repeat_cooldown",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_034",
+      "track": "proactive",
+      "family": "repeat_cooldown",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "custom_pd_035",
+      "track": "proactive",
+      "family": "repeat_cooldown",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_001",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_002",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_003",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_004",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_005",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_006",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_007",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_008",
+      "track": "routing",
+      "family": "public",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_009",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_010",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_011",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_012",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_013",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_014",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_015",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_016",
+      "track": "memory",
+      "family": "knowledge-update",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "replacement_public_017",
+      "track": "memory",
+      "family": "explicit_personal_note",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "replacement_public_018",
+      "track": "memory",
+      "family": "explicit_personal_note",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "replacement_public_019",
+      "track": "memory",
+      "family": "explicit_personal_note",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "replacement_public_020",
+      "track": "memory",
+      "family": "explicit_personal_note",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_021",
+      "track": "proactive",
+      "family": "temporal_grounding",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_022",
+      "track": "proactive",
+      "family": "temporal_grounding",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_023",
+      "track": "proactive",
+      "family": "temporal_grounding",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_024",
+      "track": "proactive",
+      "family": "state_tracking",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_025",
+      "track": "proactive",
+      "family": "state_tracking",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_026",
+      "track": "proactive",
+      "family": "logical_adherence",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_027",
+      "track": "proactive",
+      "family": "logical_adherence",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_028",
+      "track": "proactive",
+      "family": "attention_recovery",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_029",
+      "track": "proactive",
+      "family": "state_tracking",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_030",
+      "track": "proactive",
+      "family": "state_tracking",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_031",
+      "track": "proactive",
+      "family": "state_tracking",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_032",
+      "track": "proactive",
+      "family": "logical_adherence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_033",
+      "track": "proactive",
+      "family": "logical_adherence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_034",
+      "track": "proactive",
+      "family": "logical_adherence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "public_035",
+      "track": "proactive",
+      "family": "logical_adherence",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_rt_001",
+      "track": "routing",
+      "family": "same_domain_new_goal",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_rt_002",
+      "track": "routing",
+      "family": "ambiguous_active_reference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_001",
+      "track": "memory",
+      "family": "assistant_not_user",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_002",
+      "track": "memory",
+      "family": "already_recorded",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_003",
+      "track": "memory",
+      "family": "deadline_correction",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_004",
+      "track": "memory",
+      "family": "project_scoped_preference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_005",
+      "track": "memory",
+      "family": "relationship_feedback",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_006",
+      "track": "memory",
+      "family": "quoted_instruction",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_007",
+      "track": "memory",
+      "family": "entity_scope",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "primary",
+      "case_id": "extra_ml_008",
+      "track": "memory",
+      "family": "unconfirmed_correction",
+      "observed": true,
+      "passed": false,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_001",
+      "track": "routing",
+      "family": "lexical_collision",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_002",
+      "track": "routing",
+      "family": "shared_suffix",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_003",
+      "track": "routing",
+      "family": "ambiguous_active",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_004",
+      "track": "routing",
+      "family": "new_entity",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_005",
+      "track": "routing",
+      "family": "ack",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_001",
+      "track": "memory",
+      "family": "cancellation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_002",
+      "track": "memory",
+      "family": "scoped_preference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_003",
+      "track": "memory",
+      "family": "deadline",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_004",
+      "track": "memory",
+      "family": "knowledge",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_005",
+      "track": "memory",
+      "family": "progress",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_001",
+      "track": "proactive",
+      "family": "competing",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_002",
+      "track": "proactive",
+      "family": "dnd",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_003",
+      "track": "proactive",
+      "family": "too_early",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_004",
+      "track": "proactive",
+      "family": "finished_first",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_005",
+      "track": "proactive",
+      "family": "permission",
+      "observed": true,
+      "passed": true,
+      "source_stage": "verification-development"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_006",
+      "track": "routing",
+      "family": "homograph",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_007",
+      "track": "routing",
+      "family": "implicit_resume",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_008",
+      "track": "routing",
+      "family": "two_referents",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_009",
+      "track": "routing",
+      "family": "different_goal",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_rt_010",
+      "track": "routing",
+      "family": "social",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_006",
+      "track": "memory",
+      "family": "entity_isolation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_007",
+      "track": "memory",
+      "family": "conditional_scope",
+      "observed": true,
+      "passed": false,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_008",
+      "track": "memory",
+      "family": "rescheduled",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_009",
+      "track": "memory",
+      "family": "explicit_note",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_ml_010",
+      "track": "memory",
+      "family": "two_facts",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_006",
+      "track": "proactive",
+      "family": "priority",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_007",
+      "track": "proactive",
+      "family": "focused",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_008",
+      "track": "proactive",
+      "family": "covered",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_009",
+      "track": "proactive",
+      "family": "concrete_help",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "challenge",
+      "case_id": "challenge_pd_010",
+      "track": "proactive",
+      "family": "explicit_refusal",
+      "observed": true,
+      "passed": true,
+      "source_stage": "final-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-01-0",
+      "track": "routing",
+      "family": "old_exact",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-01-1",
+      "track": "routing",
+      "family": "old_exact",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-02-0",
+      "track": "routing",
+      "family": "old_paraphrase",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-02-1",
+      "track": "routing",
+      "family": "old_paraphrase",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-03-0",
+      "track": "routing",
+      "family": "interleave",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-03-1",
+      "track": "routing",
+      "family": "interleave",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-04-0",
+      "track": "routing",
+      "family": "shared_keyword",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-04-1",
+      "track": "routing",
+      "family": "shared_keyword",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-05-0",
+      "track": "routing",
+      "family": "new_project",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-05-1",
+      "track": "routing",
+      "family": "new_project",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-06-0",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-06-1",
+      "track": "routing",
+      "family": "ambiguous_reference",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-07-0",
+      "track": "routing",
+      "family": "scope_isolation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-07-1",
+      "track": "routing",
+      "family": "scope_isolation",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-01-0",
+      "track": "memory",
+      "family": "status_transition",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-01-1",
+      "track": "memory",
+      "family": "status_transition",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-02-0",
+      "track": "memory",
+      "family": "explicit_correction",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-02-1",
+      "track": "memory",
+      "family": "explicit_correction",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-03-0",
+      "track": "memory",
+      "family": "tentative_choice",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-03-1",
+      "track": "memory",
+      "family": "tentative_choice",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-04-0",
+      "track": "memory",
+      "family": "scoped_preference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-04-1",
+      "track": "memory",
+      "family": "scoped_preference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-05-0",
+      "track": "memory",
+      "family": "transient_detail",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-05-1",
+      "track": "memory",
+      "family": "transient_detail",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-06-0",
+      "track": "memory",
+      "family": "assistant_not_user",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-06-1",
+      "track": "memory",
+      "family": "assistant_not_user",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-07-0",
+      "track": "memory",
+      "family": "withdraw_preference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-07-1",
+      "track": "memory",
+      "family": "withdraw_preference",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-01-0",
+      "track": "proactive",
+      "family": "raw_discovery",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-01-1",
+      "track": "proactive",
+      "family": "raw_discovery",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-02-0",
+      "track": "proactive",
+      "family": "already_covered",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-02-1",
+      "track": "proactive",
+      "family": "already_covered",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-03-0",
+      "track": "proactive",
+      "family": "completed",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-03-1",
+      "track": "proactive",
+      "family": "completed",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-04-0",
+      "track": "proactive",
+      "family": "explicit_refusal",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-04-1",
+      "track": "proactive",
+      "family": "explicit_refusal",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-05-0",
+      "track": "proactive",
+      "family": "quiet_hours",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-05-1",
+      "track": "proactive",
+      "family": "quiet_hours",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-06-0",
+      "track": "proactive",
+      "family": "expired",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-06-1",
+      "track": "proactive",
+      "family": "expired",
+      "observed": true,
+      "passed": true,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-07-0",
+      "track": "proactive",
+      "family": "competing_goals",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-07-1",
+      "track": "proactive",
+      "family": "competing_goals",
+      "observed": true,
+      "passed": false,
+      "source_stage": "initial-short-dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-01-0",
+      "track": "routing",
+      "family": "routing_0_视频空间推理",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-01-1",
+      "track": "routing",
+      "family": "routing_0_视频空间推理",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-02-0",
+      "track": "routing",
+      "family": "routing_1_论文复现",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-02-1",
+      "track": "routing",
+      "family": "routing_1_论文复现",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-03-0",
+      "track": "routing",
+      "family": "routing_2_语音助手",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-03-1",
+      "track": "routing",
+      "family": "routing_2_语音助手",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-04-0",
+      "track": "routing",
+      "family": "routing_3_笔记同步",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-04-1",
+      "track": "routing",
+      "family": "routing_3_笔记同步",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-05-0",
+      "track": "routing",
+      "family": "routing_4_机器人导航",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-05-1",
+      "track": "routing",
+      "family": "routing_4_机器人导航",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-06-0",
+      "track": "routing",
+      "family": "routing_0_课程推荐",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-06-1",
+      "track": "routing",
+      "family": "routing_0_课程推荐",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-07-0",
+      "track": "routing",
+      "family": "routing_1_文献管理",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-07-1",
+      "track": "routing",
+      "family": "routing_1_文献管理",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-08-0",
+      "track": "routing",
+      "family": "routing_2_图像去噪",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-08-1",
+      "track": "routing",
+      "family": "routing_2_图像去噪",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-09-0",
+      "track": "routing",
+      "family": "routing_3_日程助手",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-09-1",
+      "track": "routing",
+      "family": "routing_3_日程助手",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-10-0",
+      "track": "routing",
+      "family": "routing_4_旅行规划",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-10-1",
+      "track": "routing",
+      "family": "routing_4_旅行规划",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-11-0",
+      "track": "routing",
+      "family": "routing_0_音乐检索",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-11-1",
+      "track": "routing",
+      "family": "routing_0_音乐检索",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-12-0",
+      "track": "routing",
+      "family": "routing_1_日志分析",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-12-1",
+      "track": "routing",
+      "family": "routing_1_日志分析",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-13-0",
+      "track": "routing",
+      "family": "routing_2_食谱工具",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-13-1",
+      "track": "routing",
+      "family": "routing_2_食谱工具",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-14-0",
+      "track": "routing",
+      "family": "routing_3_校园地图",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-14-1",
+      "track": "routing",
+      "family": "routing_3_校园地图",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-15-0",
+      "track": "routing",
+      "family": "routing_4_读书记录",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-15-1",
+      "track": "routing",
+      "family": "routing_4_读书记录",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-16-0",
+      "track": "routing",
+      "family": "routing_0_简历助手",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-16-1",
+      "track": "routing",
+      "family": "routing_0_简历助手",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-17-0",
+      "track": "routing",
+      "family": "routing_1_代码审查",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-17-1",
+      "track": "routing",
+      "family": "routing_1_代码审查",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-18-0",
+      "track": "routing",
+      "family": "routing_2_数据标注",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-18-1",
+      "track": "routing",
+      "family": "routing_2_数据标注",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-19-0",
+      "track": "routing",
+      "family": "routing_3_问答评测",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-19-1",
+      "track": "routing",
+      "family": "routing_3_问答评测",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-20-0",
+      "track": "routing",
+      "family": "routing_4_实验追踪",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-r-20-1",
+      "track": "routing",
+      "family": "routing_4_实验追踪",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-01-0",
+      "track": "memory",
+      "family": "internship",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-01-1",
+      "track": "memory",
+      "family": "internship",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-02-0",
+      "track": "memory",
+      "family": "project_stage",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-02-1",
+      "track": "memory",
+      "family": "project_stage",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-03-0",
+      "track": "memory",
+      "family": "database",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-03-1",
+      "track": "memory",
+      "family": "database",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-04-0",
+      "track": "memory",
+      "family": "reply_style",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-04-1",
+      "track": "memory",
+      "family": "reply_style",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-05-0",
+      "track": "memory",
+      "family": "project_scope",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-05-1",
+      "track": "memory",
+      "family": "project_scope",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-06-0",
+      "track": "memory",
+      "family": "research_choice",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-06-1",
+      "track": "memory",
+      "family": "research_choice",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-07-0",
+      "track": "memory",
+      "family": "meeting_day",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-07-1",
+      "track": "memory",
+      "family": "meeting_day",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-08-0",
+      "track": "memory",
+      "family": "home_city",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-08-1",
+      "track": "memory",
+      "family": "home_city",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-09-0",
+      "track": "memory",
+      "family": "entity_scope",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-09-1",
+      "track": "memory",
+      "family": "entity_scope",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-10-0",
+      "track": "memory",
+      "family": "deadline",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-10-1",
+      "track": "memory",
+      "family": "deadline",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-11-0",
+      "track": "memory",
+      "family": "rename",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-11-1",
+      "track": "memory",
+      "family": "rename",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-12-0",
+      "track": "memory",
+      "family": "diet",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-12-1",
+      "track": "memory",
+      "family": "diet",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-13-0",
+      "track": "memory",
+      "family": "work_time",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-13-1",
+      "track": "memory",
+      "family": "work_time",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-14-0",
+      "track": "memory",
+      "family": "relationship",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-14-1",
+      "track": "memory",
+      "family": "relationship",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-15-0",
+      "track": "memory",
+      "family": "assistant_claim",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-15-1",
+      "track": "memory",
+      "family": "assistant_claim",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-16-0",
+      "track": "memory",
+      "family": "withdraw",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-16-1",
+      "track": "memory",
+      "family": "withdraw",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-17-0",
+      "track": "memory",
+      "family": "duplicate",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-17-1",
+      "track": "memory",
+      "family": "duplicate",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-18-0",
+      "track": "memory",
+      "family": "language",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-18-1",
+      "track": "memory",
+      "family": "language",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-19-0",
+      "track": "memory",
+      "family": "storage_scope",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-19-1",
+      "track": "memory",
+      "family": "storage_scope",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-20-0",
+      "track": "memory",
+      "family": "conditional",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-m-20-1",
+      "track": "memory",
+      "family": "conditional",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-01-0",
+      "track": "proactive",
+      "family": "proactive_0_评测",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-01-1",
+      "track": "proactive",
+      "family": "proactive_0_评测",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-02-0",
+      "track": "proactive",
+      "family": "proactive_1_返修",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-02-1",
+      "track": "proactive",
+      "family": "proactive_1_返修",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-03-0",
+      "track": "proactive",
+      "family": "proactive_2_发布",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-03-1",
+      "track": "proactive",
+      "family": "proactive_2_发布",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-04-0",
+      "track": "proactive",
+      "family": "proactive_3_作品",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-04-1",
+      "track": "proactive",
+      "family": "proactive_3_作品",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-05-0",
+      "track": "proactive",
+      "family": "proactive_4_报名",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-05-1",
+      "track": "proactive",
+      "family": "proactive_4_报名",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-06-0",
+      "track": "proactive",
+      "family": "proactive_0_报告",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-06-1",
+      "track": "proactive",
+      "family": "proactive_0_报告",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-07-0",
+      "track": "proactive",
+      "family": "proactive_1_面试",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-07-1",
+      "track": "proactive",
+      "family": "proactive_1_面试",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-08-0",
+      "track": "proactive",
+      "family": "proactive_2_申请",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-08-1",
+      "track": "proactive",
+      "family": "proactive_2_申请",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-09-0",
+      "track": "proactive",
+      "family": "proactive_3_展示",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-09-1",
+      "track": "proactive",
+      "family": "proactive_3_展示",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-10-0",
+      "track": "proactive",
+      "family": "proactive_4_答辩",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-10-1",
+      "track": "proactive",
+      "family": "proactive_4_答辩",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-11-0",
+      "track": "proactive",
+      "family": "proactive_0_投稿",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-11-1",
+      "track": "proactive",
+      "family": "proactive_0_投稿",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-12-0",
+      "track": "proactive",
+      "family": "proactive_1_验收",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-12-1",
+      "track": "proactive",
+      "family": "proactive_1_验收",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-13-0",
+      "track": "proactive",
+      "family": "proactive_2_搬迁",
+      "split": "dev",
+      "observed": true,
+      "passed": true,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-13-1",
+      "track": "proactive",
+      "family": "proactive_2_搬迁",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-14-0",
+      "track": "proactive",
+      "family": "proactive_3_续约",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-14-1",
+      "track": "proactive",
+      "family": "proactive_3_续约",
+      "split": "dev",
+      "observed": true,
+      "passed": false,
+      "source_stage": "dev"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-15-0",
+      "track": "proactive",
+      "family": "proactive_4_预约",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-15-1",
+      "track": "proactive",
+      "family": "proactive_4_预约",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-16-0",
+      "track": "proactive",
+      "family": "proactive_0_出行",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-16-1",
+      "track": "proactive",
+      "family": "proactive_0_出行",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-17-0",
+      "track": "proactive",
+      "family": "proactive_1_交付",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-17-1",
+      "track": "proactive",
+      "family": "proactive_1_交付",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-18-0",
+      "track": "proactive",
+      "family": "proactive_2_归档",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-18-1",
+      "track": "proactive",
+      "family": "proactive_2_归档",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-19-0",
+      "track": "proactive",
+      "family": "proactive_3_演讲",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-19-1",
+      "track": "proactive",
+      "family": "proactive_3_演讲",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-20-0",
+      "track": "proactive",
+      "family": "proactive_4_开题",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "long",
+      "case_id": "long-p-20-1",
+      "track": "proactive",
+      "family": "proactive_4_开题",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-08-0",
+      "track": "routing",
+      "family": "explicit_id",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-08-1",
+      "track": "routing",
+      "family": "explicit_id",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-09-0",
+      "track": "routing",
+      "family": "state_tail",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-09-1",
+      "track": "routing",
+      "family": "state_tail",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-10-0",
+      "track": "routing",
+      "family": "active_bias",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-r-10-1",
+      "track": "routing",
+      "family": "active_bias",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-08-0",
+      "track": "memory",
+      "family": "behavior_vs_preference",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-08-1",
+      "track": "memory",
+      "family": "behavior_vs_preference",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-09-0",
+      "track": "memory",
+      "family": "duplicate_fact",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-09-1",
+      "track": "memory",
+      "family": "duplicate_fact",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-10-0",
+      "track": "memory",
+      "family": "negation",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-m-10-1",
+      "track": "memory",
+      "family": "negation",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-08-0",
+      "track": "proactive",
+      "family": "assistant_suggestion",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-08-1",
+      "track": "proactive",
+      "family": "assistant_suggestion",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-09-0",
+      "track": "proactive",
+      "family": "ordinary_update",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-09-1",
+      "track": "proactive",
+      "family": "ordinary_update",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-10-0",
+      "track": "proactive",
+      "family": "explicit_new_plan",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    },
+    {
+      "subset": "short",
+      "case_id": "seq-p-10-1",
+      "track": "proactive",
+      "family": "explicit_new_plan",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "source_stage": "short-reserved"
+    }
+  ],
+  "new_stages": [
+    "dev",
+    "reserved",
+    "short-reserved"
+  ],
+  "new_usage": {
+    "protocol_hash": "3591b6651d2b28ecb59c7f29be97a3a509f839ff03aa95d29b2fdec38e663029",
+    "currency": "CNY",
+    "requests": 1770,
+    "input_tokens": 3268803,
+    "output_tokens": 161911,
+    "reasoning_tokens": 0,
+    "pending": false,
+    "usage_complete": false,
+    "reserved_tokens": 3445841,
+    "reserved_cost_cny": 7.8877239999999995,
+    "cost_cny_upper_estimate": 7.8877239999999995,
+    "accounting_complete": true,
+    "unknown_usage_reservations": [
+      {
+        "request": "live-long-dev/request-0113.json",
+        "request_sha256": "366c2906bbd41b9f81e2ae5af3cd4bb839a00e66fff154e47dc0f5bbb6244519",
+        "input_token_ceiling": 11031,
+        "output_token_ceiling": 4096,
+        "cost_cny_ceiling": 0.05483,
+        "provider_usage_known": false,
+        "approved_by": "user, 2026-11-10",
+        "retry": false
+      }
+    ],
+    "token_totals_note": "input/output/reasoning totals include ONLY known Provider usage; unknown bounds are separate"
+  },
+  "unknown_usage_requests": 1,
+  "long_fully_replayed": 119,
+  "long_observed_user_messages": 3101,
+  "long_planned_user_messages": 3120,
+  "human_reviewed": false,
+  "aggregation": "One case one vote; frozen latest final snapshots + short + long sequences. Missing/errors fail; smoke repeats and diagnostic probes excluded.",
+  "limitations": [
+    "Historical snapshot results are reused; not a single newly rerun 360-case experiment.",
+    "Gold is Agent-authored/reviewed, not independently human verified.",
+    "Long user inputs and acknowledgements are fixed; assistant answers are not generated.",
+    "Lexical/structural checks; no general Faithfulness or user-satisfaction score.",
+    "Templates/variants are correlated; 360 is not an independent sample count.",
+    "Controlled checkpoints; automatic scheduling and real delivery remain untested.",
+    "Unknown usage is separately charged at the user-approved full reservation ceiling."
+  ],
+  "hashes": {
+    "suite": "e8d86651bb7ba0491ba31a22da11de43ac11fb651d03de85cd3b413235d4b4dc",
+    "protocol": "3591b6651d2b28ecb59c7f29be97a3a509f839ff03aa95d29b2fdec38e663029",
+    "historical_cycle": "d6796e5d989fefa1cf286d00e9e41559950f6a0b62b2baba8201229797ce434a"
+  }
+}

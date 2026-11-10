@@ -1,0 +1,16 @@
+{
+  "version": "long-1.0",
+  "total": 120,
+  "families": 60,
+  "split": {
+    "dev": 84,
+    "holdout": 36
+  },
+  "human_reviewed": false,
+  "sha256": {
+    "inputs.jsonl": "384c91123226aca646f3f9337e767e920165b26cdd245f87c1d4311e1c657af6",
+    "gold.jsonl": "35c990e05304358712e56681eef42fcfa27f61b5f64ab8ccff2828031dfc75c5"
+  },
+  "user_messages": 3120,
+  "checkpoints": 1480
+}

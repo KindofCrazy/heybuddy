@@ -1,6 +1,8 @@
 # HeyBuddy-Bench
 
-当前迭代版为 [v0.4](v0_4/README.md)：主集仍为 150 题，增加多文件/跨文件状态断言、未来复查边界和 30 道含开发与保留部分的挑战变体。最新结论见 [本轮 Review + Evaluation Report](ITERATION_REPORT.md) 与 [逐题结果](results/cycle_20261108_summary.json)，方案见 [迭代计划](ITERATION_PLAN.md)。下文保留 v0.2 的数据与首次交付入口；当前版本的测评使用专用 `cycle --revision v0_4`，不能混用旧评分。
+新增 [v1.0：360 案例](v1_0/README.md)，保留 v0.4 主集 150、挑战集 30 和短序列 60，新增每 Part 40 个长序列（共 120）。每个长序列含 20–32 条用户消息；整体分数按案例汇总，消息和检查点不计作额外题数。历史结果与新结果的复用、费用承接和能力边界见该版本说明。
+
+主集沿用 [v0.4](v0_4/README.md)：主集仍为 150 题，增加多文件/跨文件状态断言、未来复查边界和 30 道含开发与保留部分的挑战变体。该主集的迭代结论见 [Review + Evaluation Report](ITERATION_REPORT.md) 与 [逐题结果](results/cycle_20261108_summary.json)，方案见 [迭代计划](ITERATION_PLAN.md)。下文保留 v0.2 的数据与首次交付入口；v0.4 主集的测评使用专用 `cycle --revision v0_4`，不能混用旧评分。
 
 当前为 **150 个经编码 Agent 审阅的决策快照**：Thread Routing、Memory Learning、Proactive Decision 各 50 题。独立人工审核尚未完成，`human_reviewed=false`。已完成确定性 Baseline、离线生产链路验证和 DeepSeek 真实对照；模型结果与局限见 [真实测评报告](LIVE_EVALUATION_REPORT.md)。
 

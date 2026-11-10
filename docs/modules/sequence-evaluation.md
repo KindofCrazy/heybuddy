@@ -1,5 +1,19 @@
 # 连续场景 Benchmark
 
+v1.0 的 360 案例入口见 [数据与协议](../../evals/heybuddy_bench/v1_0/README.md)。它保留原 240 个案例，新增 120 个含 20–32 条用户消息的长序列。
+
+## v1.0 长序列执行路径
+
+`long_data.py::validate()` 核对主集、挑战、短序列、长序列四个子集的冻结哈希和 360 分母，再校验长场景时序、消息数、家族分割与来源引用。`longitudinal.py::main()` 仅在显式 `--live` 后读取可信 Settings；共用旧评测根目录和会话锁，`carried_budget()` 将冻结旧账本的已花费金额承接到 `long-session.json`，不重置 ¥20 限额。
+
+`longitudinal.execute()` 按固定顺序选题、创建不可覆盖阶段目录 → `long_replay.run_cases()` → 每场景临时 SQLite/MemoryFS → `replay_long()` 逐条披露。Routing 复用 `sequence_replay.route_step()`，保留真实绑定；Memory 在非学习步骤只记录新的 completed Run，学习步骤一次消费全部 pending Run；Proactive 复用真实 `proactive_step()` 逐用户源消费及最终时钟检查。固定助手确认文本不计为模型生成回答质量，学习与 Attention 时机由数据控制。
+
+已知的模型/元数据失败保留原状态，之后仅处理新的输入，不盲目重试旧 job；Proactive 的持久失败不会由评测擅自清除。费用未知或总预算耗尽时停止后续请求。每场景上限 1200 秒，阶段事件日志不含原话。推理完成后 `long_data.score()` 才使用独立 Gold；新 Thread 的 `@先前步骤` 引用仅在评分中解析，不传模型。
+
+`v1_0/report.py` 读取保存的最后一次主集/挑战成绩、旧短序列开发结果和此次新结果，固定一案例一票，缺失/失败保留分母；另报长序列最终检查与全部检查点。只导出无正文统计。`tests/test_heybuddy_longitudinal.py` 验证 360 清单、消息数、跨家族分割、承接费用、完整证据批次、未来信息隔离、新输入后的失败恢复及逐 Run Scout 接线；不使用真实 API。
+
+本轮用户另行明确批准一次超时请求按完整预留上界计费。`v1_0/reconcile.py` 是可信、显式的核对入口：保存旧账本与回执，`ReservedUsageBudget` 将未知费用和 token 上界与实际已知 usage 分开，继续沿用原上限；不清除真实失败、不重试旧请求。继续阶段只执行尚未尝试的 case，原部分场景仍按中断计分；保留原生产/评分代码哈希，核对工具哈希另记。`tests/test_heybuddy_long_accounting.py` 离线验证未知费用不退款、token 不伪造、上限不增加和新的未知请求再次冻结。
+
 ## 职责与架构组成
 
 `evals/heybuddy_bench/sequence_v1/` 保存原创合成输入、独立 Gold、冻结 manifest、费用协议和可复现生成器。它补充现有 snapshot benchmark，不替换旧分数或生产策略。数据覆盖、格式、例子与限制见该目录的 [README](../../evals/heybuddy_bench/sequence_v1/README.md)。

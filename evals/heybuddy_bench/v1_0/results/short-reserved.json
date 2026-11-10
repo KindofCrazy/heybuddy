@@ -1,0 +1,414 @@
+{
+  "stage": "short-reserved",
+  "expected": 18,
+  "observed": 18,
+  "tracks": {
+    "routing": {
+      "scenarios": 6,
+      "scenarios_passed": 3,
+      "checkpoints": 6,
+      "checkpoints_passed": 3,
+      "families": 3,
+      "recent_candidate_recall": {
+        "hits": 3,
+        "total": 6
+      },
+      "effective_candidate_recall_with_active": {
+        "hits": 3,
+        "total": 6
+      },
+      "model_candidate_recall_when_called": {
+        "hits": 3,
+        "total": 6
+      }
+    },
+    "memory": {
+      "scenarios": 6,
+      "scenarios_passed": 3,
+      "checkpoints": 16,
+      "checkpoints_passed": 11,
+      "families": 3
+    },
+    "proactive": {
+      "scenarios": 6,
+      "scenarios_passed": 6,
+      "checkpoints": 16,
+      "checkpoints_passed": 16,
+      "families": 3
+    }
+  },
+  "details": [
+    {
+      "case_id": "seq-r-08-0",
+      "track": "routing",
+      "family": "explicit_id",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 1,
+      "checkpoints_passed": 1,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 1,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-r-08-1",
+      "track": "routing",
+      "family": "explicit_id",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "final_passed": false,
+      "checkpoints": 1,
+      "checkpoints_passed": 0,
+      "failed_types": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1
+      },
+      "error_codes": [],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 1,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-r-09-0",
+      "track": "routing",
+      "family": "state_tail",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 1,
+      "checkpoints_passed": 1,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 1,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-r-09-1",
+      "track": "routing",
+      "family": "state_tail",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "final_passed": false,
+      "checkpoints": 1,
+      "checkpoints_passed": 0,
+      "failed_types": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1
+      },
+      "error_codes": [],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 1,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-r-10-0",
+      "track": "routing",
+      "family": "active_bias",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 1,
+      "checkpoints_passed": 1,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 1,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-r-10-1",
+      "track": "routing",
+      "family": "active_bias",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "final_passed": false,
+      "checkpoints": 1,
+      "checkpoints_passed": 0,
+      "failed_types": {
+        "action": 1,
+        "target": 1,
+        "context_has": 1
+      },
+      "error_codes": [],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 1,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-m-08-0",
+      "track": "memory",
+      "family": "behavior_vs_preference",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "final_passed": false,
+      "checkpoints": 4,
+      "checkpoints_passed": 3,
+      "failed_types": {
+        "execution": 1
+      },
+      "error_codes": [
+        "invalid_reflection_output"
+      ],
+      "observed_steps": 4,
+      "user_messages": null,
+      "planned_steps": 4,
+      "observed_user_messages": 4
+    },
+    {
+      "case_id": "seq-m-08-1",
+      "track": "memory",
+      "family": "behavior_vs_preference",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 4,
+      "checkpoints_passed": 4,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 4,
+      "user_messages": null,
+      "planned_steps": 4,
+      "observed_user_messages": 4
+    },
+    {
+      "case_id": "seq-m-09-0",
+      "track": "memory",
+      "family": "duplicate_fact",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 2,
+      "checkpoints_passed": 2,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 2,
+      "user_messages": null,
+      "planned_steps": 2,
+      "observed_user_messages": 2
+    },
+    {
+      "case_id": "seq-m-09-1",
+      "track": "memory",
+      "family": "duplicate_fact",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "final_passed": false,
+      "checkpoints": 2,
+      "checkpoints_passed": 0,
+      "failed_types": {
+        "execution": 2
+      },
+      "error_codes": [
+        "invalid_metadata"
+      ],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 2,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-m-10-0",
+      "track": "memory",
+      "family": "negation",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 2,
+      "checkpoints_passed": 2,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 2,
+      "user_messages": null,
+      "planned_steps": 2,
+      "observed_user_messages": 2
+    },
+    {
+      "case_id": "seq-m-10-1",
+      "track": "memory",
+      "family": "negation",
+      "split": "holdout",
+      "observed": true,
+      "passed": false,
+      "final_passed": false,
+      "checkpoints": 2,
+      "checkpoints_passed": 0,
+      "failed_types": {
+        "execution": 2
+      },
+      "error_codes": [
+        "invalid_metadata"
+      ],
+      "observed_steps": 1,
+      "user_messages": null,
+      "planned_steps": 2,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-p-08-0",
+      "track": "proactive",
+      "family": "assistant_suggestion",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 2,
+      "checkpoints_passed": 2,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 2,
+      "user_messages": null,
+      "planned_steps": 2,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-p-08-1",
+      "track": "proactive",
+      "family": "assistant_suggestion",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 2,
+      "checkpoints_passed": 2,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 2,
+      "user_messages": null,
+      "planned_steps": 2,
+      "observed_user_messages": 1
+    },
+    {
+      "case_id": "seq-p-09-0",
+      "track": "proactive",
+      "family": "ordinary_update",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 3,
+      "checkpoints_passed": 3,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 3,
+      "user_messages": null,
+      "planned_steps": 3,
+      "observed_user_messages": 3
+    },
+    {
+      "case_id": "seq-p-09-1",
+      "track": "proactive",
+      "family": "ordinary_update",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 3,
+      "checkpoints_passed": 3,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 3,
+      "user_messages": null,
+      "planned_steps": 3,
+      "observed_user_messages": 3
+    },
+    {
+      "case_id": "seq-p-10-0",
+      "track": "proactive",
+      "family": "explicit_new_plan",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 3,
+      "checkpoints_passed": 3,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 3,
+      "user_messages": null,
+      "planned_steps": 3,
+      "observed_user_messages": 3
+    },
+    {
+      "case_id": "seq-p-10-1",
+      "track": "proactive",
+      "family": "explicit_new_plan",
+      "split": "holdout",
+      "observed": true,
+      "passed": true,
+      "final_passed": true,
+      "checkpoints": 3,
+      "checkpoints_passed": 3,
+      "failed_types": {},
+      "error_codes": [],
+      "observed_steps": 3,
+      "user_messages": null,
+      "planned_steps": 3,
+      "observed_user_messages": 3
+    }
+  ],
+  "hashes": {
+    "suite": "e8d86651bb7ba0491ba31a22da11de43ac11fb651d03de85cd3b413235d4b4dc",
+    "evaluation": "f54cf8e96f134c2beb77aa1b04465b73d4a2f9db76e0708371be02346a1eab12",
+    "production": "a4997f6cfeaa62b31f36526bdbb4cd8c812791d2294970be8a4aa84250f04e0b",
+    "reconciliation": "57f6f089d77d96951466e8cac013ca6a98a509a1837722d10ccdb07b9f457cc4",
+    "continuation_code": "e01c2eecbf1af7a62639df7ad89ed84cb5672fb712077567e8535e1638fff4be"
+  },
+  "usage": {
+    "protocol_hash": "3591b6651d2b28ecb59c7f29be97a3a509f839ff03aa95d29b2fdec38e663029",
+    "currency": "CNY",
+    "requests": 1770,
+    "input_tokens": 3268803,
+    "output_tokens": 161911,
+    "reasoning_tokens": 0,
+    "pending": false,
+    "usage_complete": false,
+    "reserved_tokens": 3445841,
+    "reserved_cost_cny": 7.8877239999999995,
+    "cost_cny_upper_estimate": 7.8877239999999995,
+    "accounting_complete": true,
+    "unknown_usage_reservations": [
+      {
+        "request": "live-long-dev/request-0113.json",
+        "request_sha256": "366c2906bbd41b9f81e2ae5af3cd4bb839a00e66fff154e47dc0f5bbb6244519",
+        "input_token_ceiling": 11031,
+        "output_token_ceiling": 4096,
+        "cost_cny_ceiling": 0.05483,
+        "provider_usage_known": false,
+        "approved_by": "user, 2026-11-10",
+        "retry": false
+      }
+    ],
+    "token_totals_note": "input/output/reasoning totals include ONLY known Provider usage; unknown bounds are separate"
+  },
+  "configuration": {
+    "memory": "unchanged explicit checkpoints and persistent state",
+    "proactive": "unchanged incremental Scout/one final Attention; no Sender",
+    "routing": "unchanged production rules/recent24/LLM12",
+    "assistant": "fixed acknowledgements; no end-to-end answer evaluation",
+    "billing": "known Provider tokens + separately reserved unknown upper bound"
+  },
+  "human_reviewed": false
+}

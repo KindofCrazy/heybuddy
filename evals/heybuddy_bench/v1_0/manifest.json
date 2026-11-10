@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "total": 360,
+  "per_track": 120,
+  "human_reviewed": false,
+  "subsets": [
+    {
+      "name": "primary",
+      "path": "v0_4",
+      "count": 150,
+      "sha256": {
+        "inputs.jsonl": "0119c212dcd4feee84b5eab8d01949428d76752cab2255c77754ce56f7723246",
+        "gold.jsonl": "6dd8751a610fc76a9d9ce858f9de56a67d2db0be4778df66485d352779b8b1d8"
+      }
+    },
+    {
+      "name": "challenge",
+      "path": "v0_4_challenge",
+      "count": 30,
+      "sha256": {
+        "inputs.jsonl": "e9f0c046315ca4faba65c88c4240b2dababba59737c8709beb5b50cfac638642",
+        "gold.jsonl": "ad25f2462044fc6b7ccdf0c088fd85bf213871e0c236d792392ad867e7ce3623"
+      }
+    },
+    {
+      "name": "short",
+      "path": "sequence_v1",
+      "count": 60,
+      "sha256": {
+        "inputs.jsonl": "99157e413c537aa84544050a21adfca04d10108b28c6ef03a8fb45c5d71e1d6d",
+        "gold.jsonl": "36341f1cec4c2f3519e36af17cd49633f4a664d955f2b82dabb03081bf4407fb"
+      }
+    },
+    {
+      "name": "long",
+      "path": "v1_0/long",
+      "count": 120,
+      "sha256": {
+        "inputs.jsonl": "384c91123226aca646f3f9337e767e920165b26cdd245f87c1d4311e1c657af6",
+        "gold.jsonl": "35c990e05304358712e56681eef42fcfa27f61b5f64ab8ccff2828031dfc75c5"
+      }
+    }
+  ],
+  "diagnostic_probes_excluded": 4
+}

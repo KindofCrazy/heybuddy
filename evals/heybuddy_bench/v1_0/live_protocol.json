@@ -1,0 +1,37 @@
+{
+  "model": "deepseek-flash",
+  "endpoint_host": "api.deepseek.com",
+  "input_price_cny": 2,
+  "output_price_cny": 8,
+  "max_cost_cny": 20,
+  "max_requests": 4500,
+  "max_tokens": 9000000,
+  "price_source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+  "carryover": {
+    "protocol_hash": "c62ac5937a994d1ebb6397550142ae07dc32b34afa76de89b2b8ab664e7530c8",
+    "currency": "CNY",
+    "requests": 113,
+    "input_tokens": 163284,
+    "output_tokens": 12618,
+    "reasoning_tokens": 0,
+    "pending": false,
+    "usage_complete": true,
+    "reserved_tokens": 175902,
+    "reserved_cost_cny": 0.427512,
+    "cost_cny_upper_estimate": 0.427512
+  },
+  "dataset_sha256": "e8d86651bb7ba0491ba31a22da11de43ac11fb651d03de85cd3b413235d4b4dc",
+  "long_hashes": {
+    "inputs.jsonl": "384c91123226aca646f3f9337e767e920165b26cdd245f87c1d4311e1c657af6",
+    "gold.jsonl": "35c990e05304358712e56681eef42fcfa27f61b5f64ab8ccff2828031dfc75c5"
+  },
+  "timeout_seconds": 1200,
+  "stage_order": [
+    "smoke",
+    "dev",
+    "reserved",
+    "short-reserved"
+  ],
+  "no_tuning_after_freeze": true,
+  "aggregation": "one case one vote; latest final primary/challenge + frozen short dev + newly evaluated short holdout + all long; missing/errors fail; diagnostics/smoke repeats excluded"
+}
