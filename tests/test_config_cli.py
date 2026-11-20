@@ -37,12 +37,40 @@ def test_execution_budget_configuration_and_environment_precedence(monkeypatch):
     Path(".env").write_text(
         "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\nAGENT_CONTEXT_WINDOW=64000\n"
     )
-    assert load_settings().execution_max_tokens == 131072
+    assert load_settings().execution_max_tokens == 4_000_000
     with Path(".env").open("a") as file:
         file.write("AGENT_EXECUTION_MAX_TOKENS=524288\n")
     assert load_settings().execution_max_tokens == 524288
     monkeypatch.setenv("AGENT_EXECUTION_MAX_TOKENS", "262144")
     assert load_settings().execution_max_tokens == 262144
+
+
+def test_execution_request_and_time_limits_respect_host_overrides(monkeypatch):
+    Path(".env").write_text(
+        "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\nAGENT_CONTEXT_WINDOW=64000\n"
+        "AGENT_EXECUTION_MAX_REQUESTS=8\nAGENT_EXECUTION_MAX_SECONDS=240\n"
+    )
+    settings = load_settings()
+    assert settings.execution_max_requests == 8 and settings.execution_max_seconds == 240
+    monkeypatch.setenv("AGENT_EXECUTION_MAX_REQUESTS", "48")
+    monkeypatch.setenv("AGENT_EXECUTION_MAX_SECONDS", "1200")
+    settings = load_settings()
+    assert settings.execution_max_requests == 48 and settings.execution_max_seconds == 1200
+
+
+def test_application_budget_defaults_and_legacy_summary_override():
+    settings = Settings(api_key="test", model="test", context_window=131072)
+    budget = settings.context_budget()
+    assert settings.max_rounds == 32 and settings.execution_max_requests == 64
+    assert settings.execution_max_seconds == 900 and settings.request_timeout_seconds == 180
+    assert budget.reserved_output_tokens == budget.summary_output_tokens == 16384
+    assert budget.summary_max_bytes == budget.summary_tokens == 8192
+    assert budget.compaction_input_tokens == 65536 and budget.compaction_timeout == 120
+    assert budget.input_limit == 131072 - 16384 - 1024
+    assert settings.memory_learning_output_tokens == 16384
+    assert settings.organization_maintenance_tokens == 131072
+    legacy = Settings(api_key="test", model="test", context_window=64000, summary_tokens=2048)
+    assert legacy.context_budget().summary_max_bytes == 2048
 
 
 def test_thread_router_model_selection_defaults_on_and_host_can_disable(monkeypatch):
@@ -73,7 +101,12 @@ def test_thread_router_model_selection_defaults_on_and_host_can_disable(monkeypa
         ("memory_max_bytes", 511),
         ("memory_max_bytes", 1_048_577),
         ("execution_max_tokens", 4095),
-        ("execution_max_tokens", 4_000_001),
+        ("execution_max_tokens", 64_000_001),
+        ("execution_max_requests", 0),
+        ("execution_max_requests", 1025),
+        ("execution_max_seconds", 0),
+        ("execution_max_seconds", 86401),
+        ("execution_max_seconds", float("nan")),
     ],
 )
 def test_invalid_settings(field, value):

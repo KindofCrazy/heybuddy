@@ -69,20 +69,21 @@ HTTPS 校验只保证配置的初始地址符合传输策略，不验证模型�
 
 ## V0.6 Context 配置
 
-AGENT_CONTEXT_WINDOW 必填，单位为模型窗口 tokens；不按模型名或自定义端点猜测数值。其他配置继承 ContextBudget 的保守默认值，Settings.context_budget() 只将预算字段传给 SessionManager/ContextBuilder。组合约束检查输出/余量后剩余空间、摘要容量，以及 page_runs 大于 recent_runs，失败为安全配置错误退出码 2，根级错误显示 context_budget，不输出 Pydantic 输入值。
+AGENT_CONTEXT_WINDOW 必填，单位为模型窗口 tokens；不按模型名或自定义端点猜测数值。生产 Settings 提供下表的多轮任务默认值，Settings.context_budget() 只将预算字段传给 SessionManager/ContextBuilder。独立构造 ContextBudget 的嵌入宿主仍使用较小的库级默认值（输出 4096、摘要 2048 字节、摘要输出 4096、压缩输入 16384、压缩超时 30 秒）；生产入口统一走 Settings。组合约束检查输出/余量后剩余空间、摘要容量，以及 page_runs 大于 recent_runs，失败为安全配置错误退出码 2，根级错误显示 context_budget，不输出 Pydantic 输入值。
 
 | 环境变量 | 字段 | 默认 |
 | --- | --- | --- |
 | AGENT_CONTEXT_WINDOW | context_window | 必填，4096～4000000 |
-| AGENT_RESERVED_OUTPUT_TOKENS | reserved_output_tokens | 4096 |
+| AGENT_RESERVED_OUTPUT_TOKENS | reserved_output_tokens | 16384，API 总输出上限，含推理 |
 | AGENT_CONTEXT_SAFETY_MARGIN | safety_margin | 1024 |
 | AGENT_COMPACTION_TRIGGER_RATIO | trigger_ratio | 0.8 |
 | AGENT_RECENT_RUNS | recent_runs | 2，至少保护的完整 Run 数 |
 | AGENT_HISTORY_PAGE_RUNS | page_runs | 32，2～64，须大于 recent_runs |
-| AGENT_SUMMARY_TOKENS | summary_tokens | 2048，摘要正文的本地估算上限 |
-| AGENT_SUMMARY_OUTPUT_TOKENS | summary_output_tokens | 4096，摘要调用输出限额 |
-| AGENT_COMPACTION_INPUT_TOKENS | compaction_input_tokens | 16384，另受模型窗口/输出/余量限制 |
-| AGENT_COMPACTION_TIMEOUT_SECONDS | compaction_timeout | 30，独立摘要请求超时 |
+| AGENT_SUMMARY_MAX_BYTES | summary_max_bytes | 8192，摘要正文 UTF-8 字节上限 |
+| AGENT_SUMMARY_TOKENS | summary_tokens | 8192，旧字节上限别名；与 MAX_BYTES 同设时必须相等 |
+| AGENT_SUMMARY_OUTPUT_TOKENS | summary_output_tokens | 16384，摘要调用输出限额 |
+| AGENT_COMPACTION_INPUT_TOKENS | compaction_input_tokens | 65536，另受模型窗口/输出/余量限制 |
+| AGENT_COMPACTION_TIMEOUT_SECONDS | compaction_timeout | 120，独立摘要请求超时 |
 | AGENT_MAX_COMPACTION_STEPS | max_compaction_steps | 16，每次准备最多批数 |
 
 输出限额需匹配具体模型能力；reasoning 也消耗输出预算。较小窗口通常还需调低输出/摘要上限，不能只修改窗口使默认组合不一致。估算按 UTF-8 序列化字节保守计量，非精确 tokenizer，不同端点的真实上下文/最大输出应由用户查证。请求预算范围和不可缩减行为见[Compaction](compaction.md)。所有新测试继续隔离真实配置，不访问真实 API。
@@ -121,7 +122,18 @@ V0.7.2 新增 AGENT_MEMORY_AUTOMATION=suggest、AGENT_MEMORY_AUTOMATION_MAX_REQU
 
 AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CALLS_PER_RUN 默认 256、范围 1–1024。Settings 将它们传给原 Agent；在响应进入工具调用 Journal 或执行前检查整批数量，超限返回 invalid_response，已执行的更早批次保留，不截取执行部分批次、不自动重试。限制与 max_rounds/模型输出 token 限额独立。测试见 tests/test_agent.py；原 write-before-execute 和结果配对校验保持。
 
-`AGENT_EXECUTION_MAX_TOKENS` 控制每 Run 的共享累计 Token 预留上限，默认 131072、范围 4096～4000000。`Settings.execution_max_tokens` 经 `HarnessRuntime.scope()` 进入 `ExecutionBudget.max_tokens`，适用于 CLI、官方 QQ 和 NapCat。每次请求累计预留估算输入与完整输出上限，不因实际输出较少而退还；它不是实际用量或费用上限，也不改变单次模型窗口、输出限制、请求次数和执行时间。多轮文件任务提高 `AGENT_RESERVED_OUTPUT_TOKENS` 时，可显式增大此总额度，例如 524288；下次启动生效，模型无法修改。见 [Harness](harness.md)。
+根执行默认最多 32 轮主模型交互、64 次共享模型请求、4000000 累计估算预留单位、900 秒。单次主模型请求默认超时 180 秒，本地工具默认 10 秒，MCP 工具默认 60 秒且可逐 Server 覆盖。请求次数还包含路由、摘要、Goal 评审及子执行，不等于工具调用数；多项上限任一先到即停止。后台维护保持自己的原预算，不随前台上限提高。
+
+| 环境变量 | 字段 | 默认与范围 |
+| --- | --- | --- |
+| AGENT_MAX_ROUNDS | max_rounds | 32，至少 1 |
+| AGENT_EXECUTION_MAX_REQUESTS | execution_max_requests | 64，1～1024 |
+| AGENT_EXECUTION_MAX_TOKENS | execution_max_tokens | 4000000，4096～64000000 |
+| AGENT_EXECUTION_MAX_SECONDS | execution_max_seconds | 900，有限正数且不超过 86400 |
+| AGENT_REQUEST_TIMEOUT_SECONDS | request_timeout_seconds | 180，有限正数 |
+| AGENT_TOOL_TIMEOUT_SECONDS | tool_timeout_seconds | 10，有限正数 |
+
+这三个 `execution_` 字段经 `HarnessRuntime.scope()` 进入每个新 Run 的 `ExecutionBudget`，适用于 CLI、官方 QQ 和 NapCat。每次请求累计预留估算输入与完整输出上限，不因实际输出较少而退还；它不是实际用量或费用上限。估算仍以序列化 UTF-8 字节作为保守输入单位，不能将 4000000 称为实际 4M tokens；真实 Provider usage 单独记录。大窗口、多轮重复历史可能先耗尽累计上限，即使单次仍放得下也会停止。所有值只由可信 Host 设置，下次启动生效，已有环境变量和 `.env` 中显式值继续覆盖默认值。对标依据和小窗口配方见[参数对标](../parameter-benchmark.md)。
 
 ## 显式 1M 整理配置
 

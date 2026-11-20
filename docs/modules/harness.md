@@ -4,9 +4,9 @@
 
 `harness.py::HarnessRuntime` 在共享应用中装配工作文件、规划、Skills、MCP、子执行和 Workflow，CLI、官方 QQ 与 NapCat 使用同一实例。`core/agent.py::Agent` 保留手写有界循环；`tools/registry.py::ToolRegistry` 始终承担授权和参数校验。`core/lifecycle.py::HookRegistry` 提供不可变元数据事件，观察者不能替换模型请求或工具结果。
 
-`core/execution.py::RunScope` 使用 ContextVar 保存 Host 绑定的 Agent、Conversation、来源、根执行 ID、权限和共享预算。工具参数不能填写这些身份。`ExecutionBudget` 默认最多 24 次模型请求、131072 预留 Token、180 秒和 256 次工具尝试，生产工具上限同时受原配置约束。`BudgetProvider` 在请求前保守预留，成功或失败后记录实际 usage；usage 缺失不返还预留量。主模型、摘要、Goal 评审与子 Agent 共享根预算，既有维护预算独立。
+`core/execution.py::RunScope` 使用 ContextVar 保存 Host 绑定的 Agent、Conversation、来源、根执行 ID、权限和共享预算。工具参数不能填写这些身份。`ExecutionBudget` 默认最多 64 次模型请求、4000000 累计估算预留单位、900 秒和 256 次工具尝试，生产工具上限同时受原配置约束。`BudgetProvider` 在请求前保守预留，成功或失败后记录实际 usage；不返还预留量。输入估算按序列化 UTF-8 字节计数，不是实际 tokenizer 或费用统计。主模型、路由、摘要、Goal 评审与子 Agent 共享根预算，既有维护预算独立。
 
-Host 可通过 `AGENT_EXECUTION_MAX_TOKENS` 设置每 Run 的累计预留 Token 上限，范围 4096～4000000，默认保持 131072。`HarnessRuntime.__init__()` 保存该配置，`scope()` 为 CLI、官方 QQ 和 NapCat 的每个新 Run 创建相应的 `ExecutionBudget`。该值与单次请求的 `AGENT_RESERVED_OUTPUT_TOKENS` 独立；每轮按估算输入加完整输出上限累计预留，提高单轮输出时也需要为后续工具交互预留总额度。模型不能修改此配置，超限仍在请求发出前停止。
+Host 可通过 `AGENT_EXECUTION_MAX_TOKENS`（4096～64000000，默认 4000000）、`AGENT_EXECUTION_MAX_REQUESTS`（1～1024，默认 64）与 `AGENT_EXECUTION_MAX_SECONDS`（有限正数，不超过 86400，默认 900）设置每 Run 的共享上限。`HarnessRuntime.__init__()` 保存三项配置，`scope()` 为 CLI、官方 QQ 和 NapCat 的每个新 Run 创建相应的 `ExecutionBudget`。这些值与单次请求的 `AGENT_RESERVED_OUTPUT_TOKENS` 独立；每轮按估算输入加完整输出上限累计预留，提高单轮输出时也需要为后续工具交互预留总额度。主循环生产默认 32 轮，根请求数还要容纳路由、压缩与子执行。模型不能修改配置，额度不足在新请求/工具前停止，Provider 等待还受剩余根时间限制；不重跑先前工具。
 
 `storage/harness.py::HarnessRepository` 是 schema 23 的持久化入口：`harness_records` 保存按 Agent/Conversation/source 隔离的修订状态，`harness_events` 保存状态转换关联，`tool_artifacts` 保存有界工具正文。状态修改与事件原子提交，更新采用 revision 条件检查。原始会话消息继续由原 Journal 保存。
 
@@ -46,6 +46,8 @@ Hook 默认单次 1 秒、单事件累计 2 秒；只有 PreToolUse 可阻断。
 运行 `uv run pytest tests/test_harness.py` 验证 Hook 顺序、失败、来源隔离、共享预算及端到端装配。运行 `uv run python -m personal_agent.evaluation.harness` 执行固定合成场景；这是离线机制验证，不衡量真实模型能力。
 
 `tests/test_harness.py::test_runtime_configured_execution_budget_is_enforced` 验证 Host 总预算进入真实 Run 路径：小额度在调用 Provider 前停止，较大额度允许正常完成；`tests/test_config_cli.py` 验证默认值、文件配置、环境覆盖及非法额度。
+
+`test_application_multi_round_task_and_explicit_request_stop` 从 `runtime.assemble_chat()` 装配生产 Agent，验证 11 次连续工具调用后正常回答、16K 输出上限传递以及累计预留超过旧 131072 仍能完成；显式请求上限为 2 时停止且不重复执行。参数选择和单位限制见[参数对标](../parameter-benchmark.md)。
 
 ## 未来改进
 

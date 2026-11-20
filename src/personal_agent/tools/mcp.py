@@ -52,6 +52,15 @@ class MCPServerConfig:
     url: str | None = None
     allowed_tools: frozenset[str] = frozenset()
     env: dict[str, str] = field(default_factory=dict, repr=False)
+    tool_timeout_seconds: float = 60
+
+    def __post_init__(self) -> None:
+        if (
+            isinstance(self.tool_timeout_seconds, bool)
+            or not isinstance(self.tool_timeout_seconds, (int, float))
+            or not 0 < self.tool_timeout_seconds <= 600
+        ):
+            raise ValueError("MCP tool timeout must be finite and between 0 and 600 seconds")
 
 
 class MCPManager:
@@ -146,7 +155,11 @@ class MCPManager:
 
                     tools.append(
                         Tool(
-                            name, (definition.description or remote_name)[:2000], arguments, invoke
+                            name,
+                            (definition.description or remote_name)[:2000],
+                            arguments,
+                            invoke,
+                            timeout_seconds=config.tool_timeout_seconds,
                         )
                     )
                 if len({tool.name for tool in tools}) != len(tools):

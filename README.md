@@ -93,7 +93,7 @@ uv run personal-agent
 
 | 想了解什么 | 阅读入口 |
 | --- | --- |
-| 安装、配置和日常使用 | [入门指南](docs/getting-started.md)、[配置](docs/modules/config.md)、[CLI](docs/modules/sessions-cli.md) |
+| 安装、配置和日常使用 | [入门指南](docs/getting-started.md)、[配置](docs/modules/config.md)、[参数对标](docs/parameter-benchmark.md)、[CLI](docs/modules/sessions-cli.md) |
 | 一条请求如何执行 | [机制流程](docs/mechanisms.md)、[架构](docs/architecture.md)、[Agent](docs/modules/agent.md)、[Harness](docs/modules/harness.md) |
 | 会话、检索和上下文 | [Thread 路由](docs/modules/thread-routing.md)、[Context](docs/modules/context.md)、[Compaction](docs/modules/compaction.md)、[检索](docs/modules/retrieval.md) |
 | 工具和任务扩展 | [Tools](docs/modules/tools.md)、[Hooks](docs/modules/hooks.md)、[Skills](docs/modules/skills.md)、[MCP](docs/modules/skills-mcp.md)、[Planning](docs/modules/planning.md) |

@@ -47,6 +47,8 @@ class HarnessRuntime:
         self.last_budget = {}
         self.max_tool_calls = settings.max_tool_calls_per_run
         self.execution_max_tokens = settings.execution_max_tokens
+        self.execution_max_requests = settings.execution_max_requests
+        self.execution_max_seconds = settings.execution_max_seconds
         data_root = os.environ.get("LOCALAPPDATA")
         if data_root:
             base = Path(data_root) / "HeyBuddy"
@@ -107,6 +109,7 @@ class HarnessRuntime:
                         args=tuple(item.get("args", [])),
                         url=item.get("url"),
                         allowed_tools=frozenset(item.get("allowed_tools", [])),
+                        tool_timeout_seconds=item.get("tool_timeout_seconds", 60),
                         env={
                             name: os.environ[name]
                             for name in item.get("env_names", [])
@@ -234,7 +237,10 @@ class HarnessRuntime:
             source,
             permissions,
             budget=ExecutionBudget(
-                max_tokens=self.execution_max_tokens, max_tool_calls=self.max_tool_calls
+                max_tokens=self.execution_max_tokens,
+                max_requests=self.execution_max_requests,
+                max_seconds=self.execution_max_seconds,
+                max_tool_calls=self.max_tool_calls,
             ),
         )
 

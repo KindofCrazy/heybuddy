@@ -19,7 +19,7 @@
 3. Agent 每轮 definitions 过滤 required_permission，最后一轮为空。合法响应的完整 AssistantMessage 在执行前落库。
 4. execute 依次检查注册名、逐 Run 权限、参数 JSON。ToolArguments 采用 Pydantic strict、extra=forbid，拒绝类型强转和非有限值。原 arguments 保持字符串，非法 JSON 也能产生关联调用的错误回执。
 5. 取得 CURRENT_SCOPE，reserve_tool 预留根预算；再检查 Host policy，最后 emit PreToolUse。即使被 policy/Hook 拒绝，已经预留的额度也不退还。
-6. 工具在自身 timeout_seconds 或 Registry 默认超时中执行。async 直接 await；无副作用同步函数通过 asyncio.to_thread。输出 BaseModel 转 JSON，对其他结果用 JsonValue 校验，再拒绝 NaN/Infinity。
+6. 工具先取自身 timeout_seconds 或 Registry 默认超时；存在 CURRENT_SCOPE 时，再与根执行剩余时间取较小值，避免 MCP 等长调用越过根预算。async 直接 await；无副作用同步函数通过 asyncio.to_thread。输出 BaseModel 转 JSON，对其他结果用 JsonValue 校验，再拒绝 NaN/Infinity。该时间限制是协作式等待上限，不能硬中断同步磁盘提交或保证撤销外部副作用；根期限内已完成的结果仍按原顺序记账。
 7. 返回 ToolResult(call_id, name, ok, data, error)。Agent record ToolMessage 后才执行下一工具，并发 PostToolUse。下轮 prepare 可卸载大结果，但 Journal 仍完整。
 
 ## 错误与副作用

@@ -27,19 +27,22 @@ AGENT_DATABASE_PATH=.heybuddy/heybuddy.sqlite3
 AGENT_CORE_MEMORY_MAX_BYTES=8192
 # 必填：设为所用模型真实支持的窗口 token 数，不按模型名/端点猜测
 AGENT_CONTEXT_WINDOW=<实际窗口 token 数>
-AGENT_RESERVED_OUTPUT_TOKENS=4096
+AGENT_RESERVED_OUTPUT_TOKENS=16384
 AGENT_CONTEXT_SAFETY_MARGIN=1024
 AGENT_COMPACTION_TRIGGER_RATIO=0.8
 AGENT_RECENT_RUNS=2
-AGENT_MAX_ROUNDS=10
+AGENT_MAX_ROUNDS=32
 AGENT_MAX_TOOL_CALLS_PER_RESPONSE=64
 AGENT_MAX_TOOL_CALLS_PER_RUN=256
-AGENT_REQUEST_TIMEOUT_SECONDS=60
+AGENT_EXECUTION_MAX_REQUESTS=64
+AGENT_EXECUTION_MAX_TOKENS=4000000
+AGENT_EXECUTION_MAX_SECONDS=900
+AGENT_REQUEST_TIMEOUT_SECONDS=180
 AGENT_TOOL_TIMEOUT_SECONDS=10
 AGENT_LOG_LEVEL=INFO
 ```
 
-Key、模型名和 AGENT_CONTEXT_WINDOW 必填，其余均有默认值。较小窗口需同时调整输出/摘要预算，组合不一致会明确报配置错误，见[配置说明](modules/config.md)。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
+Key、模型名和 AGENT_CONTEXT_WINDOW 必填，其余均有默认值。较小窗口需同时调整输出/摘要预算，组合不一致会明确报配置错误，见[配置说明](modules/config.md)和[参数对标与小窗口配方](parameter-benchmark.md)。已有显式配置继续优先，升级不会自动改写本地 `.env`。系统环境变量优先于当前目录 `.env`，不搜索父目录。自定义 API Base URL 要求 HTTPS；HTTP 只允许 `localhost`（可带结尾的点）、IPv4 `127.0.0.0/8` 和 IPv6 `::1`。不经 DNS 判断，不放行局域网地址或 `0.0.0.0` / `::`。默认使用 OpenAI 地址；DeepSeek 支持同一 SDK 的 Responses API，见 [DeepSeek 官方说明](https://api-docs.deepseek.com/guides/responses_api/)。
 
 数据库路径相对启动目录解析；要恢复同一份数据，请保持相同工作目录或设置固定绝对路径。 `.env`、默认数据目录、SQLite 数据库及附属文件都被 Git 忽略。数据库与记忆目录含私人数据，均为明文，没有加密或日常自动备份；旧格式迁移会创建一次性完整备份。新安装 Memory 默认在 Windows `%LOCALAPPDATA%/HeyBuddy/memory/`（其他系统 `~/.local/share/heybuddy/memory/`），并按 Agent ID 隔离；已有 `<database_path>.memory/<agent_id>/` 继续原地使用。默认数据目录及常见数据库派生记忆目录已忽略；自定义 AGENT_MEMORY_ROOT 推荐放在仓库外；仓库内实际 Agent 记忆目录必须整目录被 Git 忽略且没有已跟踪文件，否则初始化或写入会被拒绝。程序不会自动改写忽略规则或移除索引。记忆大小上限包含三个块与 JSON 编译开销，按 UTF-8 字节计算；配置范围 512～1048576，超限拒绝而不截断。
 

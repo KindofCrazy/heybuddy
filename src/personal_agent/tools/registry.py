@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import re
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -142,9 +143,15 @@ class ToolRegistry:
         )
         if denied:
             return failure(denied, "Lifecycle policy denied this operation.")
+        timeout = tool.timeout_seconds or self.timeout_seconds
+        if scope is not None:
+            remaining = scope.budget.max_seconds - (time.monotonic() - scope.budget.started)
+            if remaining <= 0:
+                return failure("execution_budget", "Shared execution deadline expired.")
+            timeout = min(timeout, remaining)
         logger.info("tool_start name=%s call_id=%s", call.name, call.id)
         try:
-            async with asyncio.timeout(tool.timeout_seconds or self.timeout_seconds):
+            async with asyncio.timeout(timeout):
                 if inspect.iscoroutinefunction(tool.function):
                     value = await tool.function(arguments)
                 else:

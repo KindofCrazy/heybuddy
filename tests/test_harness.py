@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import sys
+import time
 from dataclasses import replace
 
 import pytest
@@ -31,7 +32,7 @@ from personal_agent.storage.sqlite import SQLiteStore
 from personal_agent.subagents.service import Delegate, SubagentService
 from personal_agent.tools.builtin import create_builtin_registry
 from personal_agent.tools.mcp import MCPManager, MCPServerConfig, SchemaArguments
-from personal_agent.tools.registry import ToolExecutionError, ToolRegistry
+from personal_agent.tools.registry import Tool, ToolArguments, ToolExecutionError, ToolRegistry
 from personal_agent.tools.workspace import (
     CommandRun,
     Workspace,
@@ -306,15 +307,17 @@ def test_mcp_preserves_schema_and_disallows_external_resolution():
         SchemaArguments({"$ref": "https://example.invalid/schema"})
 
 
-async def test_real_mcp_stdio_transport_and_permission_filter(tmp_path):
+@pytest.mark.parametrize("tool_timeout", [None, 0.01])
+async def test_real_mcp_stdio_transport_and_permission_filter(tmp_path, tool_timeout):
     server = tmp_path / "mcp_server.py"
     server.write_text(
         'from mcp.server.mcpserver import MCPServer\ns=MCPServer("test")\n'
-        "@s.tool()\ndef add(x: int, y: int) -> int:\n return x+y\n"
+        "@s.tool()\ndef add(x: int, y: int) -> int:\n import time\n time.sleep(0.03)\n return x+y\n"
         '@s.tool()\ndef secret() -> str:\n return "hidden"\ns.run()\n',
         encoding="utf-8",
     )
-    registry = ToolRegistry()
+    registry = ToolRegistry(timeout_seconds=0.001)
+    options = {} if tool_timeout is None else {"tool_timeout_seconds": tool_timeout}
     manager = MCPManager(
         [
             MCPServerConfig(
@@ -323,18 +326,25 @@ async def test_real_mcp_stdio_transport_and_permission_filter(tmp_path):
                 args=("-u", str(server)),
                 allowed_tools=frozenset({"add"}),
                 env={key: os.environ[key] for key in ("SystemRoot", "PATH") if key in os.environ},
+                **options,
             )
         ]
     )
     try:
         await manager.start(registry)
         assert manager.status == {"test": "ready"}
+        assert registry._tools[registry.definitions()[0].name].timeout_seconds == (
+            60 if tool_timeout is None else tool_timeout
+        )
         definitions = registry.definitions()
         assert len(definitions) == 1 and "secret" not in definitions[0].name
         result = await registry.execute(
             ToolCall(id="mcp-one", name=definitions[0].name, arguments='{"x":2,"y":3}')
         )
-        assert result.ok and "5" in str(result.data)
+        if tool_timeout is None:
+            assert result.ok and "5" in str(result.data)
+        else:
+            assert not result.ok and result.error.code == "tool_timeout"
         invalid = await registry.execute(
             ToolCall(id="mcp-two", name=definitions[0].name, arguments='{"x":"2","y":3}')
         )
@@ -558,6 +568,8 @@ async def test_runtime_configured_execution_budget_is_enforced(tmp_path, source,
             model="fake",
             context_window=131072,
             execution_max_tokens=limit,
+            execution_max_requests=7,
+            execution_max_seconds=240,
             workspace_root=tmp_path / "work",
             skills_root=tmp_path / "skills",
         )
@@ -567,8 +579,97 @@ async def test_runtime_configured_execution_budget_is_enforced(tmp_path, source,
             assert result.status == expected
             assert len(provider.requests) == (1 if expected == "completed" else 0)
             assert runtime.scope(source).budget.max_tokens == limit
+            assert runtime.scope(source).budget.max_requests == 7
+            assert runtime.scope(source).budget.max_seconds == 240
         finally:
             await runtime.close()
+
+
+@pytest.mark.parametrize("request_limit", [None, 2])
+async def test_application_multi_round_task_and_explicit_request_stop(tmp_path, request_limit):
+    from personal_agent.config import Settings
+    from personal_agent.memory.store import MemoryFS
+    from personal_agent.runtime import assemble_chat
+    from personal_agent.sessions import SessionManager
+
+    options = {} if request_limit is None else {"execution_max_requests": request_limit}
+    settings = Settings(
+        api_key="fake",
+        model="fake",
+        context_window=131072,
+        thread_routing_enabled=False,
+        memory_retrieval_llm_preflight=False,
+        workspace_root=tmp_path / "work",
+        skills_root=tmp_path / "skills",
+        **options,
+    )
+    provider = FakeProvider(
+        *(ModelResponse(tool_calls=[add_call(str(i))]) for i in range(11)),
+        ModelResponse(text="Completed all steps"),
+    )
+    with SQLiteStore(tmp_path / "multi-round.db") as store:
+        store.initialize()
+        sessions = SessionManager(store, budget=settings.context_budget())
+        memory = MemoryFS.for_agent(tmp_path / "memory", sessions.agent.id)
+        memory.initialize()
+        sessions.memory = memory
+        service = assemble_chat(settings, sessions, memory, provider)
+        # A deterministic offline tool keeps this test independent of model decisions.
+        service.agent.tools.register(create_builtin_registry()._tools["add_numbers"])
+        try:
+            result = await service.harness.run("Complete eleven steps", frozenset())
+            assert result.status == ("completed" if request_limit is None else "budget_exhausted")
+            assert len(provider.requests) == (12 if request_limit is None else 2)
+            assert provider.output_limits == [16384] * len(provider.requests)
+            if request_limit is None:
+                assert service.harness.last_budget["reserved_tokens"] > 131072
+            else:
+                assert service.harness.last_budget["requests"] == 2
+        finally:
+            await service.close()
+
+
+@pytest.mark.parametrize("value", [0, -1, 601, True, "60", float("inf"), float("nan")])
+def test_mcp_tool_timeout_rejects_invalid_host_values(value):
+    with pytest.raises(ValueError, match="MCP tool timeout"):
+        MCPServerConfig("test", tool_timeout_seconds=value)
+
+
+async def test_tool_wait_uses_remaining_root_deadline(harness_state):
+    _, scope = harness_state
+    registry = ToolRegistry()
+    attempts = []
+
+    async def slow(args):
+        attempts.append("started")
+        await asyncio.Event().wait()
+
+    registry.register(Tool("slow", "Wait", ToolArguments, slow, timeout_seconds=60))
+    scope.budget.max_seconds = 0.05
+    scope.budget.started = time.monotonic()
+    result = await asyncio.wait_for(
+        registry.execute(ToolCall(id="deadline", name="slow", arguments="{}")), 1
+    )
+    assert result.error.code == "tool_timeout" and result.call_id == "deadline"
+    assert attempts == ["started"]
+    again = await registry.execute(ToolCall(id="late", name="slow", arguments="{}"))
+    assert again.error.code == "execution_budget" and attempts == ["started"]
+
+
+async def test_tool_does_not_start_if_hook_uses_remaining_root_time(harness_state):
+    _, scope = harness_state
+    registry = ToolRegistry()
+
+    async def expire(event):
+        scope.budget.started -= scope.budget.max_seconds + 1
+
+    async def forbidden(args):
+        pytest.fail("A tool must not start after the root deadline")
+
+    registry.hooks.register("PreToolUse", expire)
+    registry.register(Tool("late", "Must not run", ToolArguments, forbidden))
+    result = await registry.execute(ToolCall(id="late", name="late", arguments="{}"))
+    assert result.error.code == "execution_budget"
 
 
 async def test_shared_runtime_goal_file_check_and_channel_isolation(tmp_path):

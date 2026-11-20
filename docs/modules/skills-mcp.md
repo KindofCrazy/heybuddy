@@ -17,10 +17,10 @@
 
 1. HarnessRuntime 扫描 `AGENT_SKILLS_ROOT` 或用户数据目录 `HeyBuddy/skills` 下的 `*/SKILL.md`。YAML safe loader 读取 name/description，拒绝别名、重复名称、越界和过大文件。
 2. 目录摘要经 ContextContributor 装配；skill_load 才读取完整正文并返回 hash。skill_read_resource 只读取同技能目录的有界文本资源，不运行其中脚本。
-3. Host 可用 `AGENT_MCP_CONFIG` 指向本地 JSON 数组，每项含 name、command/args 或 url、allowed_tools、env_names。env_names 仅从进程环境读取；配置不存明文凭据。模型无连接配置接口。
+3. Host 可用 `AGENT_MCP_CONFIG` 指向本地 JSON 数组，每项含 name、command/args 或 url、allowed_tools、env_names，可选 `tool_timeout_seconds`。调用超时默认 60 秒，允许大于 0 且不超过 600 的有限数字；非法值在装配时拒绝，错误不回显配置内容。env_names 仅从进程环境读取；配置不存明文凭据。模型无连接配置接口。
 4. open_chat 调用 MCPManager.start，10 秒内建立 stdio 或 Streamable HTTP 会话并分页发现工具；最多十页、100 个工具，只注册 allowed_tools。
 5. 工具名由 Server/工具命名空间和稳定摘要组成，限制在 Registry 允许的字符及长度内。原 input_schema 交给 SchemaArguments，禁止外部 `$ref`，不生成有损参数模型。
-6. 模型调用仍通过 Registry 的身份、参数、预算、Hook 和超时路径。MCP is_error 变为工具错误，文本和 structured_content 进入统一结果；大型结果交给 ReplayView 存档。未知二进制和资源 URI 不自动下载。
+6. 模型调用仍通过 Registry 的身份、参数、预算、Hook 和超时路径。`MCPManager.start()` 注册 Tool 时设置 Server 的独立 timeout_seconds，覆盖本地工具默认 10 秒；调用仍受根执行剩余时间限制。MCP is_error 变为工具错误，文本和 structured_content 进入统一结果；大型结果交给 ReplayView 存档。未知二进制和资源 URI 不自动下载。
 7. 单 Server 连接失败标 unavailable；已发出的工具请求不自动重试。应用退出按逆序关闭 Client 与 transport。
 
 ## 异常与边界
@@ -31,7 +31,7 @@
 
 ## 阅读与验证
 
-MCP 配置示例：`[{"name":"docs","command":"已审核可执行文件绝对路径","args":[],"allowed_tools":["search"],"env_names":[]}]`。真实配置放源码外或被忽略的本地目录。
+MCP 配置示例：`[{"name":"docs","command":"已审核可执行文件绝对路径","args":[],"allowed_tools":["search"],"env_names":[],"tool_timeout_seconds":60}]`。真实配置放源码外或被忽略的本地目录。
 
 `tests/test_harness.py` 启动临时 stdio Server 和 loopback HTTP Server 验证真实发现/调用、Schema 拒绝、工具许可与关闭；不会访问远程服务或真实模型。
 

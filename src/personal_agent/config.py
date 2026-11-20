@@ -36,11 +36,21 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     api_key: SecretStr
     model: str = Field(min_length=1)
     base_url: HttpUrl | None = None
-    max_rounds: int = Field(default=10, ge=1)
+    # Application defaults allow multi-step work; standalone ContextBudget keeps
+    # its smaller defaults for hosts that explicitly assemble their own runtime.
+    reserved_output_tokens: int = Field(default=16384, ge=16)
+    summary_max_bytes: int = Field(default=8192, ge=64, le=16384)
+    summary_tokens: int = Field(default=8192, ge=64, le=16384)
+    summary_output_tokens: int = Field(default=16384, ge=16)
+    compaction_input_tokens: int = Field(default=65536, ge=2048)
+    compaction_timeout: float = Field(default=120, gt=0, allow_inf_nan=False)
+    max_rounds: int = Field(default=32, ge=1)
     max_tool_calls_per_response: int = Field(default=64, ge=1, le=256)
     max_tool_calls_per_run: int = Field(default=256, ge=1, le=1024)
-    execution_max_tokens: int = Field(default=131072, ge=4096, le=4_000_000)
-    request_timeout_seconds: float = Field(default=60, gt=0)
+    execution_max_tokens: int = Field(default=4_000_000, ge=4096, le=64_000_000)
+    execution_max_requests: int = Field(default=64, ge=1, le=1024)
+    execution_max_seconds: float = Field(default=900, gt=0, le=86400)
+    request_timeout_seconds: float = Field(default=180, gt=0)
     tool_timeout_seconds: float = Field(default=10, gt=0)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     database_path: Path = Path(".heybuddy/heybuddy.sqlite3")
@@ -366,6 +376,8 @@ ENV_FIELDS = {
     "AGENT_MAX_TOOL_CALLS_PER_RESPONSE": "max_tool_calls_per_response",
     "AGENT_MAX_TOOL_CALLS_PER_RUN": "max_tool_calls_per_run",
     "AGENT_EXECUTION_MAX_TOKENS": "execution_max_tokens",
+    "AGENT_EXECUTION_MAX_REQUESTS": "execution_max_requests",
+    "AGENT_EXECUTION_MAX_SECONDS": "execution_max_seconds",
     "AGENT_REQUEST_TIMEOUT_SECONDS": "request_timeout_seconds",
     "AGENT_TOOL_TIMEOUT_SECONDS": "tool_timeout_seconds",
     "AGENT_LOG_LEVEL": "log_level",

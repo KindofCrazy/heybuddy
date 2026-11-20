@@ -13,9 +13,9 @@ from personal_agent.llm.base import ProviderError
 
 @dataclass
 class ExecutionBudget:
-    max_requests: int = 24
-    max_tokens: int = 131072
-    max_seconds: float = 180
+    max_requests: int = 64
+    max_tokens: int = 4_000_000
+    max_seconds: float = 900
     requests: int = 0
     reserved_tokens: int = 0
     input_tokens: int = 0
