@@ -12,7 +12,7 @@ HeyBuddy 用 Python 和 asyncio 自行实现 Agent Harness，把模型调用、�
 
 项目适合希望理解 Agent 内部机制、实验长期记忆，或搭建本地个人助手的开发者。核心循环不依赖 LangChain、LangGraph 等 Agent 框架；模型通过 Provider Protocol 接入，当前适配器使用官方 OpenAI Python SDK。
 
-> **项目状态：持续开发中。** 当前包版本为 `0.7.2`，已实现 P5 Harness，SQLite schema 为 `24`。版本号、实现阶段和数据库版本分别维护。
+> **项目状态：持续开发中。** 当前包版本为 `0.7.2`，已实现 P5 Harness，SQLite schema 为 `25`。版本号、实现阶段和数据库版本分别维护。
 
 ## 核心能力
 
@@ -24,7 +24,7 @@ HeyBuddy 用 Python 和 asyncio 自行实现 Agent Harness，把模型调用、�
 | 工具与扩展 | 注册与授权校验、只读 Skills、MCP Client、受控工作文件和白名单命令 |
 | 任务与工作流 | Todo / Task / Goal、深度一只读子执行、后台作业、注册式 Workflow 与显式恢复 |
 | 交互与观测 | 本地 CLI、官方 QQ 白名单私聊、NapCat 单主号私聊、loopback 只读 Observatory |
-| 关注与提醒 | 关心式跟进保持 Shadow；明确一次性提醒可向已绑定 NapCat 主号投递 |
+| 关注与提醒 | 关心式跟进与明确一次性提醒可向已绑定 NapCat 主号投递 |
 
 ## 架构概览
 
@@ -86,7 +86,7 @@ uv run personal-agent
 - **权限来自可信宿主。** 工具必须注册、校验并授权；不开放任意 Shell、模型生成代码执行或配置管理。自然语言和历史消息不能授予权限。
 - **记忆与证据分离。** Markdown 是长期 Memory 唯一权威源，SQLite 保存原始历史。主模型写入按 Run 授权，后台 Learning 使用独立 Host 策略，手动 Reflection 仍需审批。
 - **摘要不替代日志。** 压缩只改变模型可见的工作上下文，保留原始 Journal、工具调用和结果。重启不自动重跑工具，Workflow 仅经可信显式 Resume 并核对副作用后恢复。
-- **主动能力分级开放。** 关心式 Proactive 保持 Shadow，不真实发送；明确提醒使用独立 Scheduler。官方 QQ 仅被动回复。
+- **主动能力分级开放。** 关心式 Proactive 可在受控复核后投递至绑定的 NapCat 主号；明确提醒使用独立 Scheduler。官方 QQ 仅被动回复。
 - **数据在本地以明文保存。** `.env`、数据库和 Memory 不应入 Git；自定义记忆目录建议放在仓库外。当前没有数据加密或日常自动备份。更多见[安全说明](SECURITY.md)。
 
 ## 文档导航

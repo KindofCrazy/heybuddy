@@ -25,11 +25,11 @@ PAGES = {
         "Proactive",
         "Proactive",
         (
-            ("proactive-status", "Shadow status", "SHADOW MODE"),
+            ("proactive-status", "Proactive status", "DELIVERY / STATUS"),
             ("proposals", "Opportunities", "EVIDENCE / LIFECYCLE"),
             ("decisions", "Decisions", "WAKE / ATTENTION"),
             ("outbox", "Message drafts", "COMPOSER / OUTBOX"),
-            ("attempts", "Simulation attempts", "LOCAL SIMULATION"),
+            ("attempts", "Delivery attempts", "CHANNEL / RECEIPTS"),
         ),
     ),
 }

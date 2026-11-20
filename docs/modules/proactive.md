@@ -1,14 +1,14 @@
-# Proactive Shadow：机会、唤醒与 Attention
+# Proactive：机会、唤醒与 Attention
 
 ## 在消息主线中的位置
 
-本模块在回答之后的维护通道执行，不是 Agent._run 的工具循环。ChatService.after_reply 调度 OrganizationRuntime；新输入通过 foreground 抢占。建议阅读顺序是下文的增量 Scout → Wake/Attention → Composer/Outbox，再读覆盖判断细节。普通未来计划只产生关心候选，用户明确要求的提醒另走 Scheduler；目前关心式主动内容保持 Shadow，明确提醒的 NapCat 投递不改变此边界。
+本模块在回答之后的维护通道执行，不是 Agent._run 的工具循环。ChatService.after_reply 调度 OrganizationRuntime；新输入通过 foreground 抢占。建议阅读顺序是下文的增量 Scout → Wake/Attention → Composer/Outbox，再读覆盖判断细节。普通未来计划只产生关心候选，用户明确要求的提醒另走 Scheduler；关心式内容可经受控 Outbox 投递给绑定的 NapCat 主号；未绑定真实渠道的入口保持 Shadow。
 
 ## 职责与架构组成
 
 P4.1/P4.2 为现有应用增加未来关注事项，不增加长期事实存储、模型工具权限或外部发送能力。`proactive/models.py` 定义 Host 策略、真实用户来源、候选变更和 Attention 建议；`scout.py::OpportunityScout` 提取机会；`attention.py::AttentionEngine` 判断沉默、稍后检查、建议交流或建议任务。`wake.py::WakeCoordinator` 从持久截止时间计算检查间隔和安静窗口。`proactive/runtime.py::ProactiveRuntime` 编排一次有界检查，`storage/proactive.py::ProactiveRepository` 绑定 Agent，保存进度、Proposal 和审计。
 
-当前只生成 follow_up 候选。notify 可在下一有界维护单元生成角色口吻草稿；[Composer 与离线 Outbox](outbox.md) 提供明确标记的 Fake Sender 和接续 Harness。`proactive/timing.py::followup_window()` 为有日期的真实计划生成关心式复查窗口；明确提醒另走独立 [Scheduler](scheduler.md)。外部事件、真实投递和自主工具任务留给后续阶段。notify 和 propose_task 不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
+当前只生成 follow_up 候选。notify 可在下一有界维护单元生成角色口吻草稿；[Composer 与离线 Outbox](outbox.md) 提供明确标记的 Fake Sender 和接续 Harness。`proactive/timing.py::followup_window()` 为有日期的真实计划生成关心式复查窗口；明确提醒另走独立 [Scheduler](scheduler.md)。外部事件与自主工具任务仍不在该流水线内；真实投递由 NapCat runner 绑定。notify 和 propose_task 不表示已通知或获得任务授权。独立 Web 只读，不启动扫描或模型请求。
 
 SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisions；schema 20 追加 followup_window JSON；schema 22 追加 followup_state、covered_position 和 covered_sources。旧候选默认 pending 和空覆盖证据，不重新抽样或默认历史补学。Proposal 是派生工作状态，用户经历以 Run Journal 为证据，长期理解仍以 MemoryFS Markdown 为权威。Shadow 不修改 Core、Deferred、Reflection 审批或 Character Package。
 
@@ -18,7 +18,7 @@ SQLite schema 16 追加 proactive_state、proactive_proposals、proactive_decisi
 2. 为每个事项保存来源、有效期和复查窗口；后来的真实更新可以取消、解决或覆盖原定关心。
 3. 如果用户已经主动聊过该事项的进展，就撤下这轮待发草稿并停止复查；这不等于事项已经完成。只有新计划和更新证据才能重新开启。
 4. 到复查时间后仍需检查新消息、安静时段、有效期和预算，再决定保持沉默、稍后评估或生成交流建议。
-5. 建议通过复核才形成草稿。目前关心式内容保持影子模式，只记录建议与草稿，不真实发送或自动执行任务；明确提醒走独立机制。
+5. 建议通过复核才形成草稿。已绑定 NapCat Sender 时，在独立维护单元复核草稿并投递；其他入口只记录建议与草稿，均不自动执行任务。明确提醒走独立机制。
 
 ## 代码实际运行路径
 
@@ -41,7 +41,7 @@ Attention 提示包含 JSON 实例形状，区分结果字段与 schema 元数�
 
 `ProactiveRuntime.run()` 向 Scout 与 Attention 提供的 `now` 使用 `utc_offset_minutes` 转成用户本地 ISO 时间并保留 UTC 偏移；数据库截止、排序、有效期与 CAS 仍按既有 UTC 路径处理。这样“今晚、晚饭后”的用户原话不会因为模型只看到 UTC 小时而被误判为早晨或中午。Attention 明确要求 silent 也选择一个给定 ID，并区分暂时忙碌的 defer 与明确拒绝本轮打扰的 silent。验证见 `tests/test_proactive.py::test_scout_and_attention_see_user_local_time_with_offset`，这些测试检验时间表示与门控契约，不证明模型一定正确判断语义。
 
-库级与示例默认 AGENT_PROACTIVE_ENABLED=true，用户明确要求默认开启 Shadow。后台使用已配置 Provider，受现有维护预算限制；设为 false 可关闭。开发验证全部离线。配置沿用当前项目 .env/环境变量，不在其他路径搜索凭证。Luna 由 AGENT_CHARACTER_ID=luna 显式选择，库级角色默认 none。
+库级与示例默认 AGENT_PROACTIVE_ENABLED=true，默认开启分析与草稿，NapCat 真实投递由独立开关控制。后台使用已配置 Provider，受现有维护预算限制；设为 false 可关闭。开发验证全部离线。配置沿用当前项目 .env/环境变量，不在其他路径搜索凭证。Luna 由 AGENT_CHARACTER_ID=luna 显式选择，库级角色默认 none。
 
 | 配置 | 默认值 | 含义 |
 | --- | --- | --- |
@@ -69,7 +69,7 @@ Observatory 的 `/proactive` 页面及 `/api/proactive/status`、`/api/proactive
 3. 只有日期的计划，在当天 19:00～21:30 内抽取一次含秒的非整分时间。SHA256 以 Agent、topic_key、来源位置及抽样用途为种子；同一证据稳定，不在每次检查或重启重新抽取。结果与 next_review_at 同事务保存，后续 JSON 查询和 Attention 均看到实际窗口。
 4. 有明确时刻且提前量足够的事项，原话出现“重要、关键、答辩、面试、考试、手术”等有限重要性线索时考虑开始前 15～45 分钟；其他事项按默认 30% 的稳定抽样考虑这个窗口。这只是选择何时评估，重要性与抽样都不保证 notify。未选事前窗口的事项走稍后晚间窗口；不会把计划尚未开始时当作事后追问，太晚的事项改到次日晚间。
 5. Proposal expiry 取原证据寿命与窗口结束的较早值；错过窗口则有界过期，不在下次启动集中追问。安静时段、前台输入、维护预算、未处理新证据和 Attention 仍优先；随机时间不能绕过这些门控。defer 也不能越过有效期。没有每个计划一个后台任务或 Scheduler 条目。
-6. Attention 的输入含 phase=before/evening，提示根据语境选择轻量关心、祝愿或保持沉默，不把问候变成催汇报，也不推断已经完成或成功。notify 后通过原 OutboundRuntime 生成草稿；`OutboxRepository._proposal()` 再读窗口与真实来源，原 Revision、epoch、过期和最终复核仍有效。默认 Shadow，没有真实主动消息。
+6. Attention 的输入含 phase=before/evening，提示根据语境选择轻量关心、祝愿或保持沉默，不把问候变成催汇报，也不推断已经完成或成功。notify 后通过原 OutboundRuntime 生成草稿；`OutboxRepository._proposal()` 再读窗口与真实来源，原 Revision、epoch、过期和最终复核仍有效。未绑定真实渠道时保持 Shadow；NapCat 通过 Outbox 复核并发送。
 
 窗口只是 Host 选择的评估时机，后台维护有自己的检查和预算节奏，不承诺在那个随机秒精确生成草稿。表达自然度、事项重要性和是否刚聊过进展仍依赖 Scout/Attention 语义质量，本轮没有做真实模型验证。
 
@@ -103,7 +103,7 @@ covered 只表示这轮原定的关心已被用户主动交谈满足。例如“
 - 无效模型 JSON、工具调用、伪造引文和来源发布失败暂停提取水位，保存固定错误码，必须显式 retry。单次 Attention 失败暂停该次候选，retry 或更新用户证据才可再评估。日志不打印私人文本或推理。
 - 维护预算不足不推进来源，后续周期可以读取当前证据，不重试工具或外部副作用。结构性数据库失败向上停止维护。候选、水位和审计同事务，提交失败回滚；CAS 拒绝旧水位再次发布。
 - OrganizerModel 拒绝超时或吞掉取消后返回的结果。Attention 在 await 后复核输入和版本，过期建议不记为已采用。
-- 应用关闭时没有后台执行。重启只恢复派生进度与有界检查，不保证停机期间准确到期执行。当前没有消息投递，因此没有送达、已读或重复投递保证。
+- 应用关闭时没有后台执行。重启只恢复派生进度与有界检查，不保证停机期间准确到期执行。NapCat 回执仅证明渠道接受，不代表已读；发送尝试先落库，结果不确定时不重试。重连不补发旧草稿或旧 notify 决策。
 - 不扫描所有 MemoryFS、不默认历史补学。候选语义与价值判断需要后续真实审阅，离线契约测试不能证明自然度。
 
 ## 阅读与验证
@@ -112,10 +112,10 @@ covered 只表示这轮原定的关心已被用户主动交谈满足。例如“
 
 `tests/test_proactive.py` 覆盖 Run/Thread 增量、空结果、重启水位、取消与旧摘要竞争、助手引文拒绝、跨 Agent、未完成 Run、过大来源、安静窗口、失效、Attention 动作、新 Run/QQ 收件版本/Revision 竞争、吞取消、共享预算、其他维护全部关闭后的定时检查、schema 15→16 原子迁移和回滚、发布失败回滚及 Observatory 只读分页。项目完整验证还包括 pytest、Ruff、打包和 CLI 启动检查。
 
-`tests/test_social_timing.py` 增加晚间范围、非整分稳定抽样、重要/概率分支、晚开始事项、无日期/歧义回退、配置、窗口重启持久性、取消和停机错过窗口场景；旧生命周期 Fixture 显式关闭社交时间策略以独立验证原 CAS/权限契约。2026-10-31 用户已允许执行回归和明确提醒的真实投递验证，关心式跟进仍只生成 Shadow 草稿，不做真实模型语义评测。
+`tests/test_social_timing.py` 增加晚间范围、非整分稳定抽样、重要/概率分支、晚开始事项、无日期/歧义回退、配置、窗口重启持久性、取消和停机错过窗口场景；旧生命周期 Fixture 显式关闭社交时间策略以独立验证原 CAS/权限契约。2026-10-31 用户已允许执行回归和明确提醒的真实投递验证，关心式真实投递现由 NapCat 独立开关控制，自动测试不做真实模型语义评测。
 
 审查修复验证见 `tests/test_proactive_review_fixes.py`：长助手/Provider 正文不遮蔽短取消、用户证据超限不推进且重启保持暂停、显式 retry 与预算修正、默认整批 Learning 与 Proactive 轮换、不可容纳 Learning 时保留 Scout，以及 Thread 关联前后草稿继续可用和终态不重发。
 
 ## 未来改进
 
-建立“本轮已主动聊过”的语义回归集，覆盖相关但未满足、已谈进展但事项未完成、新计划重新开启等情形。分开统计候选正确率、Attention 决策和草稿质量，先用离线样本验证；未来真实主动发送仍需新的明确授权。
+建立“本轮已主动聊过”的语义回归集，覆盖相关但未满足、已谈进展但事项未完成、新计划重新开启等情形。分开统计候选正确率、Attention 决策和草稿质量，先用离线样本验证；真实投递的范围与验证见 [Outbox](outbox.md)。

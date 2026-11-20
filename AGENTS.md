@@ -2,7 +2,11 @@
 
 ## 当前实现范围与历史阶段说明
 
-当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 24，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 Shadow 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费调用另行授权的边界继续有效。
+当前生产入口使用共享 `runtime.open_application/open_chat/assemble_chat`，支持本地 CLI、官方 QQ C2C 白名单被动回复、本机 NapCat 小号单主号好友私聊和 loopback 只读 Observatory。SQLite 当前 schema 25，Markdown 仍是长期 Memory 唯一权威源。下文 V0.7/P1 的无 QQ、无后台提取和默认 suggest 描述是对应阶段边界；当前 P2/P3/P4 与已实现渠道以本节及顶部明确授权为准，P2 开启时暂停旧 Automation，关闭后才使用兼容 suggest/auto。手动 Reflection 审批、Host 工具权限和真实付费验证另行授权的边界继续有效。
+
+## NapCat 关心式主动聊天明确授权
+
+2026-11-20 用户明确要求启用关心式主动聊天。允许在已验证的 NapCat 单主号好友私聊中默认开启受控真实投递，复用 Scout、Attention、Composer、Outbox 与现有串行维护预算；其余入口保持 Shadow，官方 QQ 仍仅被动回复。默认每天最多两次、间隔六小时，保留安静时段、新输入抢占、来源/会话/Thread 隔离、已聊过进展撤下和发送前复核。只发送当前连接后新生成且决策有效的草稿，不补发断线或重启积压；领取和唯一尝试先于外部发送，不确定结果不重试。允许通过既有可信重启入口使配置和代码生效；不增加任意 OneBot 操作、后台工具任务或真实付费模型测试。此授权优先于下文 P4 关心式消息仅 Shadow 的历史限制。
 
 ## P5 General Agent Harness 明确授权
 

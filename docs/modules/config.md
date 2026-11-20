@@ -142,13 +142,13 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 `load_settings()` 在下次启动时读取配置，环境变量优先于本地文件。超时、可见 JSON 字节上限和失败显式重试规则保持独立；增大 tokens 不会自动恢复 failed 批次。离线端到端验证见 `tests/test_episodes.py::test_million_token_configuration_reaches_single_bounded_request`。
 
 例如 [DeepSeek Chat API 文档](https://api-docs.deepseek.com/api/create-chat-completion/)目前规定 deepseek-flash 最大输出为 393216 tokens，1M 上下文不等于 1M 输出；使用此模型时应将上述 OUTPUT_TOKENS 改为 393216。宿主保留 1,000,000 的可配置上界，端点能力仍需分别核对。
-# Proactive Shadow 配置
+# Proactive 配置
 
-`Settings.proactive_policy()` 将 `AGENT_PROACTIVE_*` 可信配置转为 `ProactivePolicy`。默认开启 Shadow，没有主动发送模式；字段通过 `ENV_FIELDS` 加载，仍不搜索其他凭证路径。预算、安静窗口、时区偏移、候选上限及执行路径见 [proactive.md](proactive.md)。
+`Settings.proactive_policy()` 将 `AGENT_PROACTIVE_*` 可信配置转为 `ProactivePolicy`。默认开启分析与草稿，NapCat 可独立绑定真实 Sender；字段通过 `ENV_FIELDS` 加载，仍不搜索其他凭证路径。预算、安静窗口、时区偏移、候选上限及执行路径见 [proactive.md](proactive.md)。
 
 # Composer 预览开关
 
-`AGENT_PROACTIVE_COMPOSE_ENABLED` 默认 true，由 Settings.proactive_policy() 传入 ProactivePolicy.compose_enabled，控制已提交 notify 后的草稿生成。它不授予投递权限，当前没有真实 Sender 配置；`AGENT_PROACTIVE_ENABLED=false` 仍关闭整个流水线。离线模拟只能通过可信 CLI 显式命令或 Harness 许可，详见 [outbox.md](outbox.md)。
+`AGENT_PROACTIVE_COMPOSE_ENABLED` 默认 true，由 Settings.proactive_policy() 传入 ProactivePolicy.compose_enabled，控制已提交 notify 后的草稿生成。它本身不授予投递权限，NapCat 还需独立的真实 Sender 配置；`AGENT_PROACTIVE_ENABLED=false` 仍关闭整个流水线。离线模拟只能通过可信 CLI 显式命令或 Harness 许可，详见 [outbox.md](outbox.md)。
 
 ## 策略定义依赖
 
@@ -158,12 +158,14 @@ AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CA
 
 `Settings.scheduler_policy()` 将 AGENT_SCHEDULER_* 转为 SchedulerPolicy，控制本地 timer、每批上限、宽限窗口、未来时间范围和模拟超时。默认 enabled 只表示检查持久提醒，不授予真实发送或模型创建权限；observer_only 始终禁止写入。配置由原 ENV_FIELDS 加载，路径/凭证规则保持。完整字段、调用顺序和未运行的验证清单见 [scheduler.md](scheduler.md)。
 
-`Settings.proactive_policy()` 同步转发 social_followup_enabled、evening_start/end_minute、before_probability 和 before_min/max_minutes，控制有真实日期证据的关心式复查窗口。默认晚间为 19:00～21:30，普通明确时刻事项事前窗口抽样概率 0.3，提前 15～45 分钟；Policy 校验窗口顺序，仍只产生 Shadow 草稿。字段由既有 `AGENT_PROACTIVE_*` 映射自动读取，详见 [proactive.md](proactive.md)。
+`Settings.proactive_policy()` 同步转发 social_followup_enabled、evening_start/end_minute、before_probability 和 before_min/max_minutes，控制有真实日期证据的关心式复查窗口。默认晚间为 19:00～21:30，普通明确时刻事项事前窗口抽样概率 0.3，提前 15～45 分钟；Policy 校验窗口顺序，是否投递由 NapCat 独立开关与当前渠道资格决定。字段由既有 `AGENT_PROACTIVE_*` 映射自动读取，详见 [proactive.md](proactive.md)。
 
 `NapCatSettings.napcat_reminders_enabled` 默认 true，由 `AGENT_NAPCAT_REMINDERS_ENABLED` 控制。只有 NapCat runner 验证本机登录身份后才为 Scheduler 绑定受限提醒 Sender；这个开关不授予 Proactive 真实发送、官方 QQ 主动发送或任意 OneBot 操作权限。本地 CLI 记录不会自动投给 QQ，关闭开关或断线时当前连接许可不可用。
 
 
 ## P5 扩展
+
+2026-11-20 增加 `AGENT_NAPCAT_PROACTIVE_ENABLED`，默认 true。仅 NapCat runner 完成身份验证后，才给关心式 Outbox 绑定当前主号的真实 Sender；未绑定渠道仍保持 Shadow。设置 false 保留分析与草稿但停止真实关心消息投递。`AGENT_PROACTIVE_ENABLED` 和 `AGENT_PROACTIVE_COMPOSE_ENABLED` 同时约束投递，明确提醒仍由独立 `AGENT_NAPCAT_REMINDERS_ENABLED` 控制。新字段沿用 `NapCatSettings` 的自动环境映射，下次启动生效；旧显式配置继续优先。路径与失败处理见 [Outbox](outbox.md)。
 
 P5 增加 AGENT_HARNESS_ENABLED、AGENT_WORKSPACE_ROOT、AGENT_WORKSPACE_GIT_ROOT、AGENT_SKILLS_ROOT、AGENT_MCP_CONFIG、AGENT_GOAL_MODEL_REVIEW 和 AGENT_SUMMARY_MAX_BYTES。默认开启 Harness、关闭模型 Goal 评审；旧摘要字节限制别名继续有效。
 

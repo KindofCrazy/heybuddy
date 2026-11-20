@@ -1,4 +1,4 @@
-"""Explicit local simulation transport; no production channel adapter is registered."""
+"""Host-bound delivery grants and receipts, separate from model tool permissions."""
 
 from typing import Literal, Protocol
 
@@ -13,7 +13,9 @@ class DeliveryGrant(Model):
     revision: int = Field(default=1, ge=1)
     conversation_id: str = Field(min_length=1, max_length=128)
     recipient: str = Field(min_length=1, max_length=128)
-    channel: Literal["simulation"] = "simulation"
+    channel: Literal["simulation", "napcat"] = "simulation"
+    source_scope: str | None = None
+    channel_scope: str | None = None
     cooldown_seconds: int = Field(default=21600, ge=0, le=604800)
     daily_limit: int = Field(default=2, ge=1, le=20)
 
@@ -25,7 +27,7 @@ class SendReceipt(Model):
 
 class DeliveryError(Exception):
     def __init__(self, *, uncertain: bool = True):
-        super().__init__("simulation_send_uncertain" if uncertain else "simulation_send_failed")
+        super().__init__("send_uncertain" if uncertain else "send_failed")
         self.uncertain = uncertain
 
 

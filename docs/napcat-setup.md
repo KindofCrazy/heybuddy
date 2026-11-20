@@ -1,6 +1,6 @@
 # NapCat 小号一对一聊天
 
-此入口让已登录 NapCat 的专用 QQ 小号通过 HeyBuddy 与你的主号私聊。复用当前 Agent、选中的 Conversation、Luna、Markdown 记忆、检索和既有后台维护。只接受配置主号的好友私聊，回复为文本；支持图片及图文输入，动图只看首帧。Proactive 仍为 Shadow，没有主动消息、群聊、好友申请处理或任意 QQ 操作工具。
+此入口让已登录 NapCat 的专用 QQ 小号通过 HeyBuddy 与你的主号私聊。复用当前 Agent、选中的 Conversation、Luna、Markdown 记忆、检索和既有后台维护。只接受配置主号的好友私聊，回复为文本；支持图片及图文输入，动图只看首帧。连接通过身份核对后默认允许向绑定主号投递符合条件的关心消息；仍不开放群聊、好友申请处理或任意 QQ 操作工具。设置 `AGENT_NAPCAT_PROACTIVE_ENABLED=false` 可关闭真实关心消息投递并保留 Shadow。
 
 ## 准备 NapCat
 

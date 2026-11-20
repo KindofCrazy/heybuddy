@@ -172,6 +172,16 @@ class NapCatTransport:
             raise QQError("napcat_reminder_scope", fatal=True)
         return await self._send_private(text)
 
+    async def send_proactive(self, recipient: str, text: str) -> str:
+        if (
+            not self.account.napcat_proactive_enabled
+            or recipient != self.account.napcat_peer_id
+            or not text.strip()
+            or len(text.encode("utf-8")) > self.policy.qq_text_max_bytes
+        ):
+            raise QQError("napcat_proactive_scope", fatal=True)
+        return await self._send_private(text)
+
     async def _send_private(self, text: str) -> str:
         socket = self.socket
         if socket is None or self.state != "ready":

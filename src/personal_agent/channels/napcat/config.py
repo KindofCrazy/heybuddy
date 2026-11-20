@@ -36,6 +36,7 @@ class NapCatSettings(BaseModel):
     napcat_input_typing_enabled: bool = True
     napcat_input_typing_ttl_seconds: float = Field(default=30, ge=1, le=30)
     napcat_reminders_enabled: bool = True
+    napcat_proactive_enabled: bool = True
 
     @field_validator("napcat_ws_url")
     @classmethod

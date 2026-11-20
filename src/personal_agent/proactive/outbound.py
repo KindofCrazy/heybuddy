@@ -1,7 +1,8 @@
-"""Draft generation and explicitly authorized local simulation, with final Host checks."""
+"""Draft generation and Host-bound delivery, with final provenance and activity checks."""
 
 import asyncio
 from collections.abc import Callable
+from datetime import datetime
 
 from personal_agent.core.evidence import SECRET
 from personal_agent.core.prompts import CONVERSATION_PROMPT
@@ -26,11 +27,76 @@ class OutboundRuntime:
         self.proactive, self.repository = proactive, repository
         self.conversation, self.persona = conversation, persona
         self.composer = Composer(proactive.model)
+        self.sender: Sender | None = None
+        self.delivery_grant: Callable[[], DeliveryGrant | None] | None = None
+        self.connected_at: datetime | None = None
+        self.read_only = not initialize
         if initialize:
             repository.recover(proactive.clock.now())
 
     def ready(self) -> bool:
-        return bool(self.proactive.policy.compose_enabled and self.repository.next_decision())
+        return bool(
+            self.proactive.policy.compose_enabled
+            and (self.repository.next_decision() or self._next_delivery())
+        )
+
+    def bind_delivery(self, sender: Sender, grant: Callable[[], DeliveryGrant | None]) -> None:
+        if self.read_only or sender.mode != "napcat":
+            raise ValueError("Proactive delivery unavailable")
+        self.sender, self.delivery_grant = sender, grant
+        self.connected_at = self.proactive.clock.now()
+
+    def unbind_delivery(self) -> None:
+        self.sender, self.delivery_grant, self.connected_at = None, None, None
+
+    def delivery_available(self) -> bool:
+        grant = self.delivery_grant() if self.delivery_grant else None
+        return bool(
+            not self.read_only
+            and self.proactive.policy.enabled
+            and self.proactive.policy.compose_enabled
+            and self.sender is not None
+            and self.sender.mode == "napcat"
+            and self.connected_at is not None
+            and grant is not None
+            and grant.enabled
+            and grant.channel == "napcat"
+            and grant.source_scope
+            and grant.channel_scope
+            and grant.conversation_id == self.conversation()
+        )
+
+    def _next_delivery(self) -> dict | None:
+        if not self.delivery_available():
+            return None
+        return self.repository.next_prepared(self.conversation(), self.connected_at)
+
+    def delivery_allowed(self, item_id: str) -> bool:
+        if not self.delivery_available():
+            return False
+        grant = self.delivery_grant()
+        item = self.repository.get(item_id)
+        return bool(
+            item["status"] == "sending"
+            and item["recipient"] == grant.recipient
+            and item["grant_revision"] == grant.revision
+            and item["source_scope"] == grant.source_scope
+            and item["created_at"] >= stamp(self.connected_at)
+            and self._valid(item)
+            and self.repository.delivery_scope(item, grant, self.proactive.clock.now())
+        )
+
+    async def run(self) -> dict:
+        item = self._next_delivery()
+        if item is None:
+            return await self.compose()
+        sender, grant = self.sender, self.delivery_grant
+        result = await self._deliver(item["id"], sender, grant, mode="napcat")
+        if result["outcome"] == "blocked":
+            self.repository.stop(
+                item["id"], "cancelled", "delivery_blocked", self.proactive.clock.now()
+            )
+        return result
 
     def _valid(self, item: dict) -> bool:
         fingerprint, _ = self.persona()
@@ -110,10 +176,26 @@ class OutboundRuntime:
     async def simulate(
         self, item_id: str, sender: Sender, grant: Callable[[], DeliveryGrant | None]
     ) -> dict:
-        # Only a trusted caller may provide the local fake and grant. No model/HTTP path.
+        return await self._deliver(item_id, sender, grant, mode="simulation")
+
+    async def _deliver(
+        self,
+        item_id: str,
+        sender: Sender,
+        grant: Callable[[], DeliveryGrant | None],
+        *,
+        mode: str,
+    ) -> dict:
+        # Only a trusted Host binds a transport; no model/HTTP delivery entry point.
         initial = grant()
-        if sender.mode != "simulation" or initial is None or not initial.enabled:
-            return dict(outcome="blocked", reason="simulation_permission_required")
+        if (
+            self.read_only
+            or sender.mode != mode
+            or initial is None
+            or not initial.enabled
+            or initial.channel != mode
+        ):
+            return dict(outcome="blocked", reason="delivery_permission_required")
         item = self.repository.get(item_id)
         if item["status"] != "prepared":
             return dict(outcome="blocked", reason="outbox_not_prepared")
@@ -131,7 +213,8 @@ class OutboundRuntime:
         try:
             # Claim/attempt are committed before the first await. Cancellation is uncertain.
             async with asyncio.timeout(self.proactive.policy.timeout_seconds) as deadline:
-                receipt = await sender.send(current.recipient, item["text"], item_id)
+                key = "proactive:" + item_id if mode == "napcat" else item_id
+                receipt = await sender.send(current.recipient, item["text"], key)
                 if deadline.expired():
                     raise DeliveryError()
                 task = asyncio.current_task()
@@ -153,14 +236,14 @@ class OutboundRuntime:
                 self.proactive.clock.now(),
                 code="send_uncertain" if error.uncertain else "send_failed",
             )
-            return dict(outcome=status, mode="simulation")
+            return dict(outcome=status, mode=mode)
         except Exception:
             self.repository.finish(
                 item_id, "uncertain", self.proactive.clock.now(), code="send_unconfirmed"
             )
-            return dict(outcome="uncertain", mode="simulation")
+            return dict(outcome="uncertain", mode=mode)
         # Storage failure here cannot undo sender effects. Leave sending for recovery.
         self.repository.finish(
             item_id, "accepted", self.proactive.clock.now(), receipt=receipt.receipt_id
         )
-        return dict(outcome="accepted", mode="simulation", outbox_id=item_id)
+        return dict(outcome="accepted", mode=mode, outbox_id=item_id)

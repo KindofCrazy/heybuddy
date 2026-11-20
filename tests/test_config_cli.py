@@ -33,6 +33,17 @@ def test_no_parent_directory_secret_search(tmp_path, monkeypatch):
         load_settings()
 
 
+def test_napcat_proactive_defaults_on_and_can_be_disabled(monkeypatch, tmp_path):
+    path = tmp_path / "synthetic.env"
+    path.write_text(
+        "OPENAI_API_KEY=test\nOPENAI_MODEL=test\nAGENT_CONTEXT_WINDOW=64000\n",
+        encoding="utf-8",
+    )
+    assert load_settings(path).napcat_proactive_enabled is True
+    monkeypatch.setenv("AGENT_NAPCAT_PROACTIVE_ENABLED", "false")
+    assert load_settings(path).napcat_proactive_enabled is False
+
+
 def test_execution_budget_configuration_and_environment_precedence(monkeypatch):
     Path(".env").write_text(
         "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\nAGENT_CONTEXT_WINDOW=64000\n"

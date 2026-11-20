@@ -71,13 +71,14 @@ class ProactiveRuntime:
         )
 
     def status(self) -> dict:
+        outbound_enabled = bool(self.outbound and self.outbound.delivery_available())
         return dict(
-            mode="shadow",
+            mode="napcat" if outbound_enabled else "shadow",
             enabled=self.policy.enabled,
             gate=self.gate(),
             state=self.repository.state(),
             next_check_seconds=self.wake.delay(self.clock.now()),
-            outbound_enabled=False,
+            outbound_enabled=outbound_enabled,
             compose_enabled=self.policy.compose_enabled,
         )
 
@@ -119,7 +120,7 @@ class ProactiveRuntime:
         if gate != "eligible":
             return dict(outcome="no_proactive_work", gate=gate)
         if self.outbound is not None and self.outbound.ready():
-            return await self.outbound.compose()
+            return await self.outbound.run()
         proposals = self.repository.due(at, self.policy.candidate_limit)
         if not proposals:
             return dict(outcome="no_proactive_work")

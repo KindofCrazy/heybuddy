@@ -14,7 +14,7 @@ export async function proactivePage() {
     proposals: "Opportunities",
     decisions: "Decisions",
     outbox: "Message drafts",
-    attempts: "Simulation attempts",
+    attempts: "Delivery attempts",
   };
   const tabs = node("nav", "proactive-tabs");
   const panels = Object.keys(names);
@@ -37,12 +37,14 @@ export async function proactivePage() {
   try {
     const value = await get("/api/proactive/status");
     status.replaceChildren(
-      badge(value.enabled ? "Shadow Mode" : "disabled"),
+      badge(value.enabled ? (value.outbound_enabled ? "NapCat delivery" : "Shadow Mode") : "disabled"),
       node("p", "muted", ui(value.gate || "disabled")),
       node(
         "p",
         "",
-        ui("Observes opportunities and decisions; sends no messages or tasks."),
+        ui(value.outbound_enabled
+          ? "Eligible check-ins can be sent to the bound NapCat peer."
+          : "Observes opportunities and decisions; sends no messages or tasks."),
       ),
     );
   } catch {

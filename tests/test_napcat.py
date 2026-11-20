@@ -476,9 +476,10 @@ async def test_luna_shared_runtime_images_dedup_commands_and_restart(state):
             await restarted.close()
 
 
-async def test_runner_supervises_full_wiring_and_closes_application(state, monkeypatch):
+@pytest.mark.parametrize("checkins", [True, False])
+async def test_runner_supervises_full_wiring_and_closes_application(state, monkeypatch, checkins):
     db, sessions, memory, _ = state
-    selected = settings()
+    selected = settings(napcat_proactive_enabled=checkins)
     provider = FakeProvider(ModelResponse(text="通过小号回复。"))
     service = assemble_chat(selected, sessions, memory, provider)
     delivered = asyncio.Event()
@@ -500,6 +501,11 @@ async def test_runner_supervises_full_wiring_and_closes_application(state, monke
 
         async def run(self, receive, ready):
             ready()
+            outbound = service.organization.proactive.outbound
+            assert (outbound.sender is not None) == checkins
+            if checkins:
+                grant = outbound.delivery_grant()
+                assert grant.channel == "napcat" and grant.recipient == selected.napcat_peer_id
             await receive(event(user_id=1111111))
             await receive(event())
             await asyncio.wait_for(delivered.wait(), 2)
@@ -515,6 +521,7 @@ async def test_runner_supervises_full_wiring_and_closes_application(state, monke
         await runner.run_napcat(selected)
     assert closed and len(provider.requests) == 1
     assert rows(db)[0]["app_id"] == selected.napcat_scope
+    assert service.organization.proactive.outbound.sender is None
 
 
 def test_cli_napcat_fails_before_provider_when_not_configured(monkeypatch, capsys):

@@ -110,7 +110,7 @@ schema 16 新增 `/proactive` 页面和 `/api/proactive/status|proposals|decisio
 
 `proactive.js:proactivePage` 将观察状态作为顶部摘要，四类记录以按钮切换，只显示一张列表卡片。`.page-proactive .bento` 为摘要、标签和当前列表分配高度，矮窗口隐藏重复的状态说明，保留模式和 gate。各列表仍使用原接口及游标分页，不提供生成、发送或写入操作。
 
-`/api/proactive/outbox|attempts` 通过 OutboxRepository.listing() 绑定当前 Agent，以至多 20 条 rowid 游标返回草稿和模拟尝试；`/proactive` 增加对应卡片与模式标记。HTTP 没有生成、发送或重试端点；复用原 Host/Origin、隐私、响应限制和只读策略，详情仅通过 DOM 文本展示。完整执行路径与 API 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`。
+`/api/proactive/outbox|attempts` 通过 OutboxRepository.listing() 绑定当前 Agent，以至多 20 条 rowid 游标返回草稿和投递尝试；Attempt 关联 Outbox 显示真实渠道或 simulation。`/proactive` 的状态卡按 `/api/proactive/status` 的 outbound_enabled 显示 NapCat 投递或 Shadow，卡片和中文翻译沿用原 layout/i18n 路径。HTTP 没有生成、发送或重试端点；复用原 Host/Origin、隐私、响应限制和只读策略，详情仅通过 DOM 文本展示。完整执行路径与 API 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`、`tests/test_proactive_delivery.py`。
 
 ## 独立 Web 的数据库只读边界
 

@@ -2,7 +2,7 @@
 
 向别人解释机制时，先读[不依赖源码的逻辑流程](mechanisms.md)。本文用于把这些机制对应到实际对象与执行顺序，各模块也在代码路径前提供独立“机制流程”。
 
-本文按普通文本请求的真实执行顺序展开，基线为 P5 Harness、SQLite schema 24。入口适配层只需把可信来源和输入交给 `runtime.py::ChatService`。本文路径相对仓库根目录；源码统一位于 `src/personal_agent/`。未来改进是建议，不代表已实现或获得执行授权。
+本文按普通文本请求的真实执行顺序展开，基线为 P5 Harness、SQLite schema 25。入口适配层只需把可信来源和输入交给 `runtime.py::ChatService`。本文路径相对仓库根目录；源码统一位于 `src/personal_agent/`。未来改进是建议，不代表已实现或获得执行授权。
 
 ```mermaid
 flowchart TD
@@ -151,9 +151,9 @@ SQLite 不能与文件或外部副作用共同事务提交。工具成功但结�
 
 ## 12. 返回之后的维护
 
-入口展示/投递回答后调用 `ChatService.after_reply()`，调度 OrganizationRuntime 的可抢占维护任务，可处理 Episode/Thread、Learning、Curator、角色状态与 Proactive Shadow。这些不是主回答 round，也不能用“已回答”推导“已写长期记忆”。新输入通过 foreground 抢占。
+入口展示/投递回答后调用 `ChatService.after_reply()`，调度 OrganizationRuntime 的可抢占维护任务，可处理 Episode/Thread、Learning、Curator、角色状态与 Proactive。这些不是主回答 round，也不能用“已回答”推导“已写长期记忆”。新输入通过 foreground 抢占。
 
-明确提醒另走 Scheduler；关心式 Proactive 仍为 Shadow，只生成建议和草稿。Harness 的显式后台作业与自动维护是两种机制。继续阅读 [Memory](modules/memory.md)、[Proactive](modules/proactive.md)、[Execution](modules/execution.md)、[Workflow](modules/workflows.md)。
+明确提醒另走 Scheduler；关心式 Proactive 在 NapCat 上可经独立受控 Sender 投递，其余入口保留 Shadow。Harness 的显式后台作业与自动维护是两种机制。继续阅读 [Memory](modules/memory.md)、[Proactive](modules/proactive.md)、[Execution](modules/execution.md)、[Workflow](modules/workflows.md)。
 
 ## 阅读与离线验证
 

@@ -7,16 +7,19 @@ import httpx
 
 from personal_agent.channels.lifecycle import stop_on_termination
 from personal_agent.channels.napcat.events import parse_input_status, parse_message
+from personal_agent.channels.napcat.proactive import NapCatProactiveSender
 from personal_agent.channels.napcat.reminders import NapCatReminderSender
 from personal_agent.channels.napcat.transport import NapCatTransport
 from personal_agent.channels.qq.adapter import QQAdapter
 from personal_agent.channels.qq.humanize import Humanizer
 from personal_agent.channels.qq.images import QQImages
 from personal_agent.config import Settings
+from personal_agent.proactive.delivery import DeliveryGrant
 from personal_agent.runtime import open_application
 from personal_agent.scheduler.chat import source_scope
 from personal_agent.scheduler.models import ReminderGrant
 from personal_agent.storage.images import SQLiteImages
+from personal_agent.storage.outbox import OutboundContext
 from personal_agent.storage.qq import QQInbox
 
 
@@ -63,6 +66,35 @@ async def run_napcat(
                     else "not_running",
                 }
                 started = asyncio.Event()
+                outbound = (
+                    service.organization.proactive.outbound
+                    if service.organization and service.organization.proactive
+                    else None
+                )
+                if outbound is not None:
+                    sessions.notice_factory = lambda conversation: OutboundContext(
+                        outbound.repository, conversation, source_scope=source_scope(inbox.scope)
+                    )
+                    service.agent.context.notices = sessions.notice_factory(sessions.current.id)
+                connection_revision = 0
+
+                def proactive_grant() -> DeliveryGrant | None:
+                    if (
+                        not settings.napcat_proactive_enabled
+                        or transport.state != "ready"
+                        or adapter.closing
+                        or inbox.pending()
+                    ):
+                        return None
+                    return DeliveryGrant(
+                        enabled=True,
+                        revision=connection_revision,
+                        channel="napcat",
+                        conversation_id=adapter.conversation_id,
+                        recipient=settings.napcat_peer_id,
+                        source_scope=source_scope(inbox.scope),
+                        channel_scope=settings.napcat_scope,
+                    )
 
                 def reminder_grant() -> ReminderGrant | None:
                     if not settings.napcat_reminders_enabled or transport.state != "ready":
@@ -76,8 +108,15 @@ async def run_napcat(
                     )
 
                 def ready() -> None:
+                    nonlocal connection_revision
+                    connection_revision += 1
                     if service.scheduler is not None and settings.napcat_reminders_enabled:
                         service.scheduler.bind_delivery(reminder_sender, reminder_grant)
+                    if outbound is not None and settings.napcat_proactive_enabled:
+                        outbound.bind_delivery(
+                            NapCatProactiveSender(transport, outbound.delivery_allowed),
+                            proactive_grant,
+                        )
                     if adapter.worker is None:
                         adapter.start()
                         started.set()
@@ -111,6 +150,8 @@ async def run_napcat(
                         if task in done:
                             await task
                 finally:
+                    if outbound is not None:
+                        outbound.unbind_delivery()
                     if service.scheduler is not None:
                         service.scheduler.unbind_delivery()
                     adapter.closing = True

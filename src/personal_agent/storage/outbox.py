@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from personal_agent.core.evidence import SECRET
+from personal_agent.core.execution import CURRENT_SCOPE, CURRENT_THREAD
 from personal_agent.core.history import HistoryError
 from personal_agent.proactive.delivery import DeliveryGrant
 from personal_agent.storage.proactive import ProactiveRepository, stamp
@@ -41,6 +42,21 @@ SCHEMA = (
         error_code TEXT NOT NULL DEFAULT '', receipt_id TEXT)""",
     "CREATE INDEX attempts_recipient ON proactive_attempts(agent_id,recipient,started_at)",
 )
+
+# Preserve the legacy CHECK-constrained mode; expose the explicit channel as mode.
+REAL_SCHEMA = (
+    "ALTER TABLE proactive_outbox ADD COLUMN delivery_channel TEXT NOT NULL DEFAULT '' "
+    "CHECK(delivery_channel IN ('','simulation','napcat'))",
+    "ALTER TABLE proactive_outbox ADD COLUMN source_scope TEXT",
+    "ALTER TABLE proactive_outbox ADD COLUMN source_run_id TEXT REFERENCES runs(id)",
+    "CREATE INDEX outbox_delivery ON proactive_outbox(agent_id,status,created_at)",
+)
+
+
+def record(row) -> dict:
+    value = dict(row)
+    value["mode"] = value.get("delivery_channel") or value["mode"]
+    return value
 
 
 class OutboxRepository:
@@ -81,7 +97,7 @@ class OutboxRepository:
         ).fetchone()
         if not row:
             raise HistoryError("Outbox item is unavailable.")
-        return dict(row)
+        return record(row)
 
     def get(self, item_id: str) -> dict:
         with self.store.reading() as db:
@@ -96,6 +112,46 @@ class OutboxRepository:
                 (self.agent_id,),
             ).fetchone()
             return dict(row) if row else None
+
+    def next_prepared(self, conversation_id: str, since: datetime) -> dict | None:
+        with self.store.reading() as db:
+            row = db.execute(
+                "SELECT o.* FROM proactive_outbox o JOIN proactive_decisions d "
+                "ON d.id=o.decision_id WHERE o.agent_id=? AND o.conversation_id=? "
+                "AND o.status='prepared' AND o.created_at>=? AND d.created_at>=? "
+                "ORDER BY o.rowid LIMIT 1",
+                (self.agent_id, conversation_id, stamp(since), stamp(since)),
+            ).fetchone()
+            return record(row) if row else None
+
+    def delivery_scope(self, item: dict, grant: DeliveryGrant, at: datetime) -> bool:
+        proposal = self.proposal(item["proposal_id"], item["proposal_revision"], at)
+        if (
+            proposal is None
+            or not grant.source_scope
+            or not grant.channel_scope
+            or not grant.channel_scope.startswith("napcat:")
+            or item["conversation_id"] != grant.conversation_id
+        ):
+            return False
+        with self.store.reading() as db:
+            for source in proposal["sources"]:
+                if (
+                    source["conversation_id"] != grant.conversation_id
+                    or not db.execute(
+                        "SELECT 1 FROM qq_receipts WHERE agent_id=? AND app_id=? AND openid=? "
+                        "AND conversation_id=? AND run_id=? LIMIT 1",
+                        (
+                            self.agent_id,
+                            grant.channel_scope,
+                            grant.recipient,
+                            grant.conversation_id,
+                            source["run_id"],
+                        ),
+                    ).fetchone()
+                ):
+                    return False
+        return True
 
     def proposal(self, proposal_id: str, revision: int, at: datetime) -> dict | None:
         with self.store.reading() as db:
@@ -190,6 +246,16 @@ class OutboxRepository:
                     "" if valid else "proposal_stale",
                 ),
             )
+            if valid:
+                source = db.execute(
+                    "SELECT r.id FROM runs r,json_each(?) s "
+                    "WHERE r.id=json_extract(s.value,'$.run_id') ORDER BY r.rowid DESC LIMIT 1",
+                    (json.dumps(proposal["sources"]),),
+                ).fetchone()
+                db.execute(
+                    "UPDATE proactive_outbox SET source_run_id=? WHERE id=? AND agent_id=?",
+                    (source[0], item_id, self.agent_id),
+                )
             return self._get(db, item_id)
 
     def valid(
@@ -272,6 +338,7 @@ class OutboxRepository:
                 or not grant.enabled
                 or grant.conversation_id != current["conversation_id"]
                 or self._proposal(db, item["proposal_id"], item["proposal_revision"], at) is None
+                or (grant.channel == "napcat" and not self.delivery_scope(item, grant, at))
             ):
                 return False
             recent = db.execute(
@@ -286,9 +353,19 @@ class OutboxRepository:
             ):
                 return False
             db.execute(
-                "UPDATE proactive_outbox SET status='sending',mode='simulation',"
-                "recipient=?,grant_revision=?,updated_at=? WHERE id=? AND agent_id=?",
-                (grant.recipient, grant.revision, stamp(at), item["id"], self.agent_id),
+                "UPDATE proactive_outbox SET status='sending',mode=?,delivery_channel=?,"
+                "source_scope=?,recipient=?,grant_revision=?,updated_at=? "
+                "WHERE id=? AND agent_id=?",
+                (
+                    "simulation" if grant.channel == "simulation" else "preview",
+                    grant.channel,
+                    grant.source_scope,
+                    grant.recipient,
+                    grant.revision,
+                    stamp(at),
+                    item["id"],
+                    self.agent_id,
+                ),
             )
             db.execute(
                 "INSERT INTO proactive_attempts (id,agent_id,recipient,started_at,status) "
@@ -321,12 +398,20 @@ class OutboxRepository:
         if kind not in {"outbox", "attempts"} or not 1 <= limit <= 20 or cursor < 1:
             raise ValueError("Invalid outbox page")
         with self.store.reading() as db:
+            query = (
+                "SELECT rowid AS position,* FROM proactive_outbox "
+                "WHERE agent_id=? AND rowid<? ORDER BY rowid DESC LIMIT ?"
+                if kind == "outbox"
+                else "SELECT a.rowid AS position,a.*,"
+                "COALESCE(NULLIF(o.delivery_channel,''),o.mode) AS mode "
+                "FROM proactive_attempts a JOIN proactive_outbox o ON o.id=a.id "
+                "WHERE a.agent_id=? AND a.rowid<? ORDER BY a.rowid DESC LIMIT ?"
+            )
             rows = db.execute(
-                f"SELECT rowid AS position,* FROM proactive_{kind} "
-                "WHERE agent_id=? AND rowid<? ORDER BY rowid DESC LIMIT ?",
+                query,
                 (self.agent_id, cursor, limit + 1),
             ).fetchall()
-        items = [dict(r) for r in rows[:limit]]
+        items = [record(r) if kind == "outbox" else dict(r) for r in rows[:limit]]
         next_cursor = items[-1]["position"] if len(rows) > limit else None
         for item in items:
             item.pop("position")
@@ -343,20 +428,37 @@ class OutboundContext:
         conversation_id: str,
         *,
         include_simulations: bool = False,
+        source_scope: str | None = None,
     ) -> None:
         self.repository, self.conversation_id = repository, conversation_id
         self.include_simulations = include_simulations
+        self.source_scope = source_scope
 
     def context(self) -> dict | None:
-        if not self.include_simulations:
-            # No real transport exists in this phase. Never imply a fake was delivered.
+        scope = CURRENT_SCOPE.get()
+        source = scope.source if scope else self.source_scope
+        thread = CURRENT_THREAD.get()
+        if not self.include_simulations and not source:
             return None
         with self.repository.store.reading() as db:
             rows = db.execute(
-                "SELECT id,text,updated_at,mode FROM proactive_outbox WHERE agent_id=? "
-                "AND conversation_id=? AND status='accepted' AND mode='simulation' "
-                "ORDER BY rowid DESC LIMIT 3",
-                (self.repository.agent_id, self.conversation_id),
+                "SELECT o.id,o.text,o.updated_at,"
+                "COALESCE(NULLIF(o.delivery_channel,''),o.mode) AS mode "
+                "FROM proactive_outbox o WHERE o.agent_id=? AND o.conversation_id=? "
+                "AND o.status='accepted' AND ((? AND o.mode='simulation') OR "
+                "(o.delivery_channel='napcat' AND o.source_scope=? AND (? IS NULL OR EXISTS "
+                "(SELECT 1 FROM run_threads rt WHERE rt.run_id=o.source_run_id "
+                "AND rt.thread_id=? AND rt.source=?)))) "
+                "ORDER BY o.rowid DESC LIMIT 3",
+                (
+                    self.repository.agent_id,
+                    self.conversation_id,
+                    self.include_simulations,
+                    source,
+                    thread,
+                    thread,
+                    source,
+                ),
             ).fetchall()
         if not rows:
             return None
@@ -365,6 +467,6 @@ class OutboundContext:
             origin="proactive",
             trust="assistant_generated_only",
             user_evidence=False,
-            simulation=True,
+            simulation=all(r["mode"] == "simulation" for r in rows),
             messages=[dict(role="assistant", **dict(r)) for r in reversed(rows)],
         )

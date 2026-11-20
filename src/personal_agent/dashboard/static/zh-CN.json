@@ -1,4 +1,10 @@
 {
+  "Proactive status": "主动聊天状态",
+  "DELIVERY / STATUS": "投递 / 状态",
+  "Delivery attempts": "投递记录",
+  "CHANNEL / RECEIPTS": "渠道 / 回执",
+  "NapCat delivery": "NapCat 投递已启用",
+  "Eligible check-ins can be sent to the bound NapCat peer.": "符合条件的关心消息可投递给已绑定的 NapCat 主号。",
   "Progress discussed": "本轮进展已聊过",
   "The scheduled check-in was withdrawn.": "原定的本轮问候已撤下。",
   "Message drafts": "消息草稿",

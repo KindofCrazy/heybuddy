@@ -2,7 +2,7 @@
 
 ## 职责与架构组成
 
-明确提醒的真实发送由 `reminders.py::NapCatReminderSender` 独立接在 Scheduler：已验证登录后的 ready() 才绑定当前主号、来源和会话许可，开关为 `AGENT_NAPCAT_REMINDERS_ENABLED`。`transport.send_reminder()` 与被动回答复用固定 `_send_private()`，返回真实 message_id；来源、领取、断线与终态审计见 [scheduler.md](scheduler.md)。只发送明确提醒，关心式主动聊天仍为 Shadow；不扩大群聊或任意 QQ 工具权限。
+明确提醒的真实发送由 `reminders.py::NapCatReminderSender` 独立接在 Scheduler：已验证登录后的 ready() 才绑定当前主号、来源和会话许可，开关为 `AGENT_NAPCAT_REMINDERS_ENABLED`。`transport.send_reminder()` 与被动回答复用固定 `_send_private()`，返回真实 message_id；来源、领取、断线与终态审计见 [scheduler.md](scheduler.md)。关心式消息由 `proactive.py::NapCatProactiveSender` 独立接在 OutboundRuntime，默认开关为 `AGENT_NAPCAT_PROACTIVE_ENABLED=true`；不扩大群聊或任意 QQ 工具权限。
 
 `src/personal_agent/channels/napcat/config.py::NapCatSettings` 保存 loopback WS、Token 与大小号绑定；`events.py::parse_message()` 将 OneBot 数组消息投影为现有 `QQText` 收件结构，不构造虚假官方 Gateway 事件。`transport.py::NapCatTransport` 负责身份核对、收发复用、echo 关联和有限重连。`runner.py::run_napcat()` 负责真实入口的生命周期，不包含另一条 Agent Loop。
 
@@ -12,8 +12,10 @@
 
 1. 连接本机渠道并核对大小号绑定，只接受指定主号的好友私聊。
 2. 将合法文本和图片交给共享接收与执行机制，输出按同一对话返回。
-3. 连接建立后仅为绑定来源启用明确提醒投递；关心式主动聊天仍保持影子模式。
+3. 连接建立后为绑定来源启用明确提醒和受控关心消息投递；关闭关心消息开关可保留影子模式。
 4. 连接失败和未知回执保留状态，不扩展成任意账号操作。
+
+关心消息的具体路径为 `ready()` → `OutboundRuntime.bind_delivery()` → 原空闲维护通道的 `ProactiveRuntime.run()` → `OutboundRuntime.run()` → `OutboxRepository.claim()` → `NapCatProactiveSender.send()` → `NapCatTransport.send_proactive()` → `_send_private()`。许可只绑定当前主号、来源和会话；重连增加 revision 并重置连接时间，不补发旧草稿或旧 notify 决策。默认最近 24 小时最多两次、间隔六小时，沿用安静时段；节流等待结束后再次检查新输入和权限。离线用例见 `tests/test_proactive_delivery.py`，完整状态与异常语义见 [Outbox](outbox.md)。
 
 ## 代码实际运行路径
 
@@ -26,9 +28,9 @@ Windows 双击入口为根目录 `start-heybuddy.cmd` → `scripts/start-qq.ps1`
 3. `NapCatTransport.run()` 通过 `LocalConnect` 连接固定本机正向 WS，拒绝 HTTP 重定向，使用 Authorization Bearer Header，禁用环境代理及 wire logger，限制 frame 为 262144 字节、接收队列为 4，使用协议 Ping/Pong 检测断线。
 4. `serve()` 在连接超时内发送 `get_login_info`，校验 echo、status、retcode 与返回的 user_id。校验前最多暂存配置 queue_size 个事件；不接收进 Journal，也不启动消费者。校验失败或身份不符不会发送消息。成功后 `ready()` 启动一次 `QQAdapter.start()`，再依到达顺序提交暂存和后续事件。
 5. `parse_message()` 只接受 post_type=message、private/friend、正确 self_id/user_id/sender.user_id。忽略群聊、临时会话、自身 message_sent、其他联系人和管理通知。验证整数时间、未来偏移、数值消息 ID、有界段数和 UTF-8 大小。只投影显式 text 和 image.url；不读取 raw_message、昵称、图片本地路径或展开 reply。face 仅作通用文本占位，其他附件类型不进入模型。
-6. `QQAdapter.accept_message()` → `QQInbox.receive()` 短事务去重并暂存 → `ChatService.note_input()` → 唤醒单消费者。回调不等待模型或图片下载，所以 socket reader 可同时处理发送回执。正常消费、聚合、前台抢占、图片校验及 Journal 路径沿用 [QQ](qq.md) 和 [消息聚合](qq-turns.md)。普通对话传入空 permissions；明确 `/remind` 可创建、查看和取消当前来源/会话的提醒，其他管理命令提示本地 CLI。提醒命令不调用模型，保存后没有到期真实推送保证，详见 [scheduler.md](scheduler.md)。P2、角色与 Proactive Shadow 沿用共享运行时。
+6. `QQAdapter.accept_message()` → `QQInbox.receive()` 短事务去重并暂存 → `ChatService.note_input()` → 唤醒单消费者。回调不等待模型或图片下载，所以 socket reader 可同时处理发送回执。正常消费、聚合、前台抢占、图片校验及 Journal 路径沿用 [QQ](qq.md) 和 [消息聚合](qq-turns.md)。普通对话传入空 permissions；明确 `/remind` 可创建、查看和取消当前来源/会话的提醒，其他管理命令提示本地 CLI。提醒命令不调用模型，保存后没有到期真实推送保证，详见 [scheduler.md](scheduler.md)。P2、角色与 Proactive 沿用共享运行时。
 7. 回答调用 `NapCatTransport.send_text()`，再次校验目标主号、来源消息 ID、段数和字节上限，只发送固定 `send_private_msg`。文本以数组 text 段编码，模型生成的 CQ 字符串保持字面文本。每次 UUID echo 对应一个 future；`serve()` 收到相同 echo 后交回 status/retcode/data。只有有效成功响应且包含数值 message_id 才算确认。
-8. 外部发送前保存 sending，确认后立即更新段数，完成后 replied。异常/超时、回执缺失或断线保留 uncertain，不重发；断线令所有待确认 future 失败。消费者为空时走原 `after_reply()`，不会让 Shadow 建议发送消息。
+8. 外部发送前保存 sending，确认后立即更新段数，完成后 replied。异常/超时、回执缺失或断线保留 uncertain，不重发；断线令所有待确认 future 失败。消费者为空时走原 `after_reply()`；关心式消息在既有空闲维护单元中独立复核和投递。
 9. Runner 先监督身份核对任务与停止信号，消费者启动后监督 receiving/worker/stop。任一失败停止其他任务。Ctrl+C/SIGTERM 先禁止新收件，再取消连接和消费者，回收 HTTP 与原应用。重启只恢复未领取的 received；processing/processed/sending 保守 uncertain。关闭等待有界，但同步 SQLite 和 MemoryFS 操作没有硬实时取消保证。
 
 ## 异常与边界
@@ -63,4 +65,4 @@ Windows 双击入口为根目录 `start-heybuddy.cmd` → `scripts/start-qq.ps1`
 
 ## 未来改进
 
-增加连接重建、重复事件和主号绑定变化的离线演练。保持单主号私聊与明确提醒范围，不因 OneBot 能力丰富而开放任意操作。
+增加连接重建、重复事件和主号绑定变化的离线演练。保持单主号私聊、明确提醒与受控关心消息范围，不因 OneBot 能力丰富而开放任意操作。

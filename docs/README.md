@@ -10,7 +10,7 @@
 
 每个模块专题提供两种阅读方式：“机制流程”讲触发条件、处理步骤、决策与结果；后面的实际运行路径讲源码如何实现这些步骤。两者互相补充，未来改进单独列出，不混入当前机制。
 
-当前文档基线是 P5、SQLite schema 24。模块说明用实际源码路径和符号定位；“未来改进”是待讨论建议，不改变当前能力和授权。少数保留的版本章节用于解释兼容路径，旧交付结果统一见[历史归档](archive/README.md)。
+当前文档基线是 P5、SQLite schema 25。模块说明用实际源码路径和符号定位；“未来改进”是待讨论建议，不改变当前能力和授权。少数保留的版本章节用于解释兼容路径，旧交付结果统一见[历史归档](archive/README.md)。
 
 ## 主请求与执行
 
@@ -60,8 +60,8 @@
 
 | 模块 | 内容 |
 | --- | --- |
-| [proactive](modules/proactive.md) | Shadow 候选、Wake、Attention 与覆盖 |
-| [outbox](modules/outbox.md) | 草稿、Fake Sender 与接续 |
+| [proactive](modules/proactive.md) | 关注候选、Wake、Attention 与覆盖 |
+| [outbox](modules/outbox.md) | 草稿、受控 NapCat 投递、模拟与接续 |
 | [scheduler](modules/scheduler.md) | 明确一次性提醒队列 |
 | [calendar](modules/calendar.md) | 有限时间语法与时区 |
 

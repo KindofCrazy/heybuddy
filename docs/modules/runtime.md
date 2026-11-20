@@ -13,7 +13,7 @@
 
 ## 代码实际运行路径
 
-1. open_application 打开 Store，取得占用锁，initialize 顺序迁移到 schema 24；非只读模式 recover_incomplete_runs 只更新中断审计状态。
+1. open_application 打开 Store，取得占用锁，initialize 顺序迁移到 schema 25；非只读模式 recover_incomplete_runs 只更新中断审计状态。
 2. SessionManager 恢复当前会话，创建 Agent 级 MemoryFS，非只读模式 initialize；sessions.memory 交给 Context 编译。
 3. open_chat 创建 AsyncOpenAI，max_retries=0，通过 OpenAIProvider 和绑定 Agent 的 SQLiteImages 进入 assemble_chat。
 4. assemble_chat 加载角色、建立 Outbox 接续读取，注册内建/Memory/Recall 工具。生产不注册 add_numbers；基础检索使用 archival_memory_search 与独立 Recall，Harness 开启后还有工作、规划等工具，不能把旧的“四个工具”当完整生产列表。
@@ -29,7 +29,7 @@
 
 observer_only 使用 SQLite 只读连接，initialize 只验证当前 schema，不迁移；不创建会话、Memory、不恢复执行或激活维护，Harness 不连接 MCP。ChatService.run 拒绝执行，after_reply 不调度；缺数据库/会话或版本不匹配需先由可信普通入口初始化。仍遵守数据库单实例锁。
 
-正常 Run 错误返回 RunResult；初始化失败向外传播到入口安全处理。工具副作用与 SQLite 不共同事务。MCP 单 Server unavailable 不阻断普通聊天。Scheduler 可接明确提醒 Sender，Proactive 仍只 Shadow，二者不能混淆。详细主循环见[消息主线](../architecture.md)。
+正常 Run 错误返回 RunResult；初始化失败向外传播到入口安全处理。工具副作用与 SQLite 不共同事务。MCP 单 Server unavailable 不阻断普通聊天。Scheduler 可接明确提醒 Sender；NapCat runner 另为 Proactive 绑定受控关心消息 Sender，未绑定渠道保持 Shadow。详细主循环见[消息主线](../architecture.md)。
 
 ## 阅读与验证
 
