@@ -33,6 +33,18 @@ def test_no_parent_directory_secret_search(tmp_path, monkeypatch):
         load_settings()
 
 
+def test_execution_budget_configuration_and_environment_precedence(monkeypatch):
+    Path(".env").write_text(
+        "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\nAGENT_CONTEXT_WINDOW=64000\n"
+    )
+    assert load_settings().execution_max_tokens == 131072
+    with Path(".env").open("a") as file:
+        file.write("AGENT_EXECUTION_MAX_TOKENS=524288\n")
+    assert load_settings().execution_max_tokens == 524288
+    monkeypatch.setenv("AGENT_EXECUTION_MAX_TOKENS", "262144")
+    assert load_settings().execution_max_tokens == 262144
+
+
 def test_thread_router_model_selection_defaults_on_and_host_can_disable(monkeypatch):
     Path(".env").write_text(
         "OPENAI_API_KEY=test-key\nOPENAI_MODEL=test-model\nAGENT_CONTEXT_WINDOW=64000\n"
@@ -60,6 +72,8 @@ def test_thread_router_model_selection_defaults_on_and_host_can_disable(monkeypa
         ("base_url", "not-a-url"),
         ("memory_max_bytes", 511),
         ("memory_max_bytes", 1_048_577),
+        ("execution_max_tokens", 4095),
+        ("execution_max_tokens", 4_000_001),
     ],
 )
 def test_invalid_settings(field, value):

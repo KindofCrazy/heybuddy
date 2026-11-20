@@ -121,6 +121,8 @@ V0.7.2 新增 AGENT_MEMORY_AUTOMATION=suggest、AGENT_MEMORY_AUTOMATION_MAX_REQU
 
 AGENT_MAX_TOOL_CALLS_PER_RESPONSE 默认 64、范围 1–256；AGENT_MAX_TOOL_CALLS_PER_RUN 默认 256、范围 1–1024。Settings 将它们传给原 Agent；在响应进入工具调用 Journal 或执行前检查整批数量，超限返回 invalid_response，已执行的更早批次保留，不截取执行部分批次、不自动重试。限制与 max_rounds/模型输出 token 限额独立。测试见 tests/test_agent.py；原 write-before-execute 和结果配对校验保持。
 
+`AGENT_EXECUTION_MAX_TOKENS` 控制每 Run 的共享累计 Token 预留上限，默认 131072、范围 4096～4000000。`Settings.execution_max_tokens` 经 `HarnessRuntime.scope()` 进入 `ExecutionBudget.max_tokens`，适用于 CLI、官方 QQ 和 NapCat。每次请求累计预留估算输入与完整输出上限，不因实际输出较少而退还；它不是实际用量或费用上限，也不改变单次模型窗口、输出限制、请求次数和执行时间。多轮文件任务提高 `AGENT_RESERVED_OUTPUT_TOKENS` 时，可显式增大此总额度，例如 524288；下次启动生效，模型无法修改。见 [Harness](harness.md)。
+
 ## 显式 1M 整理配置
 
 整理输出允许 256～1,000,000 tokens，默认仍为 8192；该额度包含推理。需要大输出时，可显式设置 `AGENT_CONTEXT_WINDOW=1048576`、`AGENT_ORGANIZATION_OUTPUT_TOKENS=1000000`、`AGENT_ORGANIZATION_MAINTENANCE_TOKENS=1048576`。窗口需容纳输入、输出和安全余量；输入上限仍为默认 24576，单轮维护按实际输入估算加完整输出额度预留，因此该配置通常一轮只能容纳一次整理调用。API 是否接受这些值取决于实际模型和端点，宿主校验通过不表示服务端支持。

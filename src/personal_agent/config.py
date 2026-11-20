@@ -39,6 +39,7 @@ class Settings(ContextBudget, QQSettings, NapCatSettings):
     max_rounds: int = Field(default=10, ge=1)
     max_tool_calls_per_response: int = Field(default=64, ge=1, le=256)
     max_tool_calls_per_run: int = Field(default=256, ge=1, le=1024)
+    execution_max_tokens: int = Field(default=131072, ge=4096, le=4_000_000)
     request_timeout_seconds: float = Field(default=60, gt=0)
     tool_timeout_seconds: float = Field(default=10, gt=0)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
@@ -364,6 +365,7 @@ ENV_FIELDS = {
     "AGENT_MAX_ROUNDS": "max_rounds",
     "AGENT_MAX_TOOL_CALLS_PER_RESPONSE": "max_tool_calls_per_response",
     "AGENT_MAX_TOOL_CALLS_PER_RUN": "max_tool_calls_per_run",
+    "AGENT_EXECUTION_MAX_TOKENS": "execution_max_tokens",
     "AGENT_REQUEST_TIMEOUT_SECONDS": "request_timeout_seconds",
     "AGENT_TOOL_TIMEOUT_SECONDS": "tool_timeout_seconds",
     "AGENT_LOG_LEVEL": "log_level",

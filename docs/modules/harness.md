@@ -6,6 +6,8 @@
 
 `core/execution.py::RunScope` 使用 ContextVar 保存 Host 绑定的 Agent、Conversation、来源、根执行 ID、权限和共享预算。工具参数不能填写这些身份。`ExecutionBudget` 默认最多 24 次模型请求、131072 预留 Token、180 秒和 256 次工具尝试，生产工具上限同时受原配置约束。`BudgetProvider` 在请求前保守预留，成功或失败后记录实际 usage；usage 缺失不返还预留量。主模型、摘要、Goal 评审与子 Agent 共享根预算，既有维护预算独立。
 
+Host 可通过 `AGENT_EXECUTION_MAX_TOKENS` 设置每 Run 的累计预留 Token 上限，范围 4096～4000000，默认保持 131072。`HarnessRuntime.__init__()` 保存该配置，`scope()` 为 CLI、官方 QQ 和 NapCat 的每个新 Run 创建相应的 `ExecutionBudget`。该值与单次请求的 `AGENT_RESERVED_OUTPUT_TOKENS` 独立；每轮按估算输入加完整输出上限累计预留，提高单轮输出时也需要为后续工具交互预留总额度。模型不能修改此配置，超限仍在请求发出前停止。
+
 `storage/harness.py::HarnessRepository` 是 schema 23 的持久化入口：`harness_records` 保存按 Agent/Conversation/source 隔离的修订状态，`harness_events` 保存状态转换关联，`tool_artifacts` 保存有界工具正文。状态修改与事件原子提交，更新采用 revision 条件检查。原始会话消息继续由原 Journal 保存。
 
 ## 机制流程
@@ -42,6 +44,8 @@ Hook 默认单次 1 秒、单事件累计 2 秒；只有 PreToolUse 可阻断。
 可信 CLI：`/harness` 查看当前来源状态；`/goal` 查看目标；`/compact` 显式压缩；`/workflow resume <id>` 显式恢复。
 
 运行 `uv run pytest tests/test_harness.py` 验证 Hook 顺序、失败、来源隔离、共享预算及端到端装配。运行 `uv run python -m personal_agent.evaluation.harness` 执行固定合成场景；这是离线机制验证，不衡量真实模型能力。
+
+`tests/test_harness.py::test_runtime_configured_execution_budget_is_enforced` 验证 Host 总预算进入真实 Run 路径：小额度在调用 Provider 前停止，较大额度允许正常完成；`tests/test_config_cli.py` 验证默认值、文件配置、环境覆盖及非法额度。
 
 ## 未来改进
 

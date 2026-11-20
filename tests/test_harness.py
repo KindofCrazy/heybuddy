@@ -541,6 +541,36 @@ async def test_background_notification_only_acknowledges_presented_result(harnes
     assert not repository.get(second["id"], "execution")["notified"]
 
 
+@pytest.mark.parametrize("source", ["cli", "chat:test"])
+@pytest.mark.parametrize("limit,expected", [(4096, "budget_exhausted"), (524288, "completed")])
+async def test_runtime_configured_execution_budget_is_enforced(tmp_path, source, limit, expected):
+    from personal_agent.config import Settings
+    from personal_agent.harness import HarnessRuntime
+    from personal_agent.sessions import SessionManager
+
+    with SQLiteStore(tmp_path / "budget.db") as store:
+        store.initialize()
+        sessions = SessionManager(store, budget=ContextBudget(context_window=131072))
+        provider = FakeProvider(ModelResponse(text="Done"))
+        agent = Agent(provider, create_builtin_registry(), sessions.context())
+        settings = Settings(
+            api_key="fake",
+            model="fake",
+            context_window=131072,
+            execution_max_tokens=limit,
+            workspace_root=tmp_path / "work",
+            skills_root=tmp_path / "skills",
+        )
+        runtime = HarnessRuntime(settings, sessions, agent)
+        try:
+            result = await runtime.run("Complete this request", frozenset(), source=source)
+            assert result.status == expected
+            assert len(provider.requests) == (1 if expected == "completed" else 0)
+            assert runtime.scope(source).budget.max_tokens == limit
+        finally:
+            await runtime.close()
+
+
 async def test_shared_runtime_goal_file_check_and_channel_isolation(tmp_path):
     from personal_agent.config import Settings
     from personal_agent.harness import HarnessRuntime

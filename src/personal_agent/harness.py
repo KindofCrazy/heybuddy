@@ -46,6 +46,7 @@ class HarnessRuntime:
         self.starting_goal_id = None
         self.last_budget = {}
         self.max_tool_calls = settings.max_tool_calls_per_run
+        self.execution_max_tokens = settings.execution_max_tokens
         data_root = os.environ.get("LOCALAPPDATA")
         if data_root:
             base = Path(data_root) / "HeyBuddy"
@@ -232,7 +233,9 @@ class HarnessRuntime:
             self.sessions.current.id,
             source,
             permissions,
-            budget=ExecutionBudget(max_tool_calls=self.max_tool_calls),
+            budget=ExecutionBudget(
+                max_tokens=self.execution_max_tokens, max_tool_calls=self.max_tool_calls
+            ),
         )
 
     def status(self) -> dict:
