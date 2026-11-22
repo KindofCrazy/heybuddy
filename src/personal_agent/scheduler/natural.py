@@ -9,7 +9,7 @@ from personal_agent.core.calendar import LOCAL_ZONE, clock_hour, parse_time
 from personal_agent.core.evidence import SECRET
 from personal_agent.core.models import Model
 from personal_agent.core.reminder_intent import CREATE, META, UNTRUSTED, reminder_action
-from personal_agent.scheduler.chat import delivery_notice, describe, request_key
+from personal_agent.scheduler.chat import describe, request_key
 from personal_agent.scheduler.models import ReminderError, ReminderRequest
 from personal_agent.scheduler.runtime import SchedulerRuntime
 from personal_agent.storage.reminder_dialogues import ReminderDialogues
@@ -29,6 +29,26 @@ class Draft(Model):
 
 def _body(text: str) -> str:
     return re.sub(r"^[\s，,：:]*(?:在|于)?\s*", "", text).strip(" ，,。！!？?")
+
+
+def _when(due_at: datetime, now: datetime) -> str:
+    seconds = round((due_at - now).total_seconds())
+    if 0 < seconds <= 3600:
+        if seconds % 3600 == 0:
+            return f"{seconds // 3600}小时后"
+        if seconds % 60 == 0:
+            return f"{seconds // 60}分钟后"
+        if seconds < 60:
+            return f"{seconds}秒后"
+    due, current = due_at.astimezone(LOCAL_ZONE), now.astimezone(LOCAL_ZONE)
+    days = (due.date() - current.date()).days
+    day = {0: "今天", 1: "明天", 2: "后天"}.get(days)
+    if day is None:
+        day = f"{due.month}月{due.day}日"
+        if due.year != current.year:
+            day = f"{due.year}年" + day
+    clock = due.strftime("%H:%M:%S" if due.second else "%H:%M")
+    return day + clock
 
 
 def _prompt(draft: Draft) -> str | None:
@@ -71,8 +91,9 @@ def _cancel(
     if latest["status"] not in {"scheduled", "blocked"}:
         return "最近一条提醒已结束，我没有取消其他提醒。可以用 /remind list 查看。"
     result = runtime.cancel(latest["id"])
-    prefix = "已取消这条提醒。" if result["outcome"] == "cancelled" else "这条提醒当前无法取消。"
-    return prefix + "\n" + describe(result["reminder"])
+    if result["outcome"] == "cancelled":
+        return f"好，已取消“{result['reminder']['text']}”的提醒。"
+    return "这条提醒当前无法取消，可以查看提醒记录确认状态。"
 
 
 def respond(
@@ -193,9 +214,12 @@ def respond(
             return "这个时间已过去或超出未来一年范围。我没有顺延日期，请重新指定完整提醒。"
         raise
     dialogs.clear(conversation, scope)
-    return (
-        "提醒已记录：\n"
-        + describe(result["reminder"])
-        + "\n"
-        + delivery_notice(runtime, conversation, scope)
-    )
+    item = result["reminder"]
+    if item["status"] == "blocked":
+        return "这条提醒已到期，当前还未确认投递。"
+    if item["status"] != "scheduled":
+        return "这条提醒已在处理或已结束，没有重复设置。"
+    when = _when(datetime.fromisoformat(item["due_at"]), runtime.clock.now())
+    if result["delivery_available"]:
+        return f"好，{when}提醒你{item['text']}。"
+    return f"记下了：{when}，{item['text']}。不过当前提醒渠道不可用，暂时不能保证通知到你。"

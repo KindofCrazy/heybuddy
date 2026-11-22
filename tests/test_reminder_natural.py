@@ -9,6 +9,7 @@ from personal_agent.channels.qq.adapter import QQAdapter
 from personal_agent.core.calendar import LOCAL_ZONE
 from personal_agent.core.history import HistoryError
 from personal_agent.scheduler.chat import source_scope
+from personal_agent.scheduler.models import ReminderGrant
 from personal_agent.scheduler.natural import respond
 from personal_agent.scheduler.runtime import SchedulerRuntime
 from personal_agent.storage import sqlite as storage
@@ -17,6 +18,7 @@ from personal_agent.storage.sqlite import SQLiteStore
 from tests.test_qq_adapter import Sender, event, settled, state
 from tests.test_qq_transport import config
 from tests.test_reminder_chat import attach
+from tests.test_reminder_delivery import Sender as ReminderSender
 
 __all__ = ["state"]
 NOW = datetime(2026, 10, 30, 12, 0, tzinfo=LOCAL_ZONE)
@@ -58,12 +60,46 @@ def say(dialogue, text, message="request", **options):
 )
 def test_explicit_current_request_creates_anchored_schedule(dialogue, text, due):
     response = say(dialogue, text)
-    assert "提醒已记录" in response and "尚无到期主动发送渠道" in response
+    assert "记下了" in response and "当前提醒渠道不可用" in response
     item = dialogue[0].repository.listing()["items"][0]
     assert datetime.fromisoformat(item["due_at"]) == due
     assert item["source_scope"] == dialogue[2]
     assert say(dialogue, text) == response
     assert len(dialogue[0].repository.listing()["items"]) == 1
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("3分钟后提醒我晾衣服", "好，3分钟后提醒你晾衣服。"),
+        ("明天上午九点提醒我交材料", "好，明天09:00提醒你交材料。"),
+        ("下周一上午十点提醒我开会", "好，11月2日10:00提醒你开会。"),
+        ("2027年1月1日09:00提醒我交材料", "好，2027年1月1日09:00提醒你交材料。"),
+    ],
+)
+def test_available_channel_confirms_naturally_and_keeps_details_in_queries(
+    dialogue, text, expected
+):
+    runtime, conversation, scope, _ = dialogue
+    grant = ReminderGrant(
+        enabled=True,
+        channel="napcat",
+        conversation_id=conversation,
+        source_scope=scope,
+        recipient="7654321",
+    )
+    runtime.bind_delivery(ReminderSender(), lambda: grant)
+    assert say(dialogue, text) == expected
+    item = runtime.repository.listing()["items"][0]
+    assert item["status"] == "scheduled" and item["receipt_id"] is None
+    assert item["id"] not in expected
+    assert item["id"] in say(dialogue, "查看我的提醒", "list")
+    cancelled = say(dialogue, "取消刚才那个提醒", "cancel")
+    assert cancelled == f"好，已取消“{item['text']}”的提醒。"
+    assert item["id"] not in cancelled
+    assert runtime.repository.get(item["id"])["status"] == "cancelled"
+    assert say(dialogue, text) == "这条提醒已在处理或已结束，没有重复设置。"
+    assert runtime.repository.get(item["id"])["status"] == "cancelled"
 
 
 def test_missing_fields_survive_restart_and_only_create_when_complete(dialogue):
@@ -76,7 +112,7 @@ def test_missing_fields_survive_restart_and_only_create_when_complete(dialogue):
     assert not runtime.repository.listing()["items"]
     assert say(dialogue, "我明天准备跑实验", "ordinary-plan") is None
     assert say(dialogue, "如果明天提醒我就好了", "hypothesis") is None
-    assert "提醒已记录" in say(dialogue, "交材料", "body")
+    assert "记下了" in say(dialogue, "交材料", "body")
     item = runtime.repository.listing()["items"][0]
     assert item["text"] == "交材料"
     assert datetime.fromisoformat(item["due_at"]) == NOW.replace(day=31, hour=9)
@@ -86,7 +122,7 @@ def test_missing_fields_survive_restart_and_only_create_when_complete(dialogue):
 def test_unqualified_clock_asks_period_and_never_invents_morning(dialogue):
     assert "上午还是" in say(dialogue, "明天九点提醒我交材料")
     assert not dialogue[0].repository.listing()["items"]
-    assert "提醒已记录" in say(dialogue, "晚上", "period")
+    assert "记下了" in say(dialogue, "晚上", "period")
     assert datetime.fromisoformat(dialogue[0].repository.listing()["items"][0]["due_at"]) == (
         NOW.replace(day=31, hour=21)
     )
@@ -94,14 +130,14 @@ def test_unqualified_clock_asks_period_and_never_invents_morning(dialogue):
 
 def test_new_24_hour_answer_overrides_a_previous_period(dialogue):
     assert "几点" in say(dialogue, "明天晚上提醒我交材料")
-    assert "提醒已记录" in say(dialogue, "09:00", "precise-clock")
+    assert "记下了" in say(dialogue, "09:00", "precise-clock")
     assert datetime.fromisoformat(dialogue[0].repository.listing()["items"][0]["due_at"]) == (
         NOW.replace(day=31, hour=9)
     )
 
 
 def test_time_in_reminder_body_does_not_override_an_explicit_prefix(dialogue):
-    assert "提醒已记录" in say(dialogue, "明天上午九点提醒我下午交材料")
+    assert "记下了" in say(dialogue, "明天上午九点提醒我下午交材料")
     item = dialogue[0].repository.listing()["items"][0]
     assert datetime.fromisoformat(item["due_at"]) == NOW.replace(day=31, hour=9)
     assert item["text"] == "下午交材料"
@@ -176,7 +212,7 @@ def test_commit_before_dialogue_cleanup_keeps_original_idempotency_key(dialogue,
         with pytest.raises(HistoryError):
             say(dialogue, "上午九点", "clock")
     assert len(dialogue[0].repository.listing()["items"]) == 1
-    assert "提醒已记录" in say(dialogue, "上午九点", "clock")
+    assert "记下了" in say(dialogue, "上午九点", "clock")
     assert len(dialogue[0].repository.listing()["items"]) == 1
 
 
