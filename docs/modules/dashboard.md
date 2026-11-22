@@ -108,9 +108,19 @@ schema 16 新增 `/proactive` 页面和 `/api/proactive/status|proposals|decisio
 
 # 草稿与模拟尝试
 
-`proactive.js:proactivePage` 将观察状态作为顶部摘要，四类记录以按钮切换，只显示一张列表卡片。`.page-proactive .bento` 为摘要、标签和当前列表分配高度，矮窗口隐藏重复的状态说明，保留模式和 gate。各列表仍使用原接口及游标分页，不提供生成、发送或写入操作。
+`proactive.js:proactivePage` 将状态作为顶部摘要，五类记录以按钮切换：关注事项、扫描与判断、关心消息草稿、关心消息投递、明确提醒，只显示一张列表卡片。手机宽度下页签换行，使“明确提醒”无需横向寻找；状态卡纵向排列以留出正文宽度。`.page-proactive .bento` 为摘要、标签和当前列表分配高度，列表仍有界滚动和分页，不提供生成、发送或写入操作。
 
 `/api/proactive/outbox|attempts` 通过 OutboxRepository.listing() 绑定当前 Agent，以至多 20 条 rowid 游标返回草稿和投递尝试；Attempt 关联 Outbox 显示真实渠道或 simulation。`/proactive` 的状态卡按 `/api/proactive/status` 的 outbound_enabled 显示 NapCat 投递或 Shadow，卡片和中文翻译沿用原 layout/i18n 路径。HTTP 没有生成、发送或重试端点；复用原 Host/Origin、隐私、响应限制和只读策略，详情仅通过 DOM 文本展示。完整执行路径与 API 验证见 [outbox.md](outbox.md)、`tests/test_outbound.py`、`tests/test_proactive_delivery.py`。
+
+## 关注与提醒的可读记录
+
+`/api/proactive/status` 同时只读投影当前已加载 OrganizationPolicy 的 idle_seconds、check_seconds、cooldown_seconds，以及 SchedulerRuntime.status() 的渠道状态。页面分别显示空闲门槛、后台检查间隔、维护周期之间的间隔，说明“先达到空闲门槛，再按周期逐项推进”，避免把默认 25 分钟的空闲门槛误读成两条扫描记录之间必须间隔 25 分钟。网页不改配置，不调用会推进状态的 diagnostics() 路径，不触发额外模型请求。
+
+`proactive.js:recordCard()` 将 scouted/source_processed/run_not_completed 等固定代码展示为“对话来源检查完成”“本次未新增或修改关注事项”或跳过原因；扫描只表示来源检查，不能据此推断调用过模型或发过消息。run_cursor 与 thread_cursor 决定来源类型，position 和完整原始数据留在默认折叠的技术详情。判断标题不再重复展示同一状态标签，来源正文和模型理由仍原样以 textContent 展示。日期使用 bindTimestamp，保留年份并支持语言切换。
+
+`/api/reminders` → `ObservatoryRepository.reminders()` 复用当前 Store，按 Agent 过滤 scheduled_reminders，并以 reminder_id/agent_id 关联 reminder_attempts；返回当前状态、正文、排期、记录时间、发送开始/结束时间和回执。查询只投影展示需要的字段，不返回收件账号或请求幂等键；每页 1～20 条，采用独立 rowid 游标，不创建记录或改变提醒状态。旧的“晾衣服”测试回执来自 Scheduler，所以显示在“明确提醒”，不会混成关心式消息的 Outbox 尝试。
+
+明确提醒卡片区分等待到期、渠道已接受、失败和完成未知；accepted 保留 napcat/simulation 渠道身份，并说明“渠道接受不代表已读”或“本地模拟未发送 QQ”。详细 JSON 默认折叠；所有接口继续由现有 Host/Origin、GET/HEAD、隐私过滤和响应预算保护。`tests/test_dashboard_proactive.py` 验证实际时间配置展示、真实/模拟回执、分页、跨 Agent 隔离、字段投影、中文页签和零写入/零模型调用。
 
 ## 独立 Web 的数据库只读边界
 

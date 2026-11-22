@@ -29,6 +29,19 @@ class ObservatoryRepository:
         self.episodes = EpisodeRepository(store, agent_id)
         self.threads = ThreadRepository(store, agent_id)
 
+    def reminders(self, limit: int, cursor: int) -> dict:
+        with self.store.reading() as db:
+            rows = db.execute(
+                "SELECT r.rowid AS position,r.id,r.text,r.status,r.due_at,r.created_at,"
+                "r.updated_at,r.error_code,r.receipt_id,"
+                "COALESCE(NULLIF(r.delivery_channel,''),r.mode) AS mode,"
+                "a.started_at,a.ended_at FROM scheduled_reminders r "
+                "LEFT JOIN reminder_attempts a ON a.reminder_id=r.id AND a.agent_id=r.agent_id "
+                "WHERE r.agent_id=? AND r.rowid<? ORDER BY r.rowid DESC LIMIT ?",
+                (self.agent_id, cursor, limit + 1),
+            ).fetchall()
+        return page([dict(row) for row in rows], limit)
+
     def listing(
         self,
         kind: str,

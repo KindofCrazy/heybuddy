@@ -22,14 +22,15 @@ PAGES = {
     "runs": ("/runs", "Runs", "Runs", (("runs", "Runs", "FROM THE SOURCE"),)),
     "proactive": (
         "/proactive",
-        "Proactive",
-        "Proactive",
+        "Follow-ups and reminders",
+        "Follow-ups and reminders",
         (
             ("proactive-status", "Proactive status", "DELIVERY / STATUS"),
             ("proposals", "Opportunities", "EVIDENCE / LIFECYCLE"),
-            ("decisions", "Decisions", "WAKE / ATTENTION"),
-            ("outbox", "Message drafts", "COMPOSER / OUTBOX"),
-            ("attempts", "Delivery attempts", "CHANNEL / RECEIPTS"),
+            ("decisions", "Scans and decisions", "WAKE / ATTENTION"),
+            ("outbox", "Check-in drafts", "COMPOSER / OUTBOX"),
+            ("attempts", "Check-in deliveries", "CHANNEL / RECEIPTS"),
+            ("reminders", "Explicit reminders", "SCHEDULE / RECEIPTS"),
         ),
     ),
 }

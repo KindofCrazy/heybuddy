@@ -1583,6 +1583,15 @@ footer:not(.drawer-footer) {
 .page-proactive #content-proactive-status > p:last-child {
   flex-basis: 100%;
 }
+.page-proactive .proactive-settings {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: 6px 20px;
+}
+.page-proactive .proactive-settings p {
+  margin: 0;
+}
 @media (max-height: 500px) {
   .page-proactive .tile-proactive-status {
     padding: 8px 12px;
@@ -1613,6 +1622,7 @@ footer:not(.drawer-footer) {
   border: var(--border-nested);
   border-radius: 8px;
   padding: 16px;
+  overflow-wrap: anywhere;
 }
 .page-proactive .object-card p {
   margin: 8px 0;
@@ -1644,7 +1654,9 @@ footer:not(.drawer-footer) {
 }
 @media (max-width: 680px) {
   .page-proactive .tile-proactive-status {
-    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
   .page-proactive .tile-proactive-status .eyebrow {
     display: none;
@@ -1654,6 +1666,10 @@ footer:not(.drawer-footer) {
   }
   .proactive-tabs button {
     padding: 7px 10px;
+  }
+  .proactive-tabs {
+    flex-wrap: wrap;
+    overflow: visible;
   }
 }
 .page-proactive pre {

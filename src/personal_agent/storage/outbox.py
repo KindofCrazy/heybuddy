@@ -402,7 +402,7 @@ class OutboxRepository:
                 "SELECT rowid AS position,* FROM proactive_outbox "
                 "WHERE agent_id=? AND rowid<? ORDER BY rowid DESC LIMIT ?"
                 if kind == "outbox"
-                else "SELECT a.rowid AS position,a.*,"
+                else "SELECT a.rowid AS position,a.*,o.text,"
                 "COALESCE(NULLIF(o.delivery_channel,''),o.mode) AS mode "
                 "FROM proactive_attempts a JOIN proactive_outbox o ON o.id=a.id "
                 "WHERE a.agent_id=? AND a.rowid<? ORDER BY a.rowid DESC LIMIT ?"

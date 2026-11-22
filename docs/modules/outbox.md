@@ -4,7 +4,7 @@
 
 `proactive/composer.py::Composer` 复用 OrganizerModel，以角色风格和真实来源生成结构化草稿，不提供工具。`proactive/outbound.py::OutboundRuntime` 管生成、最终复核和宿主绑定的投递；`proactive/delivery.py` 定义不可变 DeliveryGrant、SendReceipt、Sender 和离线 FakeSender。NapCat 的具体网络适配在 `channels/napcat/proactive.py::NapCatProactiveSender`，模型和 HTTP 没有绑定或任意发送入口。
 
-`storage/outbox.py::OutboxRepository` 保存草稿、一次性发送尝试和终态。schema 17 建立 proactive_outbox/proactive_attempts；schema 25 原子追加 delivery_channel、source_scope、source_run_id 和待发送查询索引。为保留旧 CHECK 约束，数据库 mode 仍使用 preview/simulation，读取和分页通过 record() 优先暴露 delivery_channel 为真实 mode；不会把模拟历史升级成真实消息。Attempt 列表关联 Outbox 显示渠道。
+`storage/outbox.py::OutboxRepository` 保存草稿、一次性发送尝试和终态。schema 17 建立 proactive_outbox/proactive_attempts；schema 25 原子追加 delivery_channel、source_scope、source_run_id 和待发送查询索引。为保留旧 CHECK 约束，数据库 mode 仍使用 preview/simulation，读取和分页通过 record() 优先暴露 delivery_channel 为真实 mode；不会把模拟历史升级成真实消息。Attempt 列表关联 Outbox 显示渠道和所投递的草稿正文；明确提醒的独立记录与回执见 [看板](dashboard.md) 的 `/api/reminders`。
 
 ## 代码实际运行路径
 

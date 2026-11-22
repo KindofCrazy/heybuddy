@@ -168,8 +168,25 @@ def create_app(service: ChatService, *, port: int = 8765) -> FastAPI:
 
     @app.get("/api/proactive/status")
     async def proactive_status():
-        runtime = service.organization.proactive if service.organization else None
-        return output(runtime.status() if runtime else dict(enabled=False, mode="shadow"))
+        organization = service.organization
+        runtime = organization.proactive if organization else None
+        value = runtime.status() if runtime else dict(enabled=False, mode="shadow")
+        if organization:
+            policy = organization.episodes.policy
+            value["maintenance"] = dict(
+                idle_seconds=policy.idle_seconds,
+                check_seconds=policy.check_seconds,
+                cooldown_seconds=policy.cooldown_seconds,
+            )
+        value["reminders"] = service.scheduler.status() if service.scheduler else None
+        return output(value)
+
+    @app.get("/api/reminders")
+    async def reminders(
+        limit: int = Query(12, ge=1, le=20),
+        cursor: int = Query(2**63 - 1, ge=1, le=2**63 - 1),
+    ):
+        return output(repository.reminders(limit, cursor))
 
     @app.get("/api/proactive/{kind}")
     async def proactive_listing(
